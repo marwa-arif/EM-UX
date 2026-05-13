@@ -620,20 +620,80 @@ const ROWS = [
   { label: 'platform-eng',                  type: 'group',        ip: '—',                      last: '2024-09-01', active: '2024-09-30' },
 ];
 
+const SOURCE_ICONS = {
+  ms: (
+    <svg viewBox="0 0 21 21" width="13" height="13" style={{ display: 'block' }}>
+      <rect x="0" y="0" width="9.5" height="9.5" fill="#F25022"/>
+      <rect x="11.5" y="0" width="9.5" height="9.5" fill="#7FBA00"/>
+      <rect x="0" y="11.5" width="9.5" height="9.5" fill="#00A4EF"/>
+      <rect x="11.5" y="11.5" width="9.5" height="9.5" fill="#FFB900"/>
+    </svg>
+  ),
+  crwd: (
+    <svg viewBox="0 0 20 20" width="13" height="13" style={{ display: 'block' }}>
+      <rect width="20" height="20" rx="2" fill="#E10D1A"/>
+      <path d="M10 3.5C6.4 3.5 3.5 6.4 3.5 10S6.4 16.5 10 16.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M10 6.8C8.2 6.8 6.8 8.2 6.8 10S8.2 13.2 10 13.2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="10" cy="10" r="1.5" fill="white"/>
+    </svg>
+  ),
+  azure: (
+    <svg viewBox="0 0 18 18" width="13" height="13" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id="azGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#114A8B"/>
+          <stop offset="100%" stopColor="#0078D4"/>
+        </linearGradient>
+      </defs>
+      <path d="M4.5 1h9L18 14H0L4.5 1z" fill="url(#azGrad)"/>
+      <path d="M0 14l5-6.5 2.5 6.5z" fill="#0078D4" fillOpacity="0.55"/>
+    </svg>
+  ),
+  aws: (
+    <svg viewBox="0 0 26 16" width="18" height="12" style={{ display: 'block' }}>
+      <rect width="26" height="16" rx="2.5" fill="#FF9900"/>
+      <text x="13" y="11.5" textAnchor="middle" fontSize="7.5" fontWeight="800" fill="white"
+            fontFamily="'Arial', sans-serif" letterSpacing="0.5">AWS</text>
+    </svg>
+  ),
+  k8s: (
+    <svg viewBox="0 0 20 20" width="13" height="13" style={{ display: 'block' }}>
+      <circle cx="10" cy="10" r="10" fill="#326CE5"/>
+      <line x1="10" y1="2.5" x2="10" y2="7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="10" y1="13" x2="10" y2="17.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="2.5" y1="10" x2="7" y2="10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="13" y1="10" x2="17.5" y2="10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="4.4" y1="4.4" x2="7.8" y2="7.8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="12.2" y1="12.2" x2="15.6" y2="15.6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="15.6" y1="4.4" x2="12.2" y2="7.8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="7.8" y1="12.2" x2="4.4" y2="15.6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="10" cy="10" r="2.5" fill="white"/>
+    </svg>
+  ),
+  jira: (
+    <svg viewBox="0 0 24 24" width="13" height="13" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id="jiraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0052CC"/>
+          <stop offset="100%" stopColor="#2684FF"/>
+        </linearGradient>
+      </defs>
+      <path d="M12 0L0 12l12 12 12-12L12 0z" fill="url(#jiraGrad)"/>
+      <path d="M12 5v10M7.5 10l4.5 5 4.5-5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
+};
+
+const SOURCE_TITLES = { ms: 'Microsoft', crwd: 'CrowdStrike', azure: 'Azure', aws: 'AWS', k8s: 'Kubernetes', jira: 'Jira' };
+
 function SourceBadge({ src }) {
-  const map = {
-    ms:    { label: 'MS',  bg: '#0078D4', fg: '#fff' },
-    crwd:  { label: 'CS',  bg: '#FA1F1F', fg: '#fff' },
-    azure: { label: 'AZ',  bg: '#0072C6', fg: '#fff' },
-    aws:   { label: 'AWS', bg: '#FF9900', fg: '#101010' },
-    k8s:   { label: 'K8',  bg: '#326CE5', fg: '#fff' },
-    jira:  { label: 'JR',  bg: '#0052CC', fg: '#fff' },
-    '+2':  { label: '+2',  bg: '#E6E6E6', fg: '#282828' },
-    '+1':  { label: '+1',  bg: '#E6E6E6', fg: '#282828' },
-  };
-  const m = map[src] || { label: src, bg: '#E6E6E6', fg: '#282828' };
+  if (src === '+1' || src === '+2') {
+    return <span className="kg-source-badge" style={{ background: '#E6E6E6', color: '#282828' }}>{src}</span>;
+  }
+  const icon = SOURCE_ICONS[src];
+  if (!icon) return <span className="kg-source-badge" style={{ background: '#E6E6E6', color: '#282828' }}>{src}</span>;
   return (
-    <span className="kg-source-badge" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
+    <span className="kg-source-icon-badge" title={SOURCE_TITLES[src] || src}>{icon}</span>
   );
 }
 
