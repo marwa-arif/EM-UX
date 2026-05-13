@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import Topbar from './Topbar.jsx'
-import LeftNav from './LeftNav.jsx'
-import SubHeader from './SubHeader.jsx'
-import { PageKG } from './PageKG.jsx'
-import { FilterPanel, GraphFilterDrawer } from './FilterPanel.jsx'
-import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './tweaks-panel.jsx'
+import Topbar from './components/Topbar.jsx'
+import LeftNav from './components/LeftNav.jsx'
+import SubHeader from './components/SubHeader.jsx'
+import { PageKG } from './pages/PageKG.jsx'
+import { FilterPanel, GraphFilterDrawer } from './components/FilterPanel.jsx'
+import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{

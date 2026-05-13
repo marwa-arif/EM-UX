@@ -3,8 +3,8 @@
 // then the filtered Details table.
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { PAI, Icons } from './ui.jsx'
-import { DSPillSearch } from './WorkspaceCtx.jsx'
+import { PAI, Icons } from '../ui.jsx'
+import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 
 // ─────────────────────────────────────────────────────────────────────
 // Entity type catalog — colors + icon glyph (drawn inline, no SVG file)

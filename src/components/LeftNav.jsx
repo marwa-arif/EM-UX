@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { PAI, Ic } from './ui.jsx'
+import { PAI, Ic } from '../ui.jsx'
 
 function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
   const model = [

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icons } from './ui.jsx'
+import { Icons } from '../ui.jsx'
 
 function Topbar() {
   return (

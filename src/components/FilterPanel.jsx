@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { PAI } from './ui.jsx'
-import { DSPillSearch } from './WorkspaceCtx.jsx'
-import { SegmentedTabs } from './PageKG.jsx'
+import { PAI } from '../ui.jsx'
+import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import { SegmentedTabs } from '../pages/PageKG.jsx'
 
 const FP_DEFAULT_ATTRS = [
   { id: 'business-unit',     label: 'Business Unit',       sub: null,         icon: 'business-unit',       options: [] },

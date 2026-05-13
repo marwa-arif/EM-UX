@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { PAI, Ic } from './ui.jsx'
+import { PAI, Ic } from '../ui.jsx'
 
 const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
