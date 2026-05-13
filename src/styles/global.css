@@ -1,0 +1,26 @@
+@font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Medium.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-SemiBold.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Bold.woff2') format('woff2'); }
+
+html, body, #root { height: 100%; margin: 0; }
+body, svg text { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+body { background: #F7F9FC; color: #101010; }
+
+:root {
+  --shell-bg:         #fff;
+  --shell-border:     #E6E6E6;
+  --shell-text:       #101010;
+  --shell-text-2:     #282828;
+  --shell-text-muted: #6E6E6E;
+  --shell-accent:     #6360D8;
+  --shell-hover:      rgba(0,0,0,0.04);
+  --shell-active:     rgba(99,96,216,0.08);
+  --shell-raised:     #F5F5F5;
+}
+
+button { font-family: inherit; }
+
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
