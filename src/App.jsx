@@ -6,6 +6,7 @@ import { PageKG } from './pages/PageKG.jsx'
 import { FilterPanel, GraphFilterDrawer } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
+import WorkspacePage from './pages/WorkspacePage.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -240,8 +241,6 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
   );
 }
 
-const WORKSPACE_URL = 'workspace.html';
-
 function App() {
   const [current, setCurrent] = useState('kg');
   const [collapsed, setCollapsed] = useState(false);
@@ -270,12 +269,12 @@ function App() {
   }, []);
 
   const handleNav = (id) => {
-    if (id === 'workspace' || id.startsWith('workspace/')) {
-      window.location.href = WORKSPACE_URL;
-      return;
-    }
     setCurrent(id);
   };
+
+  if (current === 'workspace' || current.startsWith('workspace/')) {
+    return <WorkspacePage onNav={handleNav} />
+  }
 
   const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };
 

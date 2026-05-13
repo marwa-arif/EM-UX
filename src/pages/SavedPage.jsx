@@ -1,3 +1,7 @@
+import React, { useState } from 'react'
+import { Ic } from '../ui.jsx'
+import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
+
 // Workspace › Saved tab
 
 const SAVED_ROWS = [
@@ -53,7 +57,7 @@ const IcGlobe = () => (
 
 function SavedPage() {
   const { onNav, savedFilter, setSavedFilter, savedVisibility, setSavedVisibility, savedSearch, setSavedSearch, openDeleteModal } = useWorkspace();
-  const [page] = React.useState(1);
+  const [page] = useState(1);
   const totalRows = SAVED_ROWS.length;
 
   const filtered = SAVED_ROWS.filter(row => {
@@ -246,4 +250,4 @@ function SavedPage() {
   );
 }
 
-window.SavedPage = SavedPage;
+export default SavedPage;

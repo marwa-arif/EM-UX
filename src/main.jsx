@@ -1,5 +1,6 @@
 import '/colors_and_type.css'
 import './styles/global.css'
+import './styles/workspace.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
