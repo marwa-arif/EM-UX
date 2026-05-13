@@ -1,6 +1,5 @@
-// LeftNav — collapsible primary nav. Custom for the KG screen reference.
-
-const { useState: useStateLN } = React;
+import React, { useState } from 'react'
+import { PAI, Ic } from './ui.jsx'
 
 function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
   const model = [
@@ -31,7 +30,7 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
   const activeParent = current?.split('/')[0];
   const activeChild  = current;
 
-  const [openIds, setOpenIds] = useStateLN(() => new Set([activeParent]));
+  const [openIds, setOpenIds] = useState(() => new Set([activeParent]));
   const toggle = (id) => setOpenIds(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -105,7 +104,7 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
 }
 
 function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
-  const [hover, setHover] = useStateLN(false);
+  const [hover, setHover] = useState(false);
   const hasChildren = item.children && item.children.length;
   const isSelected = isActiveParent;
 
@@ -199,4 +198,4 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
   );
 }
 
-window.LeftNav = LeftNav;
+export default LeftNav;

@@ -1,6 +1,4 @@
-// UI primitives — Prevalent AI Studio kit
-// Exports: Button, Chip, IconBtn, DualToggle, KPI, Input
-// Loaded via Babel; attached to window at the bottom.
+import React from 'react'
 
 const PAI = {
   indigo: '#6360D8',
@@ -246,4 +244,4 @@ const Icons = {
   info:     <Ic path={<><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></>} />,
 };
 
-Object.assign(window, { PAI, Button, IconBtn, Chip, DualToggle, KPI, Input, Ic, Icons });
+export { PAI, Button, IconBtn, Chip, DualToggle, KPI, Input, Ic, Icons };

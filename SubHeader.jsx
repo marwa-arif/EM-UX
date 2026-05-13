@@ -1,8 +1,5 @@
-// SubHeader — sticky page chrome matching design spec.
-// Left: title + breadcrumb + "..." menu (Edit) + Explore In dropdown
-// Right: circle icon btn + Active Filters pill + Filter button
-
-const { useState: useStateSH, useRef: useRefSH, useEffect: useEffectSH } = React;
+import React, { useState, useRef, useEffect } from 'react'
+import { PAI, Ic } from './ui.jsx'
 
 const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
@@ -23,19 +20,19 @@ const EXPLORE_GROUPS = [
 ];
 
 function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount = 0, onExplore, onFilter, filterActive }) {
-  const [menuOpen, setMenuOpen] = useStateSH(false);
-  const menuRef = useRefSH(null);
-  const [exploreOpen, setExploreOpen] = useStateSH(false);
-  const exploreRef = useRefSH(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const exploreRef = useRef(null);
 
-  useEffectSH(() => {
+  useEffect(() => {
     if (!menuOpen) return;
     const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
-  useEffectSH(() => {
+  useEffect(() => {
     if (!exploreOpen) return;
     const onDown = (e) => { if (exploreRef.current && !exploreRef.current.contains(e.target)) setExploreOpen(false); };
     document.addEventListener('mousedown', onDown);
@@ -243,4 +240,4 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount 
   );
 }
 
-window.SubHeader = SubHeader;
+export default SubHeader;

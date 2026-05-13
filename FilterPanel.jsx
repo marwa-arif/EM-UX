@@ -1,8 +1,7 @@
-const {
-  useState: useFPS,
-  useRef: useRefFPS,
-  useEffect: useEffFPS,
-} = React;
+import React, { useState, useRef, useEffect } from 'react'
+import { PAI } from './ui.jsx'
+import { DSPillSearch } from './WorkspaceCtx.jsx'
+import { SegmentedTabs } from './PageKG.jsx'
 
 const FP_DEFAULT_ATTRS = [
   { id: 'business-unit',     label: 'Business Unit',       sub: null,         icon: 'business-unit',       options: [] },
@@ -64,7 +63,7 @@ function FPDragHandle() {
 }
 
 function FPSubTooltip({ sub, children }) {
-  const [show, setShow] = useFPS(false);
+  const [show, setShow] = useState(false);
   return (
     <span
       style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
@@ -182,7 +181,7 @@ function FPStepper({ value, onChange, min = 1, max = 20 }) {
 
 // ── Graph filter node (shared by the drawer) ──────────────────────────────
 function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
-  const [hovered, setHovered] = useFPS(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <div
       onClick={onClick}
@@ -221,10 +220,10 @@ function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
 
 // ── Graph Filter side drawer ──────────────────────────────────────────────
 function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
-  const [gfShownIds,    setGfShownIds]    = useFPS(GF_DEFAULT_SHOWN);
-  const [gfSelectedIds, setGfSelectedIds] = useFPS(new Set());
-  const [gfContextMenu, setGfContextMenu] = useFPS(null);
-  const [gfAddHideOpen, setGfAddHideOpen] = useFPS(false);
+  const [gfShownIds,    setGfShownIds]    = useState(GF_DEFAULT_SHOWN);
+  const [gfSelectedIds, setGfSelectedIds] = useState(new Set());
+  const [gfContextMenu, setGfContextMenu] = useState(null);
+  const [gfAddHideOpen, setGfAddHideOpen] = useState(false);
 
   const gfShownEntities = GF_ENTITIES.filter(e => gfShownIds.includes(e.id));
 
@@ -519,27 +518,27 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 // ── main filter panel ─────────────────────────────────────────────────────────
 
 function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen }) {
-  const [tab,             setTab]            = useFPS('quick');
-  const [settingsView,    setSettingsView]   = useFPS(false);
-  const [search,          setSearch]         = useFPS('');
-  const [savedSearch,     setSavedSearch]    = useFPS('');
-  const [expanded,        setExpanded]       = useFPS(new Set(['type-host']));
-  const [selections,      setSelections]     = useFPS({});
-  const [groupSearch,     setGroupSearch]    = useFPS({});
-  const [showAll,         setShowAll]        = useFPS({});
-  const [attrs,           setAttrs]          = useFPS(FP_DEFAULT_ATTRS);
-  const [pendingAttrs,    setPendingAttrs]   = useFPS(null);
-  const [editingId,       setEditingId]      = useFPS(null);
-  const [editingLabel,    setEditingLabel]   = useFPS('');
-  const [selectedSavedId, setSelectedSavedId] = useFPS(null);
-  const [appliedSavedId,  setAppliedSavedId]  = useFPS(null);
-  const [savedOrder,      setSavedOrder]     = useFPS(FP_SAVED_ITEMS.map(i => i.id));
-  const [savedShowCount,  setSavedShowCount] = useFPS(FP_SAVED_ITEMS.length);
-  const [pendingSaved,    setPendingSaved]   = useFPS(null);
-  const [qdragIdx,        setQdragIdx]       = useFPS(null);
-  const [qdragOver,       setQdragOver]      = useFPS(null);
-  const [sdragIdx,        setSdragIdx]       = useFPS(null);
-  const [sdragOver,       setSdragOver]      = useFPS(null);
+  const [tab,             setTab]            = useState('quick');
+  const [settingsView,    setSettingsView]   = useState(false);
+  const [search,          setSearch]         = useState('');
+  const [savedSearch,     setSavedSearch]    = useState('');
+  const [expanded,        setExpanded]       = useState(new Set(['type-host']));
+  const [selections,      setSelections]     = useState({});
+  const [groupSearch,     setGroupSearch]    = useState({});
+  const [showAll,         setShowAll]        = useState({});
+  const [attrs,           setAttrs]          = useState(FP_DEFAULT_ATTRS);
+  const [pendingAttrs,    setPendingAttrs]   = useState(null);
+  const [editingId,       setEditingId]      = useState(null);
+  const [editingLabel,    setEditingLabel]   = useState('');
+  const [selectedSavedId, setSelectedSavedId] = useState(null);
+  const [appliedSavedId,  setAppliedSavedId]  = useState(null);
+  const [savedOrder,      setSavedOrder]     = useState(FP_SAVED_ITEMS.map(i => i.id));
+  const [savedShowCount,  setSavedShowCount] = useState(FP_SAVED_ITEMS.length);
+  const [pendingSaved,    setPendingSaved]   = useState(null);
+  const [qdragIdx,        setQdragIdx]       = useState(null);
+  const [qdragOver,       setQdragOver]      = useState(null);
+  const [sdragIdx,        setSdragIdx]       = useState(null);
+  const [sdragOver,       setSdragOver]      = useState(null);
 
   const liveAttrs      = pendingAttrs || attrs;
   const liveSaved      = pendingSaved || { order: savedOrder, count: savedShowCount };
@@ -871,5 +870,4 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen }) {
   );
 }
 
-window.FilterPanel = FilterPanel;
-window.GraphFilterDrawer = GraphFilterDrawer;
+export { FilterPanel, GraphFilterDrawer };

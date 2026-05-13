@@ -1,3 +1,5 @@
+import React from 'react'
+
 // Workspace context — shared state for all workspace pages
 
 // Pill search matching the KG design system: icon on right inside indigo circle
@@ -38,7 +40,6 @@ function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
     </div>
   );
 }
-window.DSPillSearch = DSPillSearch;
 
 const LibraryIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.125" strokeLinecap="round" strokeLinejoin="round">
@@ -48,14 +49,12 @@ const LibraryIcon = ({ size = 14 }) => (
     <path d="M6.75 10.5H3C2.58579 10.5 2.25 10.8358 2.25 11.25V15C2.25 15.4142 2.58579 15.75 3 15.75H6.75C7.16421 15.75 7.5 15.4142 7.5 15V11.25C7.5 10.8358 7.16421 10.5 6.75 10.5Z"/>
   </svg>
 );
-window.LibraryIcon = LibraryIcon;
 
 const SavedIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.125" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10.5 3H15.75M10.5 6.75H15.75M10.5 11.25H15.75M10.5 15H15.75M3 2.25H6.75C7.16421 2.25 7.5 2.58579 7.5 3V6.75C7.5 7.16421 7.16421 7.5 6.75 7.5H3C2.58579 7.5 2.25 7.16421 2.25 6.75V3C2.25 2.58579 2.58579 2.25 3 2.25ZM3 10.5H6.75C7.16421 10.5 7.5 10.8358 7.5 11.25V15C7.5 15.4142 7.16421 15.75 6.75 15.75H3C2.58579 15.75 2.25 15.4142 2.25 15V11.25C2.25 10.8358 2.58579 10.5 3 10.5Z"/>
   </svg>
 );
-window.SavedIcon = SavedIcon;
 
 const WorkspaceContext = React.createContext(null);
 
@@ -129,5 +128,4 @@ function useWorkspace() {
   return ctx;
 }
 
-window.WorkspaceProvider = WorkspaceProvider;
-window.useWorkspace = useWorkspace;
+export { DSPillSearch, LibraryIcon, SavedIcon, WorkspaceProvider, useWorkspace };

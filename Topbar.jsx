@@ -1,5 +1,5 @@
-// Topbar — global chrome. Always #131313. Logo + right cluster with Navigator button.
-// Per ds/patterns/navigation.json.
+import React from 'react'
+import { Icons } from './ui.jsx'
 
 function Topbar() {
   return (
@@ -71,4 +71,4 @@ function Topbar() {
   );
 }
 
-window.Topbar = Topbar;
+export default Topbar;

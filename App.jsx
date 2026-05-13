@@ -1,6 +1,11 @@
-// App root — KG-only shell
-
-const { useState: useS, useEffect: useE, useRef: useR } = React;
+import React, { useState, useEffect, useRef } from 'react'
+import Topbar from './Topbar.jsx'
+import LeftNav from './LeftNav.jsx'
+import SubHeader from './SubHeader.jsx'
+import { PageKG } from './PageKG.jsx'
+import { FilterPanel, GraphFilterDrawer } from './FilterPanel.jsx'
+import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './tweaks-panel.jsx'
+import { PAI } from './ui.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -44,14 +49,14 @@ const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 // Subscribes to PageKG's edge state via window.__kgGetEdges + 'kg-edges-changed'
 // event, edits via window.__kgSetEdges.
 function EdgeEditor({ onSaveDefault, savedEdges }) {
-  const [edges, setLocalEdges] = useS([]);
-  const [entities, setEntities] = useS([]);
-  const [newSrc, setNewSrc] = useS('');
-  const [newTgt, setNewTgt] = useS('');
-  const [newLabel, setNewLabel] = useS('');
-  const [savedFlash, setSavedFlash] = useS(false);
+  const [edges, setLocalEdges] = useState([]);
+  const [entities, setEntities] = useState([]);
+  const [newSrc, setNewSrc] = useState('');
+  const [newTgt, setNewTgt] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  useE(() => {
+  useEffect(() => {
     const sync = () => {
       const e = window.__kgGetEdges?.() || [];
       setLocalEdges(e.map(x => [...x]));
@@ -238,14 +243,14 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
 const WORKSPACE_URL = 'workspace.html';
 
 function App() {
-  const [current, setCurrent] = useS('kg');
-  const [collapsed, setCollapsed] = useS(false);
-  const [filterPanelOpen, setFilterPanelOpen] = useS(false);
-  const [graphFilterOpen, setGraphFilterOpen] = useS(false);
-  const [activeFilterCount, setActiveFilterCount] = useS(0);
+  const [current, setCurrent] = useState('kg');
+  const [collapsed, setCollapsed] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [graphFilterOpen, setGraphFilterOpen] = useState(false);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
-  const [canvasTop, setCanvasTop] = useS(0);
-  const canvasRef = useR(null);
+  const [canvasTop, setCanvasTop] = useState(0);
+  const canvasRef = useRef(null);
 
   // Set BEFORE first render of children so PageKG can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
@@ -253,9 +258,9 @@ function App() {
   }
 
   // Keep in sync on subsequent updates (rAF reads it each frame)
-  useE(() => { window.__floatTweaks = tweaks; }, [tweaks]);
+  useEffect(() => { window.__floatTweaks = tweaks; }, [tweaks]);
 
-  useE(() => {
+  useEffect(() => {
     const measure = () => {
       if (canvasRef.current) setCanvasTop(canvasRef.current.getBoundingClientRect().top);
     };
@@ -273,8 +278,6 @@ function App() {
   };
 
   const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };
-
-  const GFDrawer = window.GraphFilterDrawer;
 
   return (
     <div data-screen-label="Knowledge Graph" style={{
@@ -341,8 +344,8 @@ function App() {
       </div>
 
       {/* Graph Filter bottom drawer — position fixed, escapes all stacking contexts */}
-      {GFDrawer && (
-        <GFDrawer
+      {GraphFilterDrawer && (
+        <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
           onApply={(count) => { setActiveFilterCount(count); setGraphFilterOpen(false); }}
@@ -377,4 +380,4 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+export default App;

@@ -2,7 +2,9 @@
 // Layout: Summary card (top, with view toggle + node search), graph canvas (SVG),
 // then the filtered Details table.
 
-const { useState: useS_KG, useMemo: useM_KG, useRef: useR_KG, useEffect: useE_KG } = React;
+import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { PAI, Icons } from './ui.jsx'
+import { DSPillSearch } from './WorkspaceCtx.jsx'
 
 // ─────────────────────────────────────────────────────────────────────
 // Entity type catalog — colors + icon glyph (drawn inline, no SVG file)
@@ -338,19 +340,19 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
 
 // ── Graph canvas ─────────────────────────────────────────────────────
 function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEdgeSet, edgeSelectionEndpoints, selectedEdgeKey, edgeReversed, edgeCounts, multiSelectMode, multiSelected, hoveredId, setHoveredId, viewMode, positions, setPositions, view, setView, zoomBy, resetView, edges, search }) {
-  const svgRef = useR_KG(null);
-  const containerRef = useR_KG(null);
+  const svgRef = useRef(null);
+  const containerRef = useRef(null);
   // Drag state stored in ref to avoid rerender thrash
-  const drag = useR_KG({ id: null, dx: 0, dy: 0, moved: false, downId: null });
-  const pan = useR_KG({ active: false, sx: 0, sy: 0, vx: 0, vy: 0, moved: false });
-  const [dragId, setDragId] = useS_KG(null);
-  const [panning, setPanning] = useS_KG(false);
-  const [hoveredEdge, setHoveredEdge] = useS_KG(null);
-  const [mousePos, setMousePos] = useS_KG({ x: 0, y: 0 });
-  const [floatOffsets, setFloatOffsets] = useS_KG({});
+  const drag = useRef({ id: null, dx: 0, dy: 0, moved: false, downId: null });
+  const pan = useRef({ active: false, sx: 0, sy: 0, vx: 0, vy: 0, moved: false });
+  const [dragId, setDragId] = useState(null);
+  const [panning, setPanning] = useState(false);
+  const [hoveredEdge, setHoveredEdge] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [floatOffsets, setFloatOffsets] = useState({});
 
   // Per-node deterministic phase + a 0..1 jitter factor for variation
-  const floatParams = useM_KG(() => {
+  const floatParams = useMemo(() => {
     const p = {};
     Object.keys(ENTITY_TYPES).forEach((id, i) => {
       const h = (id.charCodeAt(0) * 31 + (id.charCodeAt(1) || 0) * 7 + i * 13);
@@ -368,7 +370,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
   }, []);
 
   // Drive float animation — reads window.__floatTweaks each frame so changes are live
-  useE_KG(() => {
+  useEffect(() => {
     let raf, start = performance.now();
     const tick = (now) => {
       const tw = window.__floatTweaks || {};
@@ -400,7 +402,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     return () => cancelAnimationFrame(raf);
   }, [floatParams]);
 
-  const visibleEntities = useM_KG(() => {
+  const visibleEntities = useMemo(() => {
     if (viewMode === 'All') return Object.keys(ENTITY_TYPES);
     if (viewMode === 'Host')     return Object.keys(ENTITY_TYPES).filter(k => ENTITY_TYPES[k].group === 'host' || k === 'finding' || k === 'host');
     if (viewMode === 'Cloud')    return Object.keys(ENTITY_TYPES).filter(k => ENTITY_TYPES[k].group === 'cloud' || k === 'finding');
@@ -453,7 +455,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     setDragId(id);
   };
 
-  useE_KG(() => {
+  useEffect(() => {
     const onMove = (e) => {
       if (drag.current.id) {
         const p = toSvgPoint(e.clientX, e.clientY);
@@ -498,7 +500,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
   }, [positions, setPositions, onSelect, view, setView]);
 
   // Wheel = zoom around cursor
-  useE_KG(() => {
+  useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e) => {
@@ -730,66 +732,6 @@ function OSPill({ os }) {
   );
 }
 
-// ── Design-system pill search — icon on right inside an indigo-tinted
-//    circular swatch; pill border (44px), 32px tall.
-function DSPillSearch({ value, onChange, placeholder, width = 220 }) {
-  const [focused, setFocused] = useS_KG(false);
-  return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center',
-      height: 32, paddingLeft: 14, paddingRight: 4,
-      background: '#fff',
-      border: `1px solid ${focused ? '#6360D8' : '#E6E6E6'}`,
-      boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',
-      borderRadius: 44, width, boxSizing: 'border-box',
-      transition: 'border-color 120ms, box-shadow 120ms',
-    }}>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholder={placeholder}
-        style={{
-          flex: 1, border: 'none', outline: 'none', background: 'transparent',
-          fontSize: 13, fontFamily: 'inherit', color: '#101010',
-          minWidth: 0,
-        }}
-      />
-      {value && (
-        <button
-          onMouseDown={(e) => { e.preventDefault(); onChange(''); }}
-          style={{
-            border: 'none', background: 'none', padding: 0, marginLeft: 4,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            color: '#A0A0A0', cursor: 'pointer', flexShrink: 0, lineHeight: 1,
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" strokeWidth="2.5"
-               strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      )}
-      <span style={{
-        width: 24, height: 24, marginLeft: 6,
-        borderRadius: '50%',
-        background: '#F0F0FC',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: '#6360D8',
-        flexShrink: 0,
-      }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-        </svg>
-      </span>
-    </div>
-  );
-}
-
 // ── Header column — design-system .ds-th: F5F5F5 bg, 10px uppercase,
 //    .06em letter-spacing, no inter-column dividers, single bottom border
 function Th({ children }) {
@@ -918,28 +860,28 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
 // PageKG — composes graph + table + selection state
 // ─────────────────────────────────────────────────────────────────────
 function PageKG() {
-  const [selected, setSelected] = useS_KG(null);
-  const [multiSelectMode, setMultiSelectMode] = useS_KG(false);
-  const [multiSelected, setMultiSelected] = useS_KG(() => new Set());
-  const [hoveredId, setHoveredId] = useS_KG(null);
-  const [viewMode, setViewMode] = useS_KG('All');
-  const [search, setSearch] = useS_KG('');
-  const [tableSearch, setTableSearch] = useS_KG('');
+  const [selected, setSelected] = useState(null);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [multiSelected, setMultiSelected] = useState(() => new Set());
+  const [hoveredId, setHoveredId] = useState(null);
+  const [viewMode, setViewMode] = useState('All');
+  const [search, setSearch] = useState('');
+  const [tableSearch, setTableSearch] = useState('');
   // Set of edge keys that are currently OFF (deselected). When a node is
   // selected, all its edges start as on (active); user can deselect chips
   // to drop those relationships from the filter without losing them.
-  const [deselectedChips, setDeselectedChips] = useS_KG(() => new Set());
+  const [deselectedChips, setDeselectedChips] = useState(() => new Set());
   // When an edge is clicked, restrict chips to ONLY that edge. Cleared when
   // a node is clicked (which shows all of its relationships).
-  const [selectedEdgeKey, setSelectedEdgeKey] = useS_KG(null);
-  const [edgeReversed, setEdgeReversed] = useS_KG(false);
-  const [positions, setPositions] = useS_KG(() => ({ ...NODE_POS }));
-  const [view, setView] = useS_KG({ x: 0, y: 0, w: 940, h: 440 });
-  const [isDirty, setIsDirty] = useS_KG(false);
-  const [panelOpen, setPanelOpen] = useS_KG(false);
-  const [panelRow, setPanelRow] = useS_KG(null);
-  const [panelTab, setPanelTab] = useS_KG('summary');
-  const [edges, setEdges] = useS_KG(() => {
+  const [selectedEdgeKey, setSelectedEdgeKey] = useState(null);
+  const [edgeReversed, setEdgeReversed] = useState(false);
+  const [positions, setPositions] = useState(() => ({ ...NODE_POS }));
+  const [view, setView] = useState({ x: 0, y: 0, w: 940, h: 440 });
+  const [isDirty, setIsDirty] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelRow, setPanelRow] = useState(null);
+  const [panelTab, setPanelTab] = useState('summary');
+  const [edges, setEdges] = useState(() => {
     // Prefer persisted edges from tweaks (App writes them onto window before mount)
     const fromTweaks = (window.__floatTweaks && window.__floatTweaks.edges);
     if (Array.isArray(fromTweaks) && fromTweaks.length) {
@@ -949,7 +891,7 @@ function PageKG() {
   });
 
   // Expose edge editing API + entity list to the Tweaks panel
-  useE_KG(() => {
+  useEffect(() => {
     window.__kgSetEdges = setEdges;
     window.__kgGetEdges = () => edges;
     window.__kgEntityList = Object.keys(ENTITY_TYPES).map(id => ({
@@ -960,7 +902,7 @@ function PageKG() {
 
   // Set of entity ids visible under the current viewMode (used for both
   // chip filtering and auto-clearing stale selections).
-  const visibleSetByView = useM_KG(() => {
+  const visibleSetByView = useMemo(() => {
     if (viewMode === 'All') return new Set(Object.keys(ENTITY_TYPES));
     const ids = Object.keys(ENTITY_TYPES).filter(k => {
       if (k === 'finding') return true;
@@ -975,7 +917,7 @@ function PageKG() {
 
   // Auto-select the primary node when entering a tab; clear it when leaving.
   const TAB_DEFAULT = { Host: 'host', Cloud: 'cloudAccount', Identity: 'identity' };
-  useE_KG(() => {
+  useEffect(() => {
     const visible = visibleSetByView;
     const def = TAB_DEFAULT[viewMode];
     if (def && !multiSelectMode) {
@@ -1009,7 +951,7 @@ function PageKG() {
   const setViewDirty = (updater) => { setView(updater); setIsDirty(true); };
 
   // Reset chip state whenever the selected node changes.
-  useE_KG(() => {
+  useEffect(() => {
     setDeselectedChips(new Set());
     setEdgeReversed(false);
     // Node-click path clears the edge-only filter; edge-click path sets it
@@ -1019,7 +961,7 @@ function PageKG() {
 
   // All relationship chips for the selected node — one per connecting edge.
   // When `selectedEdgeKey` is set, restrict to ONLY that edge.
-  const relationshipChips = useM_KG(() => {
+  const relationshipChips = useMemo(() => {
     if (!selected) return [];
     return edges
       .filter(([a,b]) => a === selected || b === selected)
@@ -1044,7 +986,7 @@ function PageKG() {
 
   // Build adjacency for selection halo — full set (visual halo always shows
   // all connections of the selected node, regardless of chip state).
-  const { neighborSet, neighborEdgeSet } = useM_KG(() => {
+  const { neighborSet, neighborEdgeSet } = useMemo(() => {
     if (!selected) return { neighborSet: new Set(), neighborEdgeSet: new Set() };
     const ns = new Set([selected]);
     const es = new Set();
@@ -1057,7 +999,7 @@ function PageKG() {
 
   // Active neighbor set for FILTERING — only neighbors whose chip is on.
   // Also build active edge set so the graph can dim deselected edges.
-  const { activeNeighborSet, activeNeighborEdgeSet } = useM_KG(() => {
+  const { activeNeighborSet, activeNeighborEdgeSet } = useMemo(() => {
     if (!selected) return { activeNeighborSet: new Set(), activeNeighborEdgeSet: new Set() };
     const ns = new Set([selected]);
     const es = new Set();
@@ -1073,7 +1015,7 @@ function PageKG() {
   }, [selected, relationshipChips, deselectedChips]);
 
   // Filter rows: node-only selection → that node's type; edge selection → both endpoint types.
-  const filteredRows = useM_KG(() => {
+  const filteredRows = useMemo(() => {
     let rs = ROWS;
     if (multiSelectMode) {
       if (multiSelected.size > 0) rs = rs.filter(r => multiSelected.has(r.type));
@@ -1099,7 +1041,7 @@ function PageKG() {
   }, [selected, selectedEdgeKey, multiSelectMode, multiSelected, tableSearch]);
 
   // Total count for header
-  const totalCount = useM_KG(() => {
+  const totalCount = useMemo(() => {
     if (multiSelectMode) {
       if (multiSelected.size === 0) return 15730247;
       let sum = 0;
@@ -1613,11 +1555,11 @@ function PageKG() {
 // with a sliding indigo thumb and label color that flips on the active
 // segment.
 function SegmentedTabs({ value, options, onChange, fullWidth, compact }) {
-  const containerRef = useR_KG(null);
-  const btnRefs = useR_KG([]);
-  const [thumb, setThumb] = useS_KG({ left: 3, width: 0 });
+  const containerRef = useRef(null);
+  const btnRefs = useRef([]);
+  const [thumb, setThumb] = useState({ left: 3, width: 0 });
 
-  useE_KG(() => {
+  useEffect(() => {
     const idx = options.indexOf(value);
     const btn = btnRefs.current[idx];
     if (btn) {
@@ -1725,7 +1667,7 @@ function EmptyOverlay({ icon, title, subtitle }) {
 }
 
 function RailBtn({ icon, onClick }) {
-  const [hover, setHover] = useS_KG(false);
+  const [hover, setHover] = useState(false);
   return (
     <button
       onClick={onClick}
@@ -1827,9 +1769,7 @@ function FilterChipBar({ chips, deselected, selectedLabel, onToggle }) {
   );
 }
 
-window.PageKG = PageKG;
-window.SegmentedTabs = SegmentedTabs;
-window.DSPillSearch = DSPillSearch;
+export { PageKG, SegmentedTabs };
 
 // ── HoverTooltip ─────────────────────────────────────────────────────
 function HoverTooltip({ nodeId, edgeKey, mousePos, edges, reversed }) {
