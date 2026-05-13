@@ -621,17 +621,22 @@ const ROWS = [
 ];
 
 function SourceBadge({ src }) {
-  const map = {
-    ms:    { label: 'MS',  bg: '#0078D4', fg: '#fff' },
-    crwd:  { label: 'CS',  bg: '#FA1F1F', fg: '#fff' },
-    azure: { label: 'AZ',  bg: '#0072C6', fg: '#fff' },
-    aws:   { label: 'AWS', bg: '#FF9900', fg: '#101010' },
-    k8s:   { label: 'K8',  bg: '#326CE5', fg: '#fff' },
-    jira:  { label: 'JR',  bg: '#0052CC', fg: '#fff' },
-    '+2':  { label: '+2',  bg: '#E6E6E6', fg: '#282828' },
-    '+1':  { label: '+1',  bg: '#E6E6E6', fg: '#282828' },
+  const LOGOS = {
+    ms:    '/assets/Data source logos/logo-intunes.svg',
+    crwd:  '/assets/Data source logos/logo-crowdstrike.svg',
+    azure: '/assets/Data source logos/logo-azure.svg',
+    aws:   '/assets/Data source logos/logo-aws.svg',
   };
-  const m = map[src] || { label: src, bg: '#E6E6E6', fg: '#282828' };
+  const BADGES = {
+    k8s:  { label: 'K8',  bg: '#326CE5', fg: '#fff' },
+    jira: { label: 'JR',  bg: '#0052CC', fg: '#fff' },
+    '+2': { label: '+2',  bg: '#E6E6E6', fg: '#282828' },
+    '+1': { label: '+1',  bg: '#E6E6E6', fg: '#282828' },
+  };
+  if (LOGOS[src]) {
+    return <img src={LOGOS[src]} alt={src} className="kg-source-logo" />;
+  }
+  const m = BADGES[src] || { label: src, bg: '#E6E6E6', fg: '#282828' };
   return (
     <span className="kg-source-badge" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
   );
@@ -662,7 +667,17 @@ function Th({ children }) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
+  const [page, setPage] = useState(0);
+  useEffect(() => { setPage(0); }, [rows]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pagedRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const from = rows.length === 0 ? 0 : page * PAGE_SIZE + 1;
+  const to   = Math.min((page + 1) * PAGE_SIZE, rows.length);
+
   return (
     <div className="kg-details">
       <div className="kg-details__header">
@@ -694,9 +709,9 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <tr><td colSpan="7" className="kg-details__empty">No records match this filter.</td></tr>
-            ) : rows.map((r, i) => {
+            ) : pagedRows.map((r, i) => {
               const meta = TYPE_TO_TABLE_LABEL[r.type];
               return (
                 <tr key={i} className="kg-details__row" onClick={() => onRowClick && onRowClick(r)}>
@@ -721,6 +736,37 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="kg-details__footer">
+        <span className="kg-details__page-info">
+          {rows.length === 0 ? 'No results' : `${from}–${to} of ${rows.length}`}
+        </span>
+        <div className="kg-details__page-btns">
+          <button
+            className="kg-page-btn"
+            disabled={page === 0}
+            onClick={() => setPage(p => p - 1)}
+          >
+            <Ic size={13} path={<><path d="m15 18-6-6 6-6"/></>}/>
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              className={`kg-page-btn${i === page ? ' kg-page-btn--active' : ''}`}
+              onClick={() => setPage(i)}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            className="kg-page-btn"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage(p => p + 1)}
+          >
+            <Ic size={13} path={<><path d="m9 18 6-6-6-6"/></>}/>
+          </button>
+        </div>
       </div>
     </div>
   );

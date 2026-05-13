@@ -304,7 +304,7 @@ function App() {
           <SubHeader
             title={meta.title}
             breadcrumb={meta.crumbs}
-            breadcrumbHrefs={[WORKSPACE_URL, null]}
+            breadcrumbHrefs={[null, null]}
             activeFilterCount={activeFilterCount}
             filterActive={filterPanelOpen}
             onFilter={() => setFilterPanelOpen(o => !o)}
@@ -314,7 +314,7 @@ function App() {
 
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
             {/* Canvas — always full width */}
-            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
               <PageKG />
             </div>
 
