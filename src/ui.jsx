@@ -21,55 +21,11 @@ const PAI = {
 
 // ── Button ──────────────────────────────────────────────────────────
 function Button({ type = 'primary', size = 'md', label, leading, trailing, onClick, disabled }) {
-  const [hover, setHover] = React.useState(false);
-  const [down, setDown] = React.useState(false);
-
-  const sizes = {
-    sm: { h: 24, px: 12, fs: 11 },
-    md: { h: 32, px: 16, fs: 12 },
-    lg: { h: 40, px: 20, fs: 13 },
-  }[size];
-
-  let bg, fg, border = 'none';
-  if (disabled) {
-    bg = type === 'primary' ? PAI.bgRaised : 'transparent';
-    fg = PAI.disabled;
-    border = type === 'outline' ? `1px solid ${PAI.border}` : 'none';
-  } else if (type === 'primary') {
-    bg = down ? PAI.indigo : hover ? PAI.indigoHover : PAI.indigo;
-    fg = PAI.indigoTint;
-  } else if (type === 'secondary') {
-    bg = hover ? '#E0DFF7' : PAI.indigoTint;
-    fg = PAI.indigo;
-  } else if (type === 'outline') {
-    bg = down ? PAI.bgRaised : 'transparent';
-    fg = PAI.fg2;
-    border = `1px solid ${hover ? '#404040' : PAI.borderStrong}`;
-  } else if (type === 'tertiary') {
-    bg = down ? '#E6E6E6' : hover ? PAI.bgRaised : 'transparent';
-    fg = PAI.fg2;
-  } else if (type === 'danger') {
-    bg = hover ? '#FFDBDC' : PAI.critBg;
-    fg = PAI.critFg;
-  }
-
   return (
     <button
       onClick={disabled ? undefined : onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => { setHover(false); setDown(false); }}
-      onMouseDown={() => setDown(true)}
-      onMouseUp={() => setDown(false)}
       disabled={disabled}
-      style={{
-        height: sizes.h, padding: `0 ${sizes.px}px`,
-        fontSize: sizes.fs, fontWeight: 500, fontFamily: 'inherit',
-        background: bg, color: fg, border,
-        borderRadius: 44, cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        transition: 'background 150ms cubic-bezier(.2,.8,.2,1), color 150ms, border 150ms',
-        outline: 'none', whiteSpace: 'nowrap', userSelect: 'none',
-      }}
+      className={`pai-btn pai-btn--${size} pai-btn--${type}`}
     >
       {leading}{label}{trailing}
     </button>
@@ -78,21 +34,12 @@ function Button({ type = 'primary', size = 'md', label, leading, trailing, onCli
 
 // ── IconBtn ─────────────────────────────────────────────────────────
 function IconBtn({ children, onClick, active, title, size = 28 }) {
-  const [hover, setHover] = React.useState(false);
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       title={title}
-      style={{
-        width: size, height: size, padding: 0,
-        background: active ? 'rgba(99,96,216,0.08)' : hover ? 'rgba(0,0,0,0.04)' : 'transparent',
-        color: active ? PAI.indigo : PAI.fg2,
-        border: 'none', borderRadius: 6, cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
-      }}
+      style={{ width: size, height: size }}
+      className={`pai-icon-btn${active ? ' pai-icon-btn--active' : ''}`}
     >
       {children}
     </button>
@@ -101,31 +48,9 @@ function IconBtn({ children, onClick, active, title, size = 28 }) {
 
 // ── Chip ────────────────────────────────────────────────────────────
 function Chip({ tone = 'neutral', children, subtle, dot }) {
-  const tones = {
-    critical: { bg: PAI.critBg, fg: PAI.critFg },
-    high:     { bg: PAI.highBg, fg: PAI.highFg },
-    medium:   { bg: PAI.medBg,  fg: PAI.medFg  },
-    low:      { bg: PAI.lowBg,  fg: PAI.lowFg  },
-    open:     { bg: PAI.critBg, fg: PAI.critFg },
-    progress: { bg: PAI.highBg, fg: PAI.highFg },
-    resolved: { bg: PAI.lowBg,  fg: PAI.lowFg  },
-    neutral:  { bg: PAI.bgRaised, fg: PAI.fg3 },
-    indigo:   { bg: PAI.indigoTint, fg: PAI.indigo },
-  };
-  const t = tones[tone] || tones.neutral;
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      height: 22, padding: '0 8px',
-      background: subtle ? 'transparent' : t.bg,
-      color: t.fg,
-      border: subtle ? `1px solid ${PAI.border}` : 'none',
-      borderRadius: 4,
-      fontSize: 11, fontWeight: 600,
-      letterSpacing: '0.04em', textTransform: 'uppercase',
-      whiteSpace: 'nowrap',
-    }}>
-      {dot && <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.fg }} />}
+    <span className={`pai-chip pai-chip--${tone}${subtle ? ' pai-chip--subtle' : ''}`}>
+      {dot && <span className="pai-chip__dot" />}
       {children}
     </span>
   );
@@ -134,59 +59,27 @@ function Chip({ tone = 'neutral', children, subtle, dot }) {
 // ── DualToggle ──────────────────────────────────────────────────────
 function DualToggle({ options, value, onChange }) {
   return (
-    <div style={{
-      display: 'inline-flex', background: PAI.bgRaised,
-      borderRadius: 44, padding: 2, gap: 0,
-    }}>
-      {options.map(o => {
-        const active = o === value;
-        return (
-          <button
-            key={o}
-            onClick={() => onChange(o)}
-            style={{
-              height: 24, padding: '0 14px',
-              borderRadius: 44, border: 'none',
-              background: active ? '#fff' : 'transparent',
-              color: active ? PAI.indigo : PAI.fg3,
-              fontSize: 11, fontWeight: 500,
-              fontFamily: 'inherit', cursor: 'pointer',
-              boxShadow: active ? '0 1px 2px rgba(16,16,16,0.08)' : 'none',
-              transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
-            }}
-          >{o}</button>
-        );
-      })}
+    <div className="pai-dual-toggle">
+      {options.map(o => (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          className={`pai-dual-toggle__btn${o === value ? ' pai-dual-toggle__btn--active' : ''}`}
+        >{o}</button>
+      ))}
     </div>
   );
 }
 
 // ── KPI card ────────────────────────────────────────────────────────
 function KPI({ label, value, valueColor, trend, trendTone = 'up' }) {
-  const trendColors = { up: PAI.critFg, down: PAI.lowFg, flat: PAI.fg3 };
-  const trendArrow = { up: '▲', down: '▼', flat: '—' };
   return (
-    <div style={{
-      background: PAI.surface, border: `1px solid ${PAI.border}`,
-      borderRadius: 4, padding: 14,
-      display: 'flex', flexDirection: 'column', gap: 6,
-    }}>
-      <div style={{
-        fontSize: 10, fontWeight: 600, color: PAI.fg3,
-        textTransform: 'uppercase', letterSpacing: '0.06em',
-      }}>{label}</div>
-      <div style={{
-        fontSize: 24, fontWeight: 700, lineHeight: 1,
-        color: valueColor || PAI.fg1,
-        fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
-      }}>{value}</div>
+    <div className="pai-kpi">
+      <div className="pai-kpi__label">{label}</div>
+      <div className="pai-kpi__value" style={{ color: valueColor || PAI.fg1 }}>{value}</div>
       {trend && (
-        <div style={{
-          fontSize: 11, fontWeight: 600,
-          color: trendColors[trendTone],
-          display: 'flex', alignItems: 'center', gap: 4,
-        }}>
-          <span>{trendArrow[trendTone]}</span>{trend}
+        <div className={`pai-kpi__trend pai-kpi__trend--${trendTone}`}>
+          <span>{{ up: '▲', down: '▼', flat: '—' }[trendTone]}</span>{trend}
         </div>
       )}
     </div>
@@ -195,34 +88,18 @@ function KPI({ label, value, valueColor, trend, trendTone = 'up' }) {
 
 // ── Input ───────────────────────────────────────────────────────────
 function Input({ value, onChange, placeholder, prefix, size = 'md', width }) {
-  const [focused, setFocused] = React.useState(false);
-  const heights = { sm: 28, md: 32, lg: 40 }[size];
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 8,
-      height: heights, padding: '0 12px', width,
-      background: '#fff',
-      border: `1px solid ${focused ? PAI.indigo : PAI.border}`,
-      borderRadius: 8,
-      boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.22)' : 'none',
-      transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
-    }}>
-      {prefix && <span style={{ color: PAI.fg3, display: 'flex' }}>{prefix}</span>}
+    <div className={`pai-input-wrap pai-input-wrap--${size}`} style={{ width }}>
+      {prefix && <span className="pai-input-wrap__prefix">{prefix}</span>}
       <input
         value={value || ''} onChange={e => onChange && onChange(e.target.value)}
         placeholder={placeholder}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{
-          flex: 1, border: 'none', outline: 'none', background: 'transparent',
-          fontSize: 13, fontFamily: 'inherit', color: PAI.fg1,
-          minWidth: 0,
-        }}
       />
     </div>
   );
 }
 
-// ── Ic — tiny generic Lucide-like strokes (used for chrome only) ────
+// ── Ic — tiny generic Lucide-like strokes ───────────────────────────
 function Ic({ path, size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -231,6 +108,7 @@ function Ic({ path, size = 14 }) {
     </svg>
   );
 }
+
 const Icons = {
   search:   <Ic path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></>} />,
   plus:     <Ic path={<><path d="M12 5v14M5 12h14"/></>} />,

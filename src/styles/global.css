@@ -8,6 +8,7 @@ body, svg text { font-family: 'Inter', system-ui; -webkit-font-smoothing: antial
 body { background: #F7F9FC; color: #101010; }
 
 :root {
+  /* Shell tokens */
   --shell-bg:         #fff;
   --shell-border:     #E6E6E6;
   --shell-text:       #101010;
@@ -17,6 +18,28 @@ body { background: #F7F9FC; color: #101010; }
   --shell-hover:      rgba(0,0,0,0.04);
   --shell-active:     rgba(99,96,216,0.08);
   --shell-raised:     #F5F5F5;
+
+  /* PAI color tokens */
+  --pai-indigo:        #6360D8;
+  --pai-indigo-hover:  #504BB8;
+  --pai-indigo-tint:   #F0F0FC;
+  --pai-fg1:           #101010;
+  --pai-fg2:           #282828;
+  --pai-fg3:           #6E6E6E;
+  --pai-disabled:      #9CA3AF;
+  --pai-border:        #E6E6E6;
+  --pai-border-strong: #CFCFCF;
+  --pai-bg-app:        #F7F9FC;
+  --pai-bg-raised:     #F5F5F5;
+  --pai-surface:       #FFFFFF;
+  --pai-crit-fg:       #D12329;
+  --pai-crit-bg:       #F9EEEE;
+  --pai-high-fg:       #D98B1D;
+  --pai-high-bg:       #FEF3C7;
+  --pai-med-fg:        #6360D8;
+  --pai-med-bg:        #F0F0FC;
+  --pai-low-fg:        #1A7549;
+  --pai-low-bg:        #EFF7ED;
 }
 
 button { font-family: inherit; }

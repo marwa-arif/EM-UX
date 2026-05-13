@@ -1,0 +1,117 @@
+/* ── Button ───────────────────────────────────────────────────────── */
+.pai-btn {
+  border-radius: 44px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background 150ms cubic-bezier(.2,.8,.2,1), color 150ms, border-color 150ms;
+  outline: none; white-space: nowrap; user-select: none;
+  font-weight: 500; font-family: inherit; border: none;
+}
+.pai-btn:disabled { cursor: not-allowed; opacity: 0.5; pointer-events: none; }
+.pai-btn--sm { height: 24px; padding: 0 12px; font-size: 11px; }
+.pai-btn--md { height: 32px; padding: 0 16px; font-size: 12px; }
+.pai-btn--lg { height: 40px; padding: 0 20px; font-size: 13px; }
+
+.pai-btn--primary { background: var(--pai-indigo); color: var(--pai-indigo-tint); }
+.pai-btn--primary:hover { background: var(--pai-indigo-hover); }
+
+.pai-btn--secondary { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
+.pai-btn--secondary:hover { background: #E0DFF7; }
+
+.pai-btn--outline { background: transparent; border: 1px solid var(--pai-border-strong); color: var(--pai-fg2); }
+.pai-btn--outline:hover { border-color: #404040; background: var(--shell-hover); }
+
+.pai-btn--tertiary { background: transparent; color: var(--pai-fg2); }
+.pai-btn--tertiary:hover { background: var(--pai-bg-raised); }
+
+.pai-btn--danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
+.pai-btn--danger:hover { background: #FFDBDC; }
+
+/* ── IconBtn ──────────────────────────────────────────────────────── */
+.pai-icon-btn {
+  padding: 0; border: none; border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--pai-fg2);
+  transition: background 120ms cubic-bezier(.2,.8,.2,1);
+}
+.pai-icon-btn:hover { background: var(--shell-hover); }
+.pai-icon-btn--active { background: var(--shell-active); color: var(--pai-indigo); }
+.pai-icon-btn--active:hover { background: var(--shell-active); }
+
+/* ── Chip ─────────────────────────────────────────────────────────── */
+.pai-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 22px; padding: 0 8px;
+  border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.pai-chip--critical  { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
+.pai-chip--high      { background: var(--pai-high-bg); color: var(--pai-high-fg); }
+.pai-chip--medium    { background: var(--pai-med-bg);  color: var(--pai-med-fg); }
+.pai-chip--low       { background: var(--pai-low-bg);  color: var(--pai-low-fg); }
+.pai-chip--open      { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
+.pai-chip--progress  { background: var(--pai-high-bg); color: var(--pai-high-fg); }
+.pai-chip--resolved  { background: var(--pai-low-bg);  color: var(--pai-low-fg); }
+.pai-chip--neutral   { background: var(--pai-bg-raised); color: var(--pai-fg3); }
+.pai-chip--indigo    { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
+.pai-chip--subtle    { background: transparent; border: 1px solid var(--pai-border); }
+.pai-chip__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── DualToggle ───────────────────────────────────────────────────── */
+.pai-dual-toggle {
+  display: inline-flex; background: var(--pai-bg-raised);
+  border-radius: 44px; padding: 2px; gap: 0;
+}
+.pai-dual-toggle__btn {
+  height: 24px; padding: 0 14px;
+  border-radius: 44px; border: none;
+  font-size: 11px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  transition: all 150ms cubic-bezier(.2,.8,.2,1);
+  background: transparent; color: var(--pai-fg3);
+}
+.pai-dual-toggle__btn--active {
+  background: #fff; color: var(--pai-indigo);
+  box-shadow: 0 1px 2px rgba(16,16,16,0.08);
+}
+
+/* ── KPI card ─────────────────────────────────────────────────────── */
+.pai-kpi {
+  background: var(--pai-surface); border: 1px solid var(--pai-border);
+  border-radius: 4px; padding: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pai-kpi__label {
+  font-size: 10px; font-weight: 600; color: var(--pai-fg3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.pai-kpi__value {
+  font-size: 24px; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.pai-kpi__trend { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.pai-kpi__trend--up   { color: var(--pai-crit-fg); }
+.pai-kpi__trend--down { color: var(--pai-low-fg); }
+.pai-kpi__trend--flat { color: var(--pai-fg3); }
+
+/* ── Input ────────────────────────────────────────────────────────── */
+.pai-input-wrap {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 12px; background: #fff;
+  border: 1px solid var(--pai-border);
+  border-radius: 8px;
+  transition: all 150ms cubic-bezier(.2,.8,.2,1);
+}
+.pai-input-wrap:focus-within {
+  border-color: var(--pai-indigo);
+  box-shadow: 0 0 0 3px rgba(99,96,216,0.22);
+}
+.pai-input-wrap--sm { height: 28px; }
+.pai-input-wrap--md { height: 32px; }
+.pai-input-wrap--lg { height: 40px; }
+.pai-input-wrap__prefix { color: var(--pai-fg3); display: flex; }
+.pai-input-wrap input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 13px; font-family: inherit; color: var(--pai-fg1); min-width: 0;
+}
