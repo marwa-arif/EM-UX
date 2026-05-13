@@ -3,7 +3,7 @@
 // then the filtered Details table.
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { PAI, Icons } from '../ui.jsx'
+import { PAI, Icons, Ic } from '../ui.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 
 // ─────────────────────────────────────────────────────────────────────
