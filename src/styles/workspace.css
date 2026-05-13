@@ -1,0 +1,41 @@
+/* DS Button */
+.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
+.ds-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
+.ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
+.ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500; }
+.ds-btn.t-primary { background: #6360D8; color: #fff; }
+.ds-btn.t-primary:hover { background: #504bb8; }
+.ds-btn.t-outline { background: transparent; border: 1px solid var(--ctrl-border, #CFCFCF); color: var(--shell-text-2); }
+.ds-btn.t-outline:hover { border-color: #999; background: var(--shell-hover); }
+.ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: #6360D8; }
+.ds-btn.t-secondary:hover { background: rgba(99,96,216,0.18); }
+
+/* DS Badge */
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 44px; font-size: 11px; font-weight: 600; }
+.ds-badge.success { background: rgba(49,165,109,0.12); color: #16a34a; }
+.ds-badge.neutral { background: #F0F0F0; color: #6E6E6E; }
+
+/* DS Tab */
+.ds-tab { padding: 8px 14px; font-size: 12px; font-weight: 500; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 150ms, border-color 150ms; white-space: nowrap; }
+.ds-tab:hover { color: var(--shell-text); }
+.ds-tab.active { color: var(--shell-accent); border-bottom-color: var(--shell-accent); font-weight: 600; }
+
+/* DS Icon Button */
+.ds-icon-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; transition: background 120ms, color 120ms; flex-shrink: 0; }
+.ds-icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+/* DS Table */
+.ds-table-wrap { width: 100%; overflow-x: auto; }
+.ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ds-th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--shell-text-muted); background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+.ds-td { padding: 10px 12px; border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
+.ds-table tbody tr:last-child td { border-bottom: none; }
+.ds-table tbody tr:hover td { background: var(--shell-hover); }
+.row-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
+.ds-table tbody tr:hover .row-actions { visibility: visible; }
+
+/* DS Pagination */
+.ds-page-btn { min-width: 28px; height: 28px; border-radius: 44px; border: 1px solid var(--shell-border); background: #fff; color: var(--shell-text-2); cursor: pointer; font-size: 11px; font-family: inherit; padding: 0 6px; display: flex; align-items: center; justify-content: center; transition: all 120ms; }
+.ds-page-btn:hover { background: var(--shell-hover); }
+.ds-page-btn.active { background: var(--shell-accent); color: #fff; border-color: var(--shell-accent); font-weight: 600; }
+.ds-page-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }

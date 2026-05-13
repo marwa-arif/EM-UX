@@ -1,7 +1,10 @@
+import React, { useState, useRef, useEffect } from 'react'
+import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
+
 // Workspace › Library tab
 
 function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
   const isReport = iconType === 'report';
   const baseBorder = highlighted ? '#A2A1F7' : 'var(--card-border)';
   return (
@@ -39,7 +42,7 @@ function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted })
 }
 
 function QuickCard({ title, desc, tag, actionLabel, action }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
   const isReport = tag === 'REPORT';
   return (
     <div
@@ -113,7 +116,7 @@ const SORT_OPTIONS = [
 ];
 
 function SortOption({ label, selected, onClick }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
@@ -135,12 +138,12 @@ function SortOption({ label, selected, onClick }) {
 
 function LibraryPage() {
   const { onNav, libraryFilter, setLibraryFilter, librarySearch, setLibrarySearch } = useWorkspace();
-  const [sortValue, setSortValue] = React.useState('A-Z');
-  const [sortOpen, setSortOpen] = React.useState(false);
-  const sortRef = React.useRef(null);
+  const [sortValue, setSortValue] = useState('A-Z');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef(null);
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortValue)?.label.replace('Name: ', '') ?? 'A-Z';
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!sortOpen) return;
     const handler = (e) => { if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -320,4 +323,4 @@ function LibraryPage() {
   );
 }
 
-window.LibraryPage = LibraryPage;
+export default LibraryPage;
