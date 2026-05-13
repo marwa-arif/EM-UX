@@ -1,0 +1,188 @@
+/* ============================================================
+   Prevalent AI — Colors & Type
+   Source: source/design-tokens.js (generated from ds/tokens/*.json)
+   ============================================================ */
+
+/* Inter @font-face is declared in index.html <style> block */
+
+:root {
+  /* ── Brand ─────────────────────────────────────────────────── */
+  --pai-indigo:           #6360D8;   /* primary brand indigo */
+  --pai-indigo-hover:     #504BB8;
+  --pai-indigo-pressed:   #6360D8;
+  --pai-indigo-tint:      #F0F0FC;   /* light surface + on-primary text */
+  --pai-indigo-border:    #8B88E2;
+
+  /* Gradient used on "Primary Special" — the only place in the UI
+     where multiple hues meet. Blue → teal, never purple. */
+  --pai-gradient-from:    #467FCD;
+  --pai-gradient-to:      #47ADCB;
+
+  /* ── Neutrals (fg) ─────────────────────────────────────────── */
+  --fg-1:                 #101010;   /* headings, strongest text */
+  --fg-2:                 #282828;   /* body copy */
+  --fg-3:                 #6E6E6E;   /* muted, labels, captions */
+  --fg-disabled:          #9CA3AF;   /* disabled text, placeholder */
+
+  /* ── Borders ───────────────────────────────────────────────── */
+  --border-strong:        #CFCFCF;
+  --border:               #E6E6E6;
+  --border-subtle:        #F0F0F0;
+
+  /* ── Surfaces (bg) ─────────────────────────────────────────── */
+  --bg-app:               #F7F9FC;   /* shell background */
+  --bg-surface:           #FFFFFF;   /* cards, inputs, menus */
+  --bg-raised:            #F5F5F5;   /* table headers, raised wells */
+  --bg-sunken:            #E6E6E6;   /* pressed states */
+
+  /* ── Semantic ──────────────────────────────────────────────── */
+  --success-bg:           #EFF7ED;
+  --success-bg-hover:     #D6F1DF;
+  --success-fg:           #1A7549;
+  --success-fg-pressed:   #0A4A2C;
+  --success-border:       #31A56D;
+
+  --danger-bg:            #F9EEEE;
+  --danger-bg-hover:      #FFDBDC;
+  --danger-fg:            #D12329;
+  --danger-fg-pressed:    #931B1F;
+  --danger-border:        #EB8E90;
+
+  --warning-bg:           #FEF3C7;
+  --warning-fg:           #D98B1D;
+
+  /* ── Severity — one row per level (bg + text) ──────────────── */
+  --severity-critical-fg: #D12329;
+  --severity-critical-bg: #F9EEEE;
+  --severity-high-fg:     #D98B1D;
+  --severity-high-bg:     #FEF3C7;
+  --severity-medium-fg:   #D98B1D;
+  --severity-medium-bg:   #FEF3C7;
+  --severity-low-fg:      #31A56D;
+  --severity-low-bg:      #EFF7ED;
+
+  /* ── Charts — ordered palette ──────────────────────────────── */
+  --chart-1: #6360D8;   /* indigo */
+  --chart-2: #3DA5B8;   /* teal */
+  --chart-3: #B57A3E;   /* ochre */
+  --chart-4: #8E5CC7;   /* violet */
+  --chart-5: #5A7A52;   /* moss */
+  --chart-6: #C46FA5;   /* rose */
+
+  /* ── Type — families ───────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui;
+
+  /* ── Type — scale (Tailwind-aligned; the product is DENSE) ─── */
+  --text-2xs:  10px;   --lh-2xs: 14px;
+  --text-xs:   11px;   --lh-xs:  15px;
+  --text-sm:   12px;   --lh-sm:  16px;   /* body default */
+  --text-base: 13px;   --lh-base:19px;
+  --text-md:   14px;   --lh-md:  20px;   /* heading-md */
+  --text-lg:   16px;   --lh-lg:  22px;
+  --text-xl:   18px;   --lh-xl:  24px;   /* page-title */
+
+  /* ── Type — weight tokens ──────────────────────────────────── */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ── Spacing ───────────────────────────────────────────────── */
+  --space-2xs: 4px;
+  --space-xs:  8px;
+  --space-sm:  12px;
+  --space-md:  16px;
+  --space-lg:  20px;
+  --space-xl:  24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* ── Radii ─────────────────────────────────────────────────── */
+  --radius-card:    4px;
+  --radius-badge:   4px;
+  --radius-input:   8px;
+  --radius-dropdown:8px;
+  --radius-modal:   12px;
+  --radius-pill:    44px;   /* buttons are fully rounded */
+
+  /* ── Shadows — used sparingly, mostly on popovers/menus ────── */
+  --shadow-xs:    0 1px 2px rgba(16, 16, 16, 0.04);
+  --shadow-sm:    0 2px 4px rgba(16, 16, 16, 0.06);
+  --shadow-popup: 0 8px 24px rgba(16, 16, 16, 0.08), 0 2px 6px rgba(16, 16, 16, 0.04);
+  --shadow-modal: 0 24px 48px rgba(16, 16, 16, 0.16);
+
+  /* ── Focus ring ────────────────────────────────────────────── */
+  --ring-primary: 0 0 0 3px rgba(99, 96, 216, 0.22);
+  --ring-danger:  0 0 0 3px rgba(209, 35, 41, 0.22);
+
+  /* ── Motion — everything is fast and linear-ish ────────────── */
+  --ease-out:  cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast:  120ms;
+  --dur-base:  150ms;
+  --dur-slow:  220ms;
+}
+
+/* ============================================================
+   Semantic aliases (use these in products, not the raw vars)
+   ============================================================ */
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  color: var(--fg-2);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, .h1, .page-title {
+  font-size: var(--text-xl);
+  line-height: var(--lh-xl);
+  font-weight: var(--fw-bold);
+  color: var(--fg-1);
+  margin: 0;
+}
+h2, .h2 {
+  font-size: var(--text-lg);
+  line-height: var(--lh-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  margin: 0;
+}
+h3, .h3, .heading-md {
+  font-size: var(--text-md);
+  line-height: var(--lh-md);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  margin: 0;
+}
+.subheader, .label-strong {
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: var(--fw-medium);
+  color: var(--fg-2);
+}
+p, .body-md {
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: var(--fw-regular);
+  color: var(--fg-2);
+  margin: 0;
+}
+.body-sm, small {
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--fg-3);
+}
+.caption, .eyebrow {
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--fw-semibold);
+}
+code, kbd, .mono {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+}
