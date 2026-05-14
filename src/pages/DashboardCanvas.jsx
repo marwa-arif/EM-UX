@@ -222,7 +222,7 @@ function ChartSilhouette({ chartId }) {
 }
 
 // ── Chart renders (active widgets, DS-aligned) ────────────────────────
-function ChartRender({ chartId }) {
+function ChartRender({ chartId, showPctChange, showLegend = true, showTotalCount = true }) {
   const charts = {
     'vert-bar': (
       // Severity colors: Critical > High > Medium > Low > Compliant
@@ -307,68 +307,6 @@ function ChartRender({ chartId }) {
         ))}
       </svg>
     ),
-    'pie': (() => {
-      const DCOLS = ['#D12329','#D98B1D','#6760d8','#31A56D']
-      const raw = [
-        { label: 'Workstation',    count: '36,323', pct: '66.42%', value: 36323 },
-        { label: 'Server',         count: '11,476', pct: '20.99%', value: 11476 },
-        { label: 'Network Device', count: '4,478',  pct: '8.19%',  value: 4478  },
-        { label: 'Mobile',         count: '2,407',  pct: '4.4%',   value: 2407  },
-      ]
-      const size = 130, cx = 65, cy = 65
-      const outerR = size / 2 - 2
-      const strokeW = outerR * 0.12
-      const r = outerR - strokeW / 2
-      const total = raw.reduce((s, d) => s + d.value, 0)
-
-      const ptCart = (cx, cy, r, deg) => {
-        const rad = (deg - 90) * Math.PI / 180
-        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-      }
-      const arc = (sa, ea) => {
-        const s = ptCart(cx, cy, r, ea), e = ptCart(cx, cy, r, sa)
-        const la = (ea - sa) <= 180 ? '0' : '1'
-        return `M ${s.x} ${s.y} A ${r} ${r} 0 ${la} 0 ${e.x} ${e.y}`
-      }
-
-      let sa = 0
-      const segs = raw.map((d, i) => {
-        const sweep = (d.value / total) * 360
-        const ea = sa + sweep - 8
-        const seg = { ...d, color: DCOLS[i % DCOLS.length], d: arc(sa, Math.max(ea, sa + 1)) }
-        sa += sweep
-        return seg
-      })
-
-      return (
-        <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 12px' }}>
-            <div style={{ position: 'relative', width: size, height: size }}>
-              <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                {segs.map((d, i) => (
-                  <path key={i} d={d.d} fill="none"
-                    stroke={d.color} strokeWidth={strokeW} strokeLinecap="round" />
-                ))}
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui' }}>Total</span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>54,686</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: '0 8px 8px' }}>
-            {segs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 11, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{d.label}</span>
-                <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.count}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.pct}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    })(),
     'line': (
       // Multi-line: categorical colors + severity red; gradient fill under first line
       <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
@@ -428,9 +366,75 @@ function ChartRender({ chartId }) {
     'none':    <div style={{ width: '100%', height: '100%' }} />,
   }
   if (chartId === 'pie') {
+    const DCOLS = ['#D12329','#D98B1D','#6760d8','#31A56D','#64748B','#94A3B8']
+    const raw = [
+      { label: 'Workstation',    count: '36,323', pct: '66.42%', value: 36323, change: 7.57 },
+      { label: 'Server',         count: '11,476', pct: '20.99%', value: 11476, change: 5.24 },
+      { label: 'Network Device', count: '4,478',  pct: '8.19%',  value: 4478,  change: 5.36 },
+      { label: 'Mobile',         count: '2,407',  pct: '4.4%',   value: 2407,  change: 7.6  },
+      { label: 'Virtual',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
+      { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
+    ]
+    const sz = 130, cx = 65, cy = 65
+    const outerR = sz / 2 - 2
+    const strokeW = outerR * 0.12
+    const r = outerR - strokeW / 2
+    const total = raw.reduce((s, d) => s + d.value, 0)
+    const ptCart = (cx, cy, r, deg) => {
+      const rad = (deg - 90) * Math.PI / 180
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+    }
+    const arc = (sa, ea) => {
+      const s = ptCart(cx, cy, r, ea), e = ptCart(cx, cy, r, sa)
+      const la = (ea - sa) <= 180 ? '0' : '1'
+      return `M ${s.x} ${s.y} A ${r} ${r} 0 ${la} 0 ${e.x} ${e.y}`
+    }
+    let sa = 0
+    const segs = raw.map((d, i) => {
+      const sweep = (d.value / total) * 360
+      const ea = sa + sweep - 8
+      const seg = { ...d, color: DCOLS[i % DCOLS.length], d: arc(sa, Math.max(ea, sa + 1)) }
+      sa += sweep
+      return seg
+    })
     return (
       <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {charts.pie}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 12px', flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: sz, height: sz }}>
+            <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
+              {segs.map((d, i) => (
+                <path key={i} d={d.d} fill="none" stroke={d.color} strokeWidth={strokeW} strokeLinecap="round" />
+              ))}
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              {showTotalCount ? (
+                <>
+                  <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui' }}>Total</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>54,686</span>
+                </>
+              ) : (
+                <span style={{ fontSize: 22, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{segs.length}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        {showLegend && (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: '0 8px 8px' }}>
+            {segs.map((d, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 11, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{d.label}</span>
+                <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.count}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.pct}</span>
+                {showPctChange && (
+                  d.change > 0
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: '#16a34a', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>↗ {d.change}%</span>
+                    : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
@@ -456,6 +460,35 @@ const KGBtn = () => (
   </button>
 )
 
+// ── Toggle ───────────────────────────────────────────────────────────
+function Toggle({ value, onChange }) {
+  return (
+    <button onClick={() => onChange(!value)} style={{
+      width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+      background: value ? PAI.indigo : '#D1D5DB', position: 'relative', padding: 0,
+      transition: 'background 150ms',
+    }}>
+      <span style={{
+        position: 'absolute', top: 2, left: value ? 18 : 2,
+        width: 16, height: 16, borderRadius: '50%', background: '#fff',
+        transition: 'left 150ms', display: 'block',
+      }} />
+    </button>
+  )
+}
+
+function ToggleRow({ label, description, value, onChange, disabled }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16, opacity: disabled ? 0.4 : 1, pointerEvents: disabled ? 'none' : 'auto' }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>{label}</div>
+        {description && <div style={{ fontSize: 11, color: PAI.fg3, marginTop: 2 }}>{description}</div>}
+      </div>
+      <Toggle value={value} onChange={onChange} />
+    </div>
+  )
+}
+
 // ── Field row ────────────────────────────────────────────────────────
 function FieldRow({ label, hint, children }) {
   return (
@@ -477,7 +510,7 @@ function TextInput({ placeholder, value, onChange, withKG }) {
           flex: 1, height: 40, boxSizing: 'border-box',
           border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
           padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-          color: PAI.fg3, outline: 'none', background: '#fff',
+          color: value ? PAI.fg1 : PAI.fg3, outline: 'none', background: '#fff',
         }}
       />
       {withKG && <KGBtn />}
@@ -510,7 +543,7 @@ function SelectInput({ value, onChange, options }) {
         flex: 1, height: 40, boxSizing: 'border-box',
         border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
         padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-        color: PAI.fg3, background: '#fff', outline: 'none', cursor: 'pointer',
+        color: value ? PAI.fg1 : PAI.fg3, background: '#fff', outline: 'none', cursor: 'pointer',
         appearance: 'none',
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236E6E6E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
@@ -553,12 +586,15 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const [sizeId, setSizeId]       = useState(widget.sizeId || 'small')
   const [heightId, setHeightId] = useState(widget.heightId || 'small')
   const [chartType, setChartType] = useState(widget.chartId)
-  const [groupBy, setGroupBy]     = useState('')
-  const [operation, setOperation] = useState('count')
-  const [aggregateBy, setAggregateBy] = useState('')
-  const [filterBy, setFilterBy]   = useState('')
-  const [widgetFilter, setWidgetFilter] = useState('')
-  const [sortBy, setSortBy]       = useState('')
+  const [classification, setClassification] = useState('Type')
+  const [operation, setOperation]           = useState('count-distinct')
+  const [aggregateBy, setAggregateBy]       = useState('host')
+
+  const [widgetFilter, setWidgetFilter]     = useState('')
+  const [sortBy, setSortBy]                 = useState('')
+  const [showTotalCount, setShowTotalCount] = useState(widget.showTotalCount ?? true)
+  const [showPctChange, setShowPctChange]   = useState(widget.showPctChange ?? false)
+  const [showLegend, setShowLegend]         = useState(widget.showLegend ?? true)
 
   const tabStyle = (id) => ({
     flex: 1, height: 40, border: 'none', background: 'transparent',
@@ -612,11 +648,6 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
             <FieldRow label="Widget Height">
               <SizeButtons options={WIDGET_HEIGHTS} value={heightId} onChange={setHeightId} />
             </FieldRow>
-          </>
-        )}
-
-        {tab === 'data' && (
-          <>
             <FieldRow label="Chart Type">
               <SelectInput
                 value={chartType}
@@ -624,31 +655,32 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 options={CHART_TYPES.map(c => ({ value: c.id, label: c.label }))}
               />
             </FieldRow>
+          </>
+        )}
 
+        {tab === 'data' && (
+          <>
             {isPie ? (
               <>
-                <FieldRow label="Slice" hint="Define how to divide sections in pie">
-                  <FieldRow label="Group By">
-                    <TextInput placeholder="Classification" withKG />
+                <FieldRow label="Attribute" hint="Define how to divide sections in pie">
+                  <FieldRow label="Classification">
+                    <TextInput value={classification} onChange={e => setClassification(e.target.value)} withKG />
                   </FieldRow>
                 </FieldRow>
 
-                <FieldRow label="Size" hint="Define what determines slice proportions">
+                <FieldRow label="Size" hint="Display total/distinct count in the center of pie chart">
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, borderBottom: '1px dashed #E6E6E6', paddingBottom: 4 }}>Operation</div>
-                      <SelectInput value={operation} onChange={e => setOperation(e.target.value)} options={[{ value:'count',label:'Count'},{ value:'sum',label:'Sum'},{ value:'avg',label:'Avg'}]} />
+                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Operation</div>
+                      <SelectInput value={operation} onChange={e => setOperation(e.target.value)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'},{ value:'avg',label:'Avg'}]} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, borderBottom: '1px dashed #E6E6E6', paddingBottom: 4 }}>Aggregate By</div>
-                      <TextInput placeholder="Entity ID" withKG />
+                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Aggregate By</div>
+                      <SelectInput value={aggregateBy} onChange={e => setAggregateBy(e.target.value)} options={[{ value:'host',label:'Host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
                   </div>
                 </FieldRow>
 
-                <FieldRow label="Filter By">
-                  <TextInput placeholder="Optional data filter" withKG />
-                </FieldRow>
               </>
             ) : (
               <>
@@ -658,28 +690,53 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 <FieldRow label="Y Axis">
                   <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, borderBottom: '1px dashed #E6E6E6', paddingBottom: 4 }}>Operation</div>
+                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Operation</div>
                       <SelectInput value={operation} onChange={e => setOperation(e.target.value)} options={[{ value:'count',label:'Count'},{ value:'sum',label:'Sum'},{ value:'avg',label:'Avg'}]} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, borderBottom: '1px dashed #E6E6E6', paddingBottom: 4 }}>Aggregate By</div>
+                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Aggregate By</div>
                       <TextInput placeholder="Field" withKG />
                     </div>
                   </div>
                 </FieldRow>
-                <FieldRow label="Filter By">
-                  <TextInput placeholder="Optional data filter" withKG />
-                </FieldRow>
               </>
             )}
 
-            <FieldRow label={<><span style={{ fontWeight: 600 }}>Widget Filter</span><span style={{ fontWeight: 400, color: PAI.fg3, fontSize: 11 }}> (Apply global filters - optional)</span></>}>
-              <TextInput placeholder="Select widget filter" withKG />
+            <FieldRow label="Widget Filter">
+              <TextInput placeholder="Select Widget Filter" withKG />
             </FieldRow>
 
-            <FieldRow label="Sort By" hint="Define how data is ordered in chart">
-              <TextInput placeholder="Select field" />
-            </FieldRow>
+            {!isPie && (
+              <FieldRow label="Sort By" hint="Define how data is ordered in chart">
+                <TextInput placeholder="Select field" />
+              </FieldRow>
+            )}
+
+            {isPie && (
+              <>
+                <div style={{ borderTop: '1px solid var(--shell-border)', margin: '4px 0 16px' }} />
+                <ToggleRow
+                  label="Show Legend"
+                  description="Display or hide the legend for this chart"
+                  value={showLegend}
+                  onChange={setShowLegend}
+                />
+                <ToggleRow
+                  label="Show Total Count"
+                  description="Display total/distinct count in the center of pie chart"
+                  value={showTotalCount}
+                  onChange={setShowTotalCount}
+                  disabled={!showLegend}
+                />
+                <ToggleRow
+                  label="Show Percentage Change"
+                  description='Display the change over time (e.g., "+12%" or "-5%")'
+                  value={showPctChange}
+                  onChange={setShowPctChange}
+                  disabled={!showLegend}
+                />
+              </>
+            )}
           </>
         )}
       </div>
@@ -688,9 +745,9 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
       <div style={{ borderTop: '1px solid var(--shell-border)', padding: '12px', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
         <button onClick={onClose} className="ds-btn sz-md t-outline">Cancel</button>
         <button
-          onClick={() => onSaveChanges({ label: title, description, sizeId, heightId, chartId: chartType })}
+          onClick={() => onSaveChanges({ label: title, description, sizeId, heightId, chartId: chartType, showTotalCount, showPctChange, showLegend })}
           className="ds-btn sz-md t-primary"
-        >Save Changes</button>
+        >Apply</button>
       </div>
     </div>
   )
@@ -813,7 +870,7 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
           )}
         </div>
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ChartRender chartId={widget.chartId} />
+          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} />
         </div>
       </div>
     </div>
