@@ -7,6 +7,7 @@ import { FilterPanel, GraphFilterDrawer } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
+import NavigatorPage from './pages/NavigatorPage.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -276,6 +277,10 @@ function App() {
     return <WorkspacePage onNav={handleNav} />
   }
 
+  if (current === 'navigator') {
+    return <NavigatorPage onNav={handleNav} />
+  }
+
   const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };
 
   return (
@@ -285,7 +290,7 @@ function App() {
       fontFamily: "'Inter', system-ui",
       color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
     }}>
-      <Topbar />
+      <Topbar onNav={handleNav} />
 
       <div ref={canvasRef} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav

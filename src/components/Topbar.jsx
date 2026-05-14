@@ -1,7 +1,7 @@
 import React from 'react'
 import { Icons } from '../ui.jsx'
 
-function Topbar() {
+function Topbar({ onNav }) {
   return (
     <header className="topbar">
       <img src="assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
@@ -20,7 +20,7 @@ function Topbar() {
 
       <div className="topbar__avatar">MP</div>
 
-      <button className="topbar__navigator">
+      <button className="topbar__navigator" onClick={() => onNav?.('navigator')}>
         <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
         <span className="topbar__navigator-label">Navigator</span>
       </button>
