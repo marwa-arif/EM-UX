@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { Ic, Icons, EmIcon } from '../ui.jsx'
+import { USER_INITIALS, USER_FIRST_NAME } from '../currentUser.js'
 
 const RECENT_CHATS = [
   { id: 'c1', label: 'Hosts with Critical Vulnerabilities' },
@@ -125,7 +126,7 @@ function NavigatorTopbar({ onBack }) {
         <span className="topbar__notif-dot" />
       </button>
 
-      <div className="topbar__avatar">MP</div>
+      <div className="topbar__avatar">{USER_INITIALS}</div>
 
       <button className="topbar__navigator" onClick={onBack}>
         <EmIcon size={14} />
@@ -221,7 +222,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat }) {
   );
 }
 
-const USER_NAME = 'Marwa';
+const USER_NAME = USER_FIRST_NAME;
 
 const GREETINGS = [
   `What can I do for you, ${USER_NAME}?`,

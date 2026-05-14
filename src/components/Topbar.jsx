@@ -1,5 +1,6 @@
 import React from 'react'
 import { Icons, EmIcon } from '../ui.jsx'
+import { USER_INITIALS } from '../currentUser.js'
 
 function Topbar({ onNav, current }) {
   const isNavigator = current === 'navigator';
@@ -19,7 +20,7 @@ function Topbar({ onNav, current }) {
         <span className="topbar__notif-dot" />
       </button>
 
-      <div className="topbar__avatar">MP</div>
+      <div className="topbar__avatar">{USER_INITIALS}</div>
 
       <button className="topbar__navigator" onClick={() => onNav?.(isNavigator ? 'exposure/overview' : 'navigator')}>
         {isNavigator ? <EmIcon size={14} /> : <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />}
