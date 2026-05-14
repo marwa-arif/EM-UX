@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import '../styles/findings.css'
+import '../styles/kg.css'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 
 // ── Severity palette ─────────────────────────────────────────────
@@ -151,6 +152,29 @@ const IcDoc = () => (
   </svg>
 );
 
+// ── KG-style chart tooltip (follows mouse, fixed to viewport) ────
+function ChartTooltip({ content, mousePos }) {
+  if (!content || !mousePos) return null;
+  const W = 210;
+  const flipLeft = mousePos.x + 20 + W > window.innerWidth;
+  const left = flipLeft ? mousePos.x - W - 8 : mousePos.x + 16;
+  const top = mousePos.y + 16;
+  return (
+    <div className="kg-tooltip" style={{ left, top, position: 'fixed' }}>
+      {content}
+    </div>
+  );
+}
+
+function TRow({ k, v }) {
+  return (
+    <div className="kg-tooltip-row">
+      <span className="kg-tooltip-row__key">{k}</span>
+      <span className="kg-tooltip-row__val">{v}</span>
+    </div>
+  );
+}
+
 // Small colored asset-type icon squares
 function AssetIcon({ type, color }) {
   const paths = {
@@ -259,8 +283,27 @@ function ProgramStatusWidget() {
 
 // ── Stacked horizontal bar chart ──────────────────────────────────
 function StackedBarChart({ title, rows, xLabel }) {
+  const [hovSeg, setHovSeg] = useState(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0, containerW: 400 });
+
+  const tooltipContent = hovSeg ? (
+    <div>
+      <div className="kg-tooltip__header" style={{ background: SEV[hovSeg.sev] + '22' }}>
+        <span className="kg-tooltip__header-label" style={{ color: SEV[hovSeg.sev] }}>{hovSeg.sev}</span>
+      </div>
+      <div className="kg-tooltip__body">
+        <TRow k="Category" v={hovSeg.label} />
+        <TRow k="Share" v={`${hovSeg.pct}%`} />
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="fin-card fin-chart-card">
+    <div
+      className="fin-card fin-chart-card"
+      style={{ position: 'relative' }}
+      onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
+    >
       <div className="fin-chart-title">{title}</div>
       <div className="fin-sbc-rows">
         {rows.map((row, i) => (
@@ -274,7 +317,8 @@ function StackedBarChart({ title, rows, xLabel }) {
                   key={j}
                   className="fin-sbc-seg"
                   style={{ width: `${seg.pct}%`, background: SEV[seg.sev] }}
-                  title={`${seg.sev}: ${seg.pct}%`}
+                  onMouseEnter={() => setHovSeg({ sev: seg.sev, pct: seg.pct, label: row.label.join(' ') })}
+                  onMouseLeave={() => setHovSeg(null)}
                 />
               ))}
             </div>
@@ -296,6 +340,7 @@ function StackedBarChart({ title, rows, xLabel }) {
           </span>
         ))}
       </div>
+      {hovSeg && <ChartTooltip content={tooltipContent} mousePos={mouse} />}
     </div>
   );
 }
@@ -305,6 +350,8 @@ function DonutChart({ data }) {
   const R = 50, CX = 68, CY = 68;
   const C = 2 * Math.PI * R;
   const GAP = 3;
+  const [hovItem, setHovItem] = useState(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0, containerW: 400 });
 
   const segs = [];
   let prevPct = 0;
@@ -316,8 +363,24 @@ function DonutChart({ data }) {
     prevPct += pct;
   });
 
+  const tooltipContent = hovItem ? (
+    <div>
+      <div className="kg-tooltip__header" style={{ background: hovItem.color + '22' }}>
+        <span className="kg-tooltip__header-label" style={{ color: hovItem.color }}>{hovItem.label}</span>
+      </div>
+      <div className="kg-tooltip__body">
+        <TRow k="Count" v={hovItem.val} />
+        <TRow k="Share" v={hovItem.pct < 1 ? '<1%' : `${hovItem.pct}%`} />
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="fin-donut-panel">
+    <div
+      className="fin-donut-panel"
+      style={{ position: 'relative' }}
+      onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
+    >
       <div className="fin-donut-title">{data.title}</div>
       <div className="fin-donut-body">
         <div className="fin-donut-svg-wrap">
@@ -333,6 +396,9 @@ function DonutChart({ data }) {
                 strokeDasharray={`${seg.segLen} ${C}`}
                 strokeDashoffset={seg.dashOffset}
                 strokeLinecap="butt"
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setHovItem(segs[i])}
+                onMouseLeave={() => setHovItem(null)}
               />
             ))}
             <text x={CX} y={CY - 6} textAnchor="middle" fontSize={10} fill="var(--shell-text-muted)" fontFamily="Inter, system-ui">Total</text>
@@ -341,7 +407,13 @@ function DonutChart({ data }) {
         </div>
         <div className="fin-donut-list">
           {data.items.map((item, i) => (
-            <div key={i} className="fin-donut-row">
+            <div
+              key={i}
+              className="fin-donut-row"
+              style={{ cursor: 'default' }}
+              onMouseEnter={() => setHovItem(segs[i])}
+              onMouseLeave={() => setHovItem(null)}
+            >
               <AssetIcon type={item.icon} color={DONUT_COLORS[i]} />
               <span className="fin-donut-label">{item.label}</span>
               <span className="fin-donut-val">{item.val}</span>
@@ -350,6 +422,7 @@ function DonutChart({ data }) {
           ))}
         </div>
       </div>
+      {hovItem && <ChartTooltip content={tooltipContent} mousePos={mouse} />}
     </div>
   );
 }
