@@ -304,7 +304,7 @@ function App() {
   if (current === 'exposure/overview') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} />
+        <Topbar onNav={handleNav} current={current} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
           <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
@@ -319,7 +319,7 @@ function App() {
   if (current === 'exposure/findings') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} />
+        <Topbar onNav={handleNav} current={current} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
           <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
@@ -340,7 +340,7 @@ function App() {
       fontFamily: "'Inter', system-ui",
       color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
     }}>
-      <Topbar onNav={handleNav} />
+      <Topbar onNav={handleNav} current={current} />
 
       <div ref={canvasRef} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav

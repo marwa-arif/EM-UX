@@ -1,7 +1,8 @@
 import React from 'react'
-import { Icons } from '../ui.jsx'
+import { Icons, EmIcon } from '../ui.jsx'
 
-function Topbar({ onNav }) {
+function Topbar({ onNav, current }) {
+  const isNavigator = current === 'navigator';
   return (
     <header className="topbar">
       <img src="assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
@@ -20,9 +21,9 @@ function Topbar({ onNav }) {
 
       <div className="topbar__avatar">MP</div>
 
-      <button className="topbar__navigator" onClick={() => onNav?.('navigator')}>
-        <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
-        <span className="topbar__navigator-label">Navigator</span>
+      <button className="topbar__navigator" onClick={() => onNav?.(isNavigator ? 'exposure/overview' : 'navigator')}>
+        {isNavigator ? <EmIcon size={14} /> : <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />}
+        <span className="topbar__navigator-label">{isNavigator ? 'Exposure Management' : 'Navigator'}</span>
       </button>
     </header>
   );
