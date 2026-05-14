@@ -19,7 +19,7 @@ const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount = 0, onExplore, onFilter, filterActive }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -49,10 +49,13 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount 
             {breadcrumb.map((b, i) => {
               const isLast = i === breadcrumb.length - 1;
               const href = breadcrumbHrefs[i];
+              const onClick = breadcrumbClicks[i];
               return (
                 <React.Fragment key={i}>
                   {i > 0 && <span className="subheader__breadcrumb-sep">›</span>}
-                  {href && !isLast ? (
+                  {!isLast && onClick ? (
+                    <span className="subheader__breadcrumb-link" onClick={onClick}>{b}</span>
+                  ) : !isLast && href ? (
                     <a href={href} className="subheader__breadcrumb-link">{b}</a>
                   ) : (
                     <span className={isLast ? 'subheader__breadcrumb-current' : ''}>{b}</span>
@@ -64,7 +67,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount 
         )}
       </div>
 
-      <div ref={menuRef} className="subheader__more-wrap">
+      {showMenu && <div ref={menuRef} className="subheader__more-wrap">
         <button onClick={() => setMenuOpen(o => !o)} className="subheader__more-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
@@ -78,9 +81,9 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount 
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
-      <div ref={exploreRef} className="subheader__explore-wrap">
+      {showExplore && <div ref={exploreRef} className="subheader__explore-wrap">
         <button
           onClick={() => setExploreOpen(o => !o)}
           className={`subheader__explore-btn${exploreOpen ? ' subheader__explore-btn--open' : ''}`}
@@ -112,31 +115,35 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], activeFilterCount 
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       <div className="subheader__spacer" />
 
-      <button title="Save filter set" className="subheader__save-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-        </svg>
-      </button>
+      {actions !== undefined ? actions : (
+        <>
+          <button title="Save filter set" className="subheader__save-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
 
-      <span className="subheader__filter-pill">
-        Active Filters
-        {activeFilterCount > 0 && (
-          <span className="subheader__filter-count">{activeFilterCount}</span>
-        )}
-      </span>
+          <span className="subheader__filter-pill">
+            Active Filters
+            {activeFilterCount > 0 && (
+              <span className="subheader__filter-count">{activeFilterCount}</span>
+            )}
+          </span>
 
-      <div className="subheader__vdivider" />
+          <div className="subheader__vdivider" />
 
-      <button onClick={onFilter} className="subheader__filter-btn">
-        Filter
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-        </svg>
-      </button>
+          <button onClick={onFilter} className="subheader__filter-btn">
+            Filter
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+          </button>
+        </>
+      )}
 
     </div>
   );

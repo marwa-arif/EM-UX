@@ -32,6 +32,11 @@ body { background: #F7F9FC; color: #101010; }
   --pai-bg-app:        #F7F9FC;
   --pai-bg-raised:     #F5F5F5;
   --pai-surface:       #FFFFFF;
+
+  /* Card tokens */
+  --card-bg:           #FFFFFF;
+  --card-border:       #E6E6E6;
+
   --pai-crit-fg:       #D12329;
   --pai-crit-bg:       #F9EEEE;
   --pai-high-fg:       #D98B1D;
