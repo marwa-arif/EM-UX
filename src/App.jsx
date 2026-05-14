@@ -8,6 +8,7 @@ import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from '
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
 import NavigatorPage from './pages/NavigatorPage.jsx'
+import FindingsPage from './pages/FindingsPage.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -297,6 +298,21 @@ function App() {
 
   if (current === 'navigator') {
     return <NavigatorPage onNav={handleNav} />
+  }
+
+  if (current === 'exposure/findings') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
+        <Topbar onNav={handleNav} />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
+          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
+            <SubHeader title="Findings" breadcrumb={['Dashboard', 'Exposure', 'Findings']} breadcrumbHrefs={[null, null, null]} />
+            <FindingsPage />
+          </main>
+        </div>
+      </div>
+    );
   }
 
   const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };

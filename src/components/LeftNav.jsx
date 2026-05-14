@@ -5,8 +5,8 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
   const model = [
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
     { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
-        { id: 'exposure/overview', label: 'Overview' },
-        { id: 'exposure/trend',    label: 'Trend' },
+        { id: 'exposure/overview',  label: 'Overview' },
+        { id: 'exposure/findings',  label: 'Findings' },
     ]},
     { id: 'discover',   label: 'Discover',        icon: 'navbar-discover',   children: [
         { id: 'discover/assets',   label: 'Assets' },
