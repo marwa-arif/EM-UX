@@ -1,61 +1,11 @@
 import React, { useState } from 'react'
-import { PAI, Ic } from '../ui.jsx'
 import Topbar from '../components/Topbar.jsx'
 import LeftNav from '../components/LeftNav.jsx'
+import SubHeader from '../components/SubHeader.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
 import LibraryPage from './LibraryPage.jsx'
 import SavedPage from './SavedPage.jsx'
-
-const KG_ROUTE = 'kg'
-
-function WorkspaceSubHeader({ onNav }) {
-  return (
-    <div style={{
-      height: 48, flexShrink: 0,
-      background: 'var(--shell-bg)',
-      borderBottom: '1px solid var(--shell-border)',
-      display: 'flex', alignItems: 'center',
-      padding: '0 20px', gap: 12,
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1, lineHeight: 1.2 }}>Workspace</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: PAI.fg3, marginTop: 2 }}>
-          <span
-            style={{ color: PAI.fg3, cursor: 'pointer' }}
-            onClick={() => onNav(KG_ROUTE)}
-            onMouseEnter={e => e.currentTarget.style.color = PAI.indigo}
-            onMouseLeave={e => e.currentTarget.style.color = PAI.fg3}
-          >Dashboard</span>
-          <span>›</span>
-          <span style={{ color: PAI.indigo, fontWeight: 500 }}>Workspace</span>
-        </div>
-      </div>
-
-      <button style={{
-        height: 28, padding: '0 10px',
-        background: 'transparent', border: `1px solid ${PAI.borderStrong}`,
-        borderRadius: 44, cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: PAI.fg2,
-      }}>
-        <Ic size={14} path={<><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>} />
-      </button>
-
-      <button style={{
-        height: 28, padding: '0 12px',
-        background: 'transparent', border: `1px solid ${PAI.borderStrong}`,
-        borderRadius: 44, cursor: 'pointer',
-        fontSize: 12, fontWeight: 500, fontFamily: 'inherit',
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        color: PAI.fg2,
-      }}>
-        <Ic size={12} path={<><path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7"/></>} />
-        Explore in
-        <Ic size={11} path={<><path d="m6 9 6 6 6-6"/></>} />
-      </button>
-    </div>
-  )
-}
+import DashboardCanvas from './DashboardCanvas.jsx'
 
 export default function WorkspacePage({ onNav }) {
   const [current, setCurrent] = useState('workspace/library')
@@ -75,7 +25,7 @@ export default function WorkspacePage({ onNav }) {
         display: 'flex', flexDirection: 'column',
         height: '100vh', overflow: 'hidden',
         fontFamily: "'Inter', system-ui",
-        color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
+        color: '#101010', background: 'var(--shell-bg, #F7F9FC)',
       }}>
         <Topbar />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -91,8 +41,26 @@ export default function WorkspacePage({ onNav }) {
             overflow: 'hidden',
             background: '#F7F9FC',
           }}>
-            <WorkspaceSubHeader onNav={handleNav} />
-            {current === 'workspace/saved' ? <SavedPage /> : <LibraryPage />}
+            <SubHeader
+              title={current.startsWith('workspace/dashboard') ? 'New Dashboard' : 'Workspace'}
+              breadcrumb={current.startsWith('workspace/dashboard')
+                ? ['Dashboard', 'Workspace', 'New Dashboard']
+                : ['Dashboard', 'Workspace']
+              }
+              breadcrumbClicks={current.startsWith('workspace/dashboard')
+                ? [() => handleNav('kg'), () => handleNav('workspace/library')]
+                : [() => handleNav('kg')]
+              }
+              actions={null}
+              showMenu={false}
+              showExplore={false}
+            />
+            {current === 'workspace/saved'
+              ? <SavedPage />
+              : current.startsWith('workspace/dashboard')
+                ? <DashboardCanvas onNav={handleNav} />
+                : <LibraryPage />
+            }
           </main>
         </div>
       </div>
