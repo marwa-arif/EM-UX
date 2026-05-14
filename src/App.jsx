@@ -242,7 +242,12 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
 }
 
 function App() {
-  const [current, setCurrent] = useState('kg');
+  const [current, setCurrent] = useState(() => {
+    const path = window.location.pathname;
+    if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
+    if (path === '/knowledge-graph' || path.startsWith('/knowledge-graph/')) return 'kg';
+    return 'kg';
+  });
   const [collapsed, setCollapsed] = useState(false);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
@@ -268,8 +273,21 @@ function App() {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname;
+      if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
+      else setCurrent('kg');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const handleNav = (id) => {
     setCurrent(id);
+    let url = '/knowledge-graph';
+    if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
+    history.pushState(null, '', url);
   };
 
   if (current === 'workspace' || current.startsWith('workspace/')) {
@@ -304,7 +322,7 @@ function App() {
           <SubHeader
             title={meta.title}
             breadcrumb={meta.crumbs}
-            breadcrumbHrefs={[WORKSPACE_URL, null]}
+            breadcrumbHrefs={['/knowledge-graph', null]}
             activeFilterCount={activeFilterCount}
             filterActive={filterPanelOpen}
             onFilter={() => setFilterPanelOpen(o => !o)}
@@ -314,7 +332,7 @@ function App() {
 
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
             {/* Canvas — always full width */}
-            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
               <PageKG />
             </div>
 
