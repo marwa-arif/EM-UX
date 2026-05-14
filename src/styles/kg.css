@@ -131,7 +131,24 @@
 .kg-details__title { font-size: 13px; font-weight: 600; color: var(--pai-fg1); }
 .kg-details__title-count { color: var(--pai-fg3); font-weight: 400; }
 .kg-details__spacer { flex: 1; }
-.kg-details__body { overflow: auto; max-height: 320px; }
+.kg-details__body {}
+.kg-details__footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--pai-border);
+}
+.kg-details__page-info { font-size: 11px; color: var(--pai-fg3); }
+.kg-details__page-btns { display: inline-flex; align-items: center; gap: 2px; }
+.kg-page-btn {
+  min-width: 28px; height: 28px; padding: 0 6px;
+  border: 1px solid var(--pai-border); border-radius: 4px;
+  background: #fff; color: var(--pai-fg2); font-size: 11px; font-family: inherit;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  transition: background 100ms;
+}
+.kg-page-btn:hover:not(:disabled) { background: var(--pai-bg-app); }
+.kg-page-btn:disabled { opacity: 0.35; cursor: default; }
+.kg-page-btn--active { background: var(--pai-indigo); border-color: var(--pai-indigo); color: #fff; font-weight: 600; }
 .kg-details table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: inherit; }
 .kg-details th {
   text-align: left; padding: 8px 12px;
@@ -165,6 +182,13 @@
 }
 .kg-source-icon-badge {
   display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.kg-source-logo {
+  width: 20px; height: 20px;
+  border-radius: 3px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
