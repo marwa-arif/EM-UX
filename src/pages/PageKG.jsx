@@ -1181,17 +1181,56 @@ function PageKG() {
                         {meta.type || panelRow.type}
                       </span>
                     </div>
-                    <div className="kg-panel__meta-row">
-                      <span className="kg-panel__meta-item">IP: <span className="kg-panel__meta-val">{panelRow.ip}</span></span>
-                      <span className="kg-panel__meta-item">OS: <span className="kg-panel__meta-val">{meta.os}</span></span>
-                      <span className="kg-panel__meta-item">Last Active: <span className="kg-panel__meta-val">{panelRow.active}</span></span>
-                    </div>
                   </div>
-                  <button onClick={() => setPanelOpen(false)} className="kg-panel__close-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  <button onClick={() => setPanelOpen(false)} className="kg-panel__collapse-btn">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m18 15-6-6-6 6"/>
                     </svg>
+                    Collapse
                   </button>
+                </div>
+
+                <div className="kg-panel__score-bar">
+                  <div className="kg-panel__score-group">
+                    <span className="kg-panel__score-label">Exposure Score</span>
+                    <span className="kg-panel__score-val">920</span>
+                  </div>
+                  <div className="kg-panel__score-sep" />
+                  <div className="kg-panel__score-group">
+                    <span className="kg-panel__score-label">Asset Criticality Score</span>
+                    <span className="kg-panel__score-val">920</span>
+                  </div>
+                  <div className="kg-panel__score-sep" />
+                  <button className="kg-panel__score-action">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    </svg>
+                    View Score Simulation
+                    <kbd className="kg-panel__score-kbd">⌘ D</kbd>
+                  </button>
+                </div>
+
+                <div className="kg-panel__connections">
+                  {[
+                    { glyph: 'application', label: 'Application Endpoint', count: null },
+                    { glyph: 'person',      label: 'Shashi.salian',        count: null },
+                    { glyph: 'account',     label: 'Account',              count: 2 },
+                    { glyph: 'vulnerability', label: 'Vulnerability',      count: 8 },
+                    { glyph: 'finding',     label: 'Findings',             count: 43 },
+                  ].map(c => (
+                    <span key={c.glyph} className="kg-panel__conn-chip">
+                      <EntityGlyph kind={c.glyph} size={13} />
+                      <span>{c.label}</span>
+                      {c.count != null && <span className="kg-panel__conn-count">{c.count}</span>}
+                    </span>
+                  ))}
+                  <span className="kg-panel__conn-chip kg-panel__conn-chip--internet">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <span>Internet</span>
+                    <span className="kg-panel__conn-badge">True</span>
+                  </span>
                 </div>
 
                 <div className="kg-panel__rel-graph">
@@ -1226,9 +1265,9 @@ function PageKG() {
               </div>
 
               <div className="kg-panel__tabs">
-                {['summary', 'evolution', 'derivation'].map(t => (
-                  <button key={t} onClick={() => setPanelTab(t)}
-                    className={`kg-panel__tab${panelTab === t ? ' kg-panel__tab--active' : ''}`}>
+                {['Summary', 'Timeline', 'Evolution'].map(t => (
+                  <button key={t} onClick={() => setPanelTab(t.toLowerCase())}
+                    className={`kg-panel__tab${panelTab === t.toLowerCase() ? ' kg-panel__tab--active' : ''}`}>
                     {t}
                   </button>
                 ))}
@@ -1238,20 +1277,31 @@ function PageKG() {
                 {panelTab === 'summary' && (
                   <>
                     <div className="kg-panel__section">
-                      <div className="kg-panel__section-header">General Information</div>
+                      <div className="kg-panel__section-header kg-panel__section-header--icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                        </svg>
+                        General
+                      </div>
                       <div className="kg-panel__info-grid">
                         {[
-                          ['Display Label', panelRow.label],
-                          ['Type',          meta.type || panelRow.type],
-                          ['OS Family',     meta.os],
-                          ['IP Address',    panelRow.ip],
-                          ['Last Found',    panelRow.last],
-                          ['Last Active',   panelRow.active],
-                        ].map(([k, v], i) => (
-                          <div key={k} className="kg-panel__info-cell" style={{
-                            borderBottom: i < 4 ? '1px solid #F5F5F5' : 'none',
-                            borderRight: i % 2 === 0 ? '1px solid #F5F5F5' : 'none',
-                          }}>
+                          ['Display Label',      panelRow.label],
+                          ['Type',               meta.type || panelRow.type],
+                          ['FQDN',               panelRow.type === 'host' ? panelRow.label : '—'],
+                          ['AAD Device ID',      '12345678-90ab-cdef-1234-567890abcdef'],
+                          ['MAC Address',        '00:1A:2B:3C:4D:5E'],
+                          ['Internet Facing',    'True'],
+                          ['Environment',        'Production'],
+                          ['Data Source',        (meta.sources || ['—']).join(', ')],
+                          ['OS',                 meta.os],
+                          ['Infrastructure Type', ent.group === 'cloud' ? 'Cloud' : 'On-Premise'],
+                          ['Business Unit',      'Customer Service'],
+                          ['Role',               panelRow.type === 'host' ? 'Web Server, Database' : '—'],
+                          ['Hardware Serial',    'SN1234567890'],
+                          ['Last Found',         panelRow.last],
+                          ['Last Active',        panelRow.active],
+                        ].map(([k, v]) => (
+                          <div key={k} className="kg-panel__info-cell">
                             <div className="kg-panel__info-label">{k}</div>
                             <div className="kg-panel__info-value">{v}</div>
                           </div>
@@ -1260,32 +1310,72 @@ function PageKG() {
                     </div>
 
                     <div className="kg-panel__section">
-                      <div className="kg-panel__section-header">Data Sources</div>
-                      <div className="kg-panel__sources">
-                        {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
+                      <div className="kg-panel__section-header kg-panel__section-header--icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        Metadata and tags
+                      </div>
+                      <div className="kg-panel__tag-table">
+                        {[
+                          ['Primary Asset Tags', ['APP=CustomerPortal', 'ENV=Production', 'ROLE=WebServer,DatabaseServer']],
+                          ['Technical Tags',     ['OS=CentOS8', 'APP_STACK=ApacheStruts,Tomcat', 'DB=MySQL']],
+                          ['Business Tags',      ['BUSINESS_UNIT=CustomerService', 'TIER=Critical', 'DATA_CLASSIFICATION=Sensitive']],
+                          ['Security Tags',      ['SCAN_PROFILE=External', 'COMPLIANCE=PCI,GDPR', 'PATCH_GROUP=Critical-48hrs']],
+                        ].map(([label, tags]) => (
+                          <div key={label} className="kg-panel__tag-row">
+                            <span className="kg-panel__tag-row-label">{label}</span>
+                            <span className="kg-panel__tag-list">
+                              {tags.map(t => <span key={t} className="kg-panel__tag-pill">{t}</span>)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--row">
-                        <span>Findings</span>
-                        <span className="kg-panel__section-count">({fmtN(ent.count || 0)})</span>
+                      <div className="kg-panel__section-header kg-panel__section-header--icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        Security and Compliance
                       </div>
-                      <div className="kg-panel__severity">
+                      <div className="kg-panel__info-grid">
                         {[
-                          { label: 'Critical', pct: 4,  color: '#D12329' },
-                          { label: 'High',     pct: 21, color: '#f97316' },
-                          { label: 'Medium',   pct: 68, color: '#eab308' },
-                          { label: 'Low',      pct: 7,  color: '#16a34a' },
-                        ].map(s => (
-                          <div key={s.label} className="kg-severity-row">
-                            <span className="kg-severity-label">{s.label}</span>
-                            <div className="kg-severity-track">
-                              <div className="kg-severity-fill" style={{ width: `${s.pct}%`, background: s.color }} />
-                            </div>
-                            <span className="kg-severity-count">
-                              {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
-                            </span>
+                          ['Defender Risk Score',    'High'],
+                          ['Defender Health Status', 'TRUE'],
+                          ['EDR Onboarding Status',  'TRUE'],
+                          ['VM Onboarding Status',   'TRUE'],
+                          ['FW Enabled',             'TRUE'],
+                        ].map(([k, v]) => (
+                          <div key={k} className="kg-panel__info-cell">
+                            <div className="kg-panel__info-label">{k}</div>
+                            <div className={`kg-panel__info-value${v === 'TRUE' ? ' kg-panel__badge--true' : v === 'High' ? ' kg-panel__badge--risk' : ''}`}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="kg-panel__section">
+                      <div className="kg-panel__section-header kg-panel__section-header--icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        Hardware
+                      </div>
+                      <div className="kg-panel__info-grid">
+                        {[
+                          ['Hardware Model',         'Dell Latitude 7420'],
+                          ['IP',                     panelRow.ip !== '—' ? panelRow.ip.split(',')[0].trim() : '192.168.1.10'],
+                          ['Hardware Bios Version',  '1.12.3'],
+                          ['Crowdstrike Local IP',   '192.168.1.10'],
+                          ['Hardware Chassis Type',  'Laptop'],
+                          ['Hardware Serial Number', 'SN1234567890'],
+                          ['Hardware Manufacturer',  'Dell Inc.'],
+                        ].map(([k, v]) => (
+                          <div key={k} className="kg-panel__info-cell">
+                            <div className="kg-panel__info-label">{k}</div>
+                            <div className="kg-panel__info-value">{v}</div>
                           </div>
                         ))}
                       </div>
@@ -1293,17 +1383,17 @@ function PageKG() {
                   </>
                 )}
 
-                {panelTab === 'evolution' && (
+                {panelTab === 'timeline' && (
                   <div className="kg-panel__placeholder">
-                    Evolution history for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Track how attributes changed over time across data sources.
+                    Timeline for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
+                    Track when this entity was first seen and how its attributes changed.
                   </div>
                 )}
 
-                {panelTab === 'derivation' && (
+                {panelTab === 'evolution' && (
                   <div className="kg-panel__placeholder">
-                    Derivation graph for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Shows how this entity was resolved from source fragments.
+                    Evolution history for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
+                    Shows how this entity was resolved from source fragments over time.
                   </div>
                 )}
               </div>
