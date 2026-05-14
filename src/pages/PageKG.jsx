@@ -5,6 +5,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { PAI, Icons, Ic } from '../ui.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import TablePagination from '../components/TablePagination.jsx'
 
 // ─────────────────────────────────────────────────────────────────────
 // Entity type catalog — colors + icon glyph (drawn inline, no SVG file)
@@ -733,16 +734,13 @@ function Th({ children }) {
   );
 }
 
-const PAGE_SIZE = 10;
-
 function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
-  const [page, setPage] = useState(0);
-  useEffect(() => { setPage(0); }, [rows]);
+  const [page, setPage]               = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  useEffect(() => { setPage(1); }, [rows]);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const pagedRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const from = rows.length === 0 ? 0 : page * PAGE_SIZE + 1;
-  const to   = Math.min((page + 1) * PAGE_SIZE, rows.length);
+  const start     = (page - 1) * rowsPerPage;
+  const pagedRows = rows.slice(start, start + rowsPerPage);
 
   return (
     <div className="kg-details">
@@ -804,36 +802,13 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
         </table>
       </div>
 
-      <div className="kg-details__footer">
-        <span className="kg-details__page-info">
-          {rows.length === 0 ? 'No results' : `${from}–${to} of ${rows.length}`}
-        </span>
-        <div className="kg-details__page-btns">
-          <button
-            className="kg-page-btn"
-            disabled={page === 0}
-            onClick={() => setPage(p => p - 1)}
-          >
-            <Ic size={13} path={<><path d="m15 18-6-6 6-6"/></>}/>
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              className={`kg-page-btn${i === page ? ' kg-page-btn--active' : ''}`}
-              onClick={() => setPage(i)}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            className="kg-page-btn"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage(p => p + 1)}
-          >
-            <Ic size={13} path={<><path d="m9 18 6-6-6-6"/></>}/>
-          </button>
-        </div>
-      </div>
+      <TablePagination
+        total={rows.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+      />
     </div>
   );
 }

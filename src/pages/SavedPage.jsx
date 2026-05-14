@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Ic } from '../ui.jsx'
 import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
+import TablePagination from '../components/TablePagination.jsx'
 
 // Workspace › Saved tab
 
@@ -57,8 +58,8 @@ const IcGlobe = () => (
 
 function SavedPage() {
   const { onNav, savedFilter, setSavedFilter, savedVisibility, setSavedVisibility, savedSearch, setSavedSearch, openDeleteModal } = useWorkspace();
-  const [page] = useState(1);
-  const totalRows = SAVED_ROWS.length;
+  const [page, setPage]               = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const filtered = SAVED_ROWS.filter(row => {
     const matchType = savedFilter === 'all' || (savedFilter === 'dashboards' && row.type === 'DASHBOARD') || (savedFilter === 'reports' && row.type === 'REPORT');
@@ -66,6 +67,8 @@ function SavedPage() {
     const matchSearch = savedSearch === '' || row.name.toLowerCase().includes(savedSearch.toLowerCase());
     return matchType && matchVis && matchSearch;
   });
+  const start       = (page - 1) * rowsPerPage;
+  const visibleRows = filtered.slice(start, start + rowsPerPage);
 
   const pillStyle = (active) => ({
     padding: '4px 12px', borderRadius: 44, fontSize: 12,
@@ -163,7 +166,7 @@ function SavedPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length > 0 ? filtered.map(row => (
+                {visibleRows.length > 0 ? visibleRows.map(row => (
                   <tr key={row.id}>
                     <td className="ds-td">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -228,21 +231,13 @@ function SavedPage() {
             </table>
           </div>
 
-          {/* Pagination */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid var(--shell-border)' }}>
-            <span style={{ fontSize: 11, color: 'var(--shell-text-muted)' }}>
-              Showing rows {filtered.length > 0 ? 1 : 0} to {filtered.length} of {totalRows}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <button className="ds-page-btn" disabled={page === 1}>
-                <Ic size={13} path={<><polyline points="15 18 9 12 15 6"/></>} />
-              </button>
-              <button className="ds-page-btn active">1</button>
-              <button className="ds-page-btn" disabled>
-                <Ic size={13} path={<><polyline points="9 18 15 12 9 6"/></>} />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            total={filtered.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={setPage}
+            onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+          />
         </div>
       </div>
     </div>

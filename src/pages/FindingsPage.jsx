@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import '../styles/findings.css'
 import '../styles/kg.css'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import TablePagination from '../components/TablePagination.jsx'
 
 // ── Severity palette ─────────────────────────────────────────────
 const SEV = {
@@ -429,7 +430,20 @@ function DonutChart({ data }) {
 
 // ── Page root ─────────────────────────────────────────────────────
 export default function FindingsPage() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch]           = useState('');
+  const [page, setPage]               = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const filteredRows = TABLE_ROWS.filter(r =>
+    !search ||
+    r.title.toLowerCase().includes(search.toLowerCase()) ||
+    r.asset.toLowerCase().includes(search.toLowerCase())
+  );
+  const clampedPage = Math.min(page, Math.max(1, Math.ceil(filteredRows.length / rowsPerPage)));
+  const start       = (clampedPage - 1) * rowsPerPage;
+  const visibleRows = filteredRows.slice(start, start + rowsPerPage);
+
+  function handleSearch(v) { setSearch(v); setPage(1); }
 
   return (
     <div className="fin-page">
@@ -485,7 +499,7 @@ export default function FindingsPage() {
           <div className="fin-table-actions">
             <DSPillSearch
               value={search}
-              onChange={setSearch}
+              onChange={handleSearch}
               placeholder="Search Any"
               width={200}
             />
@@ -511,9 +525,7 @@ export default function FindingsPage() {
               </tr>
             </thead>
             <tbody>
-              {TABLE_ROWS.filter(r =>
-                !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.asset.toLowerCase().includes(search.toLowerCase())
-              ).map((row, i) => (
+              {visibleRows.map((row, i) => (
                 <tr key={i} className="fin-tr">
                   <td className="fin-td">
                     <div className="fin-td-flex">
@@ -547,6 +559,14 @@ export default function FindingsPage() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination
+          total={filteredRows.length}
+          page={clampedPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+        />
       </div>
 
     </div>

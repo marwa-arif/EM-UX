@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import '../styles/exposure.css'
+import TablePagination from '../components/TablePagination.jsx'
 
 // ── Data ──────────────────────────────────────────────────────────
 const TABLE_DATA = [
@@ -286,9 +287,14 @@ function MiniBar({ pct, maxPct = MAX_BAR_PCT }) {
 
 // ── Page ──────────────────────────────────────────────────────────
 export default function ExposureOverviewPage() {
-  const [search, setSearch] = useState('');
-  const [groupBy] = useState('Asset Type');
-  const filtered = TABLE_DATA.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+  const [search, setSearch]           = useState('');
+  const [groupBy]                     = useState('Asset Type');
+  const [page, setPage]               = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const filtered    = TABLE_DATA.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+  const start       = (page - 1) * rowsPerPage;
+  const visibleRows = filtered.slice(start, start + rowsPerPage);
 
   const TH = ({ children, align = 'left' }) => (
     <th className="exp-th" style={{ textAlign: align }}>
@@ -338,7 +344,7 @@ export default function ExposureOverviewPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row, i) => {
+              {visibleRows.map((row, i) => {
                 const trendColor = changeColor(row.changeDir, row.changePct);
                 return (
                   <tr key={i} className="exp-tr">
@@ -361,6 +367,13 @@ export default function ExposureOverviewPage() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          total={filtered.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+        />
       </div>
     </div>
   );
