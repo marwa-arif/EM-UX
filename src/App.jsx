@@ -49,6 +49,45 @@ const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   ]
 }/*EDITMODE-END*/;
 
+// ── Coming Soon placeholder ──────────────────────────────────────────────
+function ComingSoon() {
+  return (
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 24,
+      padding: 48,
+    }}>
+      <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="64" cy="64" r="60" fill="#EEEEFF" />
+        <circle cx="64" cy="64" r="40" stroke="#C8C7F0" strokeWidth="2" fill="white" />
+        <circle cx="64" cy="64" r="32" stroke="#6360D8" strokeWidth="2.5" fill="none" />
+        <path d="M64 42 L64 64 L78 73" stroke="#6360D8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="64" cy="64" r="3" fill="#6360D8" />
+        <circle cx="64" cy="34" r="2" fill="#6360D8" />
+        <circle cx="64" cy="94" r="2" fill="#6360D8" />
+        <circle cx="34" cy="64" r="2" fill="#6360D8" />
+        <circle cx="94" cy="64" r="2" fill="#6360D8" />
+        <circle cx="22" cy="34" r="6" fill="#6360D8" opacity="0.12" />
+        <circle cx="106" cy="95" r="8" fill="#6360D8" opacity="0.08" />
+        <circle cx="100" cy="22" r="4" fill="#6360D8" opacity="0.16" />
+        <circle cx="18" cy="88" r="5" fill="#6360D8" opacity="0.1" />
+      </svg>
+      <div style={{ textAlign: 'center', maxWidth: 360 }}>
+        <div style={{ fontSize: 18, fontWeight: 600, color: '#101010', marginBottom: 8 }}>
+          Coming Soon
+        </div>
+        <div style={{ fontSize: 13, color: '#6E6E6E', lineHeight: 1.65 }}>
+          This page is currently under development and will be available soon.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Edge editor ──────────────────────────────────────────────────────────
 // Subscribes to PageKG's edge state via window.__kgGetEdges + 'kg-edges-changed'
 // event, edits via window.__kgSetEdges.
@@ -248,8 +287,8 @@ function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
     if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
-    if (path === '/knowledge-graph' || path.startsWith('/knowledge-graph/')) return 'kg';
-    return 'kg';
+    if (path === '/knowledge-graph' || path === '/') return 'kg';
+    return path.slice(1) || 'kg';
   });
   const [collapsed, setCollapsed] = useState(false);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -280,7 +319,8 @@ function App() {
     const onPop = () => {
       const path = window.location.pathname;
       if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
-      else setCurrent('kg');
+      else if (path === '/knowledge-graph' || path === '/') setCurrent('kg');
+      else setCurrent(path.slice(1) || 'kg');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -288,8 +328,10 @@ function App() {
 
   const handleNav = (id) => {
     setCurrent(id);
-    let url = '/knowledge-graph';
+    let url;
     if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
+    else if (id === 'kg') url = '/knowledge-graph';
+    else url = `/${id}`;
     history.pushState(null, '', url);
   };
 
@@ -297,39 +339,41 @@ function App() {
     return <WorkspacePage onNav={handleNav} />
   }
 
-  if (current === 'navigator') {
-    return <NavigatorPage onNav={handleNav} />
+  if (current === 'navigator' || current.startsWith('navigator/')) {
+    return <NavigatorPage onNav={handleNav} current={current} />
   }
 
-  if (current === 'exposure/overview') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} current={current} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
-          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
-            <SubHeader title="Overview" breadcrumb={['Dashboard', 'Exposure', 'Overview']} breadcrumbHrefs={[null, null, null]} />
-            <ExposureOverviewPage />
-          </main>
-        </div>
+  const stdLayout = (title, crumbs, content = <ComingSoon />) => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
+      <Topbar onNav={handleNav} current={current} />
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
+        <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
+          <SubHeader title={title} breadcrumb={crumbs} breadcrumbHrefs={crumbs.map(() => null)} />
+          {content}
+        </main>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (current === 'exposure/findings') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} current={current} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
-          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
-            <SubHeader title="Findings" breadcrumb={['Dashboard', 'Exposure', 'Findings']} breadcrumbHrefs={[null, null, null]} />
-            <FindingsPage />
-          </main>
-        </div>
-      </div>
-    );
-  }
+  if (current === 'exposure/overview')  return stdLayout('Overview',  ['Dashboard', 'Exposure', 'Overview'],  <ExposureOverviewPage />);
+  if (current === 'exposure/findings')  return stdLayout('Findings',  ['Dashboard', 'Exposure', 'Findings'],  <FindingsPage />);
+
+  if (current === 'discover/device')    return stdLayout('Device',    ['Dashboard', 'Discover', 'Device']);
+  if (current === 'discover/cloud')     return stdLayout('Cloud',     ['Dashboard', 'Discover', 'Cloud']);
+  if (current === 'discover/identity')  return stdLayout('Identity',  ['Dashboard', 'Discover', 'Identity']);
+
+  if (current === 'report/compliance')          return stdLayout('Compliance',          ['Dashboard', 'Report', 'Compliance']);
+  if (current === 'report/assessments')         return stdLayout('Assessments',         ['Dashboard', 'Report', 'Assessments']);
+  if (current === 'report/compliance-matrix')   return stdLayout('Compliance Matrix',   ['Dashboard', 'Report', 'Compliance Matrix']);
+  if (current === 'report/compliance-findings') return stdLayout('Compliance Findings', ['Dashboard', 'Report', 'Compliance Findings']);
+
+  if (current === 'data-quality/overview') return stdLayout('Overview', ['Dashboard', 'Data Quality', 'Overview']);
+  if (current === 'data-quality/in-depth') return stdLayout('In-Depth', ['Dashboard', 'Data Quality', 'In-Depth']);
+
+  if (current === 'remediation/queue')  return stdLayout('Queue',  ['Dashboard', 'Remediation', 'Queue']);
+  if (current === 'remediation/closed') return stdLayout('Closed', ['Dashboard', 'Remediation', 'Closed']);
+
 
   const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };
 
