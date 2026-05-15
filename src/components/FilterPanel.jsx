@@ -49,7 +49,7 @@ const SHOW_LIMIT = 8;
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function FPAttrIcon({ icon, size = 16 }) {
-  return <img src={`assets/icons/${icon}.svg`} width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
+  return <img src={`/assets/icons/${icon}.svg`} width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
 }
 
 function FPDragHandle() {
@@ -146,7 +146,7 @@ function FPSavedCard({ item, selected, applied, onSelect }) {
           </div>
         </div>
         {item.pinned && (
-          <img src="assets/icons/pin.svg" width={16} height={16} alt="" style={{ flexShrink: 0, marginTop: 2 }} />
+          <img src="/assets/icons/pin.svg" width={16} height={16} alt="" style={{ flexShrink: 0, marginTop: 2 }} />
         )}
       </div>
     </div>
@@ -209,7 +209,7 @@ function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
         boxShadow: selected ? `0 0 0 4px ${entity.tint}, 0 4px 12px rgba(0,0,0,0.12)` : hovered ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.06)',
         transition: 'all 150ms', flexShrink: 0,
       }}>
-        <img src={`assets/icons/${entity.file}`} width={26} height={26} alt="" style={{ display: 'block' }} />
+        <img src={`/assets/icons/${entity.file}`} width={26} height={26} alt="" style={{ display: 'block' }} />
       </div>
       <span style={{ fontSize: 12, fontWeight: 500, color: selected ? entity.color : '#1D1D1D', transition: 'color 150ms' }}>
         {entity.label}
@@ -291,7 +291,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
           padding: '12px 20px', flexShrink: 0, borderBottom: '1px solid #EFEFEF',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="assets/icons/navbar-kg.svg" width={18} height={18} alt="" style={{ opacity: 0.7 }} />
+            <img src="/assets/icons/navbar-kg.svg" width={18} height={18} alt="" style={{ opacity: 0.7 }} />
             <span style={{ fontSize: 15, fontWeight: 600, color: '#1D1D1D' }}>Graph Filter</span>
           </div>
           <button onClick={onClose} style={{
@@ -414,7 +414,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                 >
                   <FPCheckbox checked={gfShownIds.includes(entity.id)} onChange={() => toggleGFShown(entity.id)} />
                   <div style={{ width: 18, height: 18, borderRadius: '50%', background: entity.tint, border: `1.5px solid ${entity.stroke}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <img src={`assets/icons/${entity.file}`} width={11} height={11} alt="" />
+                    <img src={`/assets/icons/${entity.file}`} width={11} height={11} alt="" />
                   </div>
                   {entity.label}
                 </label>
@@ -498,7 +498,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                       fontSize: 12, fontWeight: 500, color: ent.color,
                     }}>
                       <div style={{ width: 14, height: 14, borderRadius: '50%', background: ent.tint, border: `1px solid ${ent.stroke}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={`assets/icons/${ent.file}`} width={9} height={9} alt="" />
+                        <img src={`/assets/icons/${ent.file}`} width={9} height={9} alt="" />
                       </div>
                       {ent.label}
                       <button onClick={() => toggleGFNode(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, color: ent.color, display: 'flex', alignItems: 'center' }}>
@@ -614,7 +614,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
       {!embedded && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #EFEFEF', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={onClose} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, flexShrink: 0 }}>
-            <img src="assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
+            <img src="/assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
           </button>
           <span style={{ fontSize: 16, fontWeight: 500, color: '#1D1D1D' }}>Filter</span>
         </div>
@@ -737,7 +737,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                             <span style={{ fontSize: 12, color: PAI.fg3 }}>{item.count} filters</span>
                           </div>
                         </div>
-                        {item.pinned && <img src="assets/icons/pin.svg" width={16} height={16} alt="" style={{ flexShrink: 0, marginTop: 2 }} />}
+                        {item.pinned && <img src="/assets/icons/pin.svg" width={16} height={16} alt="" style={{ flexShrink: 0, marginTop: 2 }} />}
                       </div>
                     </div>
                   </div>
@@ -756,7 +756,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               </div>
               <button style={{ height: 32, padding: '0 12px', flexShrink: 0, background: 'rgba(99,96,216,0.1)', border: '1px solid #A2A1F7', borderRadius: 68, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: PAI.indigo, fontFamily: 'inherit' }}>
                 View all
-                <img src="assets/icons/explore.svg" width={16} height={16} alt="" />
+                <img src="/assets/icons/explore.svg" width={16} height={16} alt="" />
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

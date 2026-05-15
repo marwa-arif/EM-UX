@@ -107,7 +107,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
         ].filter(Boolean).join(' ')}
       >
         <img
-          src={`assets/icons/${item.icon}.svg`}
+          src={`/assets/icons/${item.icon}.svg`}
           width={16} height={16}
           style={{ flexShrink: 0,
             filter: isActiveParent

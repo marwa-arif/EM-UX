@@ -50,6 +50,33 @@ const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   ]
 }/*EDITMODE-END*/;
 
+// ── Coming Soon placeholder ──────────────────────────────────────────────
+function ComingSoon() {
+  return (
+    <div className="coming-soon">
+      <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="64" cy="64" r="60" fill="#EEEEFF" />
+        <circle cx="64" cy="64" r="40" stroke="#C8C7F0" strokeWidth="2" fill="white" />
+        <circle cx="64" cy="64" r="32" stroke="#6360D8" strokeWidth="2.5" fill="none" />
+        <path d="M64 42 L64 64 L78 73" stroke="#6360D8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="64" cy="64" r="3" fill="#6360D8" />
+        <circle cx="64" cy="34" r="2" fill="#6360D8" />
+        <circle cx="64" cy="94" r="2" fill="#6360D8" />
+        <circle cx="34" cy="64" r="2" fill="#6360D8" />
+        <circle cx="94" cy="64" r="2" fill="#6360D8" />
+        <circle cx="22" cy="34" r="6" fill="#6360D8" opacity="0.12" />
+        <circle cx="106" cy="95" r="8" fill="#6360D8" opacity="0.08" />
+        <circle cx="100" cy="22" r="4" fill="#6360D8" opacity="0.16" />
+        <circle cx="18" cy="88" r="5" fill="#6360D8" opacity="0.1" />
+      </svg>
+      <div className="coming-soon__text">
+        <div className="coming-soon__title">Coming Soon</div>
+        <div className="coming-soon__desc">This page is currently under development and will be available soon.</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Edge editor ──────────────────────────────────────────────────────────
 // Subscribes to PageKG's edge state via window.__kgGetEdges + 'kg-edges-changed'
 // event, edits via window.__kgSetEdges.
@@ -258,7 +285,7 @@ const TAB_DEFS = [
   {
     id: 'navigator',
     label: 'Navigator',
-    icon: <img src="assets/icons/Navigator icon.svg" width={12} height={12} alt="" />,
+    icon: <img src="/assets/icons/Navigator icon.svg" width={12} height={12} alt="" />,
   },
 ];
 
@@ -331,8 +358,8 @@ function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
     if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
-    if (path === '/knowledge-graph' || path.startsWith('/knowledge-graph/')) return 'kg';
-    return 'kg';
+    if (path === '/knowledge-graph' || path === '/') return 'kg';
+    return path.slice(1) || 'kg';
   });
   const [collapsed, setCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
@@ -364,7 +391,8 @@ function App() {
     const onPop = () => {
       const path = window.location.pathname;
       if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
-      else setCurrent('kg');
+      else if (path === '/knowledge-graph' || path === '/') setCurrent('kg');
+      else setCurrent(path.slice(1) || 'kg');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -398,8 +426,10 @@ function App() {
       return;
     }
     setCurrent(id);
-    let url = '/knowledge-graph';
+    let url;
     if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
+    else if (id === 'kg') url = '/knowledge-graph';
+    else url = `/${id}`;
     history.pushState(null, '', url);
   };
 
@@ -407,8 +437,8 @@ function App() {
     return <WorkspacePage onNav={handleNav} />
   }
 
-  if (current === 'navigator') {
-    return <NavigatorPage onNav={handleNav} />
+  if (current === 'navigator' || current.startsWith('navigator/')) {
+    return <NavigatorPage onNav={handleNav} current={current} />
   }
 
   const PAGE_META = {
@@ -420,6 +450,61 @@ function App() {
     'exposure/findings': {
       title: 'Findings',
       breadcrumb: ['Dashboard', 'Exposure', 'Findings'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'discover/device': {
+      title: 'Device',
+      breadcrumb: ['Dashboard', 'Discover', 'Device'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'discover/cloud': {
+      title: 'Cloud',
+      breadcrumb: ['Dashboard', 'Discover', 'Cloud'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'discover/identity': {
+      title: 'Identity',
+      breadcrumb: ['Dashboard', 'Discover', 'Identity'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'report/compliance': {
+      title: 'Compliance',
+      breadcrumb: ['Dashboard', 'Report', 'Compliance'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'report/assessments': {
+      title: 'Assessments',
+      breadcrumb: ['Dashboard', 'Report', 'Assessments'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'report/compliance-matrix': {
+      title: 'Compliance Matrix',
+      breadcrumb: ['Dashboard', 'Report', 'Compliance Matrix'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'report/compliance-findings': {
+      title: 'Compliance Findings',
+      breadcrumb: ['Dashboard', 'Report', 'Compliance Findings'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'data-quality/overview': {
+      title: 'Overview',
+      breadcrumb: ['Dashboard', 'Data Quality', 'Overview'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'data-quality/in-depth': {
+      title: 'In-Depth',
+      breadcrumb: ['Dashboard', 'Data Quality', 'In-Depth'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'remediation/queue': {
+      title: 'Queue',
+      breadcrumb: ['Dashboard', 'Remediation', 'Queue'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'remediation/closed': {
+      title: 'Closed',
+      breadcrumb: ['Dashboard', 'Remediation', 'Closed'],
       breadcrumbHrefs: [null, null, null],
     },
     kg: {
@@ -477,6 +562,7 @@ function App() {
             <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
               {current === 'exposure/overview' && <ExposureOverviewPage />}
               {current === 'exposure/findings' && <FindingsPage />}
+              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && <ComingSoon />}
               {isKG && <PageKG />}
             </div>
           </div>

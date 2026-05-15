@@ -4,7 +4,7 @@ import { Icons } from '../ui.jsx'
 function Topbar({ onNav, navigatorActive }) {
   return (
     <header className="topbar">
-      <img src="assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
+      <img src="/assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
            style={{ display: 'block' }} />
 
       <div className="topbar__spacer" />
@@ -24,7 +24,7 @@ function Topbar({ onNav, navigatorActive }) {
         className={`topbar__navigator${navigatorActive ? ' active' : ''}`}
         onClick={() => onNav?.('navigator')}
       >
-        <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+        <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
         <span className="topbar__navigator-label">Navigator</span>
       </button>
     </header>

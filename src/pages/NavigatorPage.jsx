@@ -94,14 +94,14 @@ function NavigatorTopbar({ onBack }) {
   return (
     <header className="topbar nav-topbar">
       <button className="nav-back-crumb" onClick={onBack} title="Back to Exposure Management">
-        <img src="assets/logo/pai-wordmark-white.svg" height={20} alt="Prevalent AI" />
+        <img src="/assets/logo/pai-wordmark-white.svg" height={20} alt="Prevalent AI" />
         <span className="nav-back-crumb-label">Exposure Management</span>
       </button>
 
       <span className="nav-crumb-sep">/</span>
 
       <div className="nav-crumb-current">
-        <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+        <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
         <span>Navigator</span>
       </div>
 
@@ -137,7 +137,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
   return (
     <div className={`np-panel${collapsed ? ' collapsed' : ''}`} style={{ position: 'relative' }}>
       <div className="np-hdr">
-        <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
+        <img src="/assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
         {!collapsed && (
           <>
             <span className="np-hdr-title">Navigator</span>
@@ -386,7 +386,7 @@ function ChatView({ query }) {
             {/* AI bubble */}
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <div className="nav-avatar-ring active">
-                <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+                <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="nav-ai-card-wrap">

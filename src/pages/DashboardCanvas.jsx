@@ -617,7 +617,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
       {/* Header */}
       <div style={{ padding: '12px 12px 0', borderBottom: '1px solid #D8D9DD', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10 }}>
-          <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
+          <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
           <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Widget Settings</span>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: PAI.fg3, display: 'flex' }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -840,16 +840,16 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
       {hovered && (
         <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
           <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+            <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
           </button>
           <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+            <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
           </button>
           <button title="Edit" onClick={onEdit} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+            <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
           <button title="Delete" onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+            <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
       )}
@@ -977,7 +977,7 @@ export default function DashboardCanvas({ onNav }) {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, lineHeight: 1, padding: '0 4px 0 12px', flexShrink: 0, borderRadius: 100, background: PAI.indigoTint, color: PAI.indigo, fontSize: 14, fontWeight: 500, boxSizing: 'border-box' }}>
               Dashboard Scope
               <span style={{ width: 24, height: 24, borderRadius: '50%', background: PAI.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" style={{ filter: 'brightness(0) invert(1)' }} />
+                <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" style={{ filter: 'brightness(0) invert(1)' }} />
               </span>
             </span>
 
@@ -1014,16 +1014,16 @@ export default function DashboardCanvas({ onNav }) {
                 }}>
                   <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
                     <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+                      <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
                     </button>
                     <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                      <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
                     </button>
                     <button title="Edit" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+                      <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
                     </button>
                     <button title="Delete" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+                      <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
                     </button>
                   </div>
                   <div style={{

@@ -128,7 +128,7 @@ function EntityGlyph({ kind, size = 18 }) {
   if (!file) return null;
   return (
     <img
-      src={`assets/icons/${file}`}
+      src={`/assets/icons/${file}`}
       width={size} height={size}
       style={{ display: 'block', pointerEvents: 'none' }}
       alt=""

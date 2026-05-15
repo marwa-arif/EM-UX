@@ -122,7 +122,7 @@ function SavedPage() {
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
-            <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
+            <img src="/assets/icons/new-report.svg" width={13} height={13} alt="" />
             New Template
           </button>
           <button onClick={() => onNav('workspace/dashboard/new')} style={{
@@ -132,7 +132,7 @@ function SavedPage() {
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
-            <img src="assets/icons/template-add.svg" width={13} height={13} alt="" />
+            <img src="/assets/icons/template-add.svg" width={13} height={13} alt="" />
             New Dashboard
           </button>
         </div>

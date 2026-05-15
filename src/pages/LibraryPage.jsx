@@ -28,7 +28,7 @@ function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted })
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         {isReport
-          ? <img src="assets/icons/report.svg" width={22} height={22} alt="" />
+          ? <img src="/assets/icons/report.svg" width={22} height={22} alt="" />
           : <DashboardIcon size={18} />
         }
       </div>
@@ -66,7 +66,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           {isReport
-            ? <img src="assets/icons/report.svg" width={22} height={22} alt="" />
+            ? <img src="/assets/icons/report.svg" width={22} height={22} alt="" />
             : <DashboardIcon size={18} />
           }
         </div>
@@ -222,7 +222,7 @@ function LibraryPage() {
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
-            <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
+            <img src="/assets/icons/new-report.svg" width={13} height={13} alt="" />
             New Template
           </button>
           <button onClick={() => onNav('workspace/dashboard/new')} style={{
@@ -232,7 +232,7 @@ function LibraryPage() {
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
-            <img src="assets/icons/template-add.svg" width={13} height={13} alt="" />
+            <img src="/assets/icons/template-add.svg" width={13} height={13} alt="" />
             New Dashboard
           </button>
         </div>
@@ -244,7 +244,7 @@ function LibraryPage() {
         {/* Get Started */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <img src="assets/icons/get-started.svg" width={16} height={16} alt="" />
+            <img src="/assets/icons/get-started.svg" width={16} height={16} alt="" />
             <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--shell-text)' }}>Get Started</span>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
