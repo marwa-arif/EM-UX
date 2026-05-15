@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Ic, Icons } from '../ui.jsx'
 
 const RECENT_CHATS = [
@@ -40,13 +40,44 @@ const DEMO_FINDINGS = [
 ];
 
 // ── SVG icons (inline Lucide-style) ─────────────────────────────────
-const IcChat   = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
-const IcBook   = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
-const IcArrowL = () => <Ic size={14} path={<><path d="m15 18-6-6 6-6"/></>} />;
-const IcPlus   = () => <Ic size={16} path={<><path d="M12 5v14M5 12h14"/></>} />;
-const IcSend   = () => <Ic size={16} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />;
-const IcChevD  = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
-const IcStar   = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+const IcChat     = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
+const IcBook     = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
+const IcArrowL   = () => <Ic size={14} path={<><path d="m15 18-6-6 6-6"/></>} />;
+const IcPlus     = () => <Ic size={16} path={<><path d="M12 5v14M5 12h14"/></>} />;
+const IcSend     = () => <Ic size={16} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />;
+const IcChevD    = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
+const IcStar     = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+const IcEdit     = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />;
+const IcSidebar  = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></>} />;
+const IcFloat    = () => <Ic size={14} path={<><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M3 9h2M3 12h2M3 15h2"/></>} />;
+const IcFullscr  = () => <Ic size={14} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />;
+const IcDots     = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></>} />;
+const IcCheck    = () => <Ic size={13} path={<><polyline points="20 6 9 17 4 12"/></>} />;
+const IcRename   = () => <Ic size={14} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
+const IcTrash    = () => <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>} />;
+const IcFeedback = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
+const IcHelp     = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />;
+
+const VIEW_MODES = [
+  { id: 'sidebar',    label: 'Sidebar',     Icon: IcSidebar },
+  { id: 'floating',   label: 'Floating',    Icon: IcFloat   },
+  { id: 'fullscreen', label: 'Full screen', Icon: IcFullscr },
+];
+
+// ── Click-outside-aware dropdown ─────────────────────────────────────
+function Dropdown({ children, onClose, style }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="np-dropdown" style={style} role="menu">
+      {children}
+    </div>
+  );
+}
 
 // ── Check icon for done steps ────────────────────────────────────────
 function StepDoneIcon() {
@@ -91,13 +122,86 @@ function NavigatorTopbar({ onBack }) {
 }
 
 // ── Navigator left panel ─────────────────────────────────────────────
-function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat }) {
+function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
+  const [showViewMenu, setViewMenu] = useState(false);
+  const [showMoreMenu, setMoreMenu] = useState(false);
+
+  const handleViewMode = (id) => {
+    setViewMenu(false);
+    if (id === 'sidebar' || id === 'floating') {
+      onNav?.('kg');
+    }
+    // fullscreen = current mode, no-op
+  };
+
   return (
     <div className={`np-panel${collapsed ? ' collapsed' : ''}`} style={{ position: 'relative' }}>
       <div className="np-hdr">
         <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
         {!collapsed && (
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--shell-text)' }}>Navigator</span>
+          <>
+            <span className="np-hdr-title">Navigator</span>
+            <div className="np-hdr-actions">
+              <button className="np-icon-btn" onClick={onNewChat} title="New chat (⌘K)" aria-label="New chat">
+                <IcEdit />
+              </button>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className={`np-icon-btn${showViewMenu ? ' active' : ''}`}
+                  onClick={() => { setViewMenu(o => !o); setMoreMenu(false); }}
+                  aria-label="Switch view mode"
+                  aria-expanded={showViewMenu}
+                  aria-haspopup="menu"
+                >
+                  <IcFullscr />
+                </button>
+                {showViewMenu && (
+                  <Dropdown onClose={() => setViewMenu(false)} style={{ right: 0, top: 34, width: 186 }}>
+                    <div className="np-dropdown-label">View mode</div>
+                    {VIEW_MODES.map(m => (
+                      <button
+                        key={m.id}
+                        className={`np-dropdown-item${m.id === 'fullscreen' ? ' selected' : ''}`}
+                        onClick={() => handleViewMode(m.id)}
+                        role="menuitem"
+                      >
+                        <m.Icon /> {m.label}
+                        {m.id === 'fullscreen' && <span className="np-dropdown-check" aria-hidden="true"><IcCheck /></span>}
+                      </button>
+                    ))}
+                  </Dropdown>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className={`np-icon-btn${showMoreMenu ? ' active' : ''}`}
+                  onClick={() => { setMoreMenu(o => !o); setViewMenu(false); }}
+                  aria-label="More options"
+                  aria-expanded={showMoreMenu}
+                  aria-haspopup="menu"
+                >
+                  <IcDots />
+                </button>
+                {showMoreMenu && (
+                  <Dropdown onClose={() => setMoreMenu(false)} style={{ right: 0, top: 34, width: 194 }}>
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcRename /> Rename
+                    </button>
+                    <button className="np-dropdown-item danger" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcTrash /> Delete
+                    </button>
+                    <div className="np-dropdown-sep" role="separator" />
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcFeedback /> Send feedback
+                    </button>
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcHelp /> Help &amp; capabilities
+                    </button>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -452,6 +556,7 @@ export default function NavigatorPage({ onNav }) {
           setCollapsed={setCollapsed}
           onNewChat={handleNewChat}
           onSelectChat={handleSend}
+          onNav={onNav}
         />
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

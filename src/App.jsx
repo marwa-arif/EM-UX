@@ -8,6 +8,7 @@ import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from '
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
 import NavigatorPage from './pages/NavigatorPage.jsx'
+import NavigatorPanel from './components/NavigatorPanel.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
 
@@ -244,6 +245,88 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
   );
 }
 
+const TAB_DEFS = [
+  {
+    id: 'filter',
+    label: 'Filter',
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'navigator',
+    label: 'Navigator',
+    icon: <img src="assets/icons/Navigator icon.svg" width={12} height={12} alt="" />,
+  },
+];
+
+// ── Shared right panel tab strip ─────────────────────────────────────
+function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProps, visitedTabs = [] }) {
+  const SHELL_WIDTH = 400;
+  const isOpen = tab !== null;
+  const visibleTabs = TAB_DEFS.filter(t => visitedTabs.includes(t.id));
+
+  return (
+    <div
+      className="rp-shell"
+      style={{
+        width: isOpen ? SHELL_WIDTH : 0,
+        borderLeft: isOpen ? '1px solid rgba(0,0,0,0.07)' : 'none',
+        boxShadow: isOpen ? '-4px 0 20px rgba(0,0,0,0.07)' : 'none',
+      }}
+    >
+      <div className="rp-shell__inner" style={{ width: SHELL_WIDTH }}>
+        {/* Tab strip — 48px to align with SubHeader */}
+        <div className="rp-tabstrip">
+          <div className={`rp-tabstrip__tabs${visibleTabs.length > 1 ? ' rp-seg-tabs' : ''}`}>
+            {visibleTabs.map(t => (
+              <button
+                key={t.id}
+                className={`rp-tab${tab === t.id ? ' rp-tab--active' : ''}`}
+                onClick={() => onTabSwitch(t.id)}
+              >
+                <span className="rp-tab__icon">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <button
+            className="rp-tab-close"
+            onClick={onClose}
+            title="Close panel"
+            aria-label="Close panel"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Active panel content */}
+        <div className="rp-content">
+          {tab === 'filter' && (
+            <FilterPanel
+              {...filterProps}
+              embedded={true}
+              onClose={onClose}
+            />
+          )}
+          {tab === 'navigator' && (
+            <NavigatorPanel
+              open={true}
+              embedded={true}
+              onClose={onClose}
+              onNav={navigatorProps?.onNav}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
@@ -252,7 +335,8 @@ function App() {
     return 'kg';
   });
   const [collapsed, setCollapsed] = useState(false);
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
+  const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
@@ -286,7 +370,33 @@ function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
+  useEffect(() => {
+    const timers = new WeakMap();
+    const onScroll = (e) => {
+      const el = e.target;
+      if (!el?.classList?.contains('page-scroll')) return;
+      el.classList.add('is-scrolling');
+      if (timers.has(el)) clearTimeout(timers.get(el));
+      timers.set(el, setTimeout(() => el.classList.remove('is-scrolling'), 3000));
+    };
+    document.addEventListener('scroll', onScroll, true);
+    return () => document.removeEventListener('scroll', onScroll, true);
+  }, []);
+
+  const openRightTab = (tabName) => {
+    setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
+    setRightPanel(prev => {
+      const next = prev === tabName ? null : tabName;
+      if (next) setCollapsed(true);
+      return next;
+    });
+  };
+
   const handleNav = (id) => {
+    if (id === 'navigator') {
+      openRightTab('navigator');
+      return;
+    }
     setCurrent(id);
     let url = '/knowledge-graph';
     if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
@@ -301,48 +411,50 @@ function App() {
     return <NavigatorPage onNav={handleNav} />
   }
 
-  if (current === 'exposure/overview') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
-          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
-            <SubHeader title="Overview" breadcrumb={['Dashboard', 'Exposure', 'Overview']} breadcrumbHrefs={[null, null, null]} />
-            <ExposureOverviewPage />
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const PAGE_META = {
+    'exposure/overview': {
+      title: 'Overview',
+      breadcrumb: ['Dashboard', 'Exposure', 'Overview'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    'exposure/findings': {
+      title: 'Findings',
+      breadcrumb: ['Dashboard', 'Exposure', 'Findings'],
+      breadcrumbHrefs: [null, null, null],
+    },
+    kg: {
+      title: 'Knowledge Graph',
+      breadcrumb: ['Dashboard', 'Knowledge Graph'],
+      breadcrumbHrefs: ['/knowledge-graph', null],
+      onAdd: () => {},
+      onExplore: () => {},
+    },
+  };
 
-  if (current === 'exposure/findings') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', system-ui", color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)' }}>
-        <Topbar onNav={handleNav} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <LeftNav current={current} onNav={handleNav} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
-          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', background: '#FAFBFD' }}>
-            <SubHeader title="Findings" breadcrumb={['Dashboard', 'Exposure', 'Findings']} breadcrumbHrefs={[null, null, null]} />
-            <FindingsPage />
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const pageMeta = PAGE_META[current] || PAGE_META.kg;
+  const isKG = current === 'kg' || !PAGE_META[current];
 
-  const meta = { title: 'Knowledge Graph', crumbs: ['Dashboard', 'Knowledge Graph'] };
+  const sharedRightPanel = (
+    <RightPanelShell
+      tab={rightPanel}
+      onTabSwitch={openRightTab}
+      onClose={() => setRightPanel(null)}
+      visitedTabs={visitedTabs}
+      filterProps={{ onApply: (c) => setActiveFilterCount(c), onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      navigatorProps={{ onNav: handleNav }}
+    />
+  );
 
   return (
-    <div data-screen-label="Knowledge Graph" style={{
+    <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100vh', overflow: 'hidden',
       fontFamily: "'Inter', system-ui",
       color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
     }}>
-      <Topbar onNav={handleNav} />
+      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} />
 
-      <div ref={canvasRef} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div ref={isKG ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav
           current={current}
           onNav={handleNav}
@@ -350,86 +462,61 @@ function App() {
           onToggleCollapse={() => setCollapsed(!collapsed)}
         />
 
-        <main style={{
-          flex: 1, minWidth: 0,
-          display: 'flex', flexDirection: 'column',
-          overflow: 'auto',
-          background: '#FAFBFD',
-        }}>
-          <SubHeader
-            title={meta.title}
-            breadcrumb={meta.crumbs}
-            breadcrumbHrefs={['/knowledge-graph', null]}
-            activeFilterCount={activeFilterCount}
-            filterActive={filterPanelOpen}
-            onFilter={() => setFilterPanelOpen(o => !o)}
-            onAdd={() => {}}
-            onExplore={() => {}}
-          />
-
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
-            {/* Canvas — always full width */}
-            <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-              <PageKG />
-            </div>
-
-            {/* Filter panel — flex-push 348px sidebar */}
-            <div style={{
-              width: filterPanelOpen ? 348 : 0,
-              flexShrink: 0,
-              background: '#fff',
-              borderLeft: filterPanelOpen ? '1px solid #E6E6E6' : 'none',
-              boxShadow: filterPanelOpen ? '-4px 0 20px rgba(0,0,0,0.07)' : 'none',
-              overflow: 'hidden',
-              display: 'flex', flexDirection: 'column',
-              transition: 'width 280ms cubic-bezier(0.4,0,0.2,1)',
-            }}>
-              <div style={{ width: 348, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <FilterPanel
-                  onApply={(count) => setActiveFilterCount(count)}
-                  onClose={() => setFilterPanelOpen(false)}
-                  onOpenGraphFilter={() => setGraphFilterOpen(o => !o)}
-                  graphFilterOpen={graphFilterOpen}
-                />
-              </div>
+        <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: '#FAFBFD' }}>
+          <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <SubHeader
+              title={pageMeta.title}
+              breadcrumb={pageMeta.breadcrumb}
+              breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+              activeFilterCount={activeFilterCount}
+              filterActive={rightPanel === 'filter'}
+              onFilter={() => openRightTab('filter')}
+              onAdd={pageMeta.onAdd}
+              onExplore={pageMeta.onExplore}
+            />
+            <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+              {current === 'exposure/overview' && <ExposureOverviewPage />}
+              {current === 'exposure/findings' && <FindingsPage />}
+              {isKG && <PageKG />}
             </div>
           </div>
+          {sharedRightPanel}
         </main>
       </div>
 
-      {/* Graph Filter bottom drawer — position fixed, escapes all stacking contexts */}
-      {GraphFilterDrawer && (
+      {isKG && GraphFilterDrawer && (
         <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
           onApply={(count) => { setActiveFilterCount(count); setGraphFilterOpen(false); }}
-          onClose={() => setGraphFilterOpen(false)}
           top={canvasTop}
         />
       )}
 
-      <TweaksPanel title="Tweaks">
-        <style>{`.twk-panel { width: 360px !important; }`}</style>
-        <TweakSection label="Graph float animation" />
-        <TweakToggle label="Enabled" value={tweaks.floatEnabled}
-                     onChange={(v) => setTweak('floatEnabled', v)} />
-        <TweakSlider label="Amplitude X" value={tweaks.ampX} min={0} max={20} step={0.5} unit="px"
-                     onChange={(v) => setTweak('ampX', v)} />
-        <TweakSlider label="Amplitude Y" value={tweaks.ampY} min={0} max={20} step={0.5} unit="px"
-                     onChange={(v) => setTweak('ampY', v)} />
-        <TweakSlider label="Speed X" value={tweaks.speedX} min={0.05} max={3} step={0.05} unit=" rad/s"
-                     onChange={(v) => setTweak('speedX', v)} />
-        <TweakSlider label="Speed Y" value={tweaks.speedY} min={0.05} max={3} step={0.05} unit=" rad/s"
-                     onChange={(v) => setTweak('speedY', v)} />
-        <TweakSlider label="Per-node variation" value={tweaks.variation} min={0} max={100} step={5} unit="%"
-                     onChange={(v) => setTweak('variation', v)} />
+      {isKG && (
+        <TweaksPanel title="Tweaks">
+          <style>{`.twk-panel { width: 360px !important; }`}</style>
+          <TweakSection label="Graph float animation" />
+          <TweakToggle label="Enabled" value={tweaks.floatEnabled}
+                       onChange={(v) => setTweak('floatEnabled', v)} />
+          <TweakSlider label="Amplitude X" value={tweaks.ampX} min={0} max={20} step={0.5} unit="px"
+                       onChange={(v) => setTweak('ampX', v)} />
+          <TweakSlider label="Amplitude Y" value={tweaks.ampY} min={0} max={20} step={0.5} unit="px"
+                       onChange={(v) => setTweak('ampY', v)} />
+          <TweakSlider label="Speed X" value={tweaks.speedX} min={0.05} max={3} step={0.05} unit=" rad/s"
+                       onChange={(v) => setTweak('speedX', v)} />
+          <TweakSlider label="Speed Y" value={tweaks.speedY} min={0.05} max={3} step={0.05} unit=" rad/s"
+                       onChange={(v) => setTweak('speedY', v)} />
+          <TweakSlider label="Per-node variation" value={tweaks.variation} min={0} max={100} step={5} unit="%"
+                       onChange={(v) => setTweak('variation', v)} />
 
-        <TweakSection label="Edges" />
-        <EdgeEditor
-          onSaveDefault={(eds) => setTweak('edges', eds)}
-          savedEdges={tweaks.edges}
-        />
-      </TweaksPanel>
+          <TweakSection label="Edges" />
+          <EdgeEditor
+            onSaveDefault={(eds) => setTweak('edges', eds)}
+            savedEdges={tweaks.edges}
+          />
+        </TweaksPanel>
+      )}
     </div>
   );
 }

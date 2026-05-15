@@ -517,7 +517,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 
 // ── main filter panel ─────────────────────────────────────────────────────────
 
-function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen }) {
+function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, embedded = false }) {
   const [tab,             setTab]            = useState('quick');
   const [settingsView,    setSettingsView]   = useState(false);
   const [search,          setSearch]         = useState('');
@@ -610,8 +610,8 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen }) {
         .fp-body::-webkit-scrollbar-thumb { background: rgba(0,8,48,0.27); border-radius: 6px; }
       `}</style>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #EFEFEF', flexShrink: 0 }}>
+      {/* Header — hidden when embedded in RightPanelShell */}
+      {!embedded && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #EFEFEF', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={onClose} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, flexShrink: 0 }}>
             <img src="assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
@@ -631,7 +631,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen }) {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-      </div>
+      </div>}
 
       {/* Tabs */}
       <div style={{ padding: '10px 16px 4px', flexShrink: 0 }}>

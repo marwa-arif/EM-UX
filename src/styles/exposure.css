@@ -1,5 +1,7 @@
 /* ── Exposure Overview page layout ───────────────────────────────── */
-.exp-page { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.exp-page { padding: 16px 0 16px 16px; display: flex; flex-direction: column; gap: 16px; }
+.exp-main { gap: 16px; }
+.exp-content-col .subheader { border-right: 1px solid var(--shell-border); border-bottom-right-radius: 8px; }
 
 /* ── Shared card shell ──────────────────────────────────────────── */
 .exp-card { background: var(--color-secondary-bg, #fff); border: 1px solid var(--color-stroke-1, #E6E6E6); border-radius: 8px; padding: 16px; }
