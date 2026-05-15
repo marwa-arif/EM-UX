@@ -32,13 +32,9 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
 
   const activeParent = current?.split('/')[0];
   const activeChild  = current;
-  const [openIds, setOpenIds] = useState(() => new Set([activeParent]));
+  const [openId, setOpenId] = useState(() => activeParent ?? null);
 
-  const toggle = (id) => setOpenIds(prev => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
+  const toggle = (id) => setOpenId(prev => prev === id ? null : id);
 
   const width = collapsed ? 52 : 220;
 
@@ -74,7 +70,7 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
               collapsed={collapsed}
               isActiveParent={activeParent === item.id}
               activeChild={activeChild}
-              isOpen={openIds.has(item.id)}
+              isOpen={openId === item.id}
               onToggle={() => toggle(item.id)}
               onNav={onNav}
             />
