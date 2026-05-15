@@ -59,31 +59,10 @@ html.theme-light .ds-btn.t-danger:hover { background: #ffdbdc; }
 .nav-crumb-sep { color: var(--shell-text-faint); font-size: 15px; opacity: 0.45; flex-shrink: 0; user-select: none; }
 .nav-crumb-current { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--shell-text); white-space: nowrap; flex-shrink: 0; }
 
-/* ── Navigator panel ─────────────────────────────────────────────── */
-.np-hdr { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 2px solid transparent; background: linear-gradient(var(--ctrl-bg),var(--ctrl-bg)) padding-box,linear-gradient(to right,#6360D8,#47adcb) border-box; flex-shrink: 0; }
-.np-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 8px; gap: 2px; }
-.np-footer { display: flex; flex-direction: column; padding: 8px; border-top: 1px solid var(--shell-border); flex-shrink: 0; gap: 2px; }
-.np-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; color: var(--shell-text-muted); transition: background 0.12s,color 0.12s; }
-.np-row:hover { background: var(--shell-hover); color: var(--shell-text); }
-html.theme-light .np-row:hover { background: #f5f5f5; }
-.np-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
-.np-lbl { flex: 1; font-size: 12px; color: var(--shell-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-kbd { font-size: 11px; color: var(--shell-text-muted); white-space: nowrap; flex-shrink: 0; }
-.np-divider { height: 1px; background: var(--shell-border); margin: 4px 0; }
-.np-section { font-size: 11px; color: var(--shell-text-muted); padding: 8px 10px 4px; font-weight: 500; letter-spacing: 0.02em; }
+/* ── Navigator panel footer ──────────────────────────────────────── */
+.np-nav-footer { padding: 8px 0; border-top: 1px solid #EFEFEF; flex-shrink: 0; }
 .nav-sub { display: flex; padding: 8px; border-radius: 6px; cursor: pointer; color: var(--shell-text-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.12s; }
 .nav-sub:hover { background: #f5f5f5; color: #6360d8; }
-.np-panel { width: 220px; background: var(--ctrl-bg); border-right: 1px solid var(--shell-border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.22s ease; flex-shrink: 0; }
-.np-panel.collapsed { width: 68px; }
-.np-panel.collapsed .np-lbl,
-.np-panel.collapsed .np-kbd,
-.np-panel.collapsed .np-section,
-.np-panel.collapsed .np-history { display: none !important; }
-.np-panel.collapsed .np-hdr { justify-content: center; padding: 12px 8px; }
-.np-panel.collapsed .np-row { justify-content: center; padding: 10px 8px; gap: 0; }
-.np-panel.collapsed .np-body { padding: 8px 4px; }
-.np-panel.collapsed .np-footer { padding: 8px 4px; align-items: center; }
-.np-collapse-btn { position: absolute; right: -12px; top: 14px; width: 24px; height: 24px; border: 1px solid var(--shell-border); border-radius: 6px; background: var(--ctrl-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--shell-text-muted); padding: 0; z-index: 10; }
 
 /* ── NavPanel page header — title + action buttons ──────────────── */
 .np-hdr-title { font-size: 13px; font-weight: 600; color: var(--shell-text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -114,7 +93,7 @@ html.theme-light .np-row:hover { background: #f5f5f5; }
 
 /* ── AI Home view ────────────────────────────────────────────────── */
 .nav-view-home { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-.ai-content-wrap { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; background: var(--ctrl-bg); padding: 48px 24px; }
+.ai-content-wrap { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: 48px 24px; background: radial-gradient(ellipse 55% 45% at 25% 60%, rgba(99,96,216,0.09) 0%, transparent 70%), radial-gradient(ellipse 55% 45% at 75% 60%, rgba(99,96,216,0.09) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 50% 60%, rgba(71,173,203,0.11) 0%, transparent 65%), #fff; }
 .ai-home { width: 100%; max-width: 920px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
 .ai-heading { font-size: 38px; font-weight: 600; background: linear-gradient(90deg,#47adcb 0%,#6360D8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; line-height: 1.2; letter-spacing: -0.025em; }
 .ai-sub { font-size: 15px; font-weight: 300; color: #6E6E6E; text-align: center; line-height: 1.6; margin-top: -4px; }

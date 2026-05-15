@@ -9,17 +9,20 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
         { id: 'exposure/findings',  label: 'Findings' },
     ]},
     { id: 'discover',   label: 'Discover',        icon: 'navbar-discover',   children: [
-        { id: 'discover/assets',   label: 'Assets' },
-        { id: 'discover/scan',     label: 'Scan' },
+        { id: 'discover/device',   label: 'Device' },
+        { id: 'discover/cloud',    label: 'Cloud' },
+        { id: 'discover/identity', label: 'Identity' },
     ]},
     { id: 'report',     label: 'Report',          icon: 'navbar-report',     children: [
-        { id: 'report/board',      label: 'Board view' },
-        { id: 'report/compliance', label: 'Compliance' },
+        { id: 'report/compliance',          label: 'Compliance' },
+        { id: 'report/assessments',         label: 'Assessments' },
+        { id: 'report/compliance-matrix',   label: 'Compliance Matrix' },
+        { id: 'report/compliance-findings', label: 'Compliance Findings' },
     ]},
     { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
-    { id: 'dq',         label: 'Data Quality',    icon: 'navbar-data quality', children: [
-        { id: 'dq/issues',   label: 'Issues' },
-        { id: 'dq/coverage', label: 'Coverage' },
+    { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [
+        { id: 'data-quality/overview', label: 'Overview' },
+        { id: 'data-quality/in-depth', label: 'In-Depth' },
     ]},
     { id: 'remediation',label: 'Remediation',     icon: 'navbar-remediation', children: [
         { id: 'remediation/queue',  label: 'Queue' },
