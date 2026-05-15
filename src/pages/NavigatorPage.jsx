@@ -1,22 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Ic, Icons, EmIcon } from '../ui.jsx'
-import { USER_INITIALS, USER_FIRST_NAME } from '../currentUser.js'
+import { Ic, Icons } from '../ui.jsx'
 
 const RECENT_CHATS = [
-  { id: 'c1', label: 'Hosts with Critical Vulnerabilities' },
-  { id: 'c2', label: 'Vulnerable Hosts' },
-  { id: 'c3', label: 'Critical Vulnerabilities on Business-Critical Hosts from Last Month' },
-  { id: 'c4', label: 'Critical Issues on Important Systems' },
-  { id: 'c5', label: 'Exposure' },
+  { id: 'c1', label: 'High severity findings for host vm-prod-42' },
+  { id: 'c2', label: 'Identities with access to critical storage' },
+  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure' },
+  { id: 'c4', label: 'Compliance gaps in AWS environment' },
 ];
 
 const CTX_PILLS = [
-  { id: 'vulnerability', label: 'Vulnerability',     count: 13456, icon: <Ic size={13} path={<><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></>} /> },
-  { id: 'device',        label: 'Device',            count: 9016,  icon: <Ic size={13} path={<><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></>} /> },
-  { id: 'cloud',         label: 'Cloud',             count: 19245, icon: <Ic size={13} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></>} /> },
-  { id: 'application',   label: 'Application',       count: 6324,  icon: <Ic size={13} path={<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>} /> },
-  { id: 'identity',      label: 'Identity',          count: 10234, icon: <Ic size={13} path={<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} /> },
-  { id: 'dashboard',     label: 'Dashboard Summary', count: null,  icon: <Ic size={13} path={<><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/></>} /> },
+  { id: 'host',     label: 'Hosts',      count: 842  },
+  { id: 'finding',  label: 'Findings',   count: 2140 },
+  { id: 'identity', label: 'Identities', count: 513  },
+  { id: 'account',  label: 'Accounts',   count: 78   },
+  { id: 'vuln',     label: 'CVEs',       count: 634  },
 ];
 
 const SAMPLE_QUERIES = [
@@ -42,122 +39,45 @@ const DEMO_FINDINGS = [
   { name: 'Outdated kernel (5.4.0-147)',          sev: 'High',     src: 'Crowdstrike' },
 ];
 
-const CONTEXT_QUESTIONS = {
-  vulnerability: [
-    'Show hosts with critical vulnerabilities',
-    'What are the most recent vulnerabilities detected?',
-    'List vulnerabilities with active risk signals',
-    'Show vulnerabilities linked to external exposure',
-  ],
-  device: [
-    'Which devices have the most critical findings?',
-    'Show unmanaged devices with open vulnerabilities',
-    'List devices that haven\'t been scanned in 30 days',
-    'Which cloud-connected devices are at high risk?',
-  ],
-  cloud: [
-    'Show misconfigured cloud storage buckets',
-    'Which cloud accounts have the most findings?',
-    'List cloud resources exposed to the internet',
-    'Show cloud assets with critical vulnerabilities',
-  ],
-  application: [
-    'Which applications have unpatched CVEs?',
-    'Show applications with known active exploits',
-    'List web-facing applications with critical findings',
-    'Which applications access sensitive data stores?',
-  ],
-  identity: [
-    'Which identities have excessive permissions?',
-    'Show compromised credentials detected this month',
-    'List identities with access to critical systems',
-    'Which service accounts are overprivileged?',
-  ],
-  dashboard: [
-    'Show weekly exposure summary across all assets',
-    'What changed in my risk posture this week?',
-    'Compare current findings to last month',
-    'Show top 10 remediation priorities',
-  ],
-};
+// ── SVG icons (inline Lucide-style) ─────────────────────────────────
+const IcChat     = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
+const IcBook     = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
+const IcArrowL   = () => <Ic size={14} path={<><path d="m15 18-6-6 6-6"/></>} />;
+const IcPlus     = () => <Ic size={16} path={<><path d="M12 5v14M5 12h14"/></>} />;
+const IcSend     = () => <Ic size={16} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />;
+const IcChevD    = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
+const IcStar     = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+const IcEdit     = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />;
+const IcSidebar  = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></>} />;
+const IcFloat    = () => <Ic size={14} path={<><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M3 9h2M3 12h2M3 15h2"/></>} />;
+const IcFullscr  = () => <Ic size={14} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />;
+const IcDots     = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></>} />;
+const IcCheck    = () => <Ic size={13} path={<><polyline points="20 6 9 17 4 12"/></>} />;
+const IcRename   = () => <Ic size={14} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
+const IcTrash    = () => <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>} />;
+const IcFeedback = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
+const IcHelp     = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />;
 
-const DEPTH_OPTS = [
-  { label: 'Quick',     time: '≈10 mins' },
-  { label: 'Standard',  time: '≈30 mins' },
-  { label: 'Extensive', time: '≈60 mins' },
+const VIEW_MODES = [
+  { id: 'sidebar',    label: 'Sidebar',     Icon: IcSidebar },
+  { id: 'floating',   label: 'Floating',    Icon: IcFloat   },
+  { id: 'fullscreen', label: 'Full screen', Icon: IcFullscr },
 ];
 
-const DEPTH_FILLS  = ['2px', 'calc(50% + 1px)', 'calc(100% + 2px)'];
-const DEPTH_THUMBS = ['0px', 'calc(50% - 5px)', 'calc(100% - 10px)'];
-
-// ── SVG icons (inline Lucide-style) ─────────────────────────────────
-const IcChat   = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
-const IcBook   = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
-const IcArrowL = () => <Ic size={14} path={<><path d="m15 18-6-6 6-6"/></>} />;
-const IcPlus   = () => <Ic size={16} path={<><path d="M12 5v14M5 12h14"/></>} />;
-const IcSend   = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 19V5M5 12l7-7 7 7"/>
-  </svg>
-);
-const IcChevD  = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
-const IcChevR  = () => <Ic size={12} path={<><path d="m9 18 6-6-6-6"/></>} />;
-const IcStar   = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
-
-const IcAgentic = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93 4.93 19.07"/>
-  </svg>
-);
-const IcInteractive = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 2.1l4 4-4 4"/><path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8"/>
-    <path d="M7 21.9l-4-4 4-4"/><path d="M21 11.8v2a4 4 0 0 1-4 4H4.2"/>
-  </svg>
-);
-const IcArrowNE = () => (
-  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 17 17 7M7 7h10v10"/>
-  </svg>
-);
-
-// ── Navigator sidebar icons ──────────────────────────────────────────
-const IcAddCircle = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></>} />;
-const IcSearch    = () => <Ic size={14} path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></>} />;
-const IcDiscover  = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></>} />;
-const IcNewProject = () => (
-  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41L13.7 2.71a2.41 2.41 0 0 0-3.41 0Z"/>
-    <line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/>
-  </svg>
-);
-const IcProjects  = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5.5 8.5 9 12l-3.5 3.5L2 12l3.5-3.5z"/>
-    <path d="m12 2-3.5 3.5L12 9l3.5-3.5L12 2z"/>
-    <path d="M18.5 8.5 22 12l-3.5 3.5L15 12l3.5-3.5z"/>
-    <path d="m12 15-3.5 3.5L12 22l3.5-3.5L12 15z"/>
-  </svg>
-);
-const IcHistory   = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="10" cy="10" r="7"/><path d="m21 21-4.3-4.3"/>
-    <path d="M7 10h6M7 13h4"/>
-  </svg>
-);
-const IcSettings  = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>
-);
-const IcSidebarCollapse = ({ flipped }) => (
-  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Z"/>
-    <path d="M9 3v18"/>
-    {flipped ? <path d="M13 9l3 3-3 3"/> : <path d="M15 9l-3 3 3 3"/>}
-  </svg>
-);
+// ── Click-outside-aware dropdown ─────────────────────────────────────
+function Dropdown({ children, onClose, style }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="np-dropdown" style={style} role="menu">
+      {children}
+    </div>
+  );
+}
 
 // ── Check icon for done steps ────────────────────────────────────────
 function StepDoneIcon() {
@@ -196,174 +116,139 @@ function NavigatorTopbar({ onBack }) {
         <span className="topbar__notif-dot" />
       </button>
 
-      <div className="topbar__avatar">{USER_INITIALS}</div>
-
-      <button className="topbar__navigator" onClick={onBack}>
-        <EmIcon size={14} />
-        <span className="topbar__navigator-label">Exposure Management</span>
-      </button>
+      <div className="topbar__avatar">MP</div>
     </header>
   );
 }
 
 // ── Navigator left panel ─────────────────────────────────────────────
 function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
-  const width = collapsed ? 52 : 220;
-  const btnCls = `nav-item__btn${collapsed ? ' nav-item__btn--collapsed' : ''}`;
+  const [showViewMenu, setViewMenu] = useState(false);
+  const [showMoreMenu, setMoreMenu] = useState(false);
+
+  const handleViewMode = (id) => {
+    setViewMenu(false);
+    if (id === 'sidebar' || id === 'floating') {
+      onNav?.('kg');
+    }
+    // fullscreen = current mode, no-op
+  };
 
   return (
-    <aside className="leftnav" style={{ width }}>
-      <div className={`leftnav__header${collapsed ? ' leftnav__header--collapsed' : ''}`}>
+    <div className={`np-panel${collapsed ? ' collapsed' : ''}`} style={{ position: 'relative' }}>
+      <div className="np-hdr">
+        <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
         {!collapsed && (
-          <div className="leftnav__org">
-            <div className="leftnav__org-name-row">
-              <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt=""
-                   style={{ flexShrink: 0, filter: 'grayscale(20%) opacity(0.78)' }} />
-              <div className="leftnav__org-name">Navigator</div>
-            </div>
-            <div className="leftnav__org-sub">AI Assistant</div>
-          </div>
-        )}
-        <button className="leftnav__toggle-btn" onClick={() => setCollapsed(c => !c)}
-                title={collapsed ? 'Expand' : 'Collapse'}>
-          <Ic size={12} path={collapsed
-            ? <><path d="m9 18 6-6-6-6"/></>
-            : <><path d="m15 18-6-6 6-6"/></>
-          } />
-        </button>
-      </div>
-
-      <div className="leftnav__body">
-        <div className="nav-item">
-          <button className={btnCls} onClick={onNewChat}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcAddCircle /></span>
-            {!collapsed && <span className="nav-item__label">New Thread</span>}
-          </button>
-        </div>
-        <div className="nav-item">
-          <button className={btnCls}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcSearch /></span>
-            {!collapsed && <span className="nav-item__label">Search</span>}
-          </button>
-        </div>
-        <div className="leftnav__divider" />
-
-        <div className="nav-item">
-          <button className={btnCls} onClick={() => onNav?.('navigator/new-project')}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcNewProject /></span>
-            {!collapsed && <span className="nav-item__label">New Project</span>}
-          </button>
-        </div>
-        <div className="nav-item">
-          <button className={btnCls} onClick={() => onNav?.('navigator/projects')}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcProjects /></span>
-            {!collapsed && <span className="nav-item__label">Projects</span>}
-          </button>
-        </div>
-
-        <div className="leftnav__divider" />
-
-        <div className="nav-item">
-          <button className={btnCls}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcHistory /></span>
-            {!collapsed && <span className="nav-item__label">History</span>}
-          </button>
-          {!collapsed && (
-            <div className="nav-item__children" style={{ maxHeight: RECENT_CHATS.length * 29 }}>
-              {RECENT_CHATS.map(c => (
-                <button key={c.id} className="nav-item__child" onClick={() => onSelectChat(c.label)}>
-                  <span className="nav-item__label">{c.label}</span>
+          <>
+            <span className="np-hdr-title">Navigator</span>
+            <div className="np-hdr-actions">
+              <button className="np-icon-btn" onClick={onNewChat} title="New chat (⌘K)" aria-label="New chat">
+                <IcEdit />
+              </button>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className={`np-icon-btn${showViewMenu ? ' active' : ''}`}
+                  onClick={() => { setViewMenu(o => !o); setMoreMenu(false); }}
+                  aria-label="Switch view mode"
+                  aria-expanded={showViewMenu}
+                  aria-haspopup="menu"
+                >
+                  <IcFullscr />
                 </button>
-              ))}
+                {showViewMenu && (
+                  <Dropdown onClose={() => setViewMenu(false)} style={{ right: 0, top: 34, width: 186 }}>
+                    <div className="np-dropdown-label">View mode</div>
+                    {VIEW_MODES.map(m => (
+                      <button
+                        key={m.id}
+                        className={`np-dropdown-item${m.id === 'fullscreen' ? ' selected' : ''}`}
+                        onClick={() => handleViewMode(m.id)}
+                        role="menuitem"
+                      >
+                        <m.Icon /> {m.label}
+                        {m.id === 'fullscreen' && <span className="np-dropdown-check" aria-hidden="true"><IcCheck /></span>}
+                      </button>
+                    ))}
+                  </Dropdown>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className={`np-icon-btn${showMoreMenu ? ' active' : ''}`}
+                  onClick={() => { setMoreMenu(o => !o); setViewMenu(false); }}
+                  aria-label="More options"
+                  aria-expanded={showMoreMenu}
+                  aria-haspopup="menu"
+                >
+                  <IcDots />
+                </button>
+                {showMoreMenu && (
+                  <Dropdown onClose={() => setMoreMenu(false)} style={{ right: 0, top: 34, width: 194 }}>
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcRename /> Rename
+                    </button>
+                    <button className="np-dropdown-item danger" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcTrash /> Delete
+                    </button>
+                    <div className="np-dropdown-sep" role="separator" />
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcFeedback /> Send feedback
+                    </button>
+                    <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
+                      <IcHelp /> Help &amp; capabilities
+                    </button>
+                  </Dropdown>
+                )}
+              </div>
             </div>
-          )}
+          </>
+        )}
+      </div>
+
+      <div className="np-body">
+        <div className="np-row" onClick={onNewChat} style={{ color: 'var(--shell-accent)' }}>
+          <span className="np-icon" style={{ color: 'var(--shell-accent)' }}><IcPlus /></span>
+          <span className="np-lbl" style={{ color: 'var(--shell-accent)', fontWeight: 500 }}>New chat</span>
+          <span className="np-kbd">⌘K</span>
+        </div>
+
+        <div className="np-divider" />
+        <div className="np-section">Recent</div>
+
+        {RECENT_CHATS.map(c => (
+          <div key={c.id} className="np-row" onClick={() => onSelectChat(c.label)}>
+            <span className="np-icon"><IcChat /></span>
+            <span className="np-lbl">{c.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="np-footer">
+        <div className="np-row">
+          <span className="np-icon"><IcBook /></span>
+          <span className="np-lbl">Library</span>
         </div>
       </div>
 
-      <div className="np-nav-footer">
-        <div className="nav-item">
-          <button className={btnCls}>
-            <span style={{ display:'flex', flexShrink:0 }}><IcSettings /></span>
-            {!collapsed && <span className="nav-item__label">Settings</span>}
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-const USER_NAME = USER_FIRST_NAME;
-
-const GREETINGS = [
-  `What can I do for you, ${USER_NAME}?`,
-  `How can I help you today, ${USER_NAME}?`,
-  `What are we investigating today, ${USER_NAME}?`,
-  `What would you like to explore, ${USER_NAME}?`,
-  `Ready when you are, ${USER_NAME}.`,
-];
-
-// ── Coming soon view (Navigator sub-pages) ───────────────────────────
-function NavComingSoon({ title }) {
-  return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 24,
-      padding: 48,
-      background: 'var(--shell-bg, #F7F9FC)',
-    }}>
-      <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="64" cy="64" r="60" fill="#EEEEFF" />
-        <circle cx="64" cy="64" r="40" stroke="#C8C7F0" strokeWidth="2" fill="white" />
-        <circle cx="64" cy="64" r="32" stroke="#6360D8" strokeWidth="2.5" fill="none" />
-        <path d="M64 42 L64 64 L78 73" stroke="#6360D8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="64" cy="64" r="3" fill="#6360D8" />
-        <circle cx="64" cy="34" r="2" fill="#6360D8" />
-        <circle cx="64" cy="94" r="2" fill="#6360D8" />
-        <circle cx="34" cy="64" r="2" fill="#6360D8" />
-        <circle cx="94" cy="64" r="2" fill="#6360D8" />
-        <circle cx="22" cy="34" r="6" fill="#6360D8" opacity="0.12" />
-        <circle cx="106" cy="95" r="8" fill="#6360D8" opacity="0.08" />
-        <circle cx="100" cy="22" r="4" fill="#6360D8" opacity="0.16" />
-        <circle cx="18" cy="88" r="5" fill="#6360D8" opacity="0.1" />
-      </svg>
-      <div style={{ textAlign: 'center', maxWidth: 360 }}>
-        <div style={{ fontSize: 18, fontWeight: 600, color: '#101010', marginBottom: 8 }}>{title}</div>
-        <div style={{ fontSize: 13, color: '#6E6E6E', lineHeight: 1.65 }}>
-          This page is currently under development and will be available soon.
-        </div>
-      </div>
+      <button
+        className="np-collapse-btn"
+        onClick={() => setCollapsed(c => !c)}
+        title={collapsed ? 'Expand' : 'Collapse'}
+      >
+        <Ic size={12} path={collapsed
+          ? <><path d="m9 18 6-6-6-6"/></>
+          : <><path d="m15 18-6-6 6-6"/></>
+        } />
+      </button>
     </div>
   );
 }
 
 // ── Home / AI prompt view ────────────────────────────────────────────
 function HomeView({ onSend }) {
-  const [query, setQuery]             = useState('');
-  const [activeCtx, setCtx]           = useState(new Set());
-  const [modeOpen, setModeOpen]       = useState(false);
-  const [pendingMode, setPendingMode] = useState(null);
-  const [pendingDepth, setPendingDepth] = useState(0);
-  const [activeMode, setActiveMode]   = useState(null);
-  const [menuPos, setMenuPos]         = useState({ bottom: 0, left: 0 });
-  const textareaRef                   = useRef(null);
-  const modeBtnRef                    = useRef(null);
-  const modeMenuRef                   = useRef(null);
-  const greeting                      = useRef(GREETINGS[Math.floor(Math.random() * GREETINGS.length)]).current;
-
-  useEffect(() => {
-    if (!modeOpen) return;
-    const handler = (e) => {
-      if (!modeMenuRef.current?.contains(e.target) && !modeBtnRef.current?.contains(e.target)) {
-        setModeOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [modeOpen]);
+  const [query, setQuery]     = useState('');
+  const [activeCtx, setCtx]   = useState(new Set());
+  const textareaRef           = useRef(null);
 
   const toggleCtx = (id) => setCtx(prev => {
     const next = new Set(prev);
@@ -377,51 +262,14 @@ function HomeView({ onSend }) {
     onSend(text);
   };
 
-  const suggestions = [...activeCtx].flatMap(id => CONTEXT_QUESTIONS[id] ?? []).slice(0, 4);
-
-  const CTX_PLURAL = {
-    vulnerability: 'vulnerabilities',
-    device:        'devices',
-    cloud:         'cloud assets',
-    application:   'applications',
-    identity:      'identities',
-    dashboard:     'dashboard summaries',
-  };
-  const placeholder = activeCtx.size === 1
-    ? `Ask about ${CTX_PLURAL[[...activeCtx][0]] ?? 'the selected topic'}`
-    : activeCtx.size > 1
-    ? 'Ask about the selected topics'
-    : 'Ask about vulnerable assets, threats, or risk levels';
-
-  const openModeMenu = () => {
-    const rect = modeBtnRef.current.getBoundingClientRect();
-    setMenuPos({
-      bottom: window.innerHeight - rect.top + 8,
-      left: Math.max(8, rect.right - 305),
-    });
-    setPendingMode(activeMode?.mode ?? null);
-    setPendingDepth(activeMode?.depth ?? 0);
-    setModeOpen(true);
-  };
-
-  const applyMode = () => {
-    if (pendingMode) setActiveMode({ mode: pendingMode, depth: pendingDepth });
-    setModeOpen(false);
-  };
-
   return (
     <div className="nav-view-home">
-      <div className="nav-bg-blobs">
-        <div className="nav-bg-blob nav-bg-blob-1" />
-        <div className="nav-bg-blob nav-bg-blob-2" />
-        <div className="nav-bg-blob nav-bg-blob-3" />
-      </div>
       <div className="ai-content-wrap">
         <div className="ai-home">
-          <h1 className="ai-heading">{greeting}</h1>
+          <h1 className="ai-heading">Ask me anything</h1>
           <p className="ai-sub">
-            Discover insights with our advanced intelligence capabilities and<br />
-            ask questions relevant to your data
+            Explore your attack surface, investigate findings, and understand<br />
+            exposure risk — powered by your knowledge graph.
           </p>
 
           {/* Context pills */}
@@ -432,8 +280,7 @@ function HomeView({ onSend }) {
                 className={`ctx-pill${activeCtx.has(p.id) ? ' active' : ''}`}
                 onClick={() => toggleCtx(p.id)}
               >
-                <span className="ctx-pill-icon">{p.icon}</span>
-                {p.count != null && <span className="ctx-pill-count">{p.count.toLocaleString()}</span>}
+                <span className="ctx-pill-count">{p.count.toLocaleString()}</span>
                 <span className="ctx-pill-name">{p.label}</span>
               </button>
             ))}
@@ -448,7 +295,9 @@ function HomeView({ onSend }) {
                     const pill = CTX_PILLS.find(p => p.id === id);
                     return (
                       <span key={id} className="nav-tx-chip">
-                        <span className="nav-tx-chip-icon">{pill?.icon}</span>
+                        <span className="nav-tx-chip-icon">
+                          <Ic size={12} path={<><circle cx="12" cy="12" r="10"/></>} />
+                        </span>
                         {pill?.label}
                         <button className="nav-tx-chip-close" onClick={() => toggleCtx(id)}>×</button>
                       </span>
@@ -460,7 +309,7 @@ function HomeView({ onSend }) {
                 <textarea
                   ref={textareaRef}
                   rows={1}
-                  placeholder={placeholder}
+                  placeholder="Ask about findings, identities, hosts, CVEs, compliance…"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => {
@@ -470,17 +319,10 @@ function HomeView({ onSend }) {
               </div>
             </div>
             <div className="nav-tx-bar">
-              {activeMode && (
-                <div className="agentic-tag">
-                  <span style={{ display: 'flex' }}>
-                    {activeMode.mode === 'agentic' ? <IcAgentic /> : <IcInteractive />}
-                  </span>
-                  <button className="agentic-tag-close" onClick={() => setActiveMode(null)}>×</button>
-                </div>
-              )}
-              <button ref={modeBtnRef} className="mode-btn" onClick={openModeMenu}>
-                Mode
-                {activeMode ? <IcChevR /> : <IcChevD />}
+              <button className="mode-btn">
+                <IcStar />
+                Deep research
+                <IcChevD />
               </button>
               <button
                 className="nav-send-btn"
@@ -490,99 +332,26 @@ function HomeView({ onSend }) {
                 <IcSend />
               </button>
             </div>
-            {suggestions.length > 0 && (
-              <div className="nav-suggestions">
-                {suggestions.map((q, i) => (
-                  <button
-                    key={i}
-                    className="nav-suggestion-item"
-                    onClick={() => handleSend(q)}
-                  >
-                    <span>{q}</span>
-                    <span className="nav-suggestion-item-arrow"><IcArrowNE /></span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <p className="ai-disclaimer">
-            Details may vary over time and are subject to revision
+            Navigator uses your connected data sources. Verify critical findings independently.
           </p>
         </div>
       </div>
 
-      {/* Mode menu popup */}
-      {modeOpen && (
-        <div ref={modeMenuRef} className="mode-menu" style={{ bottom: menuPos.bottom, left: menuPos.left }}>
-          <div className="mode-menu-inner">
-            <div className="mode-menu-section">
-              <div className="mode-menu-label">Select Mode</div>
-              <button
-                className={`mode-option${pendingMode === 'agentic' ? ' selected' : ''}`}
-                onClick={() => setPendingMode('agentic')}
-              >
-                <div className="mode-option-row">
-                  <div className="mode-option-icon"><IcAgentic /></div>
-                  <span className="mode-option-name">Agentic Mode</span>
-                </div>
-                <div className="mode-option-desc">Navigator autonomously explores and finds the best path.</div>
-              </button>
-              <button
-                className={`mode-option${pendingMode === 'interactive' ? ' selected' : ''}`}
-                onClick={() => setPendingMode('interactive')}
-              >
-                <div className="mode-option-row">
-                  <div className="mode-option-icon"><IcInteractive /></div>
-                  <span className="mode-option-name">Interactive Mode</span>
-                </div>
-                <div className="mode-option-desc">Guide the exploration step-by-step with your input.</div>
-              </button>
+      {/* Sample queries footer */}
+      <div className="sample-queries-footer">
+        <span className="sample-queries-label">Try asking</span>
+        <div className="sample-queries-list">
+          {SAMPLE_QUERIES.map((sq, i) => (
+            <div key={i} className="sample-q-row">
+              <span className={`sample-q-cat ${sq.cat}`}>{sq.cat}</span>
+              <button className="sample-q" onClick={() => handleSend(sq.q)}>{sq.q}</button>
             </div>
-
-            <div className="mode-depth-section">
-              <div className="mode-menu-label">Depth of Analysis</div>
-              <div className="mode-depth-slider-wrap">
-                <div className="mode-depth-labels">
-                  {DEPTH_OPTS.map((o, i) => (
-                    <span
-                      key={i}
-                      className={`mode-depth-label${pendingDepth === i ? ' active' : ''}`}
-                      onClick={() => setPendingDepth(i)}
-                    >{o.label}</span>
-                  ))}
-                </div>
-                <div
-                  className="mode-depth-track-wrap"
-                  onClick={e => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pct = (e.clientX - rect.left) / rect.width;
-                    setPendingDepth(pct < 0.33 ? 0 : pct < 0.67 ? 1 : 2);
-                  }}
-                >
-                  <div className="mode-depth-track">
-                    <div className="mode-depth-fill" style={{ width: DEPTH_FILLS[pendingDepth] }} />
-                    <div className="mode-depth-thumb" style={{ left: DEPTH_THUMBS[pendingDepth] }} />
-                  </div>
-                </div>
-                <div className="mode-depth-times">
-                  {DEPTH_OPTS.map((o, i) => (
-                    <span key={i} className={`mode-depth-time${pendingDepth === i ? ' active' : ''}`}>{o.time}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mode-menu-footer">
-              <button className="mode-cancel-btn" onClick={() => setModeOpen(false)}>Cancel</button>
-              <button className="mode-apply-btn" onClick={applyMode} disabled={!pendingMode}
-                style={{ opacity: pendingMode ? 1 : 0.45, cursor: pendingMode ? 'pointer' : 'not-allowed' }}>
-                Apply
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -665,11 +434,7 @@ function ChatView({ query }) {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setFollowUp(''); }
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10 }}>
-              <button className="mode-btn">
-                Mode
-                <IcChevD />
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 className="nav-send-btn"
                 disabled={!followUp.trim()}
@@ -762,11 +527,10 @@ function ChatView({ query }) {
 }
 
 // ── Page root ────────────────────────────────────────────────────────
-export default function NavigatorPage({ onNav, current }) {
+export default function NavigatorPage({ onNav }) {
   const [collapsed, setCollapsed] = useState(false);
   const [view, setView]           = useState('home');
   const [activeQuery, setQuery]   = useState('');
-  const subRoute = current?.startsWith('navigator/') ? current.slice('navigator/'.length) : null;
 
   const handleSend = (q) => {
     setQuery(q);
@@ -776,7 +540,6 @@ export default function NavigatorPage({ onNav, current }) {
   const handleNewChat = () => {
     setView('home');
     setQuery('');
-    onNav?.('navigator');
   };
 
   return (
@@ -797,10 +560,10 @@ export default function NavigatorPage({ onNav, current }) {
         />
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {subRoute === 'projects'    ? <NavComingSoon title="Projects" />
-          : subRoute === 'new-project' ? <NavComingSoon title="New Project" />
-          : view === 'home'            ? <HomeView onSend={handleSend} />
-          :                             <ChatView query={activeQuery} />}
+          {view === 'home'
+            ? <HomeView onSend={handleSend} />
+            : <ChatView query={activeQuery} />
+          }
         </div>
       </div>
     </div>

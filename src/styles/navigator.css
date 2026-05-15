@@ -91,6 +91,33 @@ html.theme-light .ds-btn.t-danger:hover { background: #ffdbdc; }
   border-color: rgba(99,96,216,0.38);
 }
 
+/* ── NavPanel page header — title + action buttons ──────────────── */
+.np-hdr-title { font-size: 13px; font-weight: 600; color: var(--shell-text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-hdr-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
+
+/* ── Embedded controls bar (shown instead of header when embedded in RightPanelShell) ── */
+.np-embedded-bar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 5px 10px; flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.np-embedded-bar-spacer { flex: 1; }
+
+/* ── Explore in detail link-button (shown after AI response in panel) ── */
+.np-explore-detail-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; margin-top: 2px; padding: 7px 12px;
+  border: 1px solid rgba(99,96,216,0.22); border-radius: 8px;
+  background: rgba(99,96,216,0.04);
+  color: #6360D8; font-size: 11.5px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.np-explore-detail-btn:hover {
+  background: rgba(99,96,216,0.09);
+  border-color: rgba(99,96,216,0.38);
+}
+
 /* ── AI Home view ────────────────────────────────────────────────── */
 .nav-view-home { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
 .ai-content-wrap { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: 48px 24px; background: radial-gradient(ellipse 55% 45% at 25% 60%, rgba(99,96,216,0.09) 0%, transparent 70%), radial-gradient(ellipse 55% 45% at 75% 60%, rgba(99,96,216,0.09) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 50% 60%, rgba(71,173,203,0.11) 0%, transparent 65%), #fff; }
