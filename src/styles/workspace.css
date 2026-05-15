@@ -2,18 +2,18 @@
 .ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
 .ds-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
 .ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
-.ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 14px; font-weight: 500; }
-.ds-btn.t-primary { background: #6360D8; color: #fff; }
-.ds-btn.t-primary:hover { background: #504bb8; }
+.ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500; }
+.ds-btn.t-primary { background: var(--pai-indigo); color: var(--pai-indigo-tint); }
+.ds-btn.t-primary:hover { background: var(--pai-indigo-hover); }
 .ds-btn.t-outline { background: transparent; border: 1px solid var(--ctrl-border, #CFCFCF); color: var(--shell-text-2); }
-.ds-btn.t-outline:hover { border-color: #999; background: var(--shell-hover); }
-.ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: #6360D8; }
+.ds-btn.t-outline:hover { border-color: var(--pai-border-strong); background: var(--shell-hover); }
+.ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: var(--pai-indigo); }
 .ds-btn.t-secondary:hover { background: rgba(99,96,216,0.18); }
 
 /* DS Badge */
-.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 44px; font-size: 11px; font-weight: 600; }
-.ds-badge.success { background: rgba(49,165,109,0.12); color: #16a34a; }
-.ds-badge.neutral { background: #F0F0F0; color: #6E6E6E; }
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ds-badge.success { background: rgba(49,165,109,0.12); color: var(--pai-low-fg); }
+.ds-badge.neutral { background: var(--shell-raised); color: var(--shell-text-muted); }
 
 /* DS Tab */
 .ds-tab { padding: 8px 14px; font-size: 12px; font-weight: 500; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 150ms, border-color 150ms; white-space: nowrap; }

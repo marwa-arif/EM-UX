@@ -16,7 +16,7 @@ const SAVED_ROWS = [
 function AvatarGroup({ count }) {
   const shown = Math.min(count, 3);
   const extra = count > 3 ? count - 3 : 0;
-  const colors = ['#6360D8', '#10b981', '#f97316'];
+  const colors = ['var(--pai-indigo)', '#10b981', '#f97316'];
   const initials = ['AB', 'CD', 'EF'];
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -25,16 +25,16 @@ function AvatarGroup({ count }) {
           width: 24, height: 24, borderRadius: '50%',
           background: colors[i % colors.length],
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, fontWeight: 700, color: '#fff',
-          border: '2px solid #fff', marginLeft: i > 0 ? -6 : 0, zIndex: shown - i,
+          fontSize: 9, fontWeight: 700, color: 'var(--card-bg)',
+          border: '2px solid var(--card-bg)', marginLeft: i > 0 ? -6 : 0, zIndex: shown - i,
         }}>{initials[i]}</div>
       ))}
       {extra > 0 && (
         <div style={{
           width: 24, height: 24, borderRadius: '50%',
-          background: '#e5e7eb', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#6e6e6e',
-          border: '2px solid #fff', marginLeft: -6,
+          background: 'var(--shell-raised)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 9, fontWeight: 700, color: 'var(--shell-text-muted)',
+          border: '2px solid var(--card-bg)', marginLeft: -6,
         }}>+{extra}</div>
       )}
     </div>
@@ -73,26 +73,26 @@ function SavedPage() {
   const pillStyle = (active) => ({
     padding: '4px 12px', borderRadius: 44, fontSize: 12,
     fontWeight: active ? 600 : 400, cursor: 'pointer',
-    border: active ? '1px solid #A2A1F7' : '1px solid var(--ctrl-border)',
-    background: active ? '#6360D8' : 'transparent',
-    color: active ? '#fff' : 'var(--shell-text-muted)',
+    border: active ? '1px solid var(--pai-indigo-light)' : '1px solid var(--ctrl-border)',
+    background: active ? 'var(--pai-indigo)' : 'transparent',
+    color: active ? 'var(--card-bg)' : 'var(--shell-text-muted)',
     transition: 'background 150ms, color 150ms', fontFamily: 'inherit',
   });
 
   const visPillStyle = (active) => ({
     padding: '4px 12px', borderRadius: 44, fontSize: 11,
     fontWeight: active ? 600 : 400, cursor: 'pointer',
-    border: `1px solid ${active ? '#6360D8' : 'var(--shell-border)'}`,
+    border: `1px solid ${active ? 'var(--pai-indigo)' : 'var(--shell-border)'}`,
     background: active ? 'rgba(99,96,216,0.08)' : 'transparent',
-    color: active ? '#6360D8' : 'var(--shell-text-muted)',
+    color: active ? 'var(--pai-indigo)' : 'var(--shell-text-muted)',
     transition: 'all 150ms', fontFamily: 'inherit',
   });
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: 16, background: '#F7F9FC' }}>
+    <div style={{ flex: 1, overflow: 'auto', padding: 16, background: 'var(--ctrl-bg)' }}>
     <div style={{
-      background: '#fff',
-      border: '1px solid #E6E6E6',
+      background: 'var(--card-bg)',
+      border: '1px solid var(--shell-border)',
       borderRadius: 12,
       display: 'flex', flexDirection: 'column',
       minHeight: '100%', overflow: 'hidden',
@@ -118,7 +118,7 @@ function SavedPage() {
           <button style={{
             height: 28, padding: '0 12px', gap: 6,
             background: 'rgba(99,96,216,0.06)', border: '1px solid rgba(99,96,216,0.35)',
-            borderRadius: 44, color: '#6360D8',
+            borderRadius: 44, color: 'var(--pai-indigo)',
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
@@ -128,7 +128,7 @@ function SavedPage() {
           <button onClick={() => onNav('workspace/dashboard/new')} style={{
             height: 28, padding: '0 12px', gap: 6,
             background: 'rgba(99,96,216,0.06)', border: '1px solid rgba(99,96,216,0.35)',
-            borderRadius: 44, color: '#6360D8',
+            borderRadius: 44, color: 'var(--pai-indigo)',
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
@@ -172,12 +172,12 @@ function SavedPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontWeight: 500, color: 'var(--shell-text)' }}>{row.name}</span>
                         {row.isNew && (
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 44, background: 'rgba(99,96,216,0.12)', color: '#6360D8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>New</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 44, background: 'rgba(99,96,216,0.12)', color: 'var(--pai-indigo)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>New</span>
                         )}
                       </div>
                     </td>
                     <td className="ds-td">
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: row.type === 'DASHBOARD' ? 'rgba(99,96,216,0.10)' : 'rgba(249,115,22,0.10)', color: row.type === 'DASHBOARD' ? '#6360D8' : '#f97316', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: row.type === 'DASHBOARD' ? 'rgba(99,96,216,0.10)' : 'rgba(249,115,22,0.10)', color: row.type === 'DASHBOARD' ? 'var(--pai-indigo)' : '#f97316', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {row.type}
                       </span>
                     </td>
@@ -214,7 +214,7 @@ function SavedPage() {
                             <Ic size={14} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />
                           </button>
                         )}
-                        <button className="ds-icon-btn" title="Delete" style={{ color: '#D12329' }} onClick={() => openDeleteModal(row.id, row.name)}>
+                        <button className="ds-icon-btn" title="Delete" style={{ color: 'var(--pai-crit-fg)' }} onClick={() => openDeleteModal(row.id, row.name)}>
                           <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>} />
                         </button>
                       </div>

@@ -9,6 +9,9 @@ body { background: #F7F9FC; color: #101010; }
 
 :root {
   /* Shell tokens */
+  --shell-topbar-bg:          #131313;
+  --shell-topbar-text:        #D1D1D1;
+  --shell-topbar-text-muted:  #9A9A9A;
   --shell-bg:           #F7F9FC;
   --shell-border:       #E6E6E6;
   --shell-text:         #101010;
@@ -59,6 +62,40 @@ body { background: #F7F9FC; color: #101010; }
   --pai-med-bg:        #F0F0FC;
   --pai-low-fg:        #1A7549;
   --pai-low-bg:        #EFF7ED;
+  --pai-green:             #31A56D;
+  --pai-red-high:          #E15252;
+  --pai-crit-bg-hover:     #FFDBDC;
+
+  /* Filter / secondary button tint */
+  --pai-indigo-secondary:    #E0DFF7;
+  --pai-indigo-secondary-fg: #504BB8;
+
+  /* Lighter indigo for chart fills / secondary bars */
+  --pai-indigo-light:        #C8C7F0;
+
+  /* Data Source chart palette */
+  --pai-chart-teal:          #5FCFEB;
+  --pai-chart-purple:        #A382E5;
+
+  /* Teal — positive trend indicator */
+  --pai-teal:                #21929B;
+
+  /* Navigator / AI panel brand gradient tokens */
+  --pai-nav-teal:            #47ADCB;   /* AI heading & icon gradient teal */
+  --pai-nav-teal-2:          #5BBDD4;   /* user bubble gradient teal */
+  --pai-nav-indigo-dark:     #343372;   /* depth slider dark indigo */
+  --pai-nav-quick-2-start:   #3A3880;   /* quick-btn secondary gradient start */
+  --pai-nav-quick-2-end:     #2E8FA3;   /* quick-btn secondary gradient end */
+  --pai-purple:              #8B5CF6;   /* deep-query tier / progress bar accent */
+  --pai-brand-blue:          #467FCD;   /* data-dict category blue */
+
+  /* Semantic tokens added for navigator */
+  --pai-indigo-muted:        #8F8DDE;   /* muted indigo — info badges/callouts */
+  --pai-warn-bg:             #F7F6EB;   /* warning callout background */
+  --pai-caution-fg:          #CDB900;   /* caution badge foreground */
+  --pai-thinking-amber:      #F5A623;   /* AI thinking dot amber */
+  --pai-toast-warn-bg:       #FFF8E8;   /* copy-friction toast background */
+  --pai-toast-warn-fg:       #956010;   /* copy-friction toast text */
 }
 
 button { font-family: inherit; }

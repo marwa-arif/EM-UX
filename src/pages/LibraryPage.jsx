@@ -6,7 +6,7 @@ import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/W
 function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted }) {
   const [hovered, setHovered] = useState(false);
   const isReport = iconType === 'report';
-  const baseBorder = highlighted ? '#A2A1F7' : 'var(--card-border)';
+  const baseBorder = highlighted ? 'var(--pai-indigo-light)' : 'var(--card-border)';
   return (
     <div
       style={{
@@ -23,7 +23,7 @@ function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted })
     >
       <div style={{
         width: 36, height: 36,
-        background: isReport ? 'rgba(217,139,29,0.10)' : '#ECF8FD',
+        background: isReport ? 'rgba(217,139,29,0.10)' : 'var(--pai-indigo-tint)',
         borderRadius: 6,
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
@@ -62,7 +62,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 8,
-          background: isReport ? 'rgba(217,139,29,0.10)' : '#ECF8FD',
+          background: isReport ? 'rgba(217,139,29,0.10)' : 'var(--pai-indigo-tint)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           {isReport
@@ -82,8 +82,8 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
       }}>
         <span style={{
           fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 44,
-          background: isReport ? 'rgba(217,139,29,0.12)' : '#ECF8FD',
-          color: isReport ? '#D98B1D' : '#286B88',
+          background: isReport ? 'rgba(217,139,29,0.12)' : 'var(--pai-indigo-tint)',
+          color: isReport ? 'var(--pai-high-fg)' : 'var(--pai-teal)',
           letterSpacing: '0.05em', textTransform: 'uppercase',
         }}>{tag}</span>
         <button className="ds-btn sz-sm t-outline" onClick={action}>{actionLabel}</button>
@@ -94,7 +94,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
 
 // Inline workspace icon so stroke colour can be controlled
 const DashboardIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="#286B88" strokeLinecap="round">
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="var(--pai-teal)" strokeLinecap="round">
     <path d="M2.49854 5.79059V3.48059C2.49854 3.20445 2.72239 2.98059 2.99854 2.98059H5.30615C5.58229 2.98059 5.80615 3.20445 5.80615 3.48059V5.79059C5.80615 6.06673 5.58229 6.29059 5.30615 6.29059H2.99854C2.72239 6.29059 2.49854 6.06673 2.49854 5.79059Z"/>
     <path d="M10.1938 11.0584V8.74841C10.1938 8.47227 10.4177 8.24841 10.6938 8.24841H13.0015C13.2776 8.24841 13.5015 8.47227 13.5015 8.74841V11.0584C13.5015 11.3346 13.2776 11.5584 13.0015 11.5584H10.6938C10.4177 11.5584 10.1938 11.3346 10.1938 11.0584Z"/>
     <path d="M7.78076 5.79059V3.48059C7.78076 3.20445 8.00462 2.98059 8.28076 2.98059H13.0015C13.2776 2.98059 13.5015 3.20445 13.5015 3.48059V5.79059C13.5015 6.06673 13.2776 6.29059 13.0015 6.29059H8.28076C8.00462 6.29059 7.78076 6.06673 7.78076 5.79059Z"/>
@@ -103,7 +103,7 @@ const DashboardIcon = ({ size = 16 }) => (
 );
 
 const ZapIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#101010" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-fg1)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
   </svg>
 );
@@ -126,8 +126,8 @@ function SortOption({ label, selected, onClick }) {
         display: 'block', width: '100%', textAlign: 'left',
         padding: '10px 16px', border: 'none', cursor: 'pointer',
         fontSize: 13, fontFamily: 'inherit',
-        background: selected ? '#6360D8' : hovered ? '#F5F4FF' : 'transparent',
-        color: selected ? '#fff' : hovered ? '#6360D8' : 'var(--shell-text)',
+        background: selected ? 'var(--pai-indigo)' : hovered ? 'var(--pai-indigo-tint)' : 'transparent',
+        color: selected ? 'var(--card-bg)' : hovered ? 'var(--pai-indigo)' : 'var(--shell-text)',
         transition: 'background 100ms, color 100ms',
       }}
     >
@@ -182,17 +182,17 @@ function LibraryPage() {
   const pillStyle = (active) => ({
     padding: '4px 14px', borderRadius: 44, fontSize: 12,
     fontWeight: active ? 600 : 400, cursor: 'pointer',
-    border: active ? '1px solid #A2A1F7' : '1px solid var(--ctrl-border)',
-    background: active ? '#6360D8' : 'transparent',
-    color: active ? '#fff' : 'var(--shell-text-muted)',
+    border: active ? '1px solid var(--pai-indigo-light)' : '1px solid var(--ctrl-border)',
+    background: active ? 'var(--pai-indigo)' : 'transparent',
+    color: active ? 'var(--card-bg)' : 'var(--shell-text-muted)',
     transition: 'background 150ms, color 150ms', fontFamily: 'inherit',
   });
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: 16, background: '#F7F9FC' }}>
+    <div style={{ flex: 1, overflow: 'auto', padding: 16, background: 'var(--ctrl-bg)' }}>
     <div style={{
-      background: '#fff',
-      border: '1px solid #E6E6E6',
+      background: 'var(--card-bg)',
+      border: '1px solid var(--shell-border)',
       borderRadius: 12,
       display: 'flex', flexDirection: 'column',
       minHeight: '100%', overflow: 'hidden',
@@ -218,7 +218,7 @@ function LibraryPage() {
           <button style={{
             height: 28, padding: '0 12px', gap: 6,
             background: 'rgba(99,96,216,0.06)', border: '1px solid rgba(99,96,216,0.35)',
-            borderRadius: 44, color: '#6360D8',
+            borderRadius: 44, color: 'var(--pai-indigo)',
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
@@ -228,7 +228,7 @@ function LibraryPage() {
           <button onClick={() => onNav('workspace/dashboard/new')} style={{
             height: 28, padding: '0 12px', gap: 6,
             background: 'rgba(99,96,216,0.06)', border: '1px solid rgba(99,96,216,0.35)',
-            borderRadius: 44, color: '#6360D8',
+            borderRadius: 44, color: 'var(--pai-indigo)',
             fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center',
           }}>
@@ -273,7 +273,7 @@ function LibraryPage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   height: 28, padding: '0 14px',
-                  background: '#fff', border: '1px solid #E6E6E6',
+                  background: 'var(--card-bg)', border: '1px solid var(--shell-border)',
                   borderRadius: 44, cursor: 'pointer',
                   fontSize: 12, fontWeight: 400, fontFamily: 'inherit', color: 'var(--shell-text-muted)',
                 }}
@@ -281,12 +281,12 @@ function LibraryPage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 6h18M7 12h10M11 18h2"/>
                 </svg>
-                Sort by :&nbsp;<span style={{ fontWeight: 500, color: '#6360D8' }}>{sortLabel}</span>
+                Sort by :&nbsp;<span style={{ fontWeight: 500, color: 'var(--pai-indigo)' }}>{sortLabel}</span>
               </button>
               {sortOpen && (
                 <div style={{
                   position: 'absolute', right: 0, top: 'calc(100% + 6px)',
-                  background: '#fff', border: '1px solid #E6E6E6',
+                  background: 'var(--card-bg)', border: '1px solid var(--shell-border)',
                   borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
                   minWidth: 180, zIndex: 100, overflow: 'hidden', padding: '4px 0',
                 }}>

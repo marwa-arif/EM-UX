@@ -15,7 +15,7 @@
 .pai-btn--primary:hover { background: var(--pai-indigo-hover); }
 
 .pai-btn--secondary { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
-.pai-btn--secondary:hover { background: #E0DFF7; }
+.pai-btn--secondary:hover { background: var(--pai-indigo-secondary); }
 
 .pai-btn--outline { background: transparent; border: 1px solid var(--pai-border-strong); color: var(--pai-fg2); }
 .pai-btn--outline:hover { border-color: #404040; background: var(--shell-hover); }
@@ -24,7 +24,7 @@
 .pai-btn--tertiary:hover { background: var(--pai-bg-raised); }
 
 .pai-btn--danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
-.pai-btn--danger:hover { background: #FFDBDC; }
+.pai-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 
 /* ── IconBtn ──────────────────────────────────────────────────────── */
 .pai-icon-btn {
@@ -72,7 +72,7 @@
   background: transparent; color: var(--pai-fg3);
 }
 .pai-dual-toggle__btn--active {
-  background: #fff; color: var(--pai-indigo);
+  background: var(--card-bg); color: var(--pai-indigo);
   box-shadow: 0 1px 2px rgba(16,16,16,0.08);
 }
 
@@ -98,7 +98,7 @@
 /* ── Input ────────────────────────────────────────────────────────── */
 .pai-input-wrap {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 0 12px; background: #fff;
+  padding: 0 12px; background: var(--card-bg);
   border: 1px solid var(--pai-border);
   border-radius: 8px;
   transition: all 150ms cubic-bezier(.2,.8,.2,1);

@@ -25,7 +25,7 @@ export default function WorkspacePage({ onNav }) {
         display: 'flex', flexDirection: 'column',
         height: '100vh', overflow: 'hidden',
         fontFamily: "'Inter', system-ui",
-        color: '#101010', background: 'var(--shell-bg, #F7F9FC)',
+        color: 'var(--pai-fg1)', background: 'var(--shell-bg)',
       }}>
         <Topbar />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -39,7 +39,7 @@ export default function WorkspacePage({ onNav }) {
             flex: 1, minWidth: 0,
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
-            background: '#F7F9FC',
+            background: 'var(--ctrl-bg)',
           }}>
             <SubHeader
               title={current.startsWith('workspace/dashboard') ? 'New Dashboard' : 'Workspace'}

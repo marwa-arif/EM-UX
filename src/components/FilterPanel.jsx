@@ -74,7 +74,7 @@ function FPSubTooltip({ sub, children }) {
       {show && (
         <span style={{
           position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%',
-          transform: 'translateX(-50%)', background: '#1D1D1D', color: '#fff',
+          transform: 'translateX(-50%)', background: 'var(--pai-fg1)', color: 'var(--card-bg)',
           fontSize: 11, fontWeight: 400, padding: '4px 8px', borderRadius: 4,
           whiteSpace: 'nowrap', zIndex: 200, pointerEvents: 'none',
           boxShadow: '0 2px 8px rgba(0,0,0,0.18)', lineHeight: 1.4,
@@ -84,7 +84,7 @@ function FPSubTooltip({ sub, children }) {
             position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
             width: 0, height: 0,
             borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
-            borderTop: '4px solid #1D1D1D',
+            borderTop: '4px solid var(--pai-fg1)',
           }} />
         </span>
       )}
@@ -96,19 +96,19 @@ function FPCheckbox({ checked, indeterminate, onChange }) {
   return (
     <div onClick={onChange} style={{
       width: 14, height: 14, borderRadius: 3, cursor: 'pointer', flexShrink: 0,
-      border: (checked || indeterminate) ? 'none' : '1.5px solid #E6E6E6',
-      background: (checked || indeterminate) ? '#6360D8' : '#fff',
+      border: (checked || indeterminate) ? 'none' : '1.5px solid var(--shell-border)',
+      background: (checked || indeterminate) ? 'var(--pai-indigo)' : 'var(--card-bg)',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       boxSizing: 'border-box', transition: 'background 100ms',
     }}>
       {checked && (
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 5l2.5 2.5L8 3" stroke="var(--pai-surface)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
       {!checked && indeterminate && (
         <svg width="8" height="2" viewBox="0 0 8 2" fill="none">
-          <path d="M0.5 1h7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M0.5 1h7" stroke="var(--pai-surface)" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       )}
     </div>
@@ -116,20 +116,20 @@ function FPCheckbox({ checked, indeterminate, onChange }) {
 }
 
 function FPSavedCard({ item, selected, applied, onSelect }) {
-  const dot = <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#CFCFCF', flexShrink: 0 }} />;
+  const dot = <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: 'var(--pai-border-strong)', flexShrink: 0 }} />;
   return (
     <div onClick={onSelect} style={{
-      background: '#fff', border: `1px solid ${selected ? PAI.indigo : PAI.borderStrong}`,
+      background: 'var(--card-bg)', border: `1px solid ${selected ? PAI.indigo : PAI.borderStrong}`,
       borderRadius: 8, padding: 12, cursor: 'pointer',
     }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 14, fontWeight: 500, color: '#101010' }}>{item.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--pai-fg1)' }}>{item.name}</span>
               {applied && (
                 <span style={{
-                  background: '#EEF0FB', border: `1px solid ${PAI.indigo}`, borderRadius: 44,
+                  background: 'var(--pai-indigo-tint)', border: `1px solid ${PAI.indigo}`, borderRadius: 44,
                   padding: '1px 8px', fontSize: 12, fontWeight: 500, color: PAI.indigo,
                   flexShrink: 0, lineHeight: '17px',
                 }}>Applied</span>
@@ -156,7 +156,7 @@ function FPSavedCard({ item, selected, applied, onSelect }) {
 function FPStepper({ value, onChange, min = 1, max = 20 }) {
   return (
     <div style={{
-      background: '#F5F5F5', border: '1px solid #D8D9DD', borderRadius: 8,
+      background: 'var(--shell-raised)', border: '1px solid var(--pai-border-strong)', borderRadius: 8,
       height: 32, display: 'inline-flex', alignItems: 'center',
       padding: '0 4px', gap: 2, width: 64, boxSizing: 'border-box',
     }}>
@@ -195,8 +195,8 @@ function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
       }}
     >
       <div style={{
-        background: '#fff', border: '1px solid #D0D3D9', borderRadius: 44,
-        padding: '2px 10px', fontSize: 11, fontWeight: 600, color: '#101010',
+        background: 'var(--card-bg)', border: '1px solid var(--pai-border-strong)', borderRadius: 44,
+        padding: '2px 10px', fontSize: 11, fontWeight: 600, color: 'var(--pai-fg1)',
         whiteSpace: 'nowrap', boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       }}>
         {entity.count.toLocaleString()}
@@ -211,7 +211,7 @@ function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
       }}>
         <img src={`/assets/icons/${entity.file}`} width={26} height={26} alt="" style={{ display: 'block' }} />
       </div>
-      <span style={{ fontSize: 12, fontWeight: 500, color: selected ? entity.color : '#1D1D1D', transition: 'color 150ms' }}>
+      <span style={{ fontSize: 12, fontWeight: 500, color: selected ? entity.color : 'var(--pai-fg1)', transition: 'color 150ms' }}>
         {entity.label}
       </span>
     </div>
@@ -249,7 +249,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 
   const canvasBtnStyle = {
     width: 32, height: 32, padding: 0,
-    background: '#fff', border: '1px solid #E6E6E6', borderRadius: 8,
+    background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8,
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: PAI.fg2, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
   };
@@ -275,8 +275,8 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
         style={{
           position: 'fixed', top: top, right: 0, bottom: 0,
           width: '75vw',
-          background: '#fff',
-          borderLeft: '1px solid #E6E6E6',
+          background: 'var(--card-bg)',
+          borderLeft: '1px solid var(--shell-border)',
           boxShadow: '-8px 0 32px rgba(0,0,0,0.1)',
           zIndex: 999,
           transform: open ? 'translateX(0)' : 'translateX(100%)',
@@ -288,11 +288,11 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 20px', flexShrink: 0, borderBottom: '1px solid #EFEFEF',
+          padding: '12px 20px', flexShrink: 0, borderBottom: '1px solid var(--shell-border)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/assets/icons/navbar-kg.svg" width={18} height={18} alt="" style={{ opacity: 0.7 }} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#1D1D1D' }}>Graph Filter</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--pai-fg1)' }}>Graph Filter</span>
           </div>
           <button onClick={onClose} style={{
             width: 28, height: 28, padding: 0, background: 'none',
@@ -309,7 +309,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
         <div style={{
           flex: 1, position: 'relative', overflow: 'hidden',
           backgroundImage: 'radial-gradient(circle, #CDD1D9 1.2px, transparent 1.2px)',
-          backgroundSize: '22px 22px', backgroundColor: '#F5F6F8',
+          backgroundSize: '22px 22px', backgroundColor: 'var(--ctrl-bg)',
         }}>
           {/* Zoom controls */}
           <div style={{ position: 'absolute', top: 12, left: 16, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 5 }}>
@@ -326,7 +326,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
           <button style={{
             position: 'absolute', top: 12, right: 16, zIndex: 5,
             height: 32, padding: '0 14px',
-            background: '#fff', border: '1px solid #E6E6E6', borderRadius: 44,
+            background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 44,
             display: 'flex', alignItems: 'center', gap: 6,
             cursor: 'pointer', fontSize: 13, fontWeight: 500, color: PAI.fg2,
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)', fontFamily: 'inherit',
@@ -373,7 +373,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
               onClick={e => e.stopPropagation()}
               style={{
                 position: 'fixed', top: gfContextMenu.y, left: gfContextMenu.x,
-                background: '#fff', border: '1px solid #E6E6E6', borderRadius: 8,
+                background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8,
                 boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 1100, minWidth: 180, overflow: 'hidden',
               }}
             >
@@ -386,7 +386,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                   display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                   fontSize: 13, color: PAI.fg1, fontFamily: 'inherit', textAlign: 'left',
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#F5F5F7'}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--shell-raised)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
                   <span style={{ color: PAI.fg3 }}>{item.icon}</span>{item.label}
@@ -401,7 +401,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
               onClick={e => e.stopPropagation()}
               style={{
                 position: 'absolute', bottom: 56, left: 16,
-                background: '#fff', border: '1px solid #E6E6E6', borderRadius: 10,
+                background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 10,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 20,
                 width: 220, maxHeight: 280, overflowY: 'auto',
               }}
@@ -409,7 +409,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
               <div style={{ padding: '10px 12px 6px', fontSize: 11, fontWeight: 600, color: PAI.fg3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Entity Types</div>
               {GF_ENTITIES.map(entity => (
                 <label key={entity.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: PAI.fg1 }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#F5F5F7'}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--shell-raised)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
                   <FPCheckbox checked={gfShownIds.includes(entity.id)} onChange={() => toggleGFShown(entity.id)} />
@@ -424,14 +424,14 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
         </div>
 
         {/* Toolbar */}
-        <div style={{ flexShrink: 0, borderTop: '1px solid #EFEFEF', background: '#fff' }}>
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--shell-border)', background: 'var(--card-bg)' }}>
           <div style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <button
               onClick={e => { e.stopPropagation(); setGfAddHideOpen(v => !v); }}
               style={{
                 height: 32, padding: '0 12px', flexShrink: 0,
-                background: gfAddHideOpen ? '#EEEEFB' : '#fff',
-                border: `1px solid ${gfAddHideOpen ? PAI.indigo : '#D0D3D9'}`, borderRadius: 6,
+                background: gfAddHideOpen ? 'var(--pai-indigo-tint)' : 'var(--card-bg)',
+                border: `1px solid ${gfAddHideOpen ? PAI.indigo :  'var(--pai-border-strong)'}`, borderRadius: 6,
                 display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
                 fontSize: 13, fontWeight: 500, color: gfAddHideOpen ? PAI.indigo : PAI.fg1, fontFamily: 'inherit',
               }}
@@ -444,7 +444,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
               Add / Hide Entity
             </button>
 
-            <span style={{ flex: 1, fontSize: 12, color: '#C07B1A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ flex: 1, fontSize: 12, color: 'var(--pai-high-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
               </svg>
@@ -453,9 +453,9 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 
             <button onClick={handleClearAll} style={{
               height: 32, padding: '0 12px', flexShrink: 0,
-              background: '#fff', border: '1px solid #E15252', borderRadius: 44,
+              background: 'var(--card-bg)', border: '1px solid var(--pai-red-high)', borderRadius: 44,
               display: 'flex', alignItems: 'center', gap: 6,
-              cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#E15252', fontFamily: 'inherit',
+              cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--pai-red-high)', fontFamily: 'inherit',
             }}>
               Clear All
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -465,7 +465,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 
             <button onClick={handleApply} style={{
               height: 32, padding: '0 14px', flexShrink: 0,
-              background: '#fff', border: `1px solid ${PAI.borderStrong}`, borderRadius: 44,
+              background: 'var(--card-bg)', border: `1px solid ${PAI.borderStrong}`, borderRadius: 44,
               display: 'flex', alignItems: 'center', gap: 6,
               cursor: 'pointer', fontSize: 13, fontWeight: 500, color: PAI.fg1, fontFamily: 'inherit',
             }}>
@@ -477,7 +477,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
           </div>
 
           {/* Preview */}
-          <div style={{ borderTop: '1px solid #F0F0F0', padding: '7px 20px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minHeight: 42 }}>
+          <div style={{ borderTop: '1px solid var(--shell-border)', padding: '7px 20px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minHeight: 42 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: PAI.fg3, flexShrink: 0 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -596,10 +596,10 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
     cursor: 'pointer', fontFamily: 'inherit',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
     ...(variant === 'primary'
-      ? { background: '#6360D8', border: 'none', color: '#fff' }
+      ? { background: 'var(--pai-indigo)', border: 'none', color: 'var(--card-bg)' }
       : variant === 'danger'
-      ? { background: '#fff', border: '1px solid #E15252', color: '#E15252' }
-      : { background: '#fff', border: `1px solid ${PAI.borderStrong}`, color: PAI.fg1 }),
+      ? { background: 'var(--card-bg)', border: '1px solid var(--pai-red-high)', color: 'var(--pai-red-high)' }
+      : { background: 'var(--card-bg)', border: `1px solid ${PAI.borderStrong}`, color: PAI.fg1 }),
   });
 
   return (
@@ -611,16 +611,16 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
       `}</style>
 
       {/* Header — hidden when embedded in RightPanelShell */}
-      {!embedded && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #EFEFEF', flexShrink: 0 }}>
+      {!embedded && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--shell-border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={onClose} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, flexShrink: 0 }}>
             <img src="/assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
           </button>
-          <span style={{ fontSize: 16, fontWeight: 500, color: '#1D1D1D' }}>Filter</span>
+          <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--pai-fg1)' }}>Filter</span>
         </div>
         <button onClick={settingsView ? () => exitSettings(false) : enterSettings} style={{
           width: 27, height: 27, padding: 0,
-          background: settingsView ? '#EEEEFB' : 'none',
+          background: settingsView ? 'var(--pai-indigo-tint)' : 'none',
           border: `1px solid ${settingsView ? PAI.indigo : PAI.borderStrong}`,
           borderRadius: '50%', cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -657,7 +657,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
           <div style={{ padding: '12px 16px 0' }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <button onClick={sortAttrsAZ} style={{
-                height: 34, padding: '0 14px', background: '#F5F5F5', border: `1px solid ${PAI.borderStrong}`,
+                height: 34, padding: '0 14px', background: 'var(--shell-raised)', border: `1px solid ${PAI.borderStrong}`,
                 borderRadius: 44, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
                 fontSize: 12, fontWeight: 500, color: PAI.fg2, fontFamily: 'inherit',
               }}>
@@ -665,7 +665,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                 Sort A–Z
               </button>
               <button onClick={onOpenGraphFilter} style={{
-                flex: 1, height: 34, background: '#F3F2FC', border: `1.5px solid ${PAI.indigo}`,
+                flex: 1, height: 34, background: 'var(--pai-indigo-tint)', border: `1.5px solid ${PAI.indigo}`,
                 borderRadius: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 fontSize: 12, fontWeight: 500, color: PAI.indigo, fontFamily: 'inherit',
               }}>
@@ -679,8 +679,8 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               const isOver = qdragOver === i && qdragIdx !== i;
               return (
                 <div key={attr.id} onDragOver={(e) => onQDragOver(e, i)} onDrop={(e) => onQDrop(e, i)} style={{ borderTop: isOver ? `2px solid ${PAI.indigo}` : '2px solid transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', borderBottom: '1px solid #F5F5F5', opacity: isDragging ? 0.4 : 1, transition: 'opacity 120ms' }}>
-                    <span draggable onDragStart={() => onQDragStart(i)} onDragEnd={onQDragEnd} style={{ color: '#C8C8C8', cursor: 'grab', flexShrink: 0, display: 'flex' }}><FPDragHandle /></span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', borderBottom: '1px solid var(--shell-border)', opacity: isDragging ? 0.4 : 1, transition: 'opacity 120ms' }}>
+                    <span draggable onDragStart={() => onQDragStart(i)} onDragEnd={onQDragEnd} style={{ color: 'var(--shell-text-faint)', cursor: 'grab', flexShrink: 0, display: 'flex' }}><FPDragHandle /></span>
                     <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: PAI.fg1, minWidth: 0 }}>
                       {attr.label}{attr.sub && <span style={{ color: PAI.fg3 }}> · {attr.sub}</span>}
                     </span>
@@ -696,8 +696,8 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                     <div style={{ paddingBottom: 12 }}>
                       <input autoFocus value={editingLabel} onChange={e => setEditingLabel(e.target.value)} style={{ width: '100%', height: 32, boxSizing: 'border-box', padding: '0 10px', border: `1.5px solid ${PAI.indigo}`, borderRadius: 6, fontSize: 12, color: PAI.fg1, fontFamily: 'inherit', outline: 'none', marginTop: 8 }} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button onClick={() => setEditingId(null)} style={{ height: 28, padding: '0 14px', background: '#fff', border: `1px solid ${PAI.borderStrong}`, borderRadius: 44, fontSize: 12, fontWeight: 500, color: PAI.fg1, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-                        <button onClick={applyEdit} style={{ height: 28, padding: '0 14px', background: PAI.indigo, border: 'none', borderRadius: 44, fontSize: 12, fontWeight: 500, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Apply</button>
+                        <button onClick={() => setEditingId(null)} style={{ height: 28, padding: '0 14px', background: 'var(--card-bg)', border: `1px solid ${PAI.borderStrong}`, borderRadius: 44, fontSize: 12, fontWeight: 500, color: PAI.fg1, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                        <button onClick={applyEdit} style={{ height: 28, padding: '0 14px', background: PAI.indigo, border: 'none', borderRadius: 44, fontSize: 12, fontWeight: 500, color: 'var(--card-bg)', cursor: 'pointer', fontFamily: 'inherit' }}>Apply</button>
                       </div>
                     </div>
                   )}
@@ -711,7 +711,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
         {settingsView && tab === 'saved' && (
           <div style={{ padding: '12px 16px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#101010', whiteSpace: 'nowrap' }}>Recent Filters</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--pai-fg1)', whiteSpace: 'nowrap' }}>Recent Filters</span>
               <div style={{ flex: 1, height: 1, background: PAI.borderStrong }} />
               <FPStepper value={liveSaved.count} onChange={(v) => setPendingSaved({ ...liveSaved, count: v })} />
             </div>
@@ -721,19 +721,19 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               return (
                 <div key={item.id} onDragOver={(e) => onSDragOver(e, i)} onDrop={(e) => onSDrop(e, i)} style={{ borderTop: isOver ? `2px solid ${PAI.indigo}` : '2px solid transparent', marginBottom: 8 }}>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: isDragging ? 0.4 : 1, transition: 'opacity 120ms' }}>
-                    <span draggable onDragStart={() => onSDragStart(i)} onDragEnd={onSDragEnd} style={{ color: '#C8C8C8', cursor: 'grab', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}><FPDragHandle /></span>
-                    <div style={{ flex: 1, minWidth: 0, background: '#fff', border: `1px solid ${PAI.borderStrong}`, borderRadius: 8, padding: 12 }}>
+                    <span draggable onDragStart={() => onSDragStart(i)} onDragEnd={onSDragEnd} style={{ color: 'var(--shell-text-faint)', cursor: 'grab', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}><FPDragHandle /></span>
+                    <div style={{ flex: 1, minWidth: 0, background: 'var(--card-bg)', border: `1px solid ${PAI.borderStrong}`, borderRadius: 8, padding: 12 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <span style={{ fontSize: 14, fontWeight: 500, color: '#101010' }}>{item.name}</span>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--pai-fg1)' }}>{item.name}</span>
                             <span style={{ fontSize: 12, color: PAI.fg3, lineHeight: 1.4 }}>{item.desc}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: 12, color: PAI.fg3 }}>{item.author}</span>
-                            <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#CFCFCF' }} />
+                            <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: 'var(--pai-border-strong)' }} />
                             <span style={{ fontSize: 12, color: PAI.fg3 }}>{item.visibility}</span>
-                            <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#CFCFCF' }} />
+                            <span style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: 'var(--pai-border-strong)' }} />
                             <span style={{ fontSize: 12, color: PAI.fg3 }}>{item.count} filters</span>
                           </div>
                         </div>
@@ -754,14 +754,14 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               <div style={{ flex: 1, minWidth: 0 }}>
                 <DSPillSearch value={savedSearch} onChange={setSavedSearch} placeholder="Search Saved Filters" width="100%" />
               </div>
-              <button style={{ height: 32, padding: '0 12px', flexShrink: 0, background: 'rgba(99,96,216,0.1)', border: '1px solid #A2A1F7', borderRadius: 68, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: PAI.indigo, fontFamily: 'inherit' }}>
+              <button style={{ height: 32, padding: '0 12px', flexShrink: 0, background: 'rgba(99,96,216,0.1)', border: '1px solid var(--pai-indigo-light)', borderRadius: 68, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: PAI.indigo, fontFamily: 'inherit' }}>
                 View all
                 <img src="/assets/icons/explore.svg" width={16} height={16} alt="" />
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#101010', whiteSpace: 'nowrap' }}>Recent Filters</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--pai-fg1)', whiteSpace: 'nowrap' }}>Recent Filters</span>
                 <div style={{ flex: 1, height: 1, background: PAI.borderStrong }} />
               </div>
               {filteredSaved.map(item => (
@@ -791,13 +791,13 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               const allChk  = attr.options.length > 0 && attr.options.every(o => sel.has(o));
               const someChk = attr.options.some(o => sel.has(o)) && !allChk;
               return (
-                <div key={attr.id} style={{ borderBottom: '1px solid #F5F5F5' }}>
+                <div key={attr.id} style={{ borderBottom: '1px solid var(--shell-border)' }}>
                   <button onClick={() => toggleExpanded(attr.id)} style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                     <span style={{ color: PAI.fg3, flexShrink: 0, display: 'flex' }}><FPAttrIcon icon={attr.icon} size={16} /></span>
                     <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: PAI.fg1, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {attr.label}
                       {attr.sub && <FPSubTooltip sub={attr.sub}><span style={{ color: PAI.fg3, fontWeight: 400 }}> · {attr.sub}</span></FPSubTooltip>}
-                      {sel.size > 0 && <span style={{ background: '#E6E6E6', color: '#6E6E6E', borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{sel.size}</span>}
+                      {sel.size > 0 && <span style={{ background: 'var(--shell-border)', color: 'var(--shell-text-muted)', borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{sel.size}</span>}
                     </span>
                     <span style={{ color: PAI.fg3, flexShrink: 0, display: 'inline-flex', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms' }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -825,7 +825,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                         </label>
                       ))}
                       {allOpts.length > SHOW_LIMIT && (
-                        <button onClick={() => setShowAll(p => ({ ...p, [attr.id]: !p[attr.id] }))} style={{ background: 'none', border: 'none', padding: '4px 0', fontSize: 12, fontWeight: 500, color: '#101010', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
+                        <button onClick={() => setShowAll(p => ({ ...p, [attr.id]: !p[attr.id] }))} style={{ background: 'none', border: 'none', padding: '4px 0', fontSize: 12, fontWeight: 500, color: 'var(--pai-fg1)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
                           {showAll[attr.id] ? 'Show Less' : 'Show All'}
                         </button>
                       )}
@@ -839,7 +839,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
       </div>
 
       {/* Footer */}
-      <div style={{ flexShrink: 0, padding: '12px 16px', borderTop: '1px solid #EFEFEF', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ flexShrink: 0, padding: '12px 16px', borderTop: '1px solid var(--shell-border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {settingsView ? (
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => exitSettings(false)} style={footerBtn('outline')}>

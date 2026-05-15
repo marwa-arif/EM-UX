@@ -11,6 +11,7 @@ import NavigatorPage from './pages/NavigatorPage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
+import DiscoverDevicePage from './pages/DiscoverDevicePage.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -56,18 +57,18 @@ function ComingSoon() {
     <div className="coming-soon">
       <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="64" cy="64" r="60" fill="#EEEEFF" />
-        <circle cx="64" cy="64" r="40" stroke="#C8C7F0" strokeWidth="2" fill="white" />
-        <circle cx="64" cy="64" r="32" stroke="#6360D8" strokeWidth="2.5" fill="none" />
-        <path d="M64 42 L64 64 L78 73" stroke="#6360D8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="64" cy="64" r="3" fill="#6360D8" />
-        <circle cx="64" cy="34" r="2" fill="#6360D8" />
-        <circle cx="64" cy="94" r="2" fill="#6360D8" />
-        <circle cx="34" cy="64" r="2" fill="#6360D8" />
-        <circle cx="94" cy="64" r="2" fill="#6360D8" />
-        <circle cx="22" cy="34" r="6" fill="#6360D8" opacity="0.12" />
-        <circle cx="106" cy="95" r="8" fill="#6360D8" opacity="0.08" />
-        <circle cx="100" cy="22" r="4" fill="#6360D8" opacity="0.16" />
-        <circle cx="18" cy="88" r="5" fill="#6360D8" opacity="0.1" />
+        <circle cx="64" cy="64" r="40" stroke="var(--pai-indigo-light)" strokeWidth="2" fill="var(--card-bg)" />
+        <circle cx="64" cy="64" r="32" stroke="var(--pai-indigo)" strokeWidth="2.5" fill="none" />
+        <path d="M64 42 L64 64 L78 73" stroke="var(--pai-indigo)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="64" cy="64" r="3" fill="var(--pai-indigo)" />
+        <circle cx="64" cy="34" r="2" fill="var(--pai-indigo)" />
+        <circle cx="64" cy="94" r="2" fill="var(--pai-indigo)" />
+        <circle cx="34" cy="64" r="2" fill="var(--pai-indigo)" />
+        <circle cx="94" cy="64" r="2" fill="var(--pai-indigo)" />
+        <circle cx="22" cy="34" r="6" fill="var(--pai-indigo)" opacity="0.12" />
+        <circle cx="106" cy="95" r="8" fill="var(--pai-indigo)" opacity="0.08" />
+        <circle cx="100" cy="22" r="4" fill="var(--pai-indigo)" opacity="0.16" />
+        <circle cx="18" cy="88" r="5" fill="var(--pai-indigo)" opacity="0.1" />
       </svg>
       <div className="coming-soon__text">
         <div className="coming-soon__title">Coming Soon</div>
@@ -167,14 +168,14 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
   };
   const selStyle = {
     fontSize: 11, padding: '4px 6px', borderRadius: 4,
-    border: '1px solid #E6E6E6', background: '#fff', color: '#101010',
+    border: '1px solid var(--shell-border)', background: 'var(--card-bg)', color: 'var(--pai-fg1)',
     fontFamily: 'inherit',
     minWidth: 0,
   };
   const inputStyle = { ...selStyle };
   const xBtnStyle = {
-    width: 22, height: 22, borderRadius: 4, border: '1px solid #E6E6E6',
-    background: '#fff', color: '#6E6E6E', cursor: 'pointer',
+    width: 22, height: 22, borderRadius: 4, border: '1px solid var(--shell-border)',
+    background: 'var(--card-bg)', color: 'var(--shell-text-muted)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     fontSize: 14, lineHeight: 1, padding: 0,
   };
@@ -192,9 +193,9 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
           style={{
             flex: 1, padding: '6px 10px',
             borderRadius: 6, border: '1px solid',
-            borderColor: savedFlash ? '#4FAE5E' : (dirty ? '#6360D8' : 'rgba(0,0,0,.1)'),
-            background: savedFlash ? '#E7F4E9' : (dirty ? '#6360D8' : 'rgba(0,0,0,.04)'),
-            color: savedFlash ? '#2F7A3D' : (dirty ? '#fff' : '#8A8A8A'),
+            borderColor: savedFlash ? 'var(--pai-green)' : (dirty ? 'var(--pai-indigo)' : 'rgba(0,0,0,.1)'),
+            background: savedFlash ? 'var(--pai-low-bg)' : (dirty ? 'var(--pai-indigo)' : 'rgba(0,0,0,.04)'),
+            color: savedFlash ? 'var(--pai-low-fg)' : (dirty ? 'var(--pai-surface)' : 'var(--shell-text-muted)'),
             fontSize: 11, fontWeight: 500,
             cursor: (dirty || savedFlash) ? 'pointer' : 'default',
             fontFamily: 'inherit',
@@ -210,7 +211,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
             padding: '6px 10px',
             borderRadius: 6, border: '1px solid rgba(0,0,0,.1)',
             background: 'transparent',
-            color: dirty ? '#6E6E6E' : 'rgba(0,0,0,.25)',
+            color: dirty ? 'var(--shell-text-muted)' : 'rgba(0,0,0,.25)',
             fontSize: 11,
             cursor: dirty ? 'pointer' : 'default',
             fontFamily: 'inherit',
@@ -220,7 +221,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
         </button>
       </div>
 
-      <div style={{ ...rowStyle, fontSize: 9, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.04em', paddingBottom: 4, borderBottom: '1px solid #F0F0F0', marginBottom: 6 }}>
+      <div style={{ ...rowStyle, fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', paddingBottom: 4, borderBottom: '1px solid var(--shell-border)', marginBottom: 6 }}>
         <div>Source</div><div>Target</div><div>Label</div><div></div>
       </div>
 
@@ -238,18 +239,18 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
                    onChange={(ev) => updateEdge(i, 'label', ev.target.value)} />
             <button style={xBtnStyle} title="Remove edge"
                     onClick={() => removeEdge(i)}
-                    onMouseEnter={(ev) => ev.currentTarget.style.background = '#FBE9EA'}
-                    onMouseLeave={(ev) => ev.currentTarget.style.background = '#fff'}
+                    onMouseEnter={(ev) => ev.currentTarget.style.background = 'var(--pai-crit-bg)'}
+                    onMouseLeave={(ev) => ev.currentTarget.style.background = 'var(--card-bg)'}
             >×</button>
           </div>
         ))}
         {edges.length === 0 && (
-          <div style={{ fontSize: 11, color: '#8A8A8A', padding: '8px 0' }}>No edges. Add one below.</div>
+          <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', padding: '8px 0' }}>No edges. Add one below.</div>
         )}
       </div>
 
-      <div style={{ borderTop: '1px solid #F0F0F0', marginTop: 8, paddingTop: 8 }}>
-        <div style={{ fontSize: 9, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+      <div style={{ borderTop: '1px solid var(--shell-border)', marginTop: 8, paddingTop: 8 }}>
+        <div style={{ fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
           Add edge
         </div>
         <div style={rowStyle}>
@@ -263,7 +264,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
                  value={newLabel}
                  onChange={(e) => setNewLabel(e.target.value)}
                  onKeyDown={(e) => e.key === 'Enter' && addEdge()} />
-          <button style={{ ...xBtnStyle, color: '#6360D8', borderColor: '#D6D3F1' }}
+          <button style={{ ...xBtnStyle, color: 'var(--pai-indigo)', borderColor: 'var(--pai-indigo-secondary)' }}
                   title="Add edge"
                   onClick={addEdge}>+</button>
         </div>
@@ -535,7 +536,7 @@ function App() {
       display: 'flex', flexDirection: 'column',
       height: '100vh', overflow: 'hidden',
       fontFamily: "'Inter', system-ui",
-      color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
+      color: PAI.fg1, background: 'var(--shell-bg)',
     }}>
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} />
 
@@ -547,7 +548,7 @@ function App() {
           onToggleCollapse={() => setCollapsed(!collapsed)}
         />
 
-        <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: '#FAFBFD' }}>
+        <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
           <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <SubHeader
               title={pageMeta.title}
@@ -560,9 +561,10 @@ function App() {
               onExplore={pageMeta.onExplore}
             />
             <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-              {current === 'exposure/overview' && <ExposureOverviewPage />}
-              {current === 'exposure/findings' && <FindingsPage />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && <ComingSoon />}
+              {current === 'exposure/overview'  && <ExposureOverviewPage />}
+              {current === 'exposure/findings'  && <FindingsPage />}
+              {current === 'discover/device'    && <DiscoverDevicePage />}
+              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && <ComingSoon />}
               {isKG && <PageKG />}
             </div>
           </div>

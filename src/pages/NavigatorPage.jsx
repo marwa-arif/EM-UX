@@ -83,8 +83,8 @@ function Dropdown({ children, onClose, style }) {
 function StepDoneIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="8" cy="8" r="7" stroke="#31A56D" strokeWidth="1.5" opacity="0.4" />
-      <path d="M5 8l2 2 4-4" stroke="#31A56D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="7" stroke="var(--pai-green)" strokeWidth="1.5" opacity="0.4" />
+      <path d="M5 8l2 2 4-4" stroke="var(--pai-green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -374,7 +374,7 @@ function ChatView({ query }) {
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <div
                 className="nav-avatar-ring"
-                style={{ background: '#6360D8', color: '#fff', fontSize: 11, fontWeight: 600 }}
+                style={{ background: 'var(--pai-indigo)', color: 'var(--card-bg)', fontSize: 11, fontWeight: 600 }}
               >
                 MP
               </div>
@@ -409,8 +409,8 @@ function ChatView({ query }) {
                     {/* Answer prose */}
                     <p className="prose-answer-text" style={{ borderTop: '1px solid var(--shell-border)', paddingTop: 12, marginTop: 4, marginBottom: 0 }}>
                       <strong>vm-prod-42</strong> has <strong>14 open findings</strong>, of which{' '}
-                      <strong style={{ color: '#D12329' }}>3 are critical severity</strong> and{' '}
-                      <strong style={{ color: '#D98B1D' }}>6 are high severity</strong>.
+                      <strong style={{ color: 'var(--pai-crit-fg)' }}>3 are critical severity</strong> and{' '}
+                      <strong style={{ color: 'var(--pai-high-fg)' }}>6 are high severity</strong>.
                       <br /><br />
                       Critical findings include an unpatched Log4Shell vulnerability, an exposed admin
                       credential in environment variables, and a misconfigured network security group
@@ -470,11 +470,11 @@ function ChatView({ query }) {
               {/* KPI row */}
               <div className="ds-kpi-row">
                 <div className="ds-kpi-card">
-                  <div className="ds-kpi-value" style={{ color: '#D12329', fontSize: 22 }}>3</div>
+                  <div className="ds-kpi-value" style={{ color: 'var(--pai-crit-fg)', fontSize: 22 }}>3</div>
                   <div className="ds-kpi-label">Critical</div>
                 </div>
                 <div className="ds-kpi-card">
-                  <div className="ds-kpi-value" style={{ color: '#D98B1D', fontSize: 22 }}>6</div>
+                  <div className="ds-kpi-value" style={{ color: 'var(--pai-high-fg)', fontSize: 22 }}>6</div>
                   <div className="ds-kpi-label">High</div>
                 </div>
                 <div className="ds-kpi-card">
@@ -546,7 +546,7 @@ export default function NavigatorPage({ onNav }) {
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
       fontFamily: "'Inter', system-ui",
-      background: 'var(--shell-bg, #F7F9FC)',
+      background: 'var(--shell-bg)',
     }}>
       <NavigatorTopbar onBack={() => onNav?.('kg')} />
 

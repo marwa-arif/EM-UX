@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { PAI, Ic } from '../ui.jsx'
+import { ChartRender } from '../components/ChartRender.jsx'
 
 // ── Constants ────────────────────────────────────────────────────────
 const WIDGET_SIZES = [
@@ -15,9 +16,9 @@ const WIDGET_HEIGHTS = [
   { id: 'xlarge',  label: 'Extra Large', px: 560 },
 ]
 const PERF_LEVELS = [
-  { max: 4,        label: 'Optimal',           bg: 'rgba(22,163,74,0.10)',  color: '#16a34a', dot: '#16a34a' },
-  { max: 7,        label: 'Approaching Limit', bg: 'rgba(217,119,6,0.10)', color: '#d97706', dot: '#d97706' },
-  { max: Infinity, label: 'Limit Reached',     bg: 'rgba(220,38,38,0.10)', color: '#dc2626', dot: '#dc2626' },
+  { max: 4,        label: 'Optimal',           bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)', dot: 'var(--pai-green)' },
+  { max: 7,        label: 'Approaching Limit', bg: 'rgba(217,119,6,0.10)', color: 'var(--pai-high-fg)', dot: 'var(--pai-high-fg)' },
+  { max: Infinity, label: 'Limit Reached',     bg: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', dot: 'var(--pai-crit-fg)' },
 ]
 const perfLevel = count => PERF_LEVELS.find(l => count <= l.max)
 
@@ -50,7 +51,7 @@ const ChartIcon = ({ id, selected }) => {
   if (src) return (
     <span style={{
       display: 'inline-block', width: 24, height: 24, flexShrink: 0,
-      backgroundColor: selected ? PAI.indigo : '#6E6E6E',
+      backgroundColor: selected ? PAI.indigo : 'var(--shell-text-muted)',
       WebkitMaskImage: `url(${src})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
       maskImage: `url(${src})`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center',
     }} />
@@ -63,13 +64,9 @@ const ChartIcon = ({ id, selected }) => {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none">{icons[id]}</svg>
 }
 
-// ── Chart constants ───────────────────────────────────────────────────
-const G    = '#E5E7EB'  // skeleton gray
-const GL   = '#F3F4F6'  // skeleton light gray
-const GRID = '#E6E6E6'  // axis / gridlines
-const SEV  = ['#D12329','#D98B1D','#CDB900','#31A56D','#1A7D4D']
-const CAT  = ['#6760d8','#47adcb','#2ea8a8','#5c6bc0','#8F8DDE','#3a7fcb']
-const TG   = '#9CA3AF'  // tick label gray
+// ── Chart constants (skeleton only — ChartRender has its own) ────────
+const G  = '#E5E7EB'  // skeleton gray
+const GL = '#F3F4F6'  // skeleton light gray
 
 // ── Chart silhouettes (DS skeleton / loading state) ───────────────────
 function ChartSilhouette({ chartId }) {
@@ -221,230 +218,6 @@ function ChartSilhouette({ chartId }) {
   )
 }
 
-// ── Chart renders (active widgets, DS-aligned) ────────────────────────
-function ChartRender({ chartId, showPctChange, showLegend = true, showTotalCount = true }) {
-  const charts = {
-    'vert-bar': (
-      // Severity colors: Critical > High > Medium > Low > Compliant
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        {[14,41,68,95,122].map(y => (
-          <line key={y} x1="30" y1={y} x2="210" y2={y} stroke={GRID} strokeWidth="0.8"/>
-        ))}
-        {[1000,800,600,400,200].map((v,i) => (
-          <text key={i} x="28" y={18+i*27} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-        ))}
-        {[[110,SEV[0]],[78,SEV[1]],[52,SEV[2]],[20,SEV[3]],[7,SEV[4]]].map(([h,clr],i) => (
-          <rect key={i} x={36+i*36} y={133-h} width="18" height={h} rx="3" fill={clr}/>
-        ))}
-        <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-        {['Crit','High','Med','Low','Comp'].map((lbl,i) => (
-          <text key={i} x={36+i*36+9} y="147" fontSize="7" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-        ))}
-      </svg>
-    ),
-    'hor-bar': (
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        {[38,79,120,161,202].map(x => (
-          <line key={x} x1={x} y1="10" x2={x} y2="133" stroke={GRID} strokeWidth="0.8"/>
-        ))}
-        {['Critical','High','Medium','Low','Compliant'].map((lbl,i) => (
-          <text key={i} x="36" y={22+i*24} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-        ))}
-        {[[115,SEV[0]],[85,SEV[1]],[50,SEV[2]],[30,SEV[3]],[8,SEV[4]]].map(([w,clr],i) => (
-          <rect key={i} x={38} y={17+i*24} width={w} height="12" rx="3" fill={clr}/>
-        ))}
-        <line x1="38" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-        {[0,100,200,300,400].map((v,i) => (
-          <text key={i} x={38+i*41} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-        ))}
-      </svg>
-    ),
-    'stack-vert': (
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        {[14,41,68,95,122].map(y => (
-          <line key={y} x1="30" y1={y} x2="210" y2={y} stroke={GRID} strokeWidth="0.8"/>
-        ))}
-        {[1000,800,600,400,200].map((v,i) => (
-          <text key={i} x="28" y={18+i*27} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-        ))}
-        {[[50,40,30],[30,50,40],[60,35,25],[20,45,55],[40,30,50]].map(([h1,h2,h3],i) => {
-          const x = 36+i*36; const t = h1+h2+h3
-          return (
-            <g key={i}>
-              <rect x={x} y={133-t} width="18" height={h1} rx="2" fill={SEV[0]}/>
-              <rect x={x} y={133-h2-h3} width="18" height={h2} fill={SEV[1]}/>
-              <rect x={x} y={133-h3} width="18" height={h3} fill={SEV[2]}/>
-            </g>
-          )
-        })}
-        <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-        {['name','name','name','name','name'].map((lbl,i) => (
-          <text key={i} x={36+i*36+9} y="147" fontSize="7" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-        ))}
-      </svg>
-    ),
-    'stack-hor': (
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        {[38,79,120,161,202].map(x => (
-          <line key={x} x1={x} y1="10" x2={x} y2="133" stroke={GRID} strokeWidth="0.8"/>
-        ))}
-        {['name','name','name','name','name'].map((lbl,i) => (
-          <text key={i} x="36" y={22+i*24} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-        ))}
-        {[[80,50,30],[60,55,25],[70,45,35],[35,60,45],[15,30,20]].map(([w1,w2,w3],i) => {
-          const y = 17+i*24
-          return (
-            <g key={i}>
-              <rect x={38} y={y} width={w1} height="12" rx="2" fill={SEV[0]}/>
-              <rect x={38+w1} y={y} width={w2} height="12" rx="2" fill={SEV[1]}/>
-              <rect x={38+w1+w2} y={y} width={w3} height="12" rx="2" fill={SEV[2]}/>
-            </g>
-          )
-        })}
-        <line x1="38" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-        {[0,100,200,300,400].map((v,i) => (
-          <text key={i} x={38+i*41} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-        ))}
-      </svg>
-    ),
-    'line': (
-      // Multi-line: categorical colors + severity red; gradient fill under first line
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="dsGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CAT[0]} stopOpacity="0.20"/>
-            <stop offset="100%" stopColor={CAT[0]} stopOpacity="0.01"/>
-          </linearGradient>
-        </defs>
-        {[14,41,68,95,122].map(y => (
-          <line key={y} x1="30" y1={y} x2="210" y2={y} stroke={GRID} strokeWidth="0.8"/>
-        ))}
-        {[1000,800,600,400,200].map((v,i) => (
-          <text key={i} x="28" y={18+i*27} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-        ))}
-        <path d="M38,115 L76,75 L114,95 L152,55 L190,45 L190,133 L38,133 Z" fill="url(#dsGrad)"/>
-        <polyline points="38,115 76,75 114,95 152,55 190,45" fill="none" stroke={CAT[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <polyline points="38,90 76,110 114,60 152,85 190,70" fill="none" stroke={CAT[1]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <polyline points="38,125 76,95 114,130 152,100 190,115" fill="none" stroke={SEV[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        {[[38,115],[76,75],[114,95],[152,55],[190,45]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r="3.5" fill="#fff" stroke={CAT[0]} strokeWidth="1.5"/>
-        ))}
-        {[[38,90],[76,110],[114,60],[152,85],[190,70]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r="3.5" fill="#fff" stroke={CAT[1]} strokeWidth="1.5"/>
-        ))}
-        {[[38,125],[76,95],[114,130],[152,100],[190,115]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r="3.5" fill="#fff" stroke={SEV[0]} strokeWidth="1.5"/>
-        ))}
-        <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-        {['name','name','name','name','name'].map((lbl,i) => (
-          <text key={i} x={38+i*38} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-        ))}
-      </svg>
-    ),
-    'table': (
-      <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        <rect x="8" y="8" width="204" height="22" rx="4" fill={CAT[0]}/>
-        {[0,1,2,3,4].map(i => (
-          <g key={i}>
-            <rect x="8" y={40+i*23} width="204" height="21" rx="2" fill={i%2===0?'#F0F0FC':'#fff'}/>
-            <rect x="14" y={46+i*23} width="32" height="9" rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'#E6E6E6'}/>
-            <rect x="54" y={46+i*23} width="80" height="9" rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'#E6E6E6'}/>
-            <rect x="148" y={46+i*23} width="52" height="9" rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'#E6E6E6'}/>
-          </g>
-        ))}
-      </svg>
-    ),
-    'kpi': (
-      <svg viewBox="0 0 220 110" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        <text x="110" y="50" textAnchor="middle" fontSize="38" fontWeight="700" fill={CAT[0]} fontFamily="Inter,system-ui">1,284</text>
-        <text x="110" y="70" textAnchor="middle" fontSize="11" fill="#6E6E6E" fontFamily="Inter,system-ui">Total Assets</text>
-        <rect x="70" y="78" width="80" height="18" rx="9" fill="#EFF7ED"/>
-        <text x="110" y="91" textAnchor="middle" fontSize="10" fontWeight="500" fill="#1A7549" fontFamily="Inter,system-ui">↑ 12% from last month</text>
-      </svg>
-    ),
-    'heading': <div style={{ width: '100%', height: '100%' }} />,
-    'none':    <div style={{ width: '100%', height: '100%' }} />,
-  }
-  if (chartId === 'pie') {
-    const DCOLS = ['#D12329','#D98B1D','#6760d8','#31A56D','#64748B','#94A3B8']
-    const raw = [
-      { label: 'Workstation',    count: '36,323', pct: '66.42%', value: 36323, change: 7.57 },
-      { label: 'Server',         count: '11,476', pct: '20.99%', value: 11476, change: 5.24 },
-      { label: 'Network Device', count: '4,478',  pct: '8.19%',  value: 4478,  change: 5.36 },
-      { label: 'Mobile',         count: '2,407',  pct: '4.4%',   value: 2407,  change: 7.6  },
-      { label: 'Virtual',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
-      { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
-    ]
-    const sz = 130, cx = 65, cy = 65
-    const outerR = sz / 2 - 2
-    const strokeW = outerR * 0.12
-    const r = outerR - strokeW / 2
-    const total = raw.reduce((s, d) => s + d.value, 0)
-    const ptCart = (cx, cy, r, deg) => {
-      const rad = (deg - 90) * Math.PI / 180
-      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-    }
-    const arc = (sa, ea) => {
-      const s = ptCart(cx, cy, r, ea), e = ptCart(cx, cy, r, sa)
-      const la = (ea - sa) <= 180 ? '0' : '1'
-      return `M ${s.x} ${s.y} A ${r} ${r} 0 ${la} 0 ${e.x} ${e.y}`
-    }
-    let sa = 0
-    const segs = raw.map((d, i) => {
-      const sweep = (d.value / total) * 360
-      const ea = sa + sweep - 8
-      const seg = { ...d, color: DCOLS[i % DCOLS.length], d: arc(sa, Math.max(ea, sa + 1)) }
-      sa += sweep
-      return seg
-    })
-    return (
-      <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 12px', flexShrink: 0 }}>
-          <div style={{ position: 'relative', width: sz, height: sz }}>
-            <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-              {segs.map((d, i) => (
-                <path key={i} d={d.d} fill="none" stroke={d.color} strokeWidth={strokeW} strokeLinecap="round" />
-              ))}
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              {showTotalCount ? (
-                <>
-                  <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui' }}>Total</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>54,686</span>
-                </>
-              ) : (
-                <span style={{ fontSize: 22, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{segs.length}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        {showLegend && (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: '0 8px 8px' }}>
-            {segs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 11, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{d.label}</span>
-                <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.count}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui', minWidth: 44, textAlign: 'right' }}>{d.pct}</span>
-                {showPctChange && (
-                  d.change > 0
-                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: '#16a34a', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>↗ {d.change}%</span>
-                    : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-  return (
-    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {charts[chartId] || charts['vert-bar']}
-    </div>
-  )
-}
-
 // ── KG picker button ─────────────────────────────────────────────────
 const KGBtn = () => (
   <button style={{
@@ -465,12 +238,12 @@ function Toggle({ value, onChange }) {
   return (
     <button onClick={() => onChange(!value)} style={{
       width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
-      background: value ? PAI.indigo : '#D1D5DB', position: 'relative', padding: 0,
+      background: value ? PAI.indigo : 'var(--pai-border-strong)', position: 'relative', padding: 0,
       transition: 'background 150ms',
     }}>
       <span style={{
         position: 'absolute', top: 2, left: value ? 18 : 2,
-        width: 16, height: 16, borderRadius: '50%', background: '#fff',
+        width: 16, height: 16, borderRadius: '50%', background: 'var(--card-bg)',
         transition: 'left 150ms', display: 'block',
       }} />
     </button>
@@ -510,7 +283,7 @@ function TextInput({ placeholder, value, onChange, withKG }) {
           flex: 1, height: 40, boxSizing: 'border-box',
           border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
           padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-          color: value ? PAI.fg1 : PAI.fg3, outline: 'none', background: '#fff',
+          color: value ? PAI.fg1 : PAI.fg3, outline: 'none', background: 'var(--card-bg)',
         }}
       />
       {withKG && <KGBtn />}
@@ -528,7 +301,7 @@ function TextArea({ placeholder, value, onChange }) {
         width: '100%', boxSizing: 'border-box',
         border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
         padding: '8px 10px', fontSize: 13, fontFamily: 'inherit',
-        color: PAI.fg3, outline: 'none', background: '#fff',
+        color: PAI.fg3, outline: 'none', background: 'var(--card-bg)',
         resize: 'vertical', lineHeight: 1.5,
       }}
     />
@@ -543,7 +316,7 @@ function SelectInput({ value, onChange, options }) {
         flex: 1, height: 40, boxSizing: 'border-box',
         border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
         padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-        color: value ? PAI.fg1 : PAI.fg3, background: '#fff', outline: 'none', cursor: 'pointer',
+        color: value ? PAI.fg1 : PAI.fg3, background: 'var(--card-bg)', outline: 'none', cursor: 'pointer',
         appearance: 'none',
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236E6E6E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
@@ -564,8 +337,8 @@ function SizeButtons({ options, value, onChange }) {
           onClick={() => onChange(o.id)}
           style={{
             flex: 1, height: 32,
-            background: value === o.id ? PAI.indigoTint : '#fff',
-            border: `1.5px solid ${value === o.id ? PAI.indigo : '#E6E6E6'}`,
+            background: value === o.id ? PAI.indigoTint : 'var(--card-bg)',
+            border: `1.5px solid ${value === o.id ? PAI.indigo : 'var(--shell-border)'}`,
             borderRadius: 8, cursor: 'pointer',
             fontSize: 11, fontWeight: 500, fontFamily: 'inherit',
             whiteSpace: 'nowrap', overflow: 'hidden',
@@ -610,12 +383,12 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
 
   return (
     <div style={{
-      width: 348, flexShrink: 0, background: '#fff',
+      width: 348, flexShrink: 0, background: 'var(--card-bg)',
       border: '1px solid var(--shell-border)', borderRadius: 8,
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
       {/* Header */}
-      <div style={{ padding: '12px 12px 0', borderBottom: '1px solid #D8D9DD', flexShrink: 0 }}>
+      <div style={{ padding: '12px 12px 0', borderBottom: '1px solid var(--pai-border-strong)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10 }}>
           <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
           <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Widget Settings</span>
@@ -759,9 +532,9 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
   for (let i = 0; i < CHART_TYPES.length; i += 2) rows.push(CHART_TYPES.slice(i, i + 2))
 
   return (
-    <div style={{ width: 348, flexShrink: 0, background: '#fff', border: '1px solid var(--shell-border)', borderRadius: 8, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ width: 348, flexShrink: 0, background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* header */}
-      <div style={{ padding: '12px', borderBottom: '1px solid #D8D9DD', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div style={{ padding: '12px', borderBottom: '1px solid var(--pai-border-strong)', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={PAI.fg1} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
           <line x1="17" y1="14" x2="17" y2="20"/><line x1="14" y1="17" x2="20" y2="17"/>
@@ -798,8 +571,8 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
                   onClick={() => setSelected(ct.id)}
                   style={{
                     flex: 1, height: 76, padding: 10,
-                    background: selected === ct.id ? PAI.indigoTint : '#fff',
-                    border: `1.5px solid ${selected === ct.id ? PAI.indigo : '#E6E6E6'}`,
+                    background: selected === ct.id ? PAI.indigoTint : 'var(--card-bg)',
+                    border: `1.5px solid ${selected === ct.id ? PAI.indigo : 'var(--shell-border)'}`,
                     borderRadius: 12, cursor: 'pointer',
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -839,16 +612,16 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
       {/* Hover actions */}
       {hovered && (
         <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
-          <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
           </button>
-          <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
           </button>
-          <button title="Edit" onClick={onEdit} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Edit" onClick={onEdit} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
-          <button title="Delete" onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Delete" onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--pai-crit-bg-hover)', background: 'var(--pai-crit-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
@@ -856,7 +629,7 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
 
       {/* Card */}
       <div style={{
-        background: '#fff',
+        background: 'var(--card-bg)',
         border: isEditing ? `1.5px dashed ${PAI.indigo}` : '1px solid var(--shell-border)',
         borderRadius: 10, padding: 12,
         display: 'flex', flexDirection: 'column', gap: 8,
@@ -946,13 +719,13 @@ export default function DashboardCanvas({ onNav }) {
       <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 12, padding: 16 }}>
 
         {/* ── Canvas ── */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid var(--shell-border)', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8, overflow: 'hidden' }}>
 
           {/* Toolbar */}
-          <div style={{ height: 52, flexShrink: 0, boxSizing: 'border-box', background: '#fff', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
+          <div style={{ height: 52, flexShrink: 0, boxSizing: 'border-box', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
             <button
               onClick={() => onNav('workspace/library')}
-              style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', border: '1.5px solid #A2A1F7', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: PAI.indigo }}
+              style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--pai-indigo-light)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: PAI.indigo }}
             >
               <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
             </button>
@@ -960,7 +733,7 @@ export default function DashboardCanvas({ onNav }) {
             <input
               value={name} onChange={e => setName(e.target.value)}
               placeholder="Enter dashboard name here..."
-              style={{ height: 32, minWidth: 220, border: '1px solid var(--shell-border)', borderRadius: 8, padding: '0 14px', fontSize: 12, fontFamily: 'inherit', color: PAI.fg1, background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+              style={{ height: 32, minWidth: 220, border: '1px solid var(--shell-border)', borderRadius: 8, padding: '0 14px', fontSize: 12, fontFamily: 'inherit', color: PAI.fg1, background: 'var(--card-bg)', outline: 'none', boxSizing: 'border-box' }}
             />
 
             {perf && (
@@ -993,7 +766,7 @@ export default function DashboardCanvas({ onNav }) {
           </div>
 
           {/* Canvas body */}
-          <div style={{ flex: 1, overflow: 'auto', backgroundImage: 'radial-gradient(circle, #D1D5DB 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+          <div style={{ flex: 1, overflow: 'auto', backgroundImage: 'radial-gradient(circle, var(--pai-border-strong) 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, padding: 20, alignItems: 'start' }}>
 
               {widgets.map(w => (
@@ -1013,21 +786,21 @@ export default function DashboardCanvas({ onNav }) {
                   position: 'relative',
                 }}>
                   <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
-                    <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
                     </button>
-                    <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
                     </button>
-                    <button title="Edit" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button title="Edit" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
                     </button>
-                    <button title="Delete" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button title="Delete" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--pai-crit-bg-hover)', background: 'var(--pai-crit-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
                     </button>
                   </div>
                   <div style={{
-                    background: '#fff',
+                    background: 'var(--card-bg)',
                     border: `1.5px dashed ${PAI.indigo}`,
                     borderRadius: 10, padding: 12,
                     height: WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260,
@@ -1053,7 +826,7 @@ export default function DashboardCanvas({ onNav }) {
                   style={{
                     gridColumn: 'span 1',
                     height: WIDGET_HEIGHTS[0].px, width: '100%',
-                    background: '#fff',
+                    background: 'var(--card-bg)',
                     border: `1.5px dashed ${PAI.indigo}`,
                     borderRadius: 10, cursor: 'pointer',
                     display: 'flex', flexDirection: 'column',

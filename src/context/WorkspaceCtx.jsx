@@ -9,8 +9,8 @@ function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
     <div style={{
       display: 'inline-flex', alignItems: 'center',
       height: 32, paddingLeft: 14, paddingRight: 4,
-      background: '#fff',
-      border: `1px solid ${focused ? '#6360D8' : '#E6E6E6'}`,
+      background: 'var(--card-bg)',
+      border: `1px solid ${focused ? 'var(--pai-indigo)' : 'var(--shell-border)'}`,
       boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',
       borderRadius: 44, width,
       transition: 'border-color 120ms, box-shadow 120ms',
@@ -23,14 +23,14 @@ function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
         placeholder={placeholder}
         style={{
           flex: 1, border: 'none', outline: 'none', background: 'transparent',
-          fontSize: 13, fontFamily: 'inherit', color: '#101010', minWidth: 0,
+          fontSize: 13, fontFamily: 'inherit', color: 'var(--pai-fg1)', minWidth: 0,
         }}
       />
       <span style={{
         width: 24, height: 24, marginLeft: 6, borderRadius: '50%',
-        background: '#F0F0FC',
+        background: 'var(--pai-indigo-tint)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: '#6360D8', flexShrink: 0,
+        color: 'var(--pai-indigo)', flexShrink: 0,
       }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
