@@ -1,5 +1,6 @@
 import React from 'react'
 import { Icons } from '../ui.jsx'
+import VersionBadge from './VersionBadge.jsx'
 
 function Topbar({ onNav, navigatorActive }) {
   return (
@@ -12,6 +13,8 @@ function Topbar({ onNav, navigatorActive }) {
       <div className="topbar__timestamp">
         Last updated <span className="topbar__timestamp-val">Apr 20, 2026 · 14:32 UTC</span>
       </div>
+
+      <VersionBadge />
 
       <button title="Notifications" className="topbar__btn">
         {Icons.bell}

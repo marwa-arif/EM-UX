@@ -128,14 +128,16 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
 
   const handleViewMode = (id) => {
     setViewMenu(false);
-    if (id === 'sidebar' || id === 'floating') {
-      onNav?.('kg');
+    if (id === 'sidebar') {
+      onNav?.('navigator');
+    } else if (id === 'floating') {
+      onNav?.('navigator-floating');
     }
     // fullscreen = current mode, no-op
   };
 
   return (
-    <div className={`np-panel${collapsed ? ' collapsed' : ''}`} style={{ position: 'relative' }}>
+    <div className={`np-panel${collapsed ? ' collapsed' : ''}`}>
       <div className="np-hdr">
         <img src="/assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
         {!collapsed && (
@@ -206,9 +208,9 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
       </div>
 
       <div className="np-body">
-        <div className="np-row" onClick={onNewChat} style={{ color: 'var(--shell-accent)' }}>
-          <span className="np-icon" style={{ color: 'var(--shell-accent)' }}><IcPlus /></span>
-          <span className="np-lbl" style={{ color: 'var(--shell-accent)', fontWeight: 500 }}>New chat</span>
+        <div className="np-row np-row--accent" onClick={onNewChat}>
+          <span className="np-icon np-icon--accent"><IcPlus /></span>
+          <span className="np-lbl np-lbl--accent">New chat</span>
           <span className="np-kbd">⌘K</span>
         </div>
 
@@ -527,10 +529,10 @@ function ChatView({ query }) {
 }
 
 // ── Page root ────────────────────────────────────────────────────────
-export default function NavigatorPage({ onNav }) {
+export default function NavigatorPage({ onNav, initialQuery = '' }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [view, setView]           = useState('home');
-  const [activeQuery, setQuery]   = useState('');
+  const [view, setView]           = useState(initialQuery ? 'chat' : 'home');
+  const [activeQuery, setQuery]   = useState(initialQuery);
 
   const handleSend = (q) => {
     setQuery(q);
@@ -543,14 +545,10 @@ export default function NavigatorPage({ onNav }) {
   };
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
-      fontFamily: "'Inter', system-ui",
-      background: 'var(--shell-bg)',
-    }}>
+    <div className="nav-page-shell">
       <NavigatorTopbar onBack={() => onNav?.('kg')} />
 
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', overflow: 'hidden' }}>
+      <div className="nav-page-body">
         <NavPanel
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -559,7 +557,7 @@ export default function NavigatorPage({ onNav }) {
           onNav={onNav}
         />
 
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="nav-page-content">
           {view === 'home'
             ? <HomeView onSend={handleSend} />
             : <ChatView query={activeQuery} />

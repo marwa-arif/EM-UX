@@ -291,18 +291,19 @@ const TAB_DEFS = [
 ];
 
 // ── Shared right panel tab strip ─────────────────────────────────────
-function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProps, visitedTabs = [] }) {
+function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProps, visitedTabs = [], navigatorFloating = false }) {
   const SHELL_WIDTH = 400;
   const isOpen = tab !== null;
+  const isCollapsedForFloat = navigatorFloating && tab === 'navigator';
   const visibleTabs = TAB_DEFS.filter(t => visitedTabs.includes(t.id));
 
   return (
     <div
       className="rp-shell"
       style={{
-        width: isOpen ? SHELL_WIDTH : 0,
-        borderLeft: isOpen ? '1px solid rgba(0,0,0,0.07)' : 'none',
-        boxShadow: isOpen ? '-4px 0 20px rgba(0,0,0,0.07)' : 'none',
+        width: isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0,
+        borderLeft: (isOpen && !isCollapsedForFloat) ? '1px solid rgba(0,0,0,0.07)' : 'none',
+        boxShadow: (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.07)' : 'none',
       }}
     >
       <div className="rp-shell__inner" style={{ width: SHELL_WIDTH }}>
@@ -347,6 +348,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               embedded={true}
               onClose={onClose}
               onNav={navigatorProps?.onNav}
+              initialViewMode={navigatorProps?.initialViewMode}
+              onViewModeChange={navigatorProps?.onViewModeChange}
             />
           )}
         </div>
@@ -364,6 +367,9 @@ function App() {
   });
   const [collapsed, setCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
+  const [navigatorQuery, setNavigatorQuery] = useState('');
+  const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
+  const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
@@ -421,8 +427,23 @@ function App() {
     });
   };
 
-  const handleNav = (id) => {
+  const handleNav = (id, data) => {
     if (id === 'navigator') {
+      setNavigatorViewMode('sidebar');
+      openRightTab('navigator');
+      return;
+    }
+    if (id === 'navigator-page') {
+      setRightPanel(null);
+      setNavigatorQuery(data || '');
+      setCurrent('navigator');
+      history.pushState(null, '', '/navigator');
+      return;
+    }
+    if (id === 'navigator-floating') {
+      setNavigatorViewMode('floating');
+      setCurrent('kg');
+      history.pushState(null, '', '/knowledge-graph');
       openRightTab('navigator');
       return;
     }
@@ -439,7 +460,7 @@ function App() {
   }
 
   if (current === 'navigator' || current.startsWith('navigator/')) {
-    return <NavigatorPage onNav={handleNav} current={current} />
+    return <NavigatorPage onNav={handleNav} current={current} initialQuery={navigatorQuery} />
   }
 
   const PAGE_META = {
@@ -524,10 +545,15 @@ function App() {
     <RightPanelShell
       tab={rightPanel}
       onTabSwitch={openRightTab}
-      onClose={() => setRightPanel(null)}
+      onClose={() => { setRightPanel(null); setNavigatorFloating(false); }}
       visitedTabs={visitedTabs}
       filterProps={{ onApply: (c) => setActiveFilterCount(c), onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
-      navigatorProps={{ onNav: handleNav }}
+      navigatorProps={{
+        onNav: handleNav,
+        initialViewMode: navigatorViewMode,
+        onViewModeChange: (mode) => setNavigatorFloating(mode === 'floating'),
+      }}
+      navigatorFloating={navigatorFloating}
     />
   );
 

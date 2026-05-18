@@ -1,11 +1,15 @@
 {
   "name": "em-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:major": "node scripts/bump-version.js major",
+    "hooks:install": "bash scripts/install-hooks.sh"
   },
   "dependencies": {
     "react": "^18.3.1",

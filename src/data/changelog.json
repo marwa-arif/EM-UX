@@ -1,0 +1,38 @@
+[
+  {
+    "version": "0.1.1",
+    "date": "2026-05-18",
+    "changes": {
+      "Added": [
+        "New version badge in topbar"
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-05-18",
+    "changes": {
+      "Added": [
+        "Navigator page with sidebar / floating / fullscreen view modes",
+        "Navigator panel embedded in right-panel shell with view-mode switching",
+        "initialQuery prop — deep-link into a chat from any page",
+        "navigator-page, navigator-floating, navigator routing in handleNav",
+        "DiscoverDevicePage with Recharts area / bar / pie charts (ChartRender)",
+        "device.css token-compliant styles for device discovery page",
+        "Left nav accordion — only one section open at a time",
+        "Coming-soon route stubs and per-page URL routing"
+      ],
+      "Changed": [
+        "Navigator layout switched from inline styles to CSS classes",
+        "RightPanelShell collapses to zero-width when Navigator is in floating mode",
+        "Left nav and shell CSS token-compliance pass across all stylesheets"
+      ],
+      "Fixed": [
+        "Asset paths and URL routing restored after merge conflict",
+        "recharts dependency installed after remote merge"
+      ]
+    }
+  }
+]

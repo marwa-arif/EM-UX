@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# pre-push — blocks push if [Unreleased] has content but version wasn't bumped.
+# Run `npm run version:patch` (or minor/major) to bump, then push again.
+
+CHANGELOG="CHANGELOG.md"
+ROOT="$(git rev-parse --show-toplevel)"
+CHANGELOG_PATH="$ROOT/$CHANGELOG"
+
+if [ ! -f "$CHANGELOG_PATH" ]; then
+  echo ""
+  echo "⚠  CHANGELOG.md not found. Create it before pushing."
+  echo ""
+  exit 1
+fi
+
+# Extract lines between [Unreleased] header and the first --- separator
+unreleased_content=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^---/{exit} found{print}' "$CHANGELOG_PATH")
+
+# Strip blank lines, comment lines, and empty ### headers
+meaningful=$(echo "$unreleased_content" | grep -v '^\s*$' | grep -v '^>' | grep -v '^### ')
+
+if [ -n "$meaningful" ]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════╗"
+  echo "║  Push blocked — unreleased changes need a version   ║"
+  echo "╚══════════════════════════════════════════════════════╝"
+  echo ""
+  echo "  Your CHANGELOG.md has [Unreleased] content:"
+  echo "$meaningful" | head -8 | sed 's/^/    /'
+  echo ""
+  echo "  Run one of:"
+  echo "    npm run version:patch   (bug fixes / small tweaks)"
+  echo "    npm run version:minor   (new features)"
+  echo "    npm run version:major   (breaking changes)"
+  echo ""
+  echo "  Then: git add CHANGELOG.md package.json src/data/changelog.json"
+  echo "        git commit -m \"chore: bump version to vX.Y.Z\""
+  echo "        git push"
+  echo ""
+  echo "  To skip (not recommended): git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "✓ CHANGELOG.md is versioned — proceeding with push."
+exit 0

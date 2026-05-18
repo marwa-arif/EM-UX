@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# post-merge — stamps a pull/merge event at the top of CHANGELOG.md so
+# the team can see when remote changes were synced in.
+
+ROOT="$(git rev-parse --show-toplevel)"
+CHANGELOG="$ROOT/CHANGELOG.md"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
+REMOTE_REF=$(git log -1 --format="%h %s" ORIG_HEAD..HEAD 2>/dev/null | head -1)
+
+if [ -z "$REMOTE_REF" ]; then
+  exit 0  # nothing was actually merged
+fi
+
+# Append a pull-log entry below the header block (before [Unreleased])
+PULL_LINE="<!-- pull: $TIMESTAMP | branch: $BRANCH | $REMOTE_REF -->"
+
+# Insert after the second blank line (after the intro paragraph)
+awk -v line="$PULL_LINE" '
+  /^## \[Unreleased\]/ && !inserted { print line; inserted=1 }
+  { print }
+' "$CHANGELOG" > "$CHANGELOG.tmp" && mv "$CHANGELOG.tmp" "$CHANGELOG"
+
+echo ""
+echo "✓ CHANGELOG.md stamped with pull event ($TIMESTAMP)"
+echo "  Merged: $REMOTE_REF"
+echo ""

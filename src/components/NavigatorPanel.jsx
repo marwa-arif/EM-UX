@@ -765,12 +765,12 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange }) {
   const [view, setView]             = useState('home')
   const [activeQuery, setQ]         = useState('')
   const [responseState, setRespSt]  = useState('done')
   const [historyOpen, setHistory]   = useState(false)
-  const [viewMode, setViewMode]     = useState('sidebar')
+  const [viewMode, setViewMode]     = useState(initialViewMode)
   const [showViewMenu, setViewMenu] = useState(false)
   const [showMoreMenu, setMoreMenu] = useState(false)
   const [panelWidth, setPanelWidth] = useState(400)
@@ -845,8 +845,8 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
 
   const handleExploreDetail = useCallback(() => {
     onClose?.()
-    onNav?.('navigator')
-  }, [onClose, onNav])
+    onNav?.('navigator-page', activeQuery)
+  }, [onClose, onNav, activeQuery])
 
   const handleCopy = useCallback((text) => {
     try { navigator.clipboard.writeText(text) } catch (_) {}
@@ -865,6 +865,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
       setFloatPos({ x: window.innerWidth - panelWidth - 16, y: 60 })
     }
     setViewMode(id)
+    onViewModeChange?.(id)
   }
 
   // Resize
@@ -901,15 +902,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
 
   const ViewIcon = viewMode === 'floating' ? IcFloat : viewMode === 'fullscreen' ? IcFullscr : IcSidebar
 
-  const panelStyle = embedded
-    ? {
-        flex:          1,
-        display:       'flex',
-        flexDirection: 'column',
-        overflow:      'hidden',
-        background:    '#FAFBFD',
-      }
-    : isFloating
+  const panelStyle = isFloating
     ? {
         position:      'fixed',
         left:          floatPos.x,
@@ -924,6 +917,14 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
         display:       open ? 'flex' : 'none',
         flexDirection: 'column',
         overflow:      'hidden',
+      }
+    : embedded
+    ? {
+        flex:          1,
+        display:       'flex',
+        flexDirection: 'column',
+        overflow:      'hidden',
+        background:    '#FAFBFD',
       }
     : {
         width:         open ? w : 0,
@@ -959,8 +960,8 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
         {/* ── Splash ── */}
         {false && splash && <SplashScreen exiting={splashExit} />}
 
-        {/* ── Header — hidden when embedded in RightPanelShell ── */}
-        {!embedded && <div
+        {/* ── Header — shown when standalone or floating ── */}
+        {(!embedded || isFloating) && <div
           className="np-header"
           onMouseDown={isFloating ? handleFloatHeaderMouseDown : undefined}
           style={isFloating ? { cursor: isDragging ? 'grabbing' : 'grab' } : undefined}
@@ -1054,8 +1055,8 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false 
           </div>
         </div>}
 
-        {/* ── Embedded controls bar (replaces header when inside RightPanelShell) ── */}
-        {embedded && (
+        {/* ── Embedded controls bar (only when embedded and not floating) ── */}
+        {embedded && !isFloating && (
           <div className="np-embedded-bar">
             <button
               className={`np-icon-btn${historyOpen ? ' active' : ''}`}
