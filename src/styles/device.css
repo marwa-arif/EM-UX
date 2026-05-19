@@ -1,7 +1,6 @@
 /* ── Layout ─────────────────────────────────────────────────────── */
 
 .dev-page {
-  padding: 16px;
   min-height: 100%;
   box-sizing: border-box;
 }
@@ -21,9 +20,6 @@
 }
 
 .dev-card {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #E6E6E6);
-  border-radius: 4px;
   padding: 16px;
   height: 460px;
   box-sizing: border-box;
@@ -53,9 +49,6 @@
 /* ── Stat card (total + trend chart) ────────────────────────────── */
 
 .dev-stat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 8px;
@@ -132,13 +125,6 @@
   color: var(--shell-text-2, #444);
 }
 
-.dev-legend-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 
 /* ── Bottom row ──────────────────────────────────────────────────── */
 
@@ -148,17 +134,9 @@
   gap: 12px;
 }
 
-.dev-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--shell-text, #101010);
-  white-space: nowrap;
-}
+.dev-card-title { white-space: nowrap; }
 
 .dev-card-hdr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
@@ -295,13 +273,10 @@
 /* ── Shared table ────────────────────────────────────────────────── */
 
 .dev-table-wrap {
-  overflow-x: auto;
   margin: 0 -16px;
 }
 
 .dev-table {
-  width: 100%;
-  border-collapse: collapse;
   font-size: 12px;
 }
 
@@ -309,34 +284,21 @@
   padding: 8px 12px;
   text-align: left;
   font-size: 11px;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--shell-text-muted, #8A8A8A);
-  background: var(--table-th-bg, #F5F5F5);
-  border-bottom: 1px solid var(--shell-border, #E8E8E8);
-  white-space: nowrap;
 }
 
-.dev-th-inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
+.dev-th-inner { gap: 4px; }
 
 .dev-th-sort { opacity: 0.5; }
 .dev-th-icon { width: 40px; padding: 8px; }
 .dev-th-check { width: 36px; padding: 8px 12px; }
 
-.dev-tr { border-bottom: 1px solid var(--table-border, #F0F0F0); }
 .dev-tr:last-child { border-bottom: none; }
 .dev-tr:hover { background: var(--shell-hover, rgba(0,0,0,0.02)); }
 
 .dev-td {
   padding: 10px 12px;
-  color: var(--shell-text-2, #444);
-  vertical-align: middle;
-  font-size: 12px;
 }
 
 .dev-td-icon  { width: 40px; padding: 8px 8px 8px 16px; }
@@ -452,9 +414,4 @@
   cursor: pointer;
 }
 
-.dev-cell-icon-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 

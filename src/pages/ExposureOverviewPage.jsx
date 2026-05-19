@@ -210,7 +210,7 @@ function ExposureOverviewSection() {
   );
 
   return (
-    <div className="exp-card">
+    <div className="card exp-card">
       <div className={`exp-ov-hdr${collapsed ? '' : ' exp-ov-hdr--open'}`}>
         <div className="exp-ov-hdr-left">
           <span className="exp-ov-hdr-title">Exposure Overview</span>
@@ -306,10 +306,10 @@ export default function ExposureOverviewPage() {
   );
 
   return (
-    <div className="exp-page">
+    <div className="page">
       <ExposureOverviewSection />
 
-      <div className="exp-contrib-card">
+      <div className="card exp-contrib-card">
         <div className="exp-contrib-hdr">
           <div className="exp-contrib-hdr-left">
             <span className="exp-contrib-title">Exposure Contribution by</span>

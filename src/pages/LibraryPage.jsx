@@ -189,7 +189,7 @@ function LibraryPage() {
   });
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: 16, background: 'var(--ctrl-bg)' }}>
+    <div style={{ flex: 1, overflow: 'auto', padding: '16px 0 16px 16px', background: 'var(--ctrl-bg)' }}>
     <div style={{
       background: 'var(--card-bg)',
       border: '1px solid var(--shell-border)',

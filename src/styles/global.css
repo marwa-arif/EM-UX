@@ -103,3 +103,18 @@ button { font-family: inherit; }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }
 *::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Shared page wrapper ─────────────────────────────────────────── */
+.page {
+  padding: 12px 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Shared card surface ─────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+}

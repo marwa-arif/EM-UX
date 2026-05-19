@@ -1,17 +1,5 @@
-/* ── Page wrapper ─────────────────────────────────────────────────── */
-.kg-page {
-  padding: 12px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 /* ── Generic card ─────────────────────────────────────────────────── */
 .kg-card {
-  background: #fff;
-  border: 1px solid var(--pai-border);
-  border-radius: 4px;
-  margin: 0 12px;
   overflow: hidden;
 }
 .kg-card__header {
@@ -67,7 +55,7 @@
   background: var(--card-bg);
   border-radius: 4px;
   height: 440px;
-  margin: 0 12px;
+  margin: 0 0 0 12px;
   background-image: radial-gradient(var(--shell-border) 1px, transparent 1px);
   background-size: 14px 14px;
   background-position: 0 0;
@@ -117,10 +105,6 @@
 
 /* ── Details table card ───────────────────────────────────────────── */
 .kg-details {
-  background: #fff;
-  border: 1px solid var(--pai-border);
-  border-radius: 6px;
-  margin: 0 12px 16px;
   overflow: hidden;
 }
 .kg-details__header {
@@ -156,7 +140,7 @@
   font-size: 10px; font-weight: 600; color: var(--shell-text-muted);
   letter-spacing: 0.01em; white-space: nowrap;
 }
-.kg-th-inner { display: inline-flex; align-items: center; gap: 6px; }
+.kg-th-inner { gap: 6px; }
 .kg-details td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--shell-border);
@@ -168,7 +152,6 @@
 .kg-details__row:hover td { background: rgba(0,0,0,0.02); }
 .kg-details__empty { padding: 32px; text-align: center; color: var(--pai-fg3); }
 .kg-td-label { font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-.kg-td-type { display: inline-flex; align-items: center; gap: 6px; }
 .kg-td-type__icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
 .kg-td-sources { display: inline-flex; align-items: center; gap: 4px; }
 .kg-td-numeric { font-variant-numeric: tabular-nums; font-weight: 400; }
@@ -213,7 +196,7 @@
   font-family: 'Inter', system-ui;
 }
 .kg-panel--open  { transform: translateX(0); }
-.kg-panel--closed { transform: translateX(100%); }
+.kg-panel--closed { transform: translateX(100%); box-shadow: none; }
 
 .kg-panel__header { padding: 16px 20px; border-bottom: 1px solid var(--pai-border); flex-shrink: 0; background: var(--card-bg); }
 .kg-panel__title-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }

@@ -14,6 +14,13 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.1.2] — 2026-05-19
+### Changed
+- Extracted shared CSS patterns from page files into `common.css` (tables, card headers, titles, legend dots, icon-text pairs)
+- Removed duplicate table, header, and title rules from `device.css`, `exposure.css`, `findings.css`, `kg.css`
+
+---
+
 ## [0.1.1] — 2026-05-18
 ### Added
 - New version badge in topbar

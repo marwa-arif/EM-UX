@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.1.2",
+    "date": "2026-05-19",
+    "url": "/versions/0.1.2/",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Extracted shared CSS patterns from page files into `common.css` (tables, card headers, titles, legend dots, icon-text pairs)",
+        "Removed duplicate table, header, and title rules from `device.css`, `exposure.css`, `findings.css`, `kg.css`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.1.1",
     "date": "2026-05-18",
     "changes": {
