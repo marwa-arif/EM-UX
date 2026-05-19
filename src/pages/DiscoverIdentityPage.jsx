@@ -446,14 +446,14 @@ export default function DiscoverIdentityPage() {
   );
 
   return (
-    <div className="dev-page">
+    <div className="page dev-page">
       <div className="dev-grid">
 
         {/* ── Left column ──────────────────────────────── */}
         <div className="dev-col-left">
 
           {/* Total stat + trend chart */}
-          <div className="dev-card">
+          <div className="card dev-card">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
@@ -527,7 +527,7 @@ export default function DiscoverIdentityPage() {
           <div className="dev-bottom-row">
 
             {/* Data Source */}
-            <div className="dev-card dev-source-card">
+            <div className="card dev-card dev-source-card">
               <div className="dev-card-title">Data Source</div>
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -579,7 +579,7 @@ export default function DiscoverIdentityPage() {
             </div>
 
             {/* Type + Donut */}
-            <div className="dev-card dev-type-card">
+            <div className="card dev-card dev-type-card">
               <div className="dev-card-title">Type</div>
               <div className="dev-donut-wrap" style={{ position: 'relative', height: 220, flex: 'none' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -637,7 +637,7 @@ export default function DiscoverIdentityPage() {
         <div className="dev-col-right">
 
           {/* Key Security Insights */}
-          <div className="dev-card dev-insights-card">
+          <div className="card dev-card dev-insights-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Key Security Insights</span>
               <DSPillSearch
@@ -689,7 +689,7 @@ export default function DiscoverIdentityPage() {
           </div>
 
           {/* Criticality */}
-          <div className="dev-card dev-crit-card">
+          <div className="card dev-card dev-crit-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Criticality Insights</span>
             </div>

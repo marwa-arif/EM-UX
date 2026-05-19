@@ -154,7 +154,7 @@
 .kg-td-label { font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 .kg-td-type__icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
 .kg-td-sources { display: inline-flex; align-items: center; gap: 4px; }
-.kg-td-numeric { font-variant-numeric: tabular-nums; font-weight: 400; }
+.kg-td-numeric { font-weight: 600; }
 
 /* ── Source badge ─────────────────────────────────────────────────── */
 .kg-source-badge {
@@ -274,7 +274,7 @@
 .kg-severity-fill { height: 100%; border-radius: 3px; }
 .kg-severity-count {
   width: 44px; font-size: 11px; font-weight: 600; color: var(--pai-fg2);
-  flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums;
+  flex-shrink: 0; text-align: right;
 }
 .kg-panel__placeholder {
   background: var(--card-bg); border: 1px solid var(--pai-border); border-radius: 4px;
@@ -307,7 +307,6 @@
 .kg-panel__score-label { font-size: 11px; color: var(--pai-fg3); }
 .kg-panel__score-val {
   font-size: 13px; font-weight: 700; color: var(--pai-fg1);
-  font-variant-numeric: tabular-nums;
 }
 .kg-panel__score-sep { width: 1px; height: 28px; background: var(--pai-border); flex-shrink: 0; }
 .kg-panel__score-action {
@@ -428,7 +427,7 @@
 .kg-tooltip__body--wide { min-width: 220px; }
 .kg-tooltip-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .kg-tooltip-row__key { font-size: 11px; color: var(--pai-fg3); }
-.kg-tooltip-row__val { font-size: 12px; color: var(--pai-fg1); font-weight: 400; font-variant-numeric: tabular-nums; font-family: 'Inter', system-ui, sans-serif; }
+.kg-tooltip-row__val { font-size: 12px; color: var(--pai-fg1); font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
 
 /* ── Zoom indicator ───────────────────────────────────────────────── */
 .kg-zoom-indicator {
