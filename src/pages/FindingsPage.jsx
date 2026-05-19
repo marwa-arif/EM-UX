@@ -197,7 +197,7 @@ function AssetIcon({ type, color }) {
 // ── Remediate Now widget ──────────────────────────────────────────
 function ActNowWidget() {
   return (
-    <div className="fin-actnow-card">
+    <div className="card fin-actnow-card">
       <div className="fin-intel-hdr">
         <span className="fin-intel-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9373C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -229,7 +229,7 @@ function ActNowWidget() {
 // ── Program Status widget ─────────────────────────────────────────
 function ProgramStatusWidget() {
   return (
-    <div className="fin-ops-card">
+    <div className="card fin-ops-card">
       <div className="fin-intel-hdr">
         <span className="fin-intel-title">Exposure & Remediation</span>
         <span className="fin-intel-badge fin-intel-badge-neutral">This week</span>
@@ -301,7 +301,7 @@ function StackedBarChart({ title, rows, xLabel }) {
 
   return (
     <div
-      className="fin-card fin-chart-card"
+      className="card fin-chart-card"
       style={{ position: 'relative' }}
       onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
     >
@@ -446,7 +446,7 @@ export default function FindingsPage() {
   function handleSearch(v) { setSearch(v); setPage(1); }
 
   return (
-    <div className="fin-page">
+    <div className="page fin-page">
 
       {/* ── Intelligence row: Act Now + Operational Health ── */}
       <div className="fin-intel-row">
@@ -473,7 +473,7 @@ export default function FindingsPage() {
 
         {/* Right: Security Posture Summary */}
         <div className="fin-right-col">
-          <div className="fin-card fin-posture-card">
+          <div className="card fin-posture-card">
             <div className="fin-posture-hdr">
               <span className="fin-posture-title">Security Posture Summary</span>
               <div className="fin-posture-groupby">
@@ -491,7 +491,7 @@ export default function FindingsPage() {
       </div>
 
       {/* ── Bottom: open findings table ── */}
-      <div className="fin-table-section">
+      <div className="card fin-table-section">
         <div className="fin-table-hdr">
           <span className="fin-table-title">
             Open Findings <span className="fin-table-count">(3,282,373)</span>

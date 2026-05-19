@@ -277,7 +277,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
           width: '75vw',
           background: 'var(--card-bg)',
           borderLeft: '1px solid var(--shell-border)',
-          boxShadow: '-8px 0 32px rgba(0,0,0,0.1)',
+          boxShadow: open ? '-8px 0 32px rgba(0,0,0,0.1)' : 'none',
           zIndex: 999,
           transform: open ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 320ms cubic-bezier(0.32,0.72,0,1)',

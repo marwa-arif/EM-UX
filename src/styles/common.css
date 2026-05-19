@@ -1,0 +1,80 @@
+/* =================================================================
+   common.css — Shared structural patterns across pages
+   Extracted from: device.css, exposure.css, findings.css, kg.css
+   Page files keep only page-specific overrides.
+   ================================================================= */
+
+/* ── Table wrapper ──────────────────────────────────────────────── */
+.dev-table-wrap,
+.exp-table-wrap,
+.fin-table-wrap { overflow-x: auto; }
+
+/* ── Table base ─────────────────────────────────────────────────── */
+.dev-table,
+.exp-table,
+.fin-table { width: 100%; border-collapse: collapse; }
+
+/* ── Table header cell ──────────────────────────────────────────── */
+.dev-th,
+.exp-th,
+.fin-th {
+  font-weight: 600;
+  color: var(--shell-text-muted);
+  background: var(--table-th-bg);
+  border-bottom: 1px solid var(--shell-border);
+  white-space: nowrap;
+}
+
+/* ── Table header inner (sort icon + label) ─────────────────────── */
+.dev-th-inner,
+.exp-th-inner,
+.fin-th-inner,
+.kg-th-inner { display: inline-flex; align-items: center; }
+
+/* ── Table body row border ──────────────────────────────────────── */
+.dev-tr,
+.exp-tr,
+.fin-tr { border-bottom: 1px solid var(--table-border); }
+
+/* ── Table body cell (base) ─────────────────────────────────────── */
+.dev-td,
+.fin-td { color: var(--shell-text-2); font-size: 12px; vertical-align: middle; }
+
+/* ── Card / section header bar ──────────────────────────────────── */
+.dev-card-hdr,
+.dev-stat-header,
+.exp-contrib-hdr,
+.fin-posture-hdr,
+.fin-table-hdr,
+.fin-intel-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Section title (13px semibold) ─────────────────────────────── */
+.dev-card-title,
+.fin-chart-title,
+.fin-posture-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--shell-text);
+}
+
+/* ── Legend dot (chart / stacked-bar legends) ───────────────────── */
+.dev-legend-dot,
+.fin-sbc-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Icon + text inline pair ────────────────────────────────────── */
+.dev-cell-icon-text,
+.kg-td-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

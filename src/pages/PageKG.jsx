@@ -743,7 +743,7 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
   const pagedRows = rows.slice(start, start + rowsPerPage);
 
   return (
-    <div className="kg-details">
+    <div className="card kg-details">
       <div className="kg-details__header">
         <div className="kg-details__title">
           Details <span className="kg-details__title-count">({fmtN(totalCount)})</span>
@@ -962,9 +962,9 @@ function PageKG() {
   }, [selected, selectedEdgeKey, multiSelectMode, multiSelected]);
 
   return (
-    <div className="kg-page">
+    <div className="page">
       {/* Summary card */}
-      <div className="kg-card">
+      <div className="card kg-card">
         <div className="kg-card__header">
           <div className="kg-card__title">Summary</div>
           <div className="kg-card__spacer" />

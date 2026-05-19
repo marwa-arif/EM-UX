@@ -1,10 +1,9 @@
 /* ── Exposure Overview page layout ───────────────────────────────── */
-.exp-page { padding: 16px 0 16px 16px; display: flex; flex-direction: column; gap: 16px; }
 .exp-main { gap: 16px; }
 .exp-content-col .subheader { border-right: 1px solid var(--shell-border); border-bottom-right-radius: 8px; }
 
-/* ── Shared card shell ──────────────────────────────────────────── */
-.exp-card { background: var(--card-bg, #fff); border: 1px solid var(--card-border, #E6E6E6); border-radius: 4px; padding: 16px; }
+/* ── Card padding override ──────────────────────────────────────── */
+.exp-card { padding: 16px; }
 
 /* ── Exposure Overview section ──────────────────────────────────── */
 .exp-ov-hdr { position: relative; display: flex; align-items: center; justify-content: space-between; }
@@ -65,10 +64,10 @@
 .exp-gauge-score-row { display: flex; align-items: baseline; gap: 2px; }
 
 /* ── Contribution table card ────────────────────────────────────── */
-.exp-contrib-card { background: var(--card-bg, #fff); border: 1px solid var(--card-border, #E6E6E6); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.exp-contrib-card { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 
 /* Card header */
-.exp-contrib-hdr { display: flex; align-items: center; justify-content: space-between; padding-left: 8px; }
+.exp-contrib-hdr { padding-left: 8px; }
 .exp-contrib-hdr-left { display: flex; align-items: center; gap: 12px; }
 .exp-contrib-title { font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
 .exp-groupby-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 54px; padding: 6px 12px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--shell-text, #101010); font-family: inherit; }
@@ -83,16 +82,14 @@
 .exp-explore-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--pai-indigo-tint); border-radius: 44px; padding: 4px 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--pai-indigo); font-family: inherit; }
 
 /* Table wrapper */
-.exp-table-wrap { overflow-x: auto; }
-.exp-table { border-collapse: collapse; width: 100%; min-width: 900px; }
+.exp-table { min-width: 900px; }
 
 /* Table header cell */
-.exp-th { background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--card-border, #E6E6E6); padding: 12px 12px 12px 4px; font-size: 12px; font-weight: 600; color: var(--shell-text-muted, #6E6E6E); white-space: nowrap; user-select: none; }
-.exp-th-inner { display: inline-flex; align-items: center; gap: 6px; }
+.exp-th { padding: 12px 12px 12px 4px; font-size: 12px; user-select: none; }
+.exp-th-inner { gap: 6px; }
 .exp-th-sort-icon { color: var(--shell-text-faint); }
 
 /* Table body rows & cells */
-.exp-tr { border-bottom: 1px solid var(--card-border, #E6E6E6); }
 .exp-td { padding: 0 12px 0 4px; height: 48px; }
 .exp-td-name { font-size: 14px; color: var(--shell-text, #101010); text-align: left; white-space: nowrap; vertical-align: middle; }
 .exp-td-score { font-size: 12px; font-weight: 600; vertical-align: middle; }

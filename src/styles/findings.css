@@ -1,16 +1,12 @@
 /* ── Findings page layout ───────────────────────────────────────── */
-.fin-page { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 12px; gap: 12px; overflow-y: auto; }
+.fin-page { flex: 1; min-height: 0; overflow-y: auto; }
 .fin-intel-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-top-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-left-col { display: flex; flex-direction: column; flex: 1; gap: 12px; min-width: 0; }
 .fin-right-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* ── Shared card shell ──────────────────────────────────────────── */
-.fin-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; }
-
 /* ── Stacked bar chart card ─────────────────────────────────────── */
 .fin-chart-card { padding: 16px 20px 14px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
-.fin-chart-title { font-size: 13px; font-weight: 600; color: var(--shell-text); }
 .fin-sbc-rows { display: flex; flex-direction: column; gap: 12px; }
 .fin-sbc-row { display: flex; align-items: center; gap: 12px; }
 .fin-sbc-label { width: 72px; flex-shrink: 0; font-size: 11px; color: var(--shell-text-2); line-height: 1.35; display: flex; flex-direction: column; text-align: left; }
@@ -23,12 +19,9 @@
 .fin-sbc-xlabel { font-size: 10px; color: var(--shell-text-muted); text-align: center; margin-top: 2px; }
 .fin-sbc-legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 .fin-sbc-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--shell-text-2); }
-.fin-sbc-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── Security Posture card ──────────────────────────────────────── */
 .fin-posture-card { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
-.fin-posture-hdr { display: flex; align-items: center; justify-content: space-between; }
-.fin-posture-title { font-size: 13px; font-weight: 600; color: var(--shell-text); }
 .fin-posture-groupby { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--shell-text-muted); }
 .fin-groupby-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border: 1px solid var(--shell-border); border-radius: 999px; background: var(--ctrl-bg); font-size: 11px; font-family: inherit; color: var(--shell-text); cursor: pointer; transition: border-color 0.12s; }
 .fin-groupby-btn:hover { border-color: var(--shell-accent); }
@@ -47,8 +40,8 @@
 .fin-donut-pct { width: 32px; text-align: right; font-size: 12px; font-weight: 600; color: var(--shell-text-muted); font-variant-numeric: tabular-nums; }
 
 /* ── Table section ──────────────────────────────────────────────── */
-.fin-table-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
-.fin-table-hdr { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-bottom: 1px solid var(--shell-border); flex-wrap: wrap; gap: 10px; }
+.fin-table-section { display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.fin-table-hdr { padding: 13px 20px; border-bottom: 1px solid var(--shell-border); flex-wrap: wrap; gap: 10px; }
 .fin-table-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
 .fin-table-count { font-weight: 400; color: var(--shell-text-muted); font-size: 13px; }
 .fin-table-actions { display: flex; align-items: center; gap: 8px; }
@@ -57,13 +50,11 @@
 .fin-btn-outline:hover { border-color: var(--shell-accent); color: var(--shell-accent); }
 .fin-btn-primary { border: none; background: var(--shell-accent); color: #fff; }
 .fin-btn-primary:hover { background: var(--pai-indigo-hover); }
-.fin-table-wrap { overflow-x: auto; }
-.fin-table { width: 100%; border-collapse: collapse; }
-.fin-th { padding: 9px 16px; text-align: left; font-size: 10px; font-weight: 600; color: var(--shell-text-muted); background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--shell-border); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
+.fin-th { padding: 9px 16px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
 html.theme-dark .fin-th { background: var(--ctrl-bg); }
-.fin-th-inner { display: inline-flex; align-items: center; gap: 5px; }
+.fin-th-inner { gap: 5px; }
 .fin-tr:hover .fin-td { background: var(--shell-hover); }
-.fin-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); font-size: 12px; vertical-align: middle; white-space: nowrap; }
+.fin-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border, #E6E6E6); white-space: nowrap; }
 html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-td-flex { display: flex; align-items: center; gap: 6px; }
 .fin-td-icon { display: flex; align-items: center; justify-content: center; color: var(--shell-text-muted); flex-shrink: 0; }
@@ -75,14 +66,14 @@ html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 
 /* ── Operational Intelligence row ────────────────────────────────── */
 /* shared intel card header */
-.fin-intel-hdr { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px 10px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; }
-.fin-intel-title { font-size: 13px; font-weight: 600; color: var(--shell-text); display: flex; align-items: center; gap: 7px; }
+.fin-intel-hdr { padding: 11px 16px 10px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; }
+.fin-intel-title { display: flex; align-items: center; gap: 7px; }
 .fin-intel-badge { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 4px; }
 .fin-intel-badge-crit { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
 .fin-intel-badge-neutral { background: var(--shell-border); color: var(--shell-text-muted); letter-spacing: 0.03em; }
 
 /* ── Remediate Now card ────────────────────────────────────────── */
-.fin-actnow-card { flex: 0 0 42%; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+.fin-actnow-card { flex: 0 0 42%; display: flex; flex-direction: column; overflow: hidden; }
 .fin-actnow-list { display: flex; flex-direction: column; flex: 1; }
 .fin-actnow-item { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px 12px 16px; border-bottom: 1px solid var(--shell-border); border-left: 3px solid transparent; transition: background 0.12s; justify-content: center; flex: 1; }
 .fin-actnow-item:last-child { border-bottom: none; }
@@ -99,7 +90,7 @@ html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-remediate-btn:hover { background: var(--pai-indigo-hover); }
 
 /* ── Program Status card ───────────────────────────────────────── */
-.fin-ops-card { flex: 1; min-width: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+.fin-ops-card { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 /* Backlog pulse strip */
 .fin-ps-pulse { display: flex; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; }
