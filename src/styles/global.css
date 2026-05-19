@@ -14,6 +14,7 @@ body { background: #F7F9FC; color: #101010; }
   --shell-topbar-text-muted:  #9A9A9A;
   --shell-bg:           #F7F9FC;
   --shell-border:       #E6E6E6;
+  --shell-border-2:     #D6D6D6;
   --shell-text:         #101010;
   --shell-text-2:       #282828;
   --shell-text-muted:   #6E6E6E;
@@ -103,6 +104,71 @@ button { font-family: inherit; }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }
 *::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Dark theme overrides ──────────────────────────────────────────── */
+html.theme-dark {
+  color-scheme: dark;
+
+  /* Shell surfaces */
+  --shell-bg:           #0E0E0E;
+  --shell-raised:       #1C1C1C;
+  --shell-border:       #272727;
+  --shell-border-2:     #3B3A3A;
+  --shell-text:         #F9F9F9;
+  --shell-text-2:       #D1D1D1;
+  --shell-text-muted:   #8A8A8A;
+  --shell-text-faint:   #696969;
+  --shell-accent:       #6360D8;
+  --shell-hover:        rgba(255,255,255,0.05);
+  --shell-active:       rgba(99,96,216,0.15);
+
+  /* Card / table surfaces */
+  --card-bg:            #1C1C1C;
+  --card-border:        #272727;
+  --table-th-bg:        #131313;
+  --table-border:       #272727;
+
+  /* Control / input */
+  --ctrl-bg:            #131313;
+  --ctrl-border:        #333333;
+  --ctrl-placeholder:   #696969;
+
+  /* PAI semantic aliases */
+  --pai-fg1:                  #F9F9F9;
+  --pai-fg2:                  #D1D1D1;
+  --pai-fg3:                  #8A8A8A;
+  --pai-border:               #272727;
+  --pai-border-strong:        #3B3A3A;
+  --pai-bg-app:               #0E0E0E;
+  --pai-bg-raised:            #1C1C1C;
+  --pai-surface:              #1C1C1C;
+  --pai-disabled:             #555555;
+  --pai-indigo-tint:          rgba(99,96,216,0.15);
+  --pai-indigo-secondary:     rgba(99,96,216,0.22);
+  --pai-indigo-secondary-fg:  #A09EEB;
+
+  /* Severity — fg lightened for dark backgrounds, bg tinted */
+  --pai-crit-fg:        #E84349;
+  --pai-crit-bg:        rgba(209,35,41,0.15);
+  --pai-crit-bg-hover:  rgba(209,35,41,0.28);
+  --pai-high-fg:        #E09830;
+  --pai-high-bg:        rgba(225,82,82,0.15);
+  --pai-med-fg:         #7D7AE0;
+  --pai-med-bg:         rgba(99,96,216,0.15);
+  --pai-low-fg:         #31A56D;
+  --pai-low-bg:         rgba(49,165,109,0.15);
+  --pai-warn-bg:        rgba(205,185,0,0.08);
+
+  /* Navigator panel — slightly lightened for dark context */
+  --pai-nav-teal:       #5BBDD4;
+}
+
+html.theme-dark body {
+  background: #0E0E0E;
+  color: #F9F9F9;
+}
+
+html.theme-dark *::-webkit-scrollbar-thumb { background: #3B3A3A; }
 
 /* ── Shared page wrapper ─────────────────────────────────────────── */
 .page {

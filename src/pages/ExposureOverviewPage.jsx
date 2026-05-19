@@ -17,10 +17,10 @@ const TABLE_DATA = [
 
 const MAX_BAR_PCT = 12;
 
-function scoreColor(v) { return v >= 740 ? '#E15252' : '#D98B1D'; }
+function scoreColor(v) { return v >= 740 ? 'var(--pai-red-high)' : 'var(--pai-high-fg)'; }
 function changeColor(dir, pct) {
-  if (dir === 'down') return '#31A56D';
-  return pct >= 10 ? '#D12329' : '#E15252';
+  if (dir === 'down') return 'var(--pai-green)';
+  return pct >= 10 ? 'var(--pai-crit-fg)' : 'var(--pai-red-high)';
 }
 
 // ── Icons ─────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ const IcExplore = () => (
   </svg>
 );
 const IcInfo = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#BBBBC0' }}>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
 );
@@ -101,8 +101,8 @@ const Sparkline = () => (
 // ── Bubble component ──────────────────────────────────────────────
 function Bubble({ score, severity, icon, size = 105, label }) {
   const isHigh = severity === 'H';
-  const color = isHigh ? '#D12329' : '#D98B1D';
-  const tagBg = isHigh ? '#F9EEEE' : '#F7F6EB';
+  const color = isHigh ? 'var(--pai-crit-fg)' : 'var(--pai-high-fg)';
+  const tagBg = isHigh ? 'var(--pai-crit-bg)' : 'var(--pai-warn-bg)';
   const gradient = isHigh
     ? 'linear-gradient(177deg, #F48484 2%, #E15252 97%)'
     : 'linear-gradient(177deg, #E6B36D 2%, #D98B1D 97%)';

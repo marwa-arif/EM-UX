@@ -193,8 +193,8 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
           style={{
             flex: 1, padding: '6px 10px',
             borderRadius: 6, border: '1px solid',
-            borderColor: savedFlash ? 'var(--pai-green)' : (dirty ? 'var(--pai-indigo)' : 'rgba(0,0,0,.1)'),
-            background: savedFlash ? 'var(--pai-low-bg)' : (dirty ? 'var(--pai-indigo)' : 'rgba(0,0,0,.04)'),
+            borderColor: savedFlash ? 'var(--pai-green)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-border)'),
+            background: savedFlash ? 'var(--pai-low-bg)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-raised)'),
             color: savedFlash ? 'var(--pai-low-fg)' : (dirty ? 'var(--pai-surface)' : 'var(--shell-text-muted)'),
             fontSize: 11, fontWeight: 500,
             cursor: (dirty || savedFlash) ? 'pointer' : 'default',
@@ -209,9 +209,9 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
           disabled={!dirty}
           style={{
             padding: '6px 10px',
-            borderRadius: 6, border: '1px solid rgba(0,0,0,.1)',
+            borderRadius: 6, border: '1px solid var(--shell-border)',
             background: 'transparent',
-            color: dirty ? 'var(--shell-text-muted)' : 'rgba(0,0,0,.25)',
+            color: dirty ? 'var(--shell-text-muted)' : 'var(--pai-disabled)',
             fontSize: 11,
             cursor: dirty ? 'pointer' : 'default',
             fontFamily: 'inherit',
@@ -302,8 +302,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
       className="rp-shell"
       style={{
         width: isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0,
-        borderLeft: (isOpen && !isCollapsedForFloat) ? '1px solid rgba(0,0,0,0.07)' : 'none',
-        boxShadow: (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.07)' : 'none',
+        borderLeft: (isOpen && !isCollapsedForFloat) ? '1px solid var(--shell-border)' : 'none',
+        boxShadow: (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.18)' : 'none',
       }}
     >
       <div className="rp-shell__inner" style={{ width: SHELL_WIDTH }}>
@@ -365,6 +365,7 @@ function App() {
     if (path === '/knowledge-graph' || path === '/') return 'kg';
     return path.slice(1) || 'kg';
   });
+  const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [collapsed, setCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
   const [navigatorQuery, setNavigatorQuery] = useState('');
@@ -376,6 +377,15 @@ function App() {
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
   const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle('theme-dark', theme === 'dark');
+    html.classList.toggle('theme-light', theme === 'light');
+    localStorage.setItem('pai-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   // Set BEFORE first render of children so PageKG can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
@@ -564,7 +574,7 @@ function App() {
       fontFamily: "'Inter', system-ui",
       color: PAI.fg1, background: 'var(--shell-bg)',
     }}>
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} />
+      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
 
       <div ref={isKG ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav

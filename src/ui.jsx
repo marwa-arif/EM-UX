@@ -1,22 +1,22 @@
 import React from 'react'
 
 const PAI = {
-  indigo: '#6360D8',
-  indigoHover: '#504BB8',
-  indigoTint: '#F0F0FC',
-  fg1: '#101010',
-  fg2: '#282828',
-  fg3: '#6E6E6E',
-  disabled: '#9CA3AF',
-  border: '#E6E6E6',
-  borderStrong: '#CFCFCF',
-  bgApp: '#F7F9FC',
-  bgRaised: '#F5F5F5',
-  surface: '#FFFFFF',
-  critFg: '#D12329', critBg: '#F9EEEE',
-  highFg: '#D98B1D', highBg: '#FEF3C7',
-  medFg:  '#6360D8', medBg:  '#F0F0FC',
-  lowFg:  '#1A7549', lowBg:  '#EFF7ED',
+  indigo:       'var(--pai-indigo)',
+  indigoHover:  'var(--pai-indigo-hover)',
+  indigoTint:   'var(--pai-indigo-tint)',
+  fg1:          'var(--pai-fg1)',
+  fg2:          'var(--pai-fg2)',
+  fg3:          'var(--pai-fg3)',
+  disabled:     'var(--pai-disabled)',
+  border:       'var(--pai-border)',
+  borderStrong: 'var(--pai-border-strong)',
+  bgApp:        'var(--pai-bg-app)',
+  bgRaised:     'var(--pai-bg-raised)',
+  surface:      'var(--pai-surface)',
+  critFg: 'var(--pai-crit-fg)', critBg: 'var(--pai-crit-bg)',
+  highFg: 'var(--pai-high-fg)', highBg: 'var(--pai-high-bg)',
+  medFg:  'var(--pai-med-fg)',  medBg:  'var(--pai-med-bg)',
+  lowFg:  'var(--pai-low-fg)',  lowBg:  'var(--pai-low-bg)',
 };
 
 // ── Button ──────────────────────────────────────────────────────────

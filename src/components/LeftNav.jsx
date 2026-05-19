@@ -105,10 +105,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
         <img
           src={`/assets/icons/${item.icon}.svg`}
           width={16} height={16}
-          style={{ flexShrink: 0,
-            filter: isActiveParent
-              ? 'brightness(0) saturate(100%) invert(37%) sepia(76%) saturate(700%) hue-rotate(218deg) brightness(97%)'
-              : 'grayscale(20%) opacity(0.78)' }}
+          className={`nav-item__icon${isActiveParent ? ' nav-item__icon--active' : ''}`}
           alt=""
         />
         {!collapsed && (

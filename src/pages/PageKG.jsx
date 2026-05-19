@@ -171,9 +171,9 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         const w = Math.max(36, txt.length * 5.5 + 12);
         return (
           <g transform={`translate(${r-2},${-r+2})`}>
-            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16" fill="#fff" stroke="#E6E6E6" strokeWidth="1" />
+            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16" fill="var(--card-bg)" stroke="var(--shell-border)" strokeWidth="1" />
             <text textAnchor="middle" dominantBaseline="central" y="0.5"
-                  style={{ fontSize: 10, fontWeight: 700, fill: '#282828', fontVariantNumeric: 'tabular-nums', fontFamily: "'Inter', system-ui" }}>
+                  style={{ fontSize: 10, fontWeight: 700, fill: 'var(--shell-text-2)', fontVariantNumeric: 'tabular-nums', fontFamily: "'Inter', system-ui" }}>
               {txt}
             </text>
           </g>
@@ -189,7 +189,7 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         textAnchor="middle"
         style={{
           fontSize: 11, fontWeight: selected ? 600 : 500,
-          fill: selected ? def.icon : '#282828',
+          fill: selected ? def.icon : 'var(--shell-text)',
           letterSpacing: '0.01em',
           fontFamily: "'Inter', system-ui",
         }}
@@ -214,7 +214,7 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
   const colorA = ENTITY_TYPES[reversed ? b : a]?.icon || '#6360D8';
   const colorB = ENTITY_TYPES[reversed ? a : b]?.icon || '#6360D8';
   const gradId = `eg-${edgeKey.replace('|', '-')}`;
-  const stroke = selected ? `url(#${gradId})` : '#D6D6D6';
+  const stroke = selected ? `url(#${gradId})` : 'var(--shell-border-2)';
   const strokeW = selected ? 1.6 : 1;
   const opacity = dimmed ? 0.18 : 1;
   const isSelfLoop = a === b;
@@ -247,7 +247,7 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
         )}
         <path d={d} fill="none" stroke="transparent" strokeWidth="10" style={{ cursor: 'pointer' }} />
         <path d={d} fill="none"
-              stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : '#D6D6D6'))}
+              stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : 'var(--shell-border-2)'))}
               strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
               style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
         />
@@ -257,7 +257,7 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
             <g transform={`translate(${labelX},${labelY})`}>
               <title>{label}</title>
               <text textAnchor="middle" dominantBaseline="central"
-                    style={{ fontSize: 9.5, fill: selected ? '#282828' : '#8A8A8A', fontWeight: selected ? 600 : 400, fontFamily: "'Inter', system-ui" }}>
+                    style={{ fontSize: 9.5, fill: selected ? 'var(--shell-text)' : 'var(--shell-text-muted)', fontWeight: selected ? 600 : 400, fontFamily: "'Inter', system-ui" }}>
                 {lbl}
               </text>
             </g>
@@ -290,7 +290,7 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
       )}
       <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="10" style={{ cursor: 'pointer' }} />
       <line x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : '#D6D6D6'))}
+            stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : 'var(--shell-border-2)'))}
             strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
             strokeDasharray={selected ? 'none' : '0'}
             style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
@@ -300,9 +300,9 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
         return (
           <g transform={`translate(${mx},${my})`}>
             <title>{label}</title>
-            <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3" fill="#F7F9FC" />
+            <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3" fill="var(--shell-bg)" />
             <text textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: 9.5, fill: selected ? '#282828' : '#8A8A8A', fontWeight: selected ? 600 : 400 }}>
+                  style={{ fontSize: 9.5, fill: selected ? 'var(--shell-text)' : 'var(--shell-text-muted)', fontWeight: selected ? 600 : 400 }}>
               {lbl}
             </text>
           </g>

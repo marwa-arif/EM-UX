@@ -61,10 +61,10 @@ const TABLE_ROWS = [
 ];
 
 function scoreColor(v) {
-  if (v >= 800) return '#D12329';
-  if (v >= 650) return '#D98B1D';
-  if (v >= 500) return '#CDB900';
-  return '#9CA3AF';
+  if (v >= 800) return 'var(--pai-crit-fg)';
+  if (v >= 650) return 'var(--pai-high-fg)';
+  if (v >= 500) return 'var(--pai-caution-fg)';
+  return 'var(--pai-disabled)';
 }
 
 // ── Operational intelligence data ────────────────────────────────

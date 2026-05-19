@@ -20,6 +20,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   position: relative;
 }
+.topbar__theme-toggle:hover { background: rgba(255,255,255,0.10); }
 .topbar__notif-dot {
   position: absolute; top: 6px; right: 7px;
   width: 6px; height: 6px; border-radius: 50%;
@@ -27,7 +28,7 @@
 }
 .topbar__avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: var(--pai-indigo); color: var(--pai-indigo-tint);
+  background: var(--pai-indigo); color: #fff;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600;
 }
@@ -86,6 +87,12 @@
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+/* Nav icon filters — theme-aware */
+.nav-item__icon        { flex-shrink: 0; filter: grayscale(20%) opacity(0.72); }
+.nav-item__icon--active { filter: brightness(0) saturate(100%) invert(37%) sepia(76%) saturate(700%) hue-rotate(218deg) brightness(97%); }
+html.theme-dark .nav-item__icon        { filter: brightness(0) invert(1) opacity(0.60); }
+html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) sepia(1) saturate(2) hue-rotate(210deg) opacity(1); }
+
 /* ── Main page scroll area ─────────────────────────────────────────── */
 .page-scroll { scrollbar-width: none; }
 .page-scroll::-webkit-scrollbar { width: 0; height: 0; }
