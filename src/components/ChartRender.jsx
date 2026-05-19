@@ -187,7 +187,7 @@ export function ChartRender({
                   {secW > 0 && (
                     <rect x={LABEL_W} y={y + 6} width={secW} height="11" rx="5" fill="var(--pai-indigo)"/>
                   )}
-                  <text x={LABEL_W + barW + 4} y={y + 14} fontSize="7.5" fill={TG} fontFamily="Inter,system-ui">{d.value}%</text>
+                  <text x={LABEL_W + barW + 4} y={y + 14} fontSize="7.5" fill={TG} fontFamily="Inter,system-ui">{d.count != null ? d.count : d.value + '%'}</text>
                 </g>
               )
             })}
@@ -214,6 +214,47 @@ export function ChartRender({
             <text key={i} x={38+i*41} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{v}</text>
           ))}
         </svg>
+      </div>
+    )
+  }
+
+  // ── Data-driven KPI ────────────────────────────────────────────
+  if (chartId === 'kpi' && data) {
+    const trendColor = data.trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
+    const trendBg    = data.trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
+    return (
+      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: 'Inter,system-ui' }}>
+        <span style={{ fontSize: 11, color: 'var(--shell-text-muted)' }}>{data.label}</span>
+        <span style={{ fontSize: 44, fontWeight: 700, color: 'var(--pai-indigo)', lineHeight: 1 }}>{data.value}</span>
+        {data.trend && (
+          <span style={{ background: trendBg, borderRadius: 100, padding: '3px 12px', fontSize: 11, fontWeight: 600, color: trendColor }}>
+            {data.trendUp ? '↑' : '↓'} {data.trend} from last month
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  // ── Data-driven stacked-hor bar ────────────────────────────────
+  if (chartId === 'stack-hor' && data) {
+    return (
+      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, padding: '4px 0', fontFamily: 'Inter,system-ui' }}>
+        <div style={{ display: 'flex', height: 12, borderRadius: 4, overflow: 'hidden', gap: 2 }}>
+          {data.map((d, i) => (
+            <div key={i} style={{ flex: d.pct, background: d.color, borderRadius: 3 }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          {data.map((d, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 8, borderLeft: `2px solid ${d.color}`, flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 11, color: 'var(--shell-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--shell-text)' }}>{d.count}</span>
+                <span style={{ fontSize: 10, color: 'var(--shell-text-muted)' }}>{d.pct.toFixed(2)}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

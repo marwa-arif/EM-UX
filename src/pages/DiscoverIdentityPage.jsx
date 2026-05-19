@@ -75,57 +75,71 @@ function fmtDate(label) {
 const TIME_RANGES = ['1 W', '1 M', '3 M', '6 M', '1 Y'];
 
 const SOURCES = [
-  { name: 'AWS',                 total: 97, corr: 5  },
-  { name: 'MS Azure',            total: 85, corr: 5  },
-  { name: 'Qualys',              total: 56, corr: 20 },
-  { name: 'MS Active Directory', total: 47, corr: 30 },
-  { name: 'WIZ',                 total: 38, corr: 5  },
-  { name: 'Infoblox',            total: 12, corr: 7  },
-  { name: 'MS Defender',         total: 8,  corr: 5  },
-  { name: 'Tenable',             total: 5,  corr: 3  },
+  { name: 'MS Active Dire...', total: 59, corr: 24 },
+  { name: 'MS Entra ID',       total: 38, corr: 15 },
+  { name: 'Windows Securit...', total: 37, corr: 12 },
+  { name: 'MS Intune',         total: 29, corr: 8  },
+  { name: 'MS Defender',       total: 23, corr: 7  },
+  { name: 'AWS IAM Center',    total: 1,  corr: 0  },
+  { name: 'MS Azure',          total: 6,  corr: 3  },
+  { name: 'Okta',              total: 4,  corr: 2  },
 ];
 
 const TYPES = [
-  { label: 'Server',           icon: 'server',      count: 4086, pct: 33, color: 'var(--pai-indigo)' },
-  { label: 'Workstation',      icon: 'workstation', count: 2848, pct: 23, color: '#5BADB8' },
-  { label: 'Network',          icon: 'network',     count: 2600, pct: 21, color: 'var(--pai-green)' },
-  { label: 'Mobile',           icon: 'mobile',      count: 897,  pct: 8,  color: 'var(--pai-high-fg)' },
-  { label: 'Printers',         icon: 'printer',     count: 124,  pct: 1,  color: 'var(--pai-red-high)' },
-  { label: 'IOT',              icon: 'iot',         count: 122,  pct: 1,  color: 'var(--pai-indigo-muted)' },
-  { label: 'Storage Accounts', icon: 'storage',     count: 2,    pct: 1,  color: '#C4C4C4' },
+  { label: 'Non-Human', icon: 'non-human', count: 57687, pct: 80.75, color: 'var(--pai-indigo)' },
+  { label: 'Human',     icon: 'human',     count: 13755, pct: 19.25, color: 'var(--pai-green)' },
 ];
 
 const INSIGHTS = [
-  { sev: 'high', text: 'Adaptive application controls for defining safe applications should be configured on your machines',           failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Adaptive network hardening recommendations should be applied on internet facing virtual machines',             failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'All network ports should be restricted on network security groups associated to your virtual machine',         failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Allowlist rules in your adaptive application control policy should be updated',                                failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Authentication to Linux machines should require SSH keys',                                                     failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Endpoint protection should be installed on your machines',                                                     failPct: 97,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Guest configuration extension should be installed on your machines',                                           failPct: 94,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Log Analytics agent should be installed on your virtual machine for Azure Security Center monitoring',         failPct: 91,  cat: 'Control Gap' },
-  { sev: 'high', text: 'MFA should be enabled on accounts with write permissions on your subscription',                                failPct: 88,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Remote debugging should be turned off for Function Apps',                                                      failPct: 85,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Data uploads to personal cloud storage are restricted during the employment period',                          failPct: 100, cat: 'Behavioural Indicators' },
+  { sev: 'high', text: 'Human identities are configured to require a password',                                                       failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Human identities in Microsoft Entra ID have had their password rotated in the last 90 days',                 failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Sensitive data is protected from unauthorized bulk access and exfiltration attempts',                         failPct: 100, cat: 'Behavioural Indicators' },
+  { sev: 'high', text: 'Machine identities have MFA enabled',                                                                         failPct: 99,  failPctLabel: '>99%', cat: 'Control Gap' },
+  { sev: 'high', text: 'Non-human accounts are scoped with least-privilege permissions',                                              failPct: 98,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Privileged identity accounts are protected with Privileged Identity Management',                              failPct: 96,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Service accounts have their credentials rotated on a regular schedule',                                       failPct: 95,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Dormant identities are reviewed and disabled after a defined inactivity period',                              failPct: 93,  cat: 'Control Gap' },
+  { sev: 'high', text: 'External guest identities are reviewed and removed when access is no longer required',                        failPct: 91,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Conditional Access policies enforce device compliance for all identity sign-ins',                             failPct: 89,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Identity governance reviews are completed on a quarterly basis for privileged roles',                         failPct: 87,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Shared accounts are eliminated and replaced with individual identity assignments',                            failPct: 85,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Break-glass emergency accounts are monitored and alerts are configured for any usage',                       failPct: 83,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Identity risk policies are configured in Microsoft Entra ID Protection for high-risk sign-ins',               failPct: 81,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Application registrations in Entra ID are reviewed and unused apps are decommissioned',                      failPct: 79,  cat: 'Control Gap' },
+  { sev: 'high', text: 'OAuth app permissions are reviewed and excessive consented scopes are revoked',                              failPct: 77,  cat: 'Behavioural Indicators' },
+  { sev: 'high', text: 'Federated identity credentials are audited and unused federations are removed',                              failPct: 75,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Sign-in activity for non-human identities is monitored for anomalous patterns',                              failPct: 73,  cat: 'Behavioural Indicators' },
+  { sev: 'high', text: 'Role assignments at the subscription scope are limited and regularly reviewed',                              failPct: 71,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Legacy authentication protocols are blocked via Conditional Access policies',                                 failPct: 69,  cat: 'Control Gap' },
+  { sev: 'high', text: 'User accounts are protected with phishing-resistant MFA methods',                                            failPct: 67,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Cross-tenant access settings restrict collaboration to approved partner tenants only',                        failPct: 65,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Identity lifecycle is integrated with HR systems for automated provisioning and deprovisioning',              failPct: 63,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Named locations are defined and risky location-based sign-ins trigger step-up authentication',               failPct: 61,  cat: 'Behavioural Indicators' },
+  { sev: 'high', text: 'Directory synchronization health is monitored and sync errors are resolved within SLA',                     failPct: 59,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Privileged access workstations are required for all Tier 0 identity administration tasks',                   failPct: 57,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Entra ID audit logs are exported to SIEM and retained for the required compliance period',                   failPct: 55,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Managed identities are used in place of service principals with client secrets where supported',             failPct: 53,  cat: 'Control Gap' },
 ];
 
 const CRITICALITY = [
-  { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'   },
-  { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'  },
-  { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'   },
-  { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'     },
+  { label: 'Critical', count: '27',     pct: 0.03,  color: 'var(--pai-crit-fg)'   },
+  { label: 'High',     count: '178',    pct: 0.20,  color: 'var(--pai-red-high)'  },
+  { label: 'Medium',   count: '84,137', pct: 96.63, color: 'var(--pai-high-fg)'   },
+  { label: 'Low',      count: '2,731',  pct: 3.14,  color: 'var(--pai-green)'     },
 ];
 
 const ASSETS = [
-  { name: 'VM-TSR39727.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 1000 },
-  { name: 'VM-TSR19224.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR27829.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR17132.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR37484.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 996  },
+  { name: 'J.HARTWELL@ACMECORP.COM:...',   type: 'Entra ID Account', crit: 'Critical', score: 1000 },
+  { name: 'JAMES HARTWELL',                type: 'Human',            crit: 'Critical', score: 1000 },
+  { name: 'S.MEHTA@ACMECORP.COM:OFF...',   type: 'Entra ID Account', crit: 'Critical', score: 1000 },
+  { name: 'J.HARTWELL@ACMECORP.COM:...',   type: 'Entra ID Account', crit: 'Critical', score: 1000 },
+  { name: 'R.TORRES@ACMECORP.COM:...',     type: 'Entra ID Account', crit: 'Critical', score: 1000 },
 ];
 
 // ── Chart data ────────────────────────────────────────────────────
 
-const TYPES_PIE_DATA = TYPES.slice(0, 6).map(t => ({
+const TYPES_PIE_DATA = TYPES.slice(0, 7).map(t => ({
   label: t.label,
   count: t.count.toLocaleString(),
   value: t.count,
@@ -135,58 +149,58 @@ const TYPES_PIE_DATA = TYPES.slice(0, 6).map(t => ({
 
 const TREND_DATA_BY_RANGE = {
   '1 W': [
-    { name: '2 Aug',  value: 11900 },
-    { name: '3 Aug',  value: 12020 },
-    { name: '4 Aug',  value: 12100 },
-    { name: '5 Aug',  value: 12180 },
-    { name: '6 Aug',  value: 12250 },
-    { name: '7 Aug',  value: 12320 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '2 Aug',  value: 67471 },
+    { name: '3 Aug',  value: 71500 },
+    { name: '4 Aug',  value: 75000 },
+    { name: '5 Aug',  value: 78500 },
+    { name: '6 Aug',  value: 81500 },
+    { name: '7 Aug',  value: 84500 },
+    { name: '8 Aug',  value: 87073 },
   ],
   '1 M': [
-    { name: '12 Jul', value: 11640 },
-    { name: '19 Jul', value: 11800 },
-    { name: '26 Jul', value: 11970 },
-    { name: '2 Aug',  value: 12180 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '12 Jul', value: 55000 },
+    { name: '19 Jul', value: 63000 },
+    { name: '26 Jul', value: 72000 },
+    { name: '2 Aug',  value: 80000 },
+    { name: '8 Aug',  value: 87073 },
   ],
   '3 M': [
-    { name: '18 May', value: 9800  },
-    { name: '25 May', value: 10050 },
-    { name: '1 Jun',  value: 10300 },
-    { name: '8 Jun',  value: 10520 },
-    { name: '15 Jun', value: 10740 },
-    { name: '22 Jun', value: 10960 },
-    { name: '29 Jun', value: 11160 },
-    { name: '6 Jul',  value: 11360 },
-    { name: '13 Jul', value: 11560 },
-    { name: '20 Jul', value: 11760 },
-    { name: '27 Jul', value: 11960 },
-    { name: '3 Aug',  value: 12180 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '18 May', value: 23000 },
+    { name: '25 May', value: 28000 },
+    { name: '1 Jun',  value: 33000 },
+    { name: '8 Jun',  value: 38000 },
+    { name: '15 Jun', value: 43000 },
+    { name: '22 Jun', value: 49000 },
+    { name: '29 Jun', value: 55000 },
+    { name: '6 Jul',  value: 61000 },
+    { name: '13 Jul', value: 67000 },
+    { name: '20 Jul', value: 73000 },
+    { name: '27 Jul', value: 79000 },
+    { name: '3 Aug',  value: 84000 },
+    { name: '8 Aug',  value: 87073 },
   ],
   '6 M': [
-    { name: '8 Feb',  value: 7200  },
-    { name: '8 Mar',  value: 8400  },
-    { name: '8 Apr',  value: 9400  },
-    { name: '8 May',  value: 10300 },
-    { name: '8 Jun',  value: 11100 },
-    { name: '8 Jul',  value: 11800 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '8 Feb',  value: 8000  },
+    { name: '8 Mar',  value: 16000 },
+    { name: '8 Apr',  value: 29000 },
+    { name: '8 May',  value: 45000 },
+    { name: '8 Jun',  value: 61000 },
+    { name: '8 Jul',  value: 76000 },
+    { name: '8 Aug',  value: 87073 },
   ],
   '1 Y': [
-    { name: '1 Sep',  value: 3800  },
-    { name: '1 Oct',  value: 4600  },
-    { name: '1 Nov',  value: 5400  },
-    { name: '1 Dec',  value: 6100  },
-    { name: '1 Jan',  value: 6900  },
-    { name: '1 Feb',  value: 7600  },
-    { name: '1 Mar',  value: 8400  },
-    { name: '1 Apr',  value: 9200  },
-    { name: '1 May',  value: 10000 },
-    { name: '1 Jun',  value: 10800 },
-    { name: '1 Jul',  value: 11600 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '1 Sep',  value: 2500  },
+    { name: '1 Oct',  value: 4000  },
+    { name: '1 Nov',  value: 6500  },
+    { name: '1 Dec',  value: 10000 },
+    { name: '1 Jan',  value: 15000 },
+    { name: '1 Feb',  value: 22000 },
+    { name: '1 Mar',  value: 31000 },
+    { name: '1 Apr',  value: 44000 },
+    { name: '1 May',  value: 57000 },
+    { name: '1 Jun',  value: 68000 },
+    { name: '1 Jul',  value: 79000 },
+    { name: '8 Aug',  value: 87073 },
   ],
 };
 
@@ -198,58 +212,58 @@ const SOURCES_CHART_DATA = SOURCES.map(s => ({
 
 const TYPE_TREND_DATA_BY_RANGE = {
   '1 W': [
-    { name: '2 Aug',  Server: 4057, Workstation: 2814, Network: 2567, Mobile: 883, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '3 Aug',  Server: 4063, Workstation: 2821, Network: 2574, Mobile: 885, Printers: 122, IOT: 120, 'Storage Accounts': 2 },
-    { name: '4 Aug',  Server: 4069, Workstation: 2828, Network: 2580, Mobile: 887, Printers: 122, IOT: 120, 'Storage Accounts': 2 },
-    { name: '5 Aug',  Server: 4074, Workstation: 2834, Network: 2586, Mobile: 890, Printers: 123, IOT: 121, 'Storage Accounts': 2 },
-    { name: '6 Aug',  Server: 4078, Workstation: 2839, Network: 2591, Mobile: 892, Printers: 123, IOT: 121, 'Storage Accounts': 2 },
-    { name: '7 Aug',  Server: 4082, Workstation: 2844, Network: 2596, Mobile: 895, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '2 Aug',  'Non-Human': 54503, Human: 12968 },
+    { name: '3 Aug',  'Non-Human': 57735, Human: 13765 },
+    { name: '4 Aug',  'Non-Human': 60563, Human: 14438 },
+    { name: '5 Aug',  'Non-Human': 63404, Human: 15096 },
+    { name: '6 Aug',  'Non-Human': 65856, Human: 15644 },
+    { name: '7 Aug',  'Non-Human': 68248, Human: 16252 },
+    { name: '8 Aug',  'Non-Human': 70312, Human: 16761 },
   ],
   '1 M': [
-    { name: '12 Jul', Server: 3948, Workstation: 2712, Network: 2472, Mobile: 857, Printers: 118, IOT: 116, 'Storage Accounts': 2 },
-    { name: '19 Jul', Server: 3980, Workstation: 2748, Network: 2510, Mobile: 868, Printers: 119, IOT: 117, 'Storage Accounts': 2 },
-    { name: '26 Jul', Server: 4015, Workstation: 2782, Network: 2545, Mobile: 878, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '2 Aug',  Server: 4054, Workstation: 2819, Network: 2574, Mobile: 889, Printers: 122, IOT: 121, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '12 Jul', 'Non-Human': 44413, Human: 10588 },
+    { name: '19 Jul', 'Non-Human': 50873, Human: 12128 },
+    { name: '26 Jul', 'Non-Human': 58140, Human: 13860 },
+    { name: '2 Aug',  'Non-Human': 64600, Human: 15400 },
+    { name: '8 Aug',  'Non-Human': 70312, Human: 16761 },
   ],
   '3 M': [
-    { name: '18 May', Server: 3350, Workstation: 2130, Network: 1940, Mobile: 723, Printers: 97,  IOT: 95,  'Storage Accounts': 1 },
-    { name: '25 May', Server: 3408, Workstation: 2195, Network: 2003, Mobile: 738, Printers: 99,  IOT: 97,  'Storage Accounts': 1 },
-    { name: '1 Jun',  Server: 3462, Workstation: 2255, Network: 2058, Mobile: 752, Printers: 102, IOT: 100, 'Storage Accounts': 1 },
-    { name: '8 Jun',  Server: 3518, Workstation: 2315, Network: 2115, Mobile: 767, Printers: 104, IOT: 102, 'Storage Accounts': 1 },
-    { name: '15 Jun', Server: 3568, Workstation: 2368, Network: 2170, Mobile: 781, Printers: 107, IOT: 105, 'Storage Accounts': 1 },
-    { name: '22 Jun', Server: 3618, Workstation: 2422, Network: 2226, Mobile: 796, Printers: 109, IOT: 107, 'Storage Accounts': 2 },
-    { name: '29 Jun', Server: 3668, Workstation: 2478, Network: 2282, Mobile: 810, Printers: 111, IOT: 109, 'Storage Accounts': 2 },
-    { name: '6 Jul',  Server: 3722, Workstation: 2538, Network: 2340, Mobile: 825, Printers: 114, IOT: 112, 'Storage Accounts': 2 },
-    { name: '13 Jul', Server: 3778, Workstation: 2600, Network: 2402, Mobile: 842, Printers: 116, IOT: 114, 'Storage Accounts': 2 },
-    { name: '20 Jul', Server: 3840, Workstation: 2662, Network: 2458, Mobile: 858, Printers: 119, IOT: 117, 'Storage Accounts': 2 },
-    { name: '27 Jul', Server: 3935, Workstation: 2728, Network: 2522, Mobile: 874, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '3 Aug',  Server: 4022, Workstation: 2800, Network: 2568, Mobile: 888, Printers: 122, IOT: 121, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '18 May', 'Non-Human': 18573, Human: 4428 },
+    { name: '25 May', 'Non-Human': 22610, Human: 5390 },
+    { name: '1 Jun',  'Non-Human': 26648, Human: 6352 },
+    { name: '8 Jun',  'Non-Human': 30685, Human: 7315 },
+    { name: '15 Jun', 'Non-Human': 34723, Human: 8278 },
+    { name: '22 Jun', 'Non-Human': 39568, Human: 9432 },
+    { name: '29 Jun', 'Non-Human': 44413, Human: 10588 },
+    { name: '6 Jul',  'Non-Human': 49258, Human: 11742 },
+    { name: '13 Jul', 'Non-Human': 54103, Human: 12898 },
+    { name: '20 Jul', 'Non-Human': 58948, Human: 14053 },
+    { name: '27 Jul', 'Non-Human': 63793, Human: 15207 },
+    { name: '3 Aug',  'Non-Human': 67831, Human: 16169 },
+    { name: '8 Aug',  'Non-Human': 70312, Human: 16761 },
   ],
   '6 M': [
-    { name: '8 Feb',  Server: 2780, Workstation: 1660, Network: 1510, Mobile: 575, Printers:  81, IOT:  79, 'Storage Accounts': 1 },
-    { name: '8 Mar',  Server: 3100, Workstation: 1980, Network: 1800, Mobile: 660, Printers:  91, IOT:  89, 'Storage Accounts': 1 },
-    { name: '8 Apr',  Server: 3400, Workstation: 2250, Network: 2040, Mobile: 732, Printers: 101, IOT:  99, 'Storage Accounts': 1 },
-    { name: '8 May',  Server: 3640, Workstation: 2460, Network: 2240, Mobile: 790, Printers: 108, IOT: 106, 'Storage Accounts': 2 },
-    { name: '8 Jun',  Server: 3820, Workstation: 2620, Network: 2380, Mobile: 832, Printers: 114, IOT: 112, 'Storage Accounts': 2 },
-    { name: '8 Jul',  Server: 3970, Workstation: 2750, Network: 2500, Mobile: 866, Printers: 120, IOT: 118, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '8 Feb',  'Non-Human':  6460, Human:  1540 },
+    { name: '8 Mar',  'Non-Human': 12920, Human:  3080 },
+    { name: '8 Apr',  'Non-Human': 23435, Human:  5565 },
+    { name: '8 May',  'Non-Human': 36338, Human:  8663 },
+    { name: '8 Jun',  'Non-Human': 49258, Human: 11742 },
+    { name: '8 Jul',  'Non-Human': 61390, Human: 14610 },
+    { name: '8 Aug',  'Non-Human': 70312, Human: 16761 },
   ],
   '1 Y': [
-    { name: '1 Sep',  Server: 1400, Workstation:  850, Network:  770, Mobile: 278, Printers: 44, IOT: 42, 'Storage Accounts': 0 },
-    { name: '1 Oct',  Server: 1760, Workstation: 1100, Network: 1000, Mobile: 348, Printers: 53, IOT: 51, 'Storage Accounts': 0 },
-    { name: '1 Nov',  Server: 2100, Workstation: 1370, Network: 1230, Mobile: 418, Printers: 62, IOT: 60, 'Storage Accounts': 0 },
-    { name: '1 Dec',  Server: 2400, Workstation: 1600, Network: 1440, Mobile: 484, Printers: 69, IOT: 67, 'Storage Accounts': 1 },
-    { name: '1 Jan',  Server: 2700, Workstation: 1840, Network: 1640, Mobile: 550, Printers: 76, IOT: 74, 'Storage Accounts': 1 },
-    { name: '1 Feb',  Server: 2960, Workstation: 2040, Network: 1840, Mobile: 610, Printers: 83, IOT: 81, 'Storage Accounts': 1 },
-    { name: '1 Mar',  Server: 3200, Workstation: 2230, Network: 2010, Mobile: 668, Printers: 89, IOT: 87, 'Storage Accounts': 1 },
-    { name: '1 Apr',  Server: 3440, Workstation: 2400, Network: 2170, Mobile: 724, Printers: 96, IOT: 94, 'Storage Accounts': 1 },
-    { name: '1 May',  Server: 3640, Workstation: 2550, Network: 2320, Mobile: 775, Printers: 103, IOT: 101, 'Storage Accounts': 2 },
-    { name: '1 Jun',  Server: 3820, Workstation: 2680, Network: 2430, Mobile: 820, Printers: 110, IOT: 108, 'Storage Accounts': 2 },
-    { name: '1 Jul',  Server: 3980, Workstation: 2780, Network: 2520, Mobile: 862, Printers: 118, IOT: 116, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '1 Sep',  'Non-Human':  2019, Human:   481 },
+    { name: '1 Oct',  'Non-Human':  3230, Human:   770 },
+    { name: '1 Nov',  'Non-Human':  5249, Human:  1251 },
+    { name: '1 Dec',  'Non-Human':  8075, Human:  1925 },
+    { name: '1 Jan',  'Non-Human': 12113, Human:  2888 },
+    { name: '1 Feb',  'Non-Human': 17765, Human:  4234 },
+    { name: '1 Mar',  'Non-Human': 25033, Human:  5967 },
+    { name: '1 Apr',  'Non-Human': 35530, Human:  8470 },
+    { name: '1 May',  'Non-Human': 46028, Human: 10972 },
+    { name: '1 Jun',  'Non-Human': 54928, Human: 13073 },
+    { name: '1 Jul',  'Non-Human': 63828, Human: 15173 },
+    { name: '8 Aug',  'Non-Human': 70312, Human: 16761 },
   ],
 };
 
@@ -289,15 +303,16 @@ const IcNewlyAdded = () => (
   </svg>
 );
 
-// Type icon inline SVGs (fallback for icons not in /assets/icons)
+// Type icon inline SVGs
 const TYPE_ICONS = {
-  server:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="7" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="7" cy="18" r="1" fill="currentColor" stroke="none"/></svg>,
-  workstation: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-  network:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4M12 11l-5 6M12 11l5 6"/></svg>,
-  mobile:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>,
-  printer:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
-  iot:         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>,
-  storage:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>,
+  'empty':       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" strokeDasharray="3 3"/></svg>,
+  'non-human':   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"/><path d="M8 11V8"/><path d="M16 11V8"/></svg>,
+  'human':       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  'win-account': <svg width="14" height="14" viewBox="0 0 88 88" fill="none"><path d="M0 12.4L36.1 7.4V43H0V12.4z" fill="currentColor"/><path d="M40.6 6.7L88 0v43H40.6V6.7z" fill="currentColor"/><path d="M0 47h36.1v35.6l-36.1-5V47z" fill="currentColor"/><path d="M40.6 47H88v41L40.6 81.3V47z" fill="currentColor"/></svg>,
+  'entra':       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>,
+  'permanent':   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+  'aws-iam':     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  'contractor':  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
 };
 
 const IcWindows = () => (
@@ -326,8 +341,8 @@ const IcSevMed = () => (
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverDevicePage() {
-  const [timeRange,     setTimeRange]     = useState('1 Y');
+export default function DiscoverIdentityPage() {
+  const [timeRange,     setTimeRange]     = useState('1 M');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
   const [insightPage,   setInsightPage]   = useState(1);
@@ -444,7 +459,7 @@ export default function DiscoverDevicePage() {
                 <span className="dev-stat-label">Total</span>
                 <span className="dev-newly-added">
                   <IcNewlyAdded />
-                  <span>15 Newly added</span>
+                  <span>115 Newly Added</span>
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -465,11 +480,11 @@ export default function DiscoverDevicePage() {
 
             <div className="dev-stat-value-row">
               <div>
-                <div className="dev-stat-value">12,382</div>
+                <div className="dev-stat-value">87,073</div>
                 <div className="dev-stat-meta">
                   <IcTrendUp size={13} color="var(--pai-crit-fg)" />
-                  <span className="dev-stat-change up">2%</span>
-                  <span className="dev-stat-from">from last month</span>
+                  <span className="dev-stat-change up">29.05%</span>
+                  <span className="dev-stat-from">from last week</span>
                 </div>
               </div>
             </div>
@@ -566,7 +581,7 @@ export default function DiscoverDevicePage() {
             {/* Type + Donut */}
             <div className="card dev-card dev-type-card">
               <div className="dev-card-title">Type</div>
-              <div className="dev-donut-wrap" style={{ position: 'relative' }}>
+              <div className="dev-donut-wrap" style={{ position: 'relative', height: 220, flex: 'none' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -596,7 +611,7 @@ export default function DiscoverDevicePage() {
                   textAlign: 'center', pointerEvents: 'none',
                 }}>
                   <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}>Total</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>6</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>71,442</div>
                 </div>
               </div>
               <div className="dev-type-list">
@@ -608,7 +623,7 @@ export default function DiscoverDevicePage() {
                     </div>
                     <div className="dev-type-row-right">
                       <span className="dev-type-count">{t.count.toLocaleString()}</span>
-                      <span className="dev-type-pct">{t.pct <= 1 ? '<1' : t.pct}%</span>
+                      <span className="dev-type-pct">{t.pct < 1 ? '<1%' : `${t.pct}%`}</span>
                     </div>
                   </div>
                 ))}
@@ -624,7 +639,7 @@ export default function DiscoverDevicePage() {
           {/* Key Security Insights */}
           <div className="card dev-card dev-insights-card">
             <div className="dev-card-hdr">
-              <span className="dev-card-title">Key Security Insights — Top 5</span>
+              <span className="dev-card-title">Key Security Insights</span>
               <DSPillSearch
                 value={insightSearch}
                 onChange={v => { setInsightSearch(v); setInsightPage(1); }}
@@ -653,7 +668,7 @@ export default function DiscoverDevicePage() {
                           <div style={{ flex: 1, height: 6, background: 'var(--ctrl-bg)', borderRadius: 3, overflow: 'hidden' }}>
                             <div style={{ width: `${r.failPct}%`, height: '100%', background: 'var(--pai-crit-fg)', borderRadius: 3, transformOrigin: 'left', animation: 'devBarGrow 0.6s ease-out forwards' }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', minWidth: 36, textAlign: 'right' }}>{r.failPct}%</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', minWidth: 36, textAlign: 'right' }}>{r.failPctLabel || `${r.failPct}%`}</span>
                         </div>
                       </td>
                       <td className="dev-td">
@@ -665,9 +680,9 @@ export default function DiscoverDevicePage() {
               </table>
             </div>
             <TablePagination
-              total={filteredInsights.length}
+              total={filteredInsights.length || 29}
               page={insightPage}
-              rowsPerPage={rowsPer}
+              rowsPerPage={5}
               onPageChange={setInsightPage}
               onRowsPerPageChange={n => { setRowsPer(n); setInsightPage(1); }}
             />
@@ -703,7 +718,7 @@ export default function DiscoverDevicePage() {
                     <span className="dev-crit-leg-label">{c.label}</span>
                     <div className="dev-crit-leg-bottom">
                       <span className="dev-crit-leg-count">{c.count}</span>
-                      <span className="dev-crit-leg-pct">{c.pct.toFixed(2)}%</span>
+                      <span className="dev-crit-leg-pct">{c.pct < 1 ? '<1%' : `${c.pct.toFixed(2)}%`}</span>
                     </div>
                   </div>
                 ))}
@@ -727,10 +742,8 @@ export default function DiscoverDevicePage() {
                   <tr>
                     <TH>Display Label</TH>
                     <TH>Type</TH>
-                    <TH>Deployment Type</TH>
                     <TH>Asset Criticality</TH>
                     <TH>Asset Criticality Score</TH>
-                    <TH>OS Family</TH>
                   </tr>
                 </thead>
                 <tbody>
@@ -738,19 +751,17 @@ export default function DiscoverDevicePage() {
                     <tr key={i} className="dev-tr">
                       <td className="dev-td dev-td-name">{a.name}</td>
                       <td className="dev-td">{a.type}</td>
-                      <td className="dev-td">{a.deploy}</td>
                       <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
                       <td className="dev-td" style={{ color: 'var(--pai-crit-fg)', fontWeight: 600 }}>{a.score.toLocaleString()}</td>
-                      <td className="dev-td"><span className="dev-cell-icon-text"><IcLinux />{a.os}</span></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <TablePagination
-              total={filteredAssets.length}
+              total={87073}
               page={assetPage}
-              rowsPerPage={10}
+              rowsPerPage={5}
               onPageChange={setAssetPage}
               onRowsPerPageChange={() => {}}
             />
@@ -759,7 +770,6 @@ export default function DiscoverDevicePage() {
         </div>
       </div>
 
-      {/* ── Trend Explore Drawer ──────────────────────────────────── */}
       {showDrawer && (() => {
         const rawBaseData = TREND_DATA_BY_RANGE[drawerRange] ?? TREND_DATA_BY_RANGE['1 Y'];
         const drawerData = baselineView
@@ -809,7 +819,7 @@ export default function DiscoverDevicePage() {
                   <DSDropdown
                     value={drawerFilter}
                     onChange={setDrawerFilter}
-                    options={['All','Type','Origin','Deployment Type','Environment','Asset Criticality','OS Family']}
+                    options={['All','Type','Origin','Authentication Type','MFA Status','Risk Level']}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--shell-text-2, #444)', fontFamily: 'Inter,system-ui', marginBottom: 16 }}>
@@ -878,7 +888,7 @@ export default function DiscoverDevicePage() {
                     ) : (
                       <AreaChart data={drawerData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
                         <defs>
-                          <linearGradient id="drawerFill" x1="0" y1="0" x2="0" y2="1">
+                          <linearGradient id="drawerFillId" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%"   stopColor="var(--pai-indigo)" stopOpacity={0.20} />
                             <stop offset="100%" stopColor="var(--pai-indigo)" stopOpacity={0} />
                           </linearGradient>
@@ -890,7 +900,7 @@ export default function DiscoverDevicePage() {
                           tickFormatter={yFmt}
                           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                         <Tooltip content={makeTrendTooltip(rawBaseData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
-                        <Area type="monotone" dataKey="value" name="Total" stroke="var(--pai-indigo)" strokeWidth={2} fill="url(#drawerFill)"
+                        <Area type="monotone" dataKey="value" name="Total" stroke="var(--pai-indigo)" strokeWidth={2} fill="url(#drawerFillId)"
                           dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} />
                       </AreaChart>
                     )}
@@ -926,6 +936,7 @@ export default function DiscoverDevicePage() {
       })()}
     {critTooltip !== null && (() => {
       const c = CRITICALITY[critTooltip.i];
+      const pctLabel = c.pct < 1 ? '<1%' : `${c.pct.toFixed(2)}%`;
       return (
         <div style={{
           position: 'fixed', left: c.label === 'Low' ? critTooltip.x - 200 : critTooltip.x + 14, top: critTooltip.y - 64,
@@ -941,7 +952,7 @@ export default function DiscoverDevicePage() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginTop: 4 }}>
             <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-            <span style={{ fontWeight: 600, color: c.color }}>{c.pct.toFixed(2)}%</span>
+            <span style={{ fontWeight: 600, color: c.color }}>{pctLabel}</span>
           </div>
         </div>
       );

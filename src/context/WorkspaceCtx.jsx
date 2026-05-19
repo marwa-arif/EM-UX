@@ -8,7 +8,7 @@ function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center',
-      height: 32, paddingLeft: 14, paddingRight: 4,
+      height: 32, boxSizing: 'border-box', paddingLeft: 14, paddingRight: 4,
       background: 'var(--card-bg)',
       border: `1px solid ${focused ? 'var(--pai-indigo)' : 'var(--shell-border)'}`,
       boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',

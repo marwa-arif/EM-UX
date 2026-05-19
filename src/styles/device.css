@@ -44,6 +44,7 @@
 .dev-time-pill--active {
   color: var(--shell-text);
   border-color: var(--shell-border);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
 }
 
 /* ── Stat card (total + trend chart) ────────────────────────────── */
@@ -73,6 +74,9 @@
   font-size: 11px;
   font-weight: 500;
   color: var(--pai-indigo);
+  background: var(--pai-indigo-tint);
+  border-radius: 44px;
+  padding: 2px 8px;
 }
 
 
@@ -365,6 +369,13 @@
   overflow: hidden;
   gap: 2px;
   margin-bottom: 12px;
+  transform-origin: left;
+  animation: devBarGrow 0.6s ease-out forwards;
+}
+
+@keyframes devBarGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 .dev-crit-legend {
@@ -414,4 +425,159 @@
   cursor: pointer;
 }
 
+
+/* ── Trend Explore Drawer ────────────────────────────────────────── */
+
+.dev-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 200;
+  animation: devOverlayIn 0.22s ease forwards;
+}
+.dev-drawer-overlay.closing { animation: devOverlayOut 0.22s ease forwards; }
+
+.dev-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 70%;
+  background: var(--card-bg, #fff);
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
+  border-radius: 12px 0 0 12px;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: devDrawerIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.dev-drawer.closing { animation: devDrawerOut 0.24s cubic-bezier(0.4, 0, 1, 1) forwards; }
+
+@keyframes devOverlayIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes devOverlayOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes devDrawerIn   { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes devDrawerOut  { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
+.dev-drawer-close-ext {
+  position: fixed;
+  top: 16px;
+  right: calc(70% + 8px);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E6E6E6);
+  background: var(--card-bg, #fff);
+  box-shadow: -2px 2px 8px rgba(0,0,0,0.10);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--shell-text-muted);
+  z-index: 202;
+  padding: 0;
+  flex-shrink: 0;
+}
+.dev-drawer-close-ext:hover { background: var(--shell-raised, #E6E6E6); }
+
+.dev-drawer-hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--card-border, #E6E6E6);
+  flex-shrink: 0;
+}
+
+.dev-drawer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text, #101010);
+}
+
+.dev-drawer-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--shell-border, #E6E6E6);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--shell-text-muted);
+  flex-shrink: 0;
+  padding: 0;
+}
+.dev-drawer-close:hover { background: var(--shell-hover, rgba(0,0,0,0.04)); }
+
+.dev-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── DS Dropdown (form control) ──────────────────────────────────── */
+
+.ds-dropdown { position: relative; display: inline-block; flex-shrink: 0; }
+
+.ds-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 50px;
+  border: 1px solid var(--ctrl-border, #D0D0D0);
+  background: var(--ctrl-bg, #F7F9FC);
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--shell-text, #101010);
+  cursor: pointer;
+  white-space: nowrap;
+  width: 200px;
+}
+.ds-dropdown-trigger:hover { border-color: var(--shell-accent, #6360D8); }
+.ds-dropdown-trigger:focus { outline: none; border-color: var(--shell-accent, #6360D8); box-shadow: 0 0 0 3px rgba(99,96,216,0.15); }
+
+.ds-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--ctrl-border, #D0D0D0);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+  z-index: 302;
+  overflow: hidden;
+  animation: dsTooltipFade 0.12s ease;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.ds-dropdown-option {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--shell-text-2, #444);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+.ds-dropdown-option:hover { background: var(--shell-hover, rgba(0,0,0,0.04)); color: var(--shell-text, #101010); }
+.ds-dropdown-option.selected { background: var(--shell-accent, #6360D8); color: #fff; font-weight: 600; }
+
+@keyframes dsTooltipFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 

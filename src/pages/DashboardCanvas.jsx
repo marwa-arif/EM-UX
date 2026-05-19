@@ -643,7 +643,7 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
           )}
         </div>
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} />
+          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} />
         </div>
       </div>
     </div>
@@ -651,11 +651,62 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
 }
 
 // ── Main ─────────────────────────────────────────────────────────────
+// ── Discover Dashboard template ──────────────────────────────────────
+const DISCOVER_TEMPLATE = {
+  name: 'Discover Dashboard',
+  widgets: [
+    {
+      id: 1001, label: 'Total Devices', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+      data: { value: '12,382', label: 'Total Devices', trend: '3.89%', trendUp: true },
+    },
+    {
+      id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+      data: [
+        { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'  },
+        { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)' },
+        { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'  },
+        { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'    },
+      ],
+    },
+    {
+      id: 1003, label: 'Data Source', chartId: 'hor-bar', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+      data: [
+        { label: 'AWS',                 value: 100, secondary: 5,  count: '97' },
+        { label: 'MS Azure',            value: 88,  secondary: 5,  count: '85' },
+        { label: 'Qualys',              value: 58,  secondary: 21, count: '56' },
+        { label: 'MS Active Directory', value: 48,  secondary: 31, count: '47' },
+        { label: 'WIZ',                 value: 39,  secondary: 5,  count: '38' },
+        { label: 'Infoblox',            value: 12,  secondary: 7,  count: '12' },
+        { label: 'MS Defender',         value: 8,   secondary: 5,  count: '8'  },
+        { label: 'Tenable',             value: 5,   secondary: 3,  count: '5'  },
+      ],
+    },
+    {
+      id: 1004, label: 'Asset Types', chartId: 'pie', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+      totalLabel: '10,679',
+      data: [
+        { label: 'Server',           count: '4,086', value: 4086, pct: '33%', color: 'var(--pai-indigo)'       },
+        { label: 'Workstation',      count: '2,848', value: 2848, pct: '23%', color: '#5BADB8'                 },
+        { label: 'Network',          count: '2,600', value: 2600, pct: '21%', color: 'var(--pai-green)'        },
+        { label: 'Mobile',           count: '897',   value: 897,  pct: '8%',  color: 'var(--pai-high-fg)'      },
+        { label: 'Printers',         count: '124',   value: 124,  pct: '1%',  color: 'var(--pai-red-high)'     },
+        { label: 'IOT',              count: '122',   value: 122,  pct: '1%',  color: 'var(--pai-indigo-muted)' },
+      ],
+    },
+    { id: 1005, label: 'Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active' },
+  ],
+}
+
 let nextId = 1
 
-export default function DashboardCanvas({ onNav }) {
-  const [name, setName]       = useState('')
-  const [widgets, setWidgets] = useState([])
+export default function DashboardCanvas({ onNav, templateId = null }) {
+  const template = templateId === 'discover' ? DISCOVER_TEMPLATE : null
+  const [name, setName]       = useState(template?.name ?? '')
+  const [widgets, setWidgets] = useState(() => {
+    if (!template) return []
+    nextId = Math.max(...template.widgets.map(w => w.id)) + 1
+    return template.widgets
+  })
 
   // Panel state: null | 'add' | 'settings'
   const [panelMode, setPanelMode]         = useState(null)

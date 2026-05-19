@@ -31,8 +31,7 @@
 .ds-td { padding: 10px 12px; border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
 .ds-table tbody tr:last-child td { border-bottom: none; }
 .ds-table tbody tr:hover td { background: var(--shell-hover); }
-.row-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
-.ds-table tbody tr:hover .row-actions { visibility: visible; }
+.row-actions { display: flex; align-items: center; gap: 4px; }
 
 /* DS Pagination */
 .ds-page-btn { min-width: 28px; height: 28px; border-radius: 44px; border: 1px solid var(--shell-border); background: #fff; color: var(--shell-text-2); cursor: pointer; font-size: 11px; font-family: inherit; padding: 0 6px; display: flex; align-items: center; justify-content: center; transition: all 120ms; }

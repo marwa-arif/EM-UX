@@ -19,7 +19,7 @@ const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -75,7 +75,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
         </button>
         {menuOpen && (
           <div className="subheader__dropdown">
-            <button onClick={() => setMenuOpen(false)} className="subheader__dropdown-item">
+            <button onClick={() => { setMenuOpen(false); onEdit && onEdit(); }} className="subheader__dropdown-item">
               <Ic size={13} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />
               Edit
             </button>

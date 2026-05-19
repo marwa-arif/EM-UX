@@ -3,6 +3,8 @@ import '../styles/findings.css'
 import '../styles/kg.css'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
+import DonutChart from '../components/DonutChart.jsx'
+import DSDropdown from '../components/DSDropdown.jsx'
 
 // ── Severity palette ─────────────────────────────────────────────
 const SEV = {
@@ -12,18 +14,16 @@ const SEV = {
   Low:      '#31A56D',
 };
 
-const DONUT_COLORS = ['#EC4899', '#8B5CF6', '#06B6D4', '#3B82F6', '#94A3B8'];
-
 // ── Chart data ───────────────────────────────────────────────────
 const ASSET_CHART = [
-  { label: ['Device'],   segs: [{ pct: 44, sev: 'Critical' }, { pct: 14, sev: 'High' }, { pct: 10, sev: 'Medium' }, { pct: 32, sev: 'Low' }] },
-  { label: ['Cloud'],    segs: [{ pct: 14, sev: 'Critical' }, { pct: 36, sev: 'High' }, { pct: 10, sev: 'Medium' }, { pct: 40, sev: 'Low' }] },
-  { label: ['Identity'], segs: [{ pct:  5, sev: 'Critical' }, { pct:  4, sev: 'High' }, { pct:  3, sev: 'Medium' }, { pct: 88, sev: 'Low' }] },
+  { label: ['Device'],   segs: [{ pct: 44, count: 9856,  sev: 'Critical' }, { pct: 14, count: 3136,  sev: 'High' }, { pct: 10, count: 2240,  sev: 'Medium' }, { pct: 32, count: 7168,  sev: 'Low' }] },
+  { label: ['Cloud'],    segs: [{ pct: 14, count: 2744,  sev: 'Critical' }, { pct: 36, count: 7056,  sev: 'High' }, { pct: 10, count: 1960,  sev: 'Medium' }, { pct: 40, count: 7840,  sev: 'Low' }] },
+  { label: ['Identity'], segs: [{ pct:  5, count:  700,  sev: 'Critical' }, { pct:  4, count:  560,  sev: 'High' }, { pct:  3, count:  420,  sev: 'Medium' }, { pct: 88, count: 12320, sev: 'Low' }] },
 ];
 
 const FINDING_CHART = [
-  { label: ['Software', 'Vulnerability'], segs: [{ pct: 32, sev: 'Critical' }, { pct: 16, sev: 'High' }, { pct: 14, sev: 'Medium' }, { pct: 38, sev: 'Low' }] },
-  { label: ['Control Gap'],               segs: [{ pct: 22, sev: 'Critical' }, { pct: 20, sev: 'High' }, { pct: 15, sev: 'Medium' }, { pct: 43, sev: 'Low' }] },
+  { label: ['Software', 'Vulnerability'], segs: [{ pct: 32, count: 779314,  sev: 'Critical' }, { pct: 16, count: 389657,  sev: 'High' }, { pct: 14, count: 340950,  sev: 'Medium' }, { pct: 38, count: 925437,  sev: 'Low' }] },
+  { label: ['Control Gap'],               segs: [{ pct: 22, count: 186343,  sev: 'Critical' }, { pct: 20, count: 169403,  sev: 'High' }, { pct: 15, count: 127052,  sev: 'Medium' }, { pct: 43, count: 364216,  sev: 'Low' }] },
 ];
 
 // ── Donut data ───────────────────────────────────────────────────
@@ -153,47 +153,6 @@ const IcDoc = () => (
   </svg>
 );
 
-// ── KG-style chart tooltip (follows mouse, fixed to viewport) ────
-function ChartTooltip({ content, mousePos }) {
-  if (!content || !mousePos) return null;
-  const W = 210;
-  const flipLeft = mousePos.x + 20 + W > window.innerWidth;
-  const left = flipLeft ? mousePos.x - W - 8 : mousePos.x + 16;
-  const top = mousePos.y + 16;
-  return (
-    <div className="kg-tooltip" style={{ left, top, position: 'fixed' }}>
-      {content}
-    </div>
-  );
-}
-
-function TRow({ k, v }) {
-  return (
-    <div className="kg-tooltip-row">
-      <span className="kg-tooltip-row__key">{k}</span>
-      <span className="kg-tooltip-row__val">{v}</span>
-    </div>
-  );
-}
-
-// Small colored asset-type icon squares
-function AssetIcon({ type, color }) {
-  const paths = {
-    server:  <><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></>,
-    monitor: <><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></>,
-    network: <><circle cx="12" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><circle cx="5" cy="19" r="3"/><path d="M12 8v5M12 13l-4.5 4M12 13l4.5 4"/></>,
-    mobile:  <><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></>,
-    other:   <><circle cx="12" cy="12" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/></>,
-  };
-  return (
-    <div className="fin-donut-asset-icon" style={{ background: `${color}18` }}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {paths[type]}
-      </svg>
-    </div>
-  );
-}
-
 // ── Remediate Now widget ──────────────────────────────────────────
 function ActNowWidget() {
   return (
@@ -287,18 +246,6 @@ function StackedBarChart({ title, rows, xLabel }) {
   const [hovSeg, setHovSeg] = useState(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0, containerW: 400 });
 
-  const tooltipContent = hovSeg ? (
-    <div>
-      <div className="kg-tooltip__header" style={{ background: SEV[hovSeg.sev] + '22' }}>
-        <span className="kg-tooltip__header-label" style={{ color: SEV[hovSeg.sev] }}>{hovSeg.sev}</span>
-      </div>
-      <div className="kg-tooltip__body">
-        <TRow k="Category" v={hovSeg.label} />
-        <TRow k="Share" v={`${hovSeg.pct}%`} />
-      </div>
-    </div>
-  ) : null;
-
   return (
     <div
       className="card fin-chart-card"
@@ -318,7 +265,7 @@ function StackedBarChart({ title, rows, xLabel }) {
                   key={j}
                   className="fin-sbc-seg"
                   style={{ width: `${seg.pct}%`, background: SEV[seg.sev] }}
-                  onMouseEnter={() => setHovSeg({ sev: seg.sev, pct: seg.pct, label: row.label.join(' ') })}
+                  onMouseEnter={() => setHovSeg({ sev: seg.sev, pct: seg.pct, count: seg.count, label: row.label.join(' ') })}
                   onMouseLeave={() => setHovSeg(null)}
                 />
               ))}
@@ -341,89 +288,25 @@ function StackedBarChart({ title, rows, xLabel }) {
           </span>
         ))}
       </div>
-      {hovSeg && <ChartTooltip content={tooltipContent} mousePos={mouse} />}
-    </div>
-  );
-}
-
-// ── Donut chart ───────────────────────────────────────────────────
-function DonutChart({ data }) {
-  const R = 50, CX = 68, CY = 68;
-  const C = 2 * Math.PI * R;
-  const GAP = 3;
-  const [hovItem, setHovItem] = useState(null);
-  const [mouse, setMouse] = useState({ x: 0, y: 0, containerW: 400 });
-
-  const segs = [];
-  let prevPct = 0;
-  data.items.forEach((item, i) => {
-    const pct = item.pct < 1 ? 0.5 : item.pct;
-    const segLen = Math.max(0, (pct / 100) * C - GAP);
-    const dashOffset = C / 4 - (prevPct / 100) * C;
-    segs.push({ ...item, segLen, dashOffset, color: DONUT_COLORS[i] });
-    prevPct += pct;
-  });
-
-  const tooltipContent = hovItem ? (
-    <div>
-      <div className="kg-tooltip__header" style={{ background: hovItem.color + '22' }}>
-        <span className="kg-tooltip__header-label" style={{ color: hovItem.color }}>{hovItem.label}</span>
-      </div>
-      <div className="kg-tooltip__body">
-        <TRow k="Count" v={hovItem.val} />
-        <TRow k="Share" v={hovItem.pct < 1 ? '<1%' : `${hovItem.pct}%`} />
-      </div>
-    </div>
-  ) : null;
-
-  return (
-    <div
-      className="fin-donut-panel"
-      style={{ position: 'relative' }}
-      onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
-    >
-      <div className="fin-donut-title">{data.title}</div>
-      <div className="fin-donut-body">
-        <div className="fin-donut-svg-wrap">
-          <svg width={136} height={136} viewBox="0 0 136 136">
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--shell-border)" strokeWidth={13} />
-            {segs.map((seg, i) => (
-              <circle
-                key={i}
-                cx={CX} cy={CY} r={R}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={13}
-                strokeDasharray={`${seg.segLen} ${C}`}
-                strokeDashoffset={seg.dashOffset}
-                strokeLinecap="butt"
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={() => setHovItem(segs[i])}
-                onMouseLeave={() => setHovItem(null)}
-              />
-            ))}
-            <text x={CX} y={CY - 6} textAnchor="middle" fontSize={10} fill="var(--shell-text-muted)" fontFamily="Inter, system-ui">Total</text>
-            <text x={CX} y={CY + 12} textAnchor="middle" fontSize={18} fontWeight={700} fill="var(--shell-text)" fontFamily="Inter, system-ui">{data.total}</text>
-          </svg>
-        </div>
-        <div className="fin-donut-list">
-          {data.items.map((item, i) => (
-            <div
-              key={i}
-              className="fin-donut-row"
-              style={{ cursor: 'default' }}
-              onMouseEnter={() => setHovItem(segs[i])}
-              onMouseLeave={() => setHovItem(null)}
-            >
-              <AssetIcon type={item.icon} color={DONUT_COLORS[i]} />
-              <span className="fin-donut-label">{item.label}</span>
-              <span className="fin-donut-val">{item.val}</span>
-              <span className="fin-donut-pct">{item.pct < 1 ? '<1%' : `${item.pct}%`}</span>
+      {hovSeg && (() => {
+        const W = 210;
+        const flipLeft = mouse.x + 20 + W > window.innerWidth;
+        const left = flipLeft ? mouse.x - W - 8 : mouse.x + 16;
+        const color = SEV[hovSeg.sev];
+        return (
+          <div style={{ position: 'fixed', left, top: mouse.y + 16, zIndex: 9999, pointerEvents: 'none', background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '12px 13px', minWidth: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{hovSeg.sev}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+              <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
+              <span style={{ fontWeight: 600, color }}>{hovSeg.count?.toLocaleString()}</span>
             </div>
-          ))}
-        </div>
-      </div>
-      {hovItem && <ChartTooltip content={tooltipContent} mousePos={mouse} />}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
+              <span style={{ fontWeight: 600, color }}>{hovSeg.pct}%</span>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -433,6 +316,7 @@ export default function FindingsPage() {
   const [search, setSearch]           = useState('');
   const [page, setPage]               = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [groupBy, setGroupBy]         = useState('Type');
 
   const filteredRows = TABLE_ROWS.filter(r =>
     !search ||
@@ -477,8 +361,12 @@ export default function FindingsPage() {
             <div className="fin-posture-hdr">
               <span className="fin-posture-title">Security Posture Summary</span>
               <div className="fin-posture-groupby">
-                <span>Group by</span>
-                <button className="fin-groupby-btn">Asset Type <IcChevD /></button>
+                <span>Group By</span>
+                <DSDropdown
+                  value={groupBy}
+                  onChange={setGroupBy}
+                  options={['Exposure Category', 'Cloud Provider', 'OS Family', 'Type', 'Finding Exposure Severity', 'Business Unit', 'Deployment Type']}
+                />
               </div>
             </div>
             <div className="fin-posture-body">

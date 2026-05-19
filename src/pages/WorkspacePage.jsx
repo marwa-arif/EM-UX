@@ -7,8 +7,12 @@ import LibraryPage from './LibraryPage.jsx'
 import SavedPage from './SavedPage.jsx'
 import DashboardCanvas from './DashboardCanvas.jsx'
 
-export default function WorkspacePage({ onNav }) {
-  const [current, setCurrent] = useState('workspace/library')
+const DASHBOARD_TITLES = {
+  'workspace/dashboard/discover': 'Discover Dashboard',
+}
+
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library' }) {
+  const [current, setCurrent] = useState(initialRoute)
   const [collapsed, setCollapsed] = useState(false)
 
   const handleNav = (id) => {
@@ -18,6 +22,10 @@ export default function WorkspacePage({ onNav }) {
     }
     setCurrent(id)
   }
+
+  const isDashboard = current.startsWith('workspace/dashboard')
+  const dashTitle   = DASHBOARD_TITLES[current] ?? 'New Dashboard'
+  const templateId  = current === 'workspace/dashboard/discover' ? 'discover' : null
 
   return (
     <WorkspaceProvider onNav={handleNav}>
@@ -42,12 +50,12 @@ export default function WorkspacePage({ onNav }) {
             background: 'var(--ctrl-bg)',
           }}>
             <SubHeader
-              title={current.startsWith('workspace/dashboard') ? 'New Dashboard' : 'Workspace'}
-              breadcrumb={current.startsWith('workspace/dashboard')
-                ? ['Dashboard', 'Workspace', 'New Dashboard']
+              title={isDashboard ? dashTitle : 'Workspace'}
+              breadcrumb={isDashboard
+                ? ['Dashboard', 'Workspace', dashTitle]
                 : ['Dashboard', 'Workspace']
               }
-              breadcrumbClicks={current.startsWith('workspace/dashboard')
+              breadcrumbClicks={isDashboard
                 ? [() => handleNav('kg'), () => handleNav('workspace/library')]
                 : [() => handleNav('kg')]
               }
@@ -57,8 +65,8 @@ export default function WorkspacePage({ onNav }) {
             />
             {current === 'workspace/saved'
               ? <SavedPage />
-              : current.startsWith('workspace/dashboard')
-                ? <DashboardCanvas onNav={handleNav} />
+              : isDashboard
+                ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
                 : <LibraryPage />
             }
           </main>
