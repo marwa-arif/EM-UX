@@ -11,7 +11,9 @@ import NavigatorPage from './pages/NavigatorPage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
-import DiscoverDevicePage from './pages/DiscoverDevicePage.jsx'
+import DiscoverDevicePage   from './pages/DiscoverDevicePage.jsx'
+import DiscoverCloudPage    from './pages/DiscoverCloudPage.jsx'
+import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -358,6 +360,139 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
   );
 }
 
+// ── Pages that have the Edit → Discover Dashboard shortcut ──────────
+const DISCOVER_PAGES = new Set(['discover/device', 'discover/cloud', 'discover/identity']);
+
+const _UNUSED = {
+  'discover/device': {
+    name: 'Device Dashboard',
+    widgets: [
+      {
+        id: 1001, label: 'Total Devices', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        data: { value: '12,382', label: 'Total Devices', trend: '3.89%', trendUp: true },
+      },
+      {
+        id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'  },
+          { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)' },
+          { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'  },
+          { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'    },
+        ],
+      },
+      {
+        id: 1003, label: 'Data Source', chartId: 'hor-bar', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'AWS',                 value: 100, secondary: 5,  count: '97' },
+          { label: 'MS Azure',            value: 88,  secondary: 5,  count: '85' },
+          { label: 'Qualys',              value: 58,  secondary: 21, count: '56' },
+          { label: 'MS Active Directory', value: 48,  secondary: 31, count: '47' },
+          { label: 'WIZ',                 value: 39,  secondary: 5,  count: '38' },
+          { label: 'Infoblox',            value: 12,  secondary: 7,  count: '12' },
+          { label: 'MS Defender',         value: 8,   secondary: 5,  count: '8'  },
+          { label: 'Tenable',             value: 5,   secondary: 3,  count: '5'  },
+        ],
+      },
+      {
+        id: 1004, label: 'Asset Types', chartId: 'pie', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        totalLabel: '10,679',
+        data: [
+          { label: 'Server',           count: '4,086', value: 4086, pct: '33%',  color: 'var(--pai-indigo)'       },
+          { label: 'Workstation',      count: '2,848', value: 2848, pct: '23%',  color: '#5BADB8'                 },
+          { label: 'Network',          count: '2,600', value: 2600, pct: '21%',  color: 'var(--pai-green)'        },
+          { label: 'Mobile',           count: '897',   value: 897,  pct: '8%',   color: 'var(--pai-high-fg)'      },
+          { label: 'Printers',         count: '124',   value: 124,  pct: '1%',   color: 'var(--pai-red-high)'     },
+          { label: 'IOT',              count: '122',   value: 122,  pct: '1%',   color: 'var(--pai-indigo-muted)' },
+        ],
+      },
+      { id: 1005, label: 'Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active' },
+    ],
+  },
+  'discover/cloud': {
+    name: 'Cloud Dashboard',
+    widgets: [
+      {
+        id: 1001, label: 'Total Cloud Assets', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        data: { value: '11,722', label: 'Total Cloud Assets', trend: '2.14%', trendUp: true },
+      },
+      {
+        id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'Critical', count: '750',   pct: 6.38,  color: 'var(--pai-crit-fg)'  },
+          { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)' },
+          { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-high-fg)'  },
+          { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'    },
+        ],
+      },
+      {
+        id: 1003, label: 'Data Source', chartId: 'hor-bar', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'AWS',         value: 100, secondary: 0,  count: '55' },
+          { label: 'Wiz',         value: 75,  secondary: 27, count: '41' },
+          { label: 'Qualys',      value: 53,  secondary: 36, count: '29' },
+          { label: 'MS Intune',   value: 24,  secondary: 18, count: '13' },
+          { label: 'MS Azure AD', value: 24,  secondary: 18, count: '13' },
+          { label: 'MS Azure',    value: 15,  secondary: 9,  count: '8'  },
+          { label: 'MS Defender', value: 11,  secondary: 7,  count: '6'  },
+          { label: 'Tenable',     value: 7,   secondary: 4,  count: '4'  },
+        ],
+      },
+      {
+        id: 1004, label: 'Asset Types', chartId: 'pie', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        totalLabel: '11,722',
+        data: [
+          { label: 'Volume',                 count: '5,423', value: 5423, pct: '46%', color: 'var(--pai-indigo)'       },
+          { label: 'Workstation',            count: '4,922', value: 4922, pct: '42%', color: '#5BADB8'                 },
+          { label: 'Server',                 count: '381',   value: 381,  pct: '3%',  color: 'var(--pai-green)'        },
+          { label: 'Kubernetes Container',   count: '353',   value: 353,  pct: '3%',  color: 'var(--pai-high-fg)'      },
+          { label: 'Security Group',         count: '224',   value: 224,  pct: '2%',  color: 'var(--pai-red-high)'     },
+          { label: 'Serverless',             count: '66',    value: 66,   pct: '1%',  color: 'var(--pai-indigo-muted)' },
+        ],
+      },
+      { id: 1005, label: 'Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active' },
+    ],
+  },
+  'discover/identity': {
+    name: 'Identity Dashboard',
+    widgets: [
+      {
+        id: 1001, label: 'Total Identities', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        data: { value: '71,442', label: 'Total Identities', trend: '1.62%', trendUp: false },
+      },
+      {
+        id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'Critical', count: '4,322',  pct: 6.05,  color: 'var(--pai-crit-fg)'  },
+          { label: 'High',     count: '17,503', pct: 24.50, color: 'var(--pai-red-high)' },
+          { label: 'Medium',   count: '40,197', pct: 56.27, color: 'var(--pai-high-fg)'  },
+          { label: 'Low',      count: '9,420',  pct: 13.18, color: 'var(--pai-green)'    },
+        ],
+      },
+      {
+        id: 1003, label: 'Data Source', chartId: 'hor-bar', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
+        data: [
+          { label: 'MS Active Dire...', value: 100, secondary: 41, count: '59' },
+          { label: 'MS Entra ID',       value: 64,  secondary: 25, count: '38' },
+          { label: 'Windows Securit...', value: 63, secondary: 20, count: '37' },
+          { label: 'MS Intune',         value: 49,  secondary: 14, count: '29' },
+          { label: 'MS Defender',       value: 39,  secondary: 12, count: '23' },
+          { label: 'MS Azure',          value: 10,  secondary: 5,  count: '6'  },
+          { label: 'Okta',              value: 7,   secondary: 3,  count: '4'  },
+        ],
+      },
+      {
+        id: 1004, label: 'Identity Types', chartId: 'pie', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
+        totalLabel: '71,442',
+        data: [
+          { label: 'Non-Human', count: '57,687', value: 57687, pct: '80.75%', color: 'var(--pai-indigo)' },
+          { label: 'Human',     count: '13,755', value: 13755, pct: '19.25%', color: 'var(--pai-green)'  },
+        ],
+      },
+      { id: 1005, label: 'Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active' },
+    ],
+  },
+};
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
@@ -466,7 +601,7 @@ function App() {
   };
 
   if (current === 'workspace' || current.startsWith('workspace/')) {
-    return <WorkspacePage onNav={handleNav} />
+    return <WorkspacePage onNav={handleNav} initialRoute={current} />
   }
 
   if (current === 'navigator' || current.startsWith('navigator/')) {
@@ -595,12 +730,18 @@ function App() {
               onFilter={() => openRightTab('filter')}
               onAdd={pageMeta.onAdd}
               onExplore={pageMeta.onExplore}
+              onEdit={DISCOVER_PAGES.has(current) ? () => {
+                setCurrent('workspace/dashboard/discover');
+                history.pushState(null, '', '/workspace');
+              } : undefined}
             />
             <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-              {current === 'exposure/overview'  && <ExposureOverviewPage />}
-              {current === 'exposure/findings'  && <FindingsPage />}
-              {current === 'discover/device'    && <DiscoverDevicePage />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && <ComingSoon />}
+              {current === 'exposure/overview'   && <ExposureOverviewPage />}
+              {current === 'exposure/findings'   && <FindingsPage />}
+              {current === 'discover/device'     && <DiscoverDevicePage />}
+              {current === 'discover/cloud'      && <DiscoverCloudPage />}
+              {current === 'discover/identity'   && <DiscoverIdentityPage />}
+              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && <ComingSoon />}
               {isKG && <PageKG />}
             </div>
           </div>

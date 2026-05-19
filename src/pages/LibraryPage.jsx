@@ -153,7 +153,7 @@ function LibraryPage() {
   const getStartedCards = [
     { title: 'Custom Dashboard',   desc: 'Build a personalized view',                 cta: 'Create New Dashboard', ctaType: 'primary', iconType: 'dashboard', highlighted: true,  action: () => onNav('workspace/dashboard/new') },
     { title: 'Report Template',    desc: 'Generate a formatted report template',      cta: 'Create New Template',  ctaType: 'primary', iconType: 'report',    highlighted: true,  action: () => {} },
-    { title: 'Discover Dashboard', desc: 'Explore security metrics and insights',     cta: 'Edit Dashboard',       ctaType: 'outline', iconType: 'dashboard', highlighted: false, action: () => onNav('workspace/dashboard/new') },
+    { title: 'Discover Dashboard', desc: 'Explore security metrics and insights',     cta: 'Edit Dashboard',       ctaType: 'outline', iconType: 'dashboard', highlighted: false, action: () => onNav('workspace/dashboard/discover') },
     { title: 'CISO Dashboard',     desc: 'Executive security overview',               cta: 'Edit Dashboard',       ctaType: 'outline', iconType: 'dashboard', highlighted: false, action: () => onNav('workspace/dashboard/new') },
     { title: 'Client Subsidiary',  desc: 'Overall security health status',            cta: 'Edit Dashboard',       ctaType: 'outline', iconType: 'dashboard', highlighted: false, action: () => onNav('workspace/dashboard/new') },
   ];

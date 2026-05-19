@@ -75,24 +75,24 @@ function fmtDate(label) {
 const TIME_RANGES = ['1 W', '1 M', '3 M', '6 M', '1 Y'];
 
 const SOURCES = [
-  { name: 'AWS',                 total: 97, corr: 5  },
-  { name: 'MS Azure',            total: 85, corr: 5  },
-  { name: 'Qualys',              total: 56, corr: 20 },
-  { name: 'MS Active Directory', total: 47, corr: 30 },
-  { name: 'WIZ',                 total: 38, corr: 5  },
-  { name: 'Infoblox',            total: 12, corr: 7  },
-  { name: 'MS Defender',         total: 8,  corr: 5  },
-  { name: 'Tenable',             total: 5,  corr: 3  },
+  { name: 'AWS',         total: 55, corr: 0  },
+  { name: 'Wiz',         total: 41, corr: 15 },
+  { name: 'Qualys',      total: 29, corr: 20 },
+  { name: 'MS Intune',   total: 13, corr: 10 },
+  { name: 'MS Azure AD', total: 13, corr: 10 },
+  { name: 'MS Azure',    total: 8,  corr: 5  },
+  { name: 'MS Defender', total: 6,  corr: 4  },
+  { name: 'Tenable',     total: 4,  corr: 2  },
 ];
 
 const TYPES = [
-  { label: 'Server',           icon: 'server',      count: 4086, pct: 33, color: 'var(--pai-indigo)' },
-  { label: 'Workstation',      icon: 'workstation', count: 2848, pct: 23, color: '#5BADB8' },
-  { label: 'Network',          icon: 'network',     count: 2600, pct: 21, color: 'var(--pai-green)' },
-  { label: 'Mobile',           icon: 'mobile',      count: 897,  pct: 8,  color: 'var(--pai-high-fg)' },
-  { label: 'Printers',         icon: 'printer',     count: 124,  pct: 1,  color: 'var(--pai-red-high)' },
-  { label: 'IOT',              icon: 'iot',         count: 122,  pct: 1,  color: 'var(--pai-indigo-muted)' },
-  { label: 'Storage Accounts', icon: 'storage',     count: 2,    pct: 1,  color: '#C4C4C4' },
+  { label: 'Volume',                 icon: 'volume',     count: 5423, pct: 46,  color: 'var(--pai-indigo)'       },
+  { label: 'Workstation',            icon: 'workstation', count: 4922, pct: 42,  color: '#5BADB8'                 },
+  { label: 'Server',                 icon: 'server',      count: 381,  pct: 3,   color: 'var(--pai-green)'        },
+  { label: 'Kubernetes Container',   icon: 'k8s',         count: 353,  pct: 3,   color: 'var(--pai-high-fg)'      },
+  { label: 'Security Group',         icon: 'secgroup',    count: 224,  pct: 2,   color: 'var(--pai-red-high)'     },
+  { label: 'Compute Instance Group', icon: 'compute',     count: 153,  pct: 1,   color: 'var(--pai-indigo-muted)' },
+  { label: 'Serverless',             icon: 'serverless',  count: 66,   pct: 1,   color: '#C4C4C4'                 },
 ];
 
 const INSIGHTS = [
@@ -100,27 +100,27 @@ const INSIGHTS = [
   { sev: 'high', text: 'Adaptive network hardening recommendations should be applied on internet facing virtual machines',             failPct: 100, cat: 'Control Gap' },
   { sev: 'high', text: 'All network ports should be restricted on network security groups associated to your virtual machine',         failPct: 100, cat: 'Control Gap' },
   { sev: 'high', text: 'Allowlist rules in your adaptive application control policy should be updated',                                failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Authentication to Linux machines should require SSH keys',                                                     failPct: 100, cat: 'Control Gap' },
-  { sev: 'high', text: 'Endpoint protection should be installed on your machines',                                                     failPct: 97,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Guest configuration extension should be installed on your machines',                                           failPct: 94,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Log Analytics agent should be installed on your virtual machine for Azure Security Center monitoring',         failPct: 91,  cat: 'Control Gap' },
-  { sev: 'high', text: 'MFA should be enabled on accounts with write permissions on your subscription',                                failPct: 88,  cat: 'Control Gap' },
-  { sev: 'high', text: 'Remote debugging should be turned off for Function Apps',                                                      failPct: 85,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Amazon EC2 should be configured to use VPC endpoints that are created for the Amazon EC2 service',            failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Auto scaling groups associated with a load balancer should use load balancer health checks',                   failPct: 98,  cat: 'Control Gap' },
+  { sev: 'high', text: 'CloudTrail should be enabled and configured with at least one multi-Region trail',                            failPct: 96,  cat: 'Control Gap' },
+  { sev: 'high', text: 'EBS default encryption should be enabled',                                                                    failPct: 94,  cat: 'Control Gap' },
+  { sev: 'high', text: 'EC2 instances should not have a public IPv4 address',                                                          failPct: 91,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Ensure IAM password policy requires at least one uppercase letter',                                            failPct: 88,  cat: 'Control Gap' },
 ];
 
 const CRITICALITY = [
-  { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'   },
-  { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'  },
-  { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'   },
-  { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'     },
+  { label: 'Critical', count: '750',   pct: 6.38,  color: 'var(--pai-crit-fg)'   },
+  { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)'  },
+  { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-high-fg)'   },
+  { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'     },
 ];
 
 const ASSETS = [
-  { name: 'VM-TSR39727.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 1000 },
-  { name: 'VM-TSR19224.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR27829.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR17132.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR37484.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 996  },
+  { name: 'DATA-TRANSFORMATION-PL...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'UI-COMPONENT-LIBRARY-V3',   type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'CONTENT-FILTERING-SERVIC...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'ML-EXPERIMENT-TRACKING-V1',  type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'WEB-UI-DESIGN-SYSTEM-V1',    type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
 ];
 
 // ── Chart data ────────────────────────────────────────────────────
@@ -135,58 +135,58 @@ const TYPES_PIE_DATA = TYPES.slice(0, 6).map(t => ({
 
 const TREND_DATA_BY_RANGE = {
   '1 W': [
-    { name: '2 Aug',  value: 11900 },
-    { name: '3 Aug',  value: 12020 },
-    { name: '4 Aug',  value: 12100 },
-    { name: '5 Aug',  value: 12180 },
-    { name: '6 Aug',  value: 12250 },
-    { name: '7 Aug',  value: 12320 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '2 Aug',  value: 11200 },
+    { name: '3 Aug',  value: 11350 },
+    { name: '4 Aug',  value: 11460 },
+    { name: '5 Aug',  value: 11560 },
+    { name: '6 Aug',  value: 11640 },
+    { name: '7 Aug',  value: 11700 },
+    { name: '8 Aug',  value: 11763 },
   ],
   '1 M': [
-    { name: '12 Jul', value: 11640 },
-    { name: '19 Jul', value: 11800 },
-    { name: '26 Jul', value: 11970 },
-    { name: '2 Aug',  value: 12180 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '12 Jul', value: 9800  },
+    { name: '19 Jul', value: 10400 },
+    { name: '26 Jul', value: 11000 },
+    { name: '2 Aug',  value: 11450 },
+    { name: '8 Aug',  value: 11763 },
   ],
   '3 M': [
-    { name: '18 May', value: 9800  },
-    { name: '25 May', value: 10050 },
-    { name: '1 Jun',  value: 10300 },
-    { name: '8 Jun',  value: 10520 },
-    { name: '15 Jun', value: 10740 },
-    { name: '22 Jun', value: 10960 },
-    { name: '29 Jun', value: 11160 },
-    { name: '6 Jul',  value: 11360 },
-    { name: '13 Jul', value: 11560 },
-    { name: '20 Jul', value: 11760 },
-    { name: '27 Jul', value: 11960 },
-    { name: '3 Aug',  value: 12180 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '18 May', value: 4800  },
+    { name: '25 May', value: 5600  },
+    { name: '1 Jun',  value: 6400  },
+    { name: '8 Jun',  value: 7200  },
+    { name: '15 Jun', value: 7900  },
+    { name: '22 Jun', value: 8600  },
+    { name: '29 Jun', value: 9200  },
+    { name: '6 Jul',  value: 9700  },
+    { name: '13 Jul', value: 10200 },
+    { name: '20 Jul', value: 10700 },
+    { name: '27 Jul', value: 11100 },
+    { name: '3 Aug',  value: 11500 },
+    { name: '8 Aug',  value: 11763 },
   ],
   '6 M': [
-    { name: '8 Feb',  value: 7200  },
-    { name: '8 Mar',  value: 8400  },
-    { name: '8 Apr',  value: 9400  },
-    { name: '8 May',  value: 10300 },
-    { name: '8 Jun',  value: 11100 },
-    { name: '8 Jul',  value: 11800 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '8 Feb',  value: 3200  },
+    { name: '8 Mar',  value: 4800  },
+    { name: '8 Apr',  value: 6400  },
+    { name: '8 May',  value: 7800  },
+    { name: '8 Jun',  value: 9200  },
+    { name: '8 Jul',  value: 10600 },
+    { name: '8 Aug',  value: 11763 },
   ],
   '1 Y': [
-    { name: '1 Sep',  value: 3800  },
-    { name: '1 Oct',  value: 4600  },
-    { name: '1 Nov',  value: 5400  },
-    { name: '1 Dec',  value: 6100  },
-    { name: '1 Jan',  value: 6900  },
-    { name: '1 Feb',  value: 7600  },
-    { name: '1 Mar',  value: 8400  },
-    { name: '1 Apr',  value: 9200  },
-    { name: '1 May',  value: 10000 },
-    { name: '1 Jun',  value: 10800 },
-    { name: '1 Jul',  value: 11600 },
-    { name: '8 Aug',  value: 12382 },
+    { name: '1 Sep',  value: 800   },
+    { name: '1 Oct',  value: 1200  },
+    { name: '1 Nov',  value: 1800  },
+    { name: '1 Dec',  value: 2500  },
+    { name: '1 Jan',  value: 3400  },
+    { name: '1 Feb',  value: 4400  },
+    { name: '1 Mar',  value: 5600  },
+    { name: '1 Apr',  value: 7000  },
+    { name: '1 May',  value: 8400  },
+    { name: '1 Jun',  value: 9800  },
+    { name: '1 Jul',  value: 11000 },
+    { name: '8 Aug',  value: 11763 },
   ],
 };
 
@@ -198,58 +198,58 @@ const SOURCES_CHART_DATA = SOURCES.map(s => ({
 
 const TYPE_TREND_DATA_BY_RANGE = {
   '1 W': [
-    { name: '2 Aug',  Server: 4057, Workstation: 2814, Network: 2567, Mobile: 883, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '3 Aug',  Server: 4063, Workstation: 2821, Network: 2574, Mobile: 885, Printers: 122, IOT: 120, 'Storage Accounts': 2 },
-    { name: '4 Aug',  Server: 4069, Workstation: 2828, Network: 2580, Mobile: 887, Printers: 122, IOT: 120, 'Storage Accounts': 2 },
-    { name: '5 Aug',  Server: 4074, Workstation: 2834, Network: 2586, Mobile: 890, Printers: 123, IOT: 121, 'Storage Accounts': 2 },
-    { name: '6 Aug',  Server: 4078, Workstation: 2839, Network: 2591, Mobile: 892, Printers: 123, IOT: 121, 'Storage Accounts': 2 },
-    { name: '7 Aug',  Server: 4082, Workstation: 2844, Network: 2596, Mobile: 895, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '2 Aug',  Volume: 5353, Workstation: 4852, Server: 374, 'Kubernetes Container': 346, 'Security Group': 219, 'Compute Instance Group': 149, Serverless: 64 },
+    { name: '3 Aug',  Volume: 5368, Workstation: 4868, Server: 376, 'Kubernetes Container': 348, 'Security Group': 220, 'Compute Instance Group': 150, Serverless: 65 },
+    { name: '4 Aug',  Volume: 5381, Workstation: 4882, Server: 377, 'Kubernetes Container': 349, 'Security Group': 221, 'Compute Instance Group': 151, Serverless: 65 },
+    { name: '5 Aug',  Volume: 5393, Workstation: 4895, Server: 378, 'Kubernetes Container': 350, 'Security Group': 222, 'Compute Instance Group': 151, Serverless: 65 },
+    { name: '6 Aug',  Volume: 5403, Workstation: 4906, Server: 379, 'Kubernetes Container': 351, 'Security Group': 222, 'Compute Instance Group': 152, Serverless: 65 },
+    { name: '7 Aug',  Volume: 5414, Workstation: 4915, Server: 380, 'Kubernetes Container': 352, 'Security Group': 223, 'Compute Instance Group': 152, Serverless: 66 },
+    { name: '8 Aug',  Volume: 5423, Workstation: 4922, Server: 381, 'Kubernetes Container': 353, 'Security Group': 224, 'Compute Instance Group': 153, Serverless: 66 },
   ],
   '1 M': [
-    { name: '12 Jul', Server: 3948, Workstation: 2712, Network: 2472, Mobile: 857, Printers: 118, IOT: 116, 'Storage Accounts': 2 },
-    { name: '19 Jul', Server: 3980, Workstation: 2748, Network: 2510, Mobile: 868, Printers: 119, IOT: 117, 'Storage Accounts': 2 },
-    { name: '26 Jul', Server: 4015, Workstation: 2782, Network: 2545, Mobile: 878, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '2 Aug',  Server: 4054, Workstation: 2819, Network: 2574, Mobile: 889, Printers: 122, IOT: 121, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '12 Jul', Volume: 4520, Workstation: 4100, Server: 317, 'Kubernetes Container': 294, 'Security Group': 186, 'Compute Instance Group': 127, Serverless: 55 },
+    { name: '19 Jul', Volume: 4820, Workstation: 4370, Server: 338, 'Kubernetes Container': 313, 'Security Group': 198, 'Compute Instance Group': 135, Serverless: 58 },
+    { name: '26 Jul', Volume: 5100, Workstation: 4625, Server: 358, 'Kubernetes Container': 332, 'Security Group': 210, 'Compute Instance Group': 143, Serverless: 62 },
+    { name: '2 Aug',  Volume: 5290, Workstation: 4800, Server: 370, 'Kubernetes Container': 343, 'Security Group': 217, 'Compute Instance Group': 148, Serverless: 64 },
+    { name: '8 Aug',  Volume: 5423, Workstation: 4922, Server: 381, 'Kubernetes Container': 353, 'Security Group': 224, 'Compute Instance Group': 153, Serverless: 66 },
   ],
   '3 M': [
-    { name: '18 May', Server: 3350, Workstation: 2130, Network: 1940, Mobile: 723, Printers: 97,  IOT: 95,  'Storage Accounts': 1 },
-    { name: '25 May', Server: 3408, Workstation: 2195, Network: 2003, Mobile: 738, Printers: 99,  IOT: 97,  'Storage Accounts': 1 },
-    { name: '1 Jun',  Server: 3462, Workstation: 2255, Network: 2058, Mobile: 752, Printers: 102, IOT: 100, 'Storage Accounts': 1 },
-    { name: '8 Jun',  Server: 3518, Workstation: 2315, Network: 2115, Mobile: 767, Printers: 104, IOT: 102, 'Storage Accounts': 1 },
-    { name: '15 Jun', Server: 3568, Workstation: 2368, Network: 2170, Mobile: 781, Printers: 107, IOT: 105, 'Storage Accounts': 1 },
-    { name: '22 Jun', Server: 3618, Workstation: 2422, Network: 2226, Mobile: 796, Printers: 109, IOT: 107, 'Storage Accounts': 2 },
-    { name: '29 Jun', Server: 3668, Workstation: 2478, Network: 2282, Mobile: 810, Printers: 111, IOT: 109, 'Storage Accounts': 2 },
-    { name: '6 Jul',  Server: 3722, Workstation: 2538, Network: 2340, Mobile: 825, Printers: 114, IOT: 112, 'Storage Accounts': 2 },
-    { name: '13 Jul', Server: 3778, Workstation: 2600, Network: 2402, Mobile: 842, Printers: 116, IOT: 114, 'Storage Accounts': 2 },
-    { name: '20 Jul', Server: 3840, Workstation: 2662, Network: 2458, Mobile: 858, Printers: 119, IOT: 117, 'Storage Accounts': 2 },
-    { name: '27 Jul', Server: 3935, Workstation: 2728, Network: 2522, Mobile: 874, Printers: 121, IOT: 119, 'Storage Accounts': 2 },
-    { name: '3 Aug',  Server: 4022, Workstation: 2800, Network: 2568, Mobile: 888, Printers: 122, IOT: 121, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '18 May', Volume: 2215, Workstation: 2009, Server: 155, 'Kubernetes Container': 144, 'Security Group':  91, 'Compute Instance Group':  62, Serverless: 27 },
+    { name: '25 May', Volume: 2584, Workstation: 2343, Server: 181, 'Kubernetes Container': 168, 'Security Group': 106, 'Compute Instance Group':  72, Serverless: 31 },
+    { name: '1 Jun',  Volume: 2952, Workstation: 2678, Server: 207, 'Kubernetes Container': 192, 'Security Group': 121, 'Compute Instance Group':  83, Serverless: 36 },
+    { name: '8 Jun',  Volume: 3321, Workstation: 3012, Server: 233, 'Kubernetes Container': 216, 'Security Group': 136, 'Compute Instance Group':  93, Serverless: 40 },
+    { name: '15 Jun', Volume: 3644, Workstation: 3306, Server: 255, 'Kubernetes Container': 236, 'Security Group': 150, 'Compute Instance Group': 102, Serverless: 44 },
+    { name: '22 Jun', Volume: 3967, Workstation: 3598, Server: 278, 'Kubernetes Container': 258, 'Security Group': 163, 'Compute Instance Group': 111, Serverless: 48 },
+    { name: '29 Jun', Volume: 4243, Workstation: 3850, Server: 297, 'Kubernetes Container': 275, 'Security Group': 174, 'Compute Instance Group': 119, Serverless: 51 },
+    { name: '6 Jul',  Volume: 4474, Workstation: 4060, Server: 313, 'Kubernetes Container': 290, 'Security Group': 184, 'Compute Instance Group': 126, Serverless: 54 },
+    { name: '13 Jul', Volume: 4705, Workstation: 4270, Server: 330, 'Kubernetes Container': 306, 'Security Group': 194, 'Compute Instance Group': 132, Serverless: 57 },
+    { name: '20 Jul', Volume: 4936, Workstation: 4478, Server: 346, 'Kubernetes Container': 321, 'Security Group': 203, 'Compute Instance Group': 138, Serverless: 59 },
+    { name: '27 Jul', Volume: 5121, Workstation: 4647, Server: 359, 'Kubernetes Container': 333, 'Security Group': 211, 'Compute Instance Group': 144, Serverless: 62 },
+    { name: '3 Aug',  Volume: 5307, Workstation: 4815, Server: 372, 'Kubernetes Container': 345, 'Security Group': 218, 'Compute Instance Group': 149, Serverless: 65 },
+    { name: '8 Aug',  Volume: 5423, Workstation: 4922, Server: 381, 'Kubernetes Container': 353, 'Security Group': 224, 'Compute Instance Group': 153, Serverless: 66 },
   ],
   '6 M': [
-    { name: '8 Feb',  Server: 2780, Workstation: 1660, Network: 1510, Mobile: 575, Printers:  81, IOT:  79, 'Storage Accounts': 1 },
-    { name: '8 Mar',  Server: 3100, Workstation: 1980, Network: 1800, Mobile: 660, Printers:  91, IOT:  89, 'Storage Accounts': 1 },
-    { name: '8 Apr',  Server: 3400, Workstation: 2250, Network: 2040, Mobile: 732, Printers: 101, IOT:  99, 'Storage Accounts': 1 },
-    { name: '8 May',  Server: 3640, Workstation: 2460, Network: 2240, Mobile: 790, Printers: 108, IOT: 106, 'Storage Accounts': 2 },
-    { name: '8 Jun',  Server: 3820, Workstation: 2620, Network: 2380, Mobile: 832, Printers: 114, IOT: 112, 'Storage Accounts': 2 },
-    { name: '8 Jul',  Server: 3970, Workstation: 2750, Network: 2500, Mobile: 866, Printers: 120, IOT: 118, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '8 Feb',  Volume: 1476, Workstation: 1340, Server: 103, 'Kubernetes Container':  96, 'Security Group':  61, 'Compute Instance Group':  41, Serverless: 18 },
+    { name: '8 Mar',  Volume: 2215, Workstation: 2010, Server: 155, 'Kubernetes Container': 144, 'Security Group':  91, 'Compute Instance Group':  62, Serverless: 27 },
+    { name: '8 Apr',  Volume: 2952, Workstation: 2678, Server: 207, 'Kubernetes Container': 192, 'Security Group': 121, 'Compute Instance Group':  83, Serverless: 36 },
+    { name: '8 May',  Volume: 3598, Workstation: 3265, Server: 252, 'Kubernetes Container': 234, 'Security Group': 148, 'Compute Instance Group': 101, Serverless: 44 },
+    { name: '8 Jun',  Volume: 4243, Workstation: 3850, Server: 297, 'Kubernetes Container': 275, 'Security Group': 174, 'Compute Instance Group': 119, Serverless: 51 },
+    { name: '8 Jul',  Volume: 4889, Workstation: 4436, Server: 343, 'Kubernetes Container': 318, 'Security Group': 201, 'Compute Instance Group': 137, Serverless: 59 },
+    { name: '8 Aug',  Volume: 5423, Workstation: 4922, Server: 381, 'Kubernetes Container': 353, 'Security Group': 224, 'Compute Instance Group': 153, Serverless: 66 },
   ],
   '1 Y': [
-    { name: '1 Sep',  Server: 1400, Workstation:  850, Network:  770, Mobile: 278, Printers: 44, IOT: 42, 'Storage Accounts': 0 },
-    { name: '1 Oct',  Server: 1760, Workstation: 1100, Network: 1000, Mobile: 348, Printers: 53, IOT: 51, 'Storage Accounts': 0 },
-    { name: '1 Nov',  Server: 2100, Workstation: 1370, Network: 1230, Mobile: 418, Printers: 62, IOT: 60, 'Storage Accounts': 0 },
-    { name: '1 Dec',  Server: 2400, Workstation: 1600, Network: 1440, Mobile: 484, Printers: 69, IOT: 67, 'Storage Accounts': 1 },
-    { name: '1 Jan',  Server: 2700, Workstation: 1840, Network: 1640, Mobile: 550, Printers: 76, IOT: 74, 'Storage Accounts': 1 },
-    { name: '1 Feb',  Server: 2960, Workstation: 2040, Network: 1840, Mobile: 610, Printers: 83, IOT: 81, 'Storage Accounts': 1 },
-    { name: '1 Mar',  Server: 3200, Workstation: 2230, Network: 2010, Mobile: 668, Printers: 89, IOT: 87, 'Storage Accounts': 1 },
-    { name: '1 Apr',  Server: 3440, Workstation: 2400, Network: 2170, Mobile: 724, Printers: 96, IOT: 94, 'Storage Accounts': 1 },
-    { name: '1 May',  Server: 3640, Workstation: 2550, Network: 2320, Mobile: 775, Printers: 103, IOT: 101, 'Storage Accounts': 2 },
-    { name: '1 Jun',  Server: 3820, Workstation: 2680, Network: 2430, Mobile: 820, Printers: 110, IOT: 108, 'Storage Accounts': 2 },
-    { name: '1 Jul',  Server: 3980, Workstation: 2780, Network: 2520, Mobile: 862, Printers: 118, IOT: 116, 'Storage Accounts': 2 },
-    { name: '8 Aug',  Server: 4086, Workstation: 2848, Network: 2600, Mobile: 897, Printers: 124, IOT: 122, 'Storage Accounts': 2 },
+    { name: '1 Sep',  Volume:  369, Workstation:  335, Server:  26, 'Kubernetes Container':  24, 'Security Group':  15, 'Compute Instance Group':  10, Serverless:  4 },
+    { name: '1 Oct',  Volume:  554, Workstation:  503, Server:  39, 'Kubernetes Container':  36, 'Security Group':  23, 'Compute Instance Group':  16, Serverless:  7 },
+    { name: '1 Nov',  Volume:  831, Workstation:  754, Server:  58, 'Kubernetes Container':  54, 'Security Group':  34, 'Compute Instance Group':  23, Serverless: 10 },
+    { name: '1 Dec',  Volume: 1153, Workstation: 1047, Server:  81, 'Kubernetes Container':  75, 'Security Group':  47, 'Compute Instance Group':  32, Serverless: 14 },
+    { name: '1 Jan',  Volume: 1569, Workstation: 1424, Server: 110, 'Kubernetes Container': 102, 'Security Group':  64, 'Compute Instance Group':  44, Serverless: 19 },
+    { name: '1 Feb',  Volume: 2031, Workstation: 1843, Server: 142, 'Kubernetes Container': 132, 'Security Group':  83, 'Compute Instance Group':  57, Serverless: 25 },
+    { name: '1 Mar',  Volume: 2584, Workstation: 2345, Server: 181, 'Kubernetes Container': 168, 'Security Group': 106, 'Compute Instance Group':  72, Serverless: 31 },
+    { name: '1 Apr',  Volume: 3229, Workstation: 2930, Server: 226, 'Kubernetes Container': 210, 'Security Group': 133, 'Compute Instance Group':  90, Serverless: 39 },
+    { name: '1 May',  Volume: 3875, Workstation: 3515, Server: 271, 'Kubernetes Container': 252, 'Security Group': 159, 'Compute Instance Group': 109, Serverless: 47 },
+    { name: '1 Jun',  Volume: 4520, Workstation: 4100, Server: 317, 'Kubernetes Container': 294, 'Security Group': 186, 'Compute Instance Group': 127, Serverless: 55 },
+    { name: '1 Jul',  Volume: 5073, Workstation: 4603, Server: 355, 'Kubernetes Container': 329, 'Security Group': 209, 'Compute Instance Group': 143, Serverless: 62 },
+    { name: '8 Aug',  Volume: 5423, Workstation: 4922, Server: 381, 'Kubernetes Container': 353, 'Security Group': 224, 'Compute Instance Group': 153, Serverless: 66 },
   ],
 };
 
@@ -298,6 +298,12 @@ const TYPE_ICONS = {
   printer:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
   iot:         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>,
   storage:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>,
+  volume:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  k8s:         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>,
+  secgroup:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  compute:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>,
+  serverless:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  subnet:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 12h10M12 7v10"/></svg>,
 };
 
 const IcWindows = () => (
@@ -326,7 +332,7 @@ const IcSevMed = () => (
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverDevicePage() {
+export default function DiscoverCloudPage() {
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
@@ -431,20 +437,20 @@ export default function DiscoverDevicePage() {
   );
 
   return (
-    <div className="page dev-page">
+    <div className="dev-page">
       <div className="dev-grid">
 
         {/* ── Left column ──────────────────────────────── */}
         <div className="dev-col-left">
 
           {/* Total stat + trend chart */}
-          <div className="card dev-card">
+          <div className="dev-card">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
                 <span className="dev-newly-added">
                   <IcNewlyAdded />
-                  <span>15 Newly added</span>
+                  <span>2,492 Newly Added</span>
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -465,11 +471,11 @@ export default function DiscoverDevicePage() {
 
             <div className="dev-stat-value-row">
               <div>
-                <div className="dev-stat-value">12,382</div>
+                <div className="dev-stat-value">11,763</div>
                 <div className="dev-stat-meta">
                   <IcTrendUp size={13} color="var(--pai-crit-fg)" />
-                  <span className="dev-stat-change up">2%</span>
-                  <span className="dev-stat-from">from last month</span>
+                  <span className="dev-stat-change up">65.12%</span>
+                  <span className="dev-stat-from">from last week</span>
                 </div>
               </div>
             </div>
@@ -512,7 +518,7 @@ export default function DiscoverDevicePage() {
           <div className="dev-bottom-row">
 
             {/* Data Source */}
-            <div className="card dev-card dev-source-card">
+            <div className="dev-card dev-source-card">
               <div className="dev-card-title">Data Source</div>
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -564,7 +570,7 @@ export default function DiscoverDevicePage() {
             </div>
 
             {/* Type + Donut */}
-            <div className="card dev-card dev-type-card">
+            <div className="dev-card dev-type-card">
               <div className="dev-card-title">Type</div>
               <div className="dev-donut-wrap" style={{ position: 'relative' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -596,7 +602,7 @@ export default function DiscoverDevicePage() {
                   textAlign: 'center', pointerEvents: 'none',
                 }}>
                   <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}>Total</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>6</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>11,763</div>
                 </div>
               </div>
               <div className="dev-type-list">
@@ -622,7 +628,7 @@ export default function DiscoverDevicePage() {
         <div className="dev-col-right">
 
           {/* Key Security Insights */}
-          <div className="card dev-card dev-insights-card">
+          <div className="dev-card dev-insights-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Key Security Insights — Top 5</span>
               <DSPillSearch
@@ -674,7 +680,7 @@ export default function DiscoverDevicePage() {
           </div>
 
           {/* Criticality */}
-          <div className="card dev-card dev-crit-card">
+          <div className="dev-card dev-crit-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Criticality Insights</span>
             </div>
@@ -727,10 +733,8 @@ export default function DiscoverDevicePage() {
                   <tr>
                     <TH>Display Label</TH>
                     <TH>Type</TH>
-                    <TH>Deployment Type</TH>
                     <TH>Asset Criticality</TH>
                     <TH>Asset Criticality Score</TH>
-                    <TH>OS Family</TH>
                   </tr>
                 </thead>
                 <tbody>
@@ -738,10 +742,8 @@ export default function DiscoverDevicePage() {
                     <tr key={i} className="dev-tr">
                       <td className="dev-td dev-td-name">{a.name}</td>
                       <td className="dev-td">{a.type}</td>
-                      <td className="dev-td">{a.deploy}</td>
                       <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
                       <td className="dev-td" style={{ color: 'var(--pai-crit-fg)', fontWeight: 600 }}>{a.score.toLocaleString()}</td>
-                      <td className="dev-td"><span className="dev-cell-icon-text"><IcLinux />{a.os}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -759,7 +761,6 @@ export default function DiscoverDevicePage() {
         </div>
       </div>
 
-      {/* ── Trend Explore Drawer ──────────────────────────────────── */}
       {showDrawer && (() => {
         const rawBaseData = TREND_DATA_BY_RANGE[drawerRange] ?? TREND_DATA_BY_RANGE['1 Y'];
         const drawerData = baselineView
@@ -809,7 +810,7 @@ export default function DiscoverDevicePage() {
                   <DSDropdown
                     value={drawerFilter}
                     onChange={setDrawerFilter}
-                    options={['All','Type','Origin','Deployment Type','Environment','Asset Criticality','OS Family']}
+                    options={['All','Type','Origin','Deployment Type','Environment','Asset Criticality']}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--shell-text-2, #444)', fontFamily: 'Inter,system-ui', marginBottom: 16 }}>
@@ -878,7 +879,7 @@ export default function DiscoverDevicePage() {
                     ) : (
                       <AreaChart data={drawerData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
                         <defs>
-                          <linearGradient id="drawerFill" x1="0" y1="0" x2="0" y2="1">
+                          <linearGradient id="drawerFillCloud" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%"   stopColor="var(--pai-indigo)" stopOpacity={0.20} />
                             <stop offset="100%" stopColor="var(--pai-indigo)" stopOpacity={0} />
                           </linearGradient>
@@ -890,7 +891,7 @@ export default function DiscoverDevicePage() {
                           tickFormatter={yFmt}
                           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                         <Tooltip content={makeTrendTooltip(rawBaseData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
-                        <Area type="monotone" dataKey="value" name="Total" stroke="var(--pai-indigo)" strokeWidth={2} fill="url(#drawerFill)"
+                        <Area type="monotone" dataKey="value" name="Total" stroke="var(--pai-indigo)" strokeWidth={2} fill="url(#drawerFillCloud)"
                           dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} />
                       </AreaChart>
                     )}

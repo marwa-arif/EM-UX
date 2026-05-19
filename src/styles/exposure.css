@@ -74,7 +74,7 @@
 .exp-contrib-hdr-right { display: flex; align-items: center; gap: 16px; }
 
 /* Search box */
-.exp-search-box { display: flex; align-items: center; border: 1px solid var(--card-border, #E6E6E6); border-radius: 58px; height: 32px; padding-left: 8px; padding-right: 4px; background: var(--card-bg); width: 313px; }
+.exp-search-box { display: flex; align-items: center; border: 1px solid var(--card-border, #E6E6E6); border-radius: 58px; height: 32px; box-sizing: border-box; padding-left: 8px; padding-right: 4px; background: var(--card-bg); width: 313px; }
 .exp-search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--shell-text, #101010); font-family: inherit; }
 .exp-search-icon-wrap { width: 24px; height: 24px; border-radius: 50%; background: rgba(99,96,216,0.15); display: flex; align-items: center; justify-content: center; color: var(--pai-indigo); flex-shrink: 0; }
 
