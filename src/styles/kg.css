@@ -154,7 +154,7 @@
 .kg-td-label { font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 .kg-td-type__icon { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
 .kg-td-sources { display: inline-flex; align-items: center; gap: 4px; }
-.kg-td-numeric { font-weight: 600; }
+.kg-td-numeric { font-variant-numeric: tabular-nums; font-weight: 400; }
 
 /* ── Source badge ─────────────────────────────────────────────────── */
 .kg-source-badge {
@@ -191,9 +191,19 @@
   background: var(--card-bg); border-left: 1px solid var(--pai-border);
   z-index: 300;
   transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: row;
   box-shadow: -8px 0 32px rgba(0,0,0,0.12);
   font-family: 'Inter', system-ui;
+}
+.kg-panel__nav-path {
+  width: 80px; flex-shrink: 0;
+  border-right: 1px solid var(--pai-border);
+  background: var(--shell-raised);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px 0 16px; overflow-y: auto; overflow-x: hidden;
+}
+.kg-panel__main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
 }
 .kg-panel--open  { transform: translateX(0); }
 .kg-panel--closed { transform: translateX(100%); box-shadow: none; }
@@ -274,7 +284,7 @@
 .kg-severity-fill { height: 100%; border-radius: 3px; }
 .kg-severity-count {
   width: 44px; font-size: 11px; font-weight: 600; color: var(--pai-fg2);
-  flex-shrink: 0; text-align: right;
+  flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums;
 }
 .kg-panel__placeholder {
   background: var(--card-bg); border: 1px solid var(--pai-border); border-radius: 4px;
@@ -307,6 +317,7 @@
 .kg-panel__score-label { font-size: 11px; color: var(--pai-fg3); }
 .kg-panel__score-val {
   font-size: 13px; font-weight: 700; color: var(--pai-fg1);
+  font-variant-numeric: tabular-nums;
 }
 .kg-panel__score-sep { width: 1px; height: 28px; background: var(--pai-border); flex-shrink: 0; }
 .kg-panel__score-action {
@@ -427,7 +438,7 @@
 .kg-tooltip__body--wide { min-width: 220px; }
 .kg-tooltip-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .kg-tooltip-row__key { font-size: 11px; color: var(--pai-fg3); }
-.kg-tooltip-row__val { font-size: 12px; color: var(--pai-fg1); font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
+.kg-tooltip-row__val { font-size: 12px; color: var(--pai-fg1); font-weight: 400; font-variant-numeric: tabular-nums; font-family: 'Inter', system-ui, sans-serif; }
 
 /* ── Zoom indicator ───────────────────────────────────────────────── */
 .kg-zoom-indicator {
@@ -502,4 +513,153 @@
 .seg-tabs__divider {
   position: absolute; left: 0; top: 4px; bottom: 4px;
   width: 1px; background: var(--shell-border); pointer-events: none;
+}
+
+/* ── Panel: redesigned compact topbar header ─────────────────────────── */
+.kg-panel__header {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--pai-border);
+  flex-shrink: 0;
+  background: var(--card-bg);
+}
+.kg-panel__topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; flex-wrap: nowrap; min-width: 0;
+}
+.kg-panel__topbar .kg-panel__name {
+  font-size: 13px; font-weight: 700; color: var(--pai-fg1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px; flex-shrink: 1;
+}
+.kg-panel__topbar .kg-panel__type-badge {
+  background: var(--shell-raised);
+  border: 1px solid var(--pai-border);
+  color: var(--pai-fg2);
+  border-radius: 44px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+}
+.kg-panel__severity-badge {
+  background: var(--pai-crit-bg); color: var(--pai-crit-fg);
+  border-radius: 44px; padding: 2px 9px;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.kg-panel__score-num {
+  font-size: 17px; font-weight: 800; color: var(--pai-fg1);
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.kg-panel__sim-link {
+  background: none; border: none; padding: 0;
+  color: var(--pai-indigo); font-size: 11px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
+  font-family: inherit; flex-shrink: 0; white-space: nowrap;
+}
+.kg-panel__sim-link:hover { text-decoration: underline; }
+.kg-panel__icon-btn {
+  width: 28px; height: 28px; padding: 0;
+  background: none; border: 1px solid var(--pai-border); border-radius: 6px;
+  cursor: pointer; color: var(--pai-fg3);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: border-color 120ms, color 120ms;
+}
+.kg-panel__icon-btn:hover { color: var(--pai-fg1); border-color: var(--pai-fg3); }
+
+/* ── Panel: Entity Relationship Summary section ──────────────────────── */
+.kg-panel__rel-section {
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--pai-border);
+}
+.kg-panel__rel-section-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  font-size: 11px; font-weight: 600; color: var(--pai-fg1);
+  border-bottom: 1px solid var(--pai-border);
+}
+.kg-panel__rel-section-header .kg-collapse-btn {
+  margin-left: auto;
+}
+.kg-panel__rel-body {
+  display: flex; align-items: stretch; height: 260px;
+}
+.kg-panel__rel-path {
+  width: 80px; flex-shrink: 0;
+  border-right: 1px solid var(--pai-border);
+  background: var(--shell-raised);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 16px 0; gap: 0; overflow: hidden;
+}
+.kg-panel__rel-path-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 0 4px;
+}
+.kg-panel__rel-path-node {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1.5px solid var(--pai-border);
+  background: var(--card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; padding: 0;
+  transition: border-color 150ms cubic-bezier(.2,.8,.2,1);
+}
+.kg-panel__rel-path-node:hover { border-color: var(--pai-fg3); }
+.kg-panel__rel-path-node--active {
+  border: 2px solid var(--pai-indigo);
+}
+.kg-panel__rel-path-label {
+  font-size: 10px; color: var(--pai-fg3); font-weight: 500;
+  text-align: center; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 72px;
+  font-family: inherit;
+}
+.kg-panel__rel-path-label--active { color: var(--pai-indigo); font-weight: 600; }
+.kg-panel__rel-path-conn {
+  width: 1px; height: 14px; background: var(--pai-border); flex-shrink: 0; margin: 3px 0;
+}
+.kg-panel__rel-canvas {
+  position: relative; height: 260px; overflow: hidden;
+  background: var(--card-bg);
+  background-image: radial-gradient(var(--shell-border) 1px, transparent 1px);
+  background-size: 14px 14px;
+  display: flex; align-items: stretch;
+}
+.kg-panel__rel-svg {
+  display: block; flex: 1; min-width: 0;
+}
+.kg-panel__zoom-ctl {
+  width: 36px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 8px 4px;
+  border-left: 1px solid var(--pai-border);
+  background: var(--card-bg);
+}
+.kg-panel__zoom-ctl-btn {
+  width: 26px; height: 26px; padding: 0;
+  background: var(--shell-raised); border: 1px solid var(--pai-border); border-radius: 4px;
+  cursor: pointer; color: var(--pai-fg3);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 100ms;
+}
+.kg-panel__zoom-ctl-btn:hover { background: var(--pai-border); color: var(--pai-fg1); }
+
+/* ── Panel: 3-column info grid ───────────────────────────────────────── */
+.kg-panel__info-grid--3col {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+}
+.kg-panel__info-grid--3col .kg-panel__info-cell {
+  border-bottom: 1px solid var(--shell-border);
+  border-right: 1px solid var(--shell-border);
+}
+.kg-panel__info-grid--3col .kg-panel__info-cell:nth-child(3n) {
+  border-right: none;
+}
+.kg-panel__info-grid--3col .kg-panel__info-cell:nth-last-child(-n+3):nth-child(3n+1),
+.kg-panel__info-grid--3col .kg-panel__info-cell:nth-last-child(-n+3):nth-child(3n+1) ~ .kg-panel__info-cell {
+  border-bottom: none;
+}
+
+/* ── Panel: section header uppercase variant ─────────────────────────── */
+.kg-panel__section-header--upper {
+  text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 10px; font-weight: 700; color: var(--pai-fg3);
+  background: var(--shell-raised);
 }

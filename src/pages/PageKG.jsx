@@ -831,6 +831,8 @@ function PageKG() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelRow, setPanelRow] = useState(null);
   const [panelTab, setPanelTab] = useState('summary');
+  const [relCollapsed, setRelCollapsed] = useState(false);
+  const [relSelectedNode, setRelSelectedNode] = useState(null);
   const [edges, setEdges] = useState(() => {
     const fromTweaks = (window.__floatTweaks && window.__floatTweaks.edges);
     if (Array.isArray(fromTweaks) && fromTweaks.length) return fromTweaks.map(e => [...e]);
@@ -889,6 +891,8 @@ function PageKG() {
   useEffect(() => {
     setDeselectedChips(new Set()); setEdgeReversed(false); setSelectedEdgeKey(null);
   }, [selected]);
+
+  useEffect(() => { setRelSelectedNode(null); }, [panelRow]);
 
   const relationshipChips = useMemo(() => {
     if (!selected) return [];
@@ -1142,21 +1146,85 @@ function PageKG() {
         {panelRow && (() => {
           const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
           const ent  = ENTITY_TYPES[panelRow.type]        || {};
+          const PATH_BASE = [
+            { id: 'internet',    fill: '#1A5244',             glyph: null,               label: 'Internet' },
+            { id: 'application', fill: '#5D4A24',             glyph: 'application',      label: 'Application' },
+            { id: 'server',      fill: ent.icon || '#2B5690', glyph: meta.glyph || 'host', label: meta.type || 'Server' },
+          ];
+          const PATH_RIGHT = {
+            person:        { id: 'person',        glyph: 'person',        label: 'Person' },
+            account:       { id: 'account',       glyph: 'account',       label: 'Account' },
+            vulnerability: { id: 'vulnerability', glyph: 'vulnerability', label: 'Vulnerability' },
+            finding:       { id: 'finding',       glyph: 'finding',       label: 'Findings' },
+          };
+          const pathNodes = relSelectedNode ? [...PATH_BASE, PATH_RIGHT[relSelectedNode]] : PATH_BASE;
+          const GlobeIconPath = ({ active }) => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke={active ? 'var(--pai-indigo)' : 'var(--pai-fg3)'}
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <path d="M12 3a15 15 0 0 1 3.5 9A15 15 0 0 1 12 21 15 15 0 0 1 8.5 12 15 15 0 0 1 12 3z"/>
+            </svg>
+          );
+          const toggleNode = (id) => setRelSelectedNode(n => n === id ? null : id);
+          const isActive   = (id) => relSelectedNode === id;
+
           return (
             <>
+              {/* ── Full-height left path sidebar ─────────────────── */}
+              <div className="kg-panel__nav-path">
+                {pathNodes.map((node, i) => {
+                  const isLast = i === pathNodes.length - 1;
+                  const isClickable = !['internet', 'application', 'server'].includes(node.id);
+                  return (
+                    <React.Fragment key={node.id}>
+                      {i > 0 && <div className="kg-panel__rel-path-conn"/>}
+                      <div
+                        className="kg-panel__rel-path-item"
+                        onClick={() => isClickable ? toggleNode(node.id) : null}
+                        style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                      >
+                        <div className={`kg-panel__rel-path-node${isLast ? ' kg-panel__rel-path-node--active' : ''}`}>
+                          {node.glyph ? (
+                            <div style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: isLast ? 'none' : 'grayscale(1) opacity(0.55)' }}>
+                              <EntityGlyph kind={node.glyph} size={20}/>
+                            </div>
+                          ) : <GlobeIconPath active={isLast}/>}
+                        </div>
+                        <span className={`kg-panel__rel-path-label${isLast ? ' kg-panel__rel-path-label--active' : ''}`}>
+                          {node.label}
+                        </span>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {/* ── Main content ──────────────────────────────────── */}
+              <div className="kg-panel__main">
+
+              {/* ── Compact topbar header ─────────────────────────── */}
               <div className="kg-panel__header">
-                <div className="kg-panel__title-row">
-                  <div className="kg-panel__entity-icon" style={{ background: ent.tint || '#F5F5F5', border: `2px solid ${ent.stroke || '#E6E6E6'}` }}>
-                    <EntityGlyph kind={meta.glyph} size={22} />
-                  </div>
-                  <div className="kg-panel__title-block">
-                    <div className="kg-panel__name-row">
-                      <span className="kg-panel__name">{panelRow.label}</span>
-                      <span className="kg-panel__type-badge" style={{ border: `1px solid ${ent.stroke || '#E6E6E6'}`, color: ent.icon || '#6360D8' }}>
-                        {meta.type || panelRow.type}
-                      </span>
-                    </div>
-                  </div>
+                <div className="kg-panel__topbar">
+                  <span className="kg-panel__name">{panelRow.label}</span>
+                  <span className="kg-panel__type-badge">{meta.type || panelRow.type}</span>
+                  <span className="kg-panel__severity-badge">Critical</span>
+                  <span className="kg-panel__score-num">970</span>
+                  <button className="kg-panel__sim-link">
+                    View Score Simulation
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M17 7H7M17 7v10"/>
+                    </svg>
+                  </button>
+                  <span style={{ flex: 1 }} />
+                  <button className="kg-panel__icon-btn" title="Open in new tab">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                      <polyline points="15 3 21 3 21 9"/>
+                      <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                  </button>
                   <button onClick={() => setPanelOpen(false)} className="kg-panel__collapse-btn">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m18 15-6-6-6 6"/>
@@ -1164,158 +1232,207 @@ function PageKG() {
                     Collapse
                   </button>
                 </div>
-
-                <div className="kg-panel__score-bar">
-                  <div className="kg-panel__score-group">
-                    <span className="kg-panel__score-label">Exposure Score</span>
-                    <span className="kg-panel__score-val">920</span>
-                  </div>
-                  <div className="kg-panel__score-sep" />
-                  <div className="kg-panel__score-group">
-                    <span className="kg-panel__score-label">Asset Criticality Score</span>
-                    <span className="kg-panel__score-val">920</span>
-                  </div>
-                  <div className="kg-panel__score-sep" />
-                  <button className="kg-panel__score-action">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                    </svg>
-                    View Score Simulation
-                    <kbd className="kg-panel__score-kbd">⌘ D</kbd>
-                  </button>
-                </div>
-
-                <div className="kg-panel__connections">
-                  {[
-                    { glyph: 'application', label: 'Application Endpoint', count: null },
-                    { glyph: 'person',      label: 'Shashi.salian',        count: null },
-                    { glyph: 'account',     label: 'Account',              count: 2 },
-                    { glyph: 'vulnerability', label: 'Vulnerability',      count: 8 },
-                    { glyph: 'finding',     label: 'Findings',             count: 43 },
-                  ].map(c => (
-                    <span key={c.glyph} className="kg-panel__conn-chip">
-                      <EntityGlyph kind={c.glyph} size={13} />
-                      <span>{c.label}</span>
-                      {c.count != null && <span className="kg-panel__conn-count">{c.count}</span>}
-                    </span>
-                  ))}
-                  <span className="kg-panel__conn-chip kg-panel__conn-chip--internet">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
-                    <span>Internet</span>
-                    <span className="kg-panel__conn-badge">True</span>
-                  </span>
-                </div>
-
-                <div className="kg-panel__rel-graph">
-                  <div className="kg-panel__rel-header">Entity Relationship Summary</div>
-                  <div className="kg-panel__rel-body">
-                    <svg width="280" height="90" style={{ display: 'block', overflow: 'visible', flex: 1 }}>
-                      <line x1="90" y1="44" x2="190" y2="44" stroke="#D6D6D6" strokeWidth="1.5"/>
-                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill={PAI.fg3} fontFamily="inherit">Has</text>
-                      <circle cx="60" cy="44" r="28" fill={ent.tint || '#F5F5F5'} stroke={ent.stroke || '#E6E6E6'} strokeWidth="1.5"/>
-                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <EntityGlyph kind={meta.glyph} size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill={PAI.fg2} fontWeight="600" fontFamily="inherit">
-                        {(meta.type || panelRow.type).slice(0, 12)}
-                      </text>
-                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
-                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <EntityGlyph kind="finding" size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
-                      <circle cx="244" cy="20" r="9" fill="#6360D8"/>
-                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
-                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0,4) : fmtN(ent.count || 0)}
-                      </text>
-                    </svg>
-                  </div>
-                </div>
               </div>
 
+              {/* ── Entity Relationship Summary ────────────────────── */}
+              <div className="kg-panel__rel-section">
+                <div className="kg-panel__rel-section-header">
+                  Entity Relationship Summary
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                  </svg>
+                  <button className="kg-collapse-btn" onClick={() => setRelCollapsed(c => !c)}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transform: relCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}>
+                      <path d="m18 15-6-6-6 6"/>
+                    </svg>
+                    Collapse
+                  </button>
+                </div>
+                {!relCollapsed && (
+                  <div className="kg-panel__rel-canvas">
+                        <svg className="kg-panel__rel-svg" viewBox="0 0 620 260" preserveAspectRatio="xMidYMid meet">
+                          {/* left-chain edges */}
+                          <line x1="100" y1="118" x2="168" y2="118" stroke="#C8C8D4" strokeWidth="1.5"/>
+                          <line x1="224" y1="118" x2="316" y2="118" stroke="#C8C8D4" strokeWidth="1.5"/>
+
+                          {/* server → right curves — highlight selected */}
+                          <path d="M 386,110 C 460,80 476,38 516,38"    fill="none" stroke={isActive('person')        ? '#6360D8' : '#C8C8D4'} strokeWidth={isActive('person')        ? 2 : 1.5}/>
+                          <path d="M 386,114 C 455,106 472,98 516,98"   fill="none" stroke={isActive('account')       ? '#6360D8' : '#C8C8D4'} strokeWidth={isActive('account')       ? 2 : 1.5}/>
+                          <path d="M 386,122 C 455,130 472,160 516,160" fill="none" stroke={isActive('vulnerability') ? '#6360D8' : '#CFBCBC'} strokeWidth={isActive('vulnerability') ? 2 : 1.5}/>
+                          <path d="M 386,126 C 462,162 476,210 516,222" fill="none" stroke={isActive('finding')       ? '#6360D8' : '#C4B8DC'} strokeWidth={isActive('finding')       ? 2 : 1.5}/>
+
+                          {/* Internet node */}
+                          <circle cx="72" cy="118" r="28" fill="#1A5244"/>
+                          <g transform="translate(60,106)" stroke="#fff" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="9"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <path d="M12 3a15 15 0 0 1 3.5 9A15 15 0 0 1 12 21 15 15 0 0 1 8.5 12 15 15 0 0 1 12 3z"/>
+                          </g>
+                          <text x="72" y="156" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit" fontWeight="500">Internet</text>
+
+                          {/* Application/Endpoint node */}
+                          <circle cx="196" cy="118" r="28" fill="#5D4A24"/>
+                          <foreignObject x="185" y="107" width="22" height="22" style={{ pointerEvents: 'none' }}>
+                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
+                              <EntityGlyph kind="application" size={22}/>
+                            </div>
+                          </foreignObject>
+                          <text x="196" y="156" textAnchor="middle" fontSize="10" fill={PAI.fg1} fontFamily="inherit" fontWeight="600">Application</text>
+                          <text x="196" y="167" textAnchor="middle" fontSize="9" fill={PAI.fg3} fontFamily="inherit">Endpoint</text>
+
+                          {/* Server (central entity) node */}
+                          <circle cx="352" cy="118" r="34" fill={ent.icon || '#7C3050'}/>
+                          <foreignObject x="340" y="106" width="24" height="24" style={{ pointerEvents: 'none' }}>
+                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }}>
+                              <EntityGlyph kind={meta.glyph || 'host'} size={24}/>
+                            </div>
+                          </foreignObject>
+                          <text x="352" y="163" textAnchor="middle" fontSize="10" fill={PAI.fg1} fontFamily="inherit" fontWeight="600">Server</text>
+                          <text x="352" y="174" textAnchor="middle" fontSize="8.5" fill={PAI.fg3} fontFamily="inherit">
+                            {panelRow.label.length > 22 ? panelRow.label.slice(0, 21) + '…' : panelRow.label}
+                          </text>
+
+                          {/* Person node */}
+                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('person')}>
+                            {isActive('person') && <circle cx="544" cy="38" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
+                            <circle cx="544" cy="38" r="26" fill="#2A6070" stroke={isActive('person') ? '#6360D8' : 'none'} strokeWidth="2"/>
+                            <circle cx="564" cy="18" r="10" fill="#6360D8"/>
+                            <text x="564" y="22" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">1</text>
+                            <foreignObject x="533" y="27" width="22" height="22" style={{ pointerEvents: 'none' }}>
+                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
+                                <EntityGlyph kind="person" size={22}/>
+                              </div>
+                            </foreignObject>
+                            <text x="544" y="74" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Person</text>
+                          </g>
+
+                          {/* Account node */}
+                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('account')}>
+                            {isActive('account') && <circle cx="544" cy="98" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
+                            <circle cx="544" cy="98" r="26" fill="#2A6070" stroke={isActive('account') ? '#6360D8' : 'none'} strokeWidth="2"/>
+                            <circle cx="564" cy="78" r="10" fill="#6360D8"/>
+                            <text x="564" y="82" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">2</text>
+                            <foreignObject x="533" y="87" width="22" height="22" style={{ pointerEvents: 'none' }}>
+                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
+                                <EntityGlyph kind="account" size={22}/>
+                              </div>
+                            </foreignObject>
+                            <text x="544" y="134" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Account</text>
+                          </g>
+
+                          {/* Vulnerability node */}
+                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('vulnerability')}>
+                            {isActive('vulnerability') && <circle cx="544" cy="160" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
+                            <circle cx="544" cy="160" r="26" fill="#822A2A" stroke={isActive('vulnerability') ? '#6360D8' : 'none'} strokeWidth="2"/>
+                            <circle cx="564" cy="140" r="10" fill="#6360D8"/>
+                            <text x="564" y="144" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">8</text>
+                            <foreignObject x="533" y="149" width="22" height="22" style={{ pointerEvents: 'none' }}>
+                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
+                                <EntityGlyph kind="vulnerability" size={22}/>
+                              </div>
+                            </foreignObject>
+                            <text x="544" y="196" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Vulnerability</text>
+                          </g>
+
+                          {/* Findings node */}
+                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('finding')}>
+                            {isActive('finding') && <circle cx="544" cy="222" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
+                            <circle cx="544" cy="222" r="26" fill="#46287E" stroke={isActive('finding') ? '#6360D8' : 'none'} strokeWidth="2"/>
+                            <circle cx="564" cy="202" r="10" fill="#6360D8"/>
+                            <text x="564" y="206" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">43</text>
+                            <foreignObject x="533" y="211" width="22" height="22" style={{ pointerEvents: 'none' }}>
+                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
+                                <EntityGlyph kind="finding" size={22}/>
+                              </div>
+                            </foreignObject>
+                            <text x="544" y="258" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Findings</text>
+                          </g>
+                        </svg>
+
+                        {/* Zoom controls */}
+                        <div className="kg-panel__zoom-ctl">
+                          <button className="kg-panel__zoom-ctl-btn" title="Zoom in">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                            </svg>
+                          </button>
+                          <button className="kg-panel__zoom-ctl-btn" title="Zoom out">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+                            </svg>
+                          </button>
+                          <button className="kg-panel__zoom-ctl-btn" title="Fit to view">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="3"/><path d="M3 12h1M20 12h1M12 3v1M12 20v1"/><path d="M5.6 5.6l.7.7M17.7 17.7l.7.7M5.6 18.4l.7-.7M17.7 6.3l.7-.7"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                )}
+              </div>
+
+              {/* ── Tabs ──────────────────────────────────────────── */}
               <div className="kg-panel__tabs">
-                {['Summary', 'Timeline', 'Evolution'].map(t => (
-                  <button key={t} onClick={() => setPanelTab(t.toLowerCase())}
-                    className={`kg-panel__tab${panelTab === t.toLowerCase() ? ' kg-panel__tab--active' : ''}`}>
-                    {t}
-                  </button>
-                ))}
+                {['Summary', 'Timeline', 'Evolution', 'Derivation', 'Contributing Sources', 'Entity Resolution'].map(t => {
+                  const key = t.toLowerCase().replace(/ /g, '-');
+                  return (
+                    <button key={t} onClick={() => setPanelTab(key)}
+                      className={`kg-panel__tab${panelTab === key ? ' kg-panel__tab--active' : ''}`}>
+                      {t}
+                    </button>
+                  );
+                })}
               </div>
 
+              {/* ── Body ──────────────────────────────────────────── */}
               <div className="kg-panel__body">
                 {panelTab === 'summary' && (
                   <>
+                    {/* General */}
                     <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                      <div className="kg-panel__section-header kg-panel__section-header--icon kg-panel__section-header--upper">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
                         </svg>
                         General
                       </div>
-                      <div className="kg-panel__info-grid">
+                      <div className="kg-panel__info-grid kg-panel__info-grid--3col">
                         {[
-                          ['Display Label',      panelRow.label],
-                          ['Type',               meta.type || panelRow.type],
-                          ['FQDN',               panelRow.type === 'host' ? panelRow.label : '—'],
-                          ['AAD Device ID',      '12345678-90ab-cdef-1234-567890abcdef'],
-                          ['MAC Address',        '00:1A:2B:3C:4D:5E'],
-                          ['Internet Facing',    'True'],
-                          ['Environment',        'Production'],
-                          ['Data Source',        (meta.sources || ['—']).join(', ')],
-                          ['OS',                 meta.os],
-                          ['Infrastructure Type', ent.group === 'cloud' ? 'Cloud' : 'On-Premise'],
-                          ['Business Unit',      'Customer Service'],
-                          ['Role',               panelRow.type === 'host' ? 'Web Server, Database' : '—'],
-                          ['Hardware Serial',    'SN1234567890'],
-                          ['Last Found',         panelRow.last],
-                          ['Last Active',        panelRow.active],
-                        ].map(([k, v]) => (
+                          ['Display Label',       panelRow.label,    false],
+                          ['OS',                  meta.os || 'CentOS 8', false],
+                          ['Data Source',         '3 sources',       false],
+                          ['Hardware Serial Name','SNP1J0HG47J2',    false],
+                          ['Business Unit',       'Customer Service',false],
+                          ['Role',                'Web Server, Database', false],
+                          ['FQDN',                panelRow.type === 'host' ? panelRow.label.replace('.io', '-local.acme.com') : '—', true],
+                          ['A&D Device ID',       '91b4911a-5716-4287-ba98-725fc0fea099', false],
+                          ['Type',                meta.type || panelRow.type, false],
+                          ['MAC Address',         '78:4B:E6:65:31:71', false],
+                          ['Internet Facing',     'True',            false],
+                          ['Environment',         'Production',      false],
+                        ].map(([k, v, isLink]) => (
                           <div key={k} className="kg-panel__info-cell">
                             <div className="kg-panel__info-label">{k}</div>
-                            <div className="kg-panel__info-value">{v}</div>
+                            <div className="kg-panel__info-value">
+                              {isLink && v !== '—'
+                                ? <span style={{ color: 'var(--pai-indigo)', cursor: 'pointer' }}>{v}</span>
+                                : v}
+                            </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
+                    {/* Security and Compliance */}
                     <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
-                        </svg>
-                        Metadata and tags
-                      </div>
-                      <div className="kg-panel__tag-table">
-                        {[
-                          ['Primary Asset Tags', ['APP=CustomerPortal', 'ENV=Production', 'ROLE=WebServer,DatabaseServer']],
-                          ['Technical Tags',     ['OS=CentOS8', 'APP_STACK=ApacheStruts,Tomcat', 'DB=MySQL']],
-                          ['Business Tags',      ['BUSINESS_UNIT=CustomerService', 'TIER=Critical', 'DATA_CLASSIFICATION=Sensitive']],
-                          ['Security Tags',      ['SCAN_PROFILE=External', 'COMPLIANCE=PCI,GDPR', 'PATCH_GROUP=Critical-48hrs']],
-                        ].map(([label, tags]) => (
-                          <div key={label} className="kg-panel__tag-row">
-                            <span className="kg-panel__tag-row-label">{label}</span>
-                            <span className="kg-panel__tag-list">
-                              {tags.map(t => <span key={t} className="kg-panel__tag-pill">{t}</span>)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="kg-panel__section-header kg-panel__section-header--icon kg-panel__section-header--upper">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                         </svg>
                         Security and Compliance
                       </div>
-                      <div className="kg-panel__info-grid">
+                      <div className="kg-panel__info-grid kg-panel__info-grid--3col">
                         {[
                           ['Defender Risk Score',    'High'],
                           ['Defender Health Status', 'TRUE'],
@@ -1330,48 +1447,16 @@ function PageKG() {
                         ))}
                       </div>
                     </div>
-
-                    <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                        </svg>
-                        Hardware
-                      </div>
-                      <div className="kg-panel__info-grid">
-                        {[
-                          ['Hardware Model',         'Dell Latitude 7420'],
-                          ['IP',                     panelRow.ip !== '—' ? panelRow.ip.split(',')[0].trim() : '192.168.1.10'],
-                          ['Hardware Bios Version',  '1.12.3'],
-                          ['Crowdstrike Local IP',   '192.168.1.10'],
-                          ['Hardware Chassis Type',  'Laptop'],
-                          ['Hardware Serial Number', 'SN1234567890'],
-                          ['Hardware Manufacturer',  'Dell Inc.'],
-                        ].map(([k, v]) => (
-                          <div key={k} className="kg-panel__info-cell">
-                            <div className="kg-panel__info-label">{k}</div>
-                            <div className="kg-panel__info-value">{v}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 )}
 
-                {panelTab === 'timeline' && (
+                {['timeline', 'evolution', 'derivation', 'contributing-sources', 'entity-resolution'].includes(panelTab) && (
                   <div className="kg-panel__placeholder">
-                    Timeline for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Track when this entity was first seen and how its attributes changed.
-                  </div>
-                )}
-
-                {panelTab === 'evolution' && (
-                  <div className="kg-panel__placeholder">
-                    Evolution history for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Shows how this entity was resolved from source fragments over time.
+                    {panelTab.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.
                   </div>
                 )}
               </div>
+              </div>{/* kg-panel__main */}
             </>
           );
         })()}
