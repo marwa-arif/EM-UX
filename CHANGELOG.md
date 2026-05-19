@@ -6,6 +6,7 @@ All notable UI changes are tracked here.
 ---
 
 <!-- pull: 2026-05-18 11:41 | branch: develop | 320a60d feat: Navigator view modes, versioning system, and layout token pass -->
+<!-- pull: 2026-05-19 11:38 | branch: develop | 44c229d Merge feature/ui-updates into develop (v0.1.2 — CSS common.css refactor) -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
