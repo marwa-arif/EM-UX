@@ -177,7 +177,7 @@ function SavedPage() {
                       </div>
                     </td>
                     <td className="ds-td">
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: row.type === 'DASHBOARD' ? 'rgba(99,96,216,0.10)' : 'rgba(249,115,22,0.10)', color: row.type === 'DASHBOARD' ? 'var(--pai-indigo)' : '#f97316', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: row.type === 'DASHBOARD' ? '#ECF8FD' : 'rgba(249,115,22,0.10)', color: row.type === 'DASHBOARD' ? '#286B88' : '#f97316', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {row.type}
                       </span>
                     </td>

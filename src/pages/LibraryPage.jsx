@@ -23,7 +23,7 @@ function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted })
     >
       <div style={{
         width: 36, height: 36,
-        background: isReport ? 'rgba(217,139,29,0.10)' : 'var(--pai-indigo-tint)',
+        background: isReport ? 'rgba(217,139,29,0.10)' : '#ECF8FD',
         borderRadius: 6,
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
@@ -62,7 +62,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 8,
-          background: isReport ? 'rgba(217,139,29,0.10)' : 'var(--pai-indigo-tint)',
+          background: isReport ? 'rgba(217,139,29,0.10)' : '#ECF8FD',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           {isReport
@@ -82,7 +82,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
       }}>
         <span style={{
           fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 44,
-          background: isReport ? 'rgba(217,139,29,0.12)' : 'var(--pai-indigo-tint)',
+          background: isReport ? 'rgba(217,139,29,0.12)' : '#ECF8FD',
           color: isReport ? 'var(--pai-high-fg)' : 'var(--pai-teal)',
           letterSpacing: '0.05em', textTransform: 'uppercase',
         }}>{tag}</span>
