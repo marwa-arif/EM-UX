@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Workspace — PAI Studio</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo/favicon.svg">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <style>
+    @font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: block; src: url('assets/fonts/Inter-Regular.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: block; src: url('assets/fonts/Inter-Medium.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: block; src: url('assets/fonts/Inter-SemiBold.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: block; src: url('assets/fonts/Inter-Bold.woff2') format('woff2'); }
+
+    html, body, #root { height: 100%; margin: 0; }
+    body, svg text { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+    body { background: #F7F9FC; color: #101010; overflow: hidden; }
+
+    :root {
+      --shell-bg: #fff; --shell-border: #E6E6E6;
+      --shell-text: #101010; --shell-text-2: #282828; --shell-text-muted: #6E6E6E;
+      --shell-accent: #6360D8; --shell-hover: rgba(0,0,0,0.04);
+      --shell-active: rgba(99,96,216,0.08); --shell-raised: #F5F5F5;
+      --ctrl-bg: #fff; --ctrl-border: #CFCFCF; --ctrl-placeholder: #9CA3AF;
+      --card-bg: #fff; --card-border: #E6E6E6;
+      --table-th-bg: #F5F5F5; --table-border: #E6E6E6;
+    }
+    button { font-family: inherit; }
+    *::-webkit-scrollbar { width: 5px; height: 5px; }
+    *::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 3px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+
+    /* DS Button */
+    .ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
+    .ds-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
+    .ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
+    .ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500; }
+    .ds-btn.t-primary { background: #6360D8; color: #fff; }
+    .ds-btn.t-primary:hover { background: #504bb8; }
+    .ds-btn.t-outline { background: transparent; border: 1px solid var(--ctrl-border); color: var(--shell-text-2); }
+    .ds-btn.t-outline:hover { border-color: #999; background: var(--shell-hover); }
+    .ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: #6360D8; }
+    .ds-btn.t-secondary:hover { background: rgba(99,96,216,0.18); }
+
+    /* DS Badge */
+    .ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 44px; font-size: 11px; font-weight: 600; }
+    .ds-badge.success { background: rgba(49,165,109,0.12); color: #16a34a; }
+    .ds-badge.neutral { background: #F0F0F0; color: #6E6E6E; }
+
+    /* DS Tab */
+    .ds-tab { padding: 8px 14px; font-size: 12px; font-weight: 500; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 150ms, border-color 150ms; white-space: nowrap; }
+    .ds-tab:hover { color: var(--shell-text); }
+    .ds-tab.active { color: var(--shell-accent); border-bottom-color: var(--shell-accent); font-weight: 600; }
+
+    /* DS Icon Button */
+    .ds-icon-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; transition: background 120ms, color 120ms; flex-shrink: 0; }
+    .ds-icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+    /* DS Table */
+    .ds-table-wrap { width: 100%; overflow-x: auto; }
+    .ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ds-th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--shell-text-muted); background: var(--table-th-bg); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+    .ds-td { padding: 10px 12px; border-bottom: 1px solid var(--table-border); color: var(--shell-text-2); vertical-align: middle; }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .ds-table tbody tr:hover td { background: var(--shell-hover); }
+    .row-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
+    .ds-table tbody tr:hover .row-actions { visibility: visible; }
+
+    /* DS Pagination */
+    .ds-page-btn { min-width: 28px; height: 28px; border-radius: 44px; border: 1px solid var(--shell-border); background: var(--card-bg); color: var(--shell-text-2); cursor: pointer; font-size: 11px; font-family: inherit; padding: 0 6px; display: flex; align-items: center; justify-content: center; transition: all 120ms; }
+    .ds-page-btn:hover { background: var(--shell-hover); }
+    .ds-page-btn.active { background: var(--shell-accent); color: #fff; border-color: var(--shell-accent); font-weight: 600; }
+    .ds-page-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="./ui.jsx"></script>
+  <script type="text/babel" src="./Topbar.jsx"></script>
+  <script type="text/babel" src="./LeftNav.jsx"></script>
+  <script type="text/babel" src="./SubHeader.jsx"></script>
+  <script type="text/babel" src="./WorkspaceCtx.jsx"></script>
+  <script type="text/babel" src="./LibraryPage.jsx"></script>
+  <script type="text/babel" src="./SavedPage.jsx"></script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const KG_URL = 'index.html';
+
+    // Custom subheader matching the screenshot: title + breadcrumb, "..." + "Explore in ▼"
+    function WorkspaceSubHeader() {
+      const [exploreOpen, setExploreOpen] = useState(false);
+      return (
+        <div style={{
+          height: 48, flexShrink: 0,
+          background: 'var(--shell-bg)',
+          borderBottom: '1px solid var(--shell-border)',
+          display: 'flex', alignItems: 'center',
+          padding: '0 20px', gap: 12,
+        }}>
+          {/* Left: title + breadcrumb */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1, lineHeight: 1.2 }}>Workspace</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: PAI.fg3, marginTop: 2 }}>
+              <a href={KG_URL} style={{ color: PAI.fg3, textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.color = PAI.indigo}
+                onMouseLeave={e => e.currentTarget.style.color = PAI.fg3}
+              >Dashboard</a>
+              <span>›</span>
+              <span style={{ color: PAI.indigo, fontWeight: 500 }}>Workspace</span>
+            </div>
+          </div>
+
+          {/* "..." more options button */}
+          <button style={{
+            height: 28, padding: '0 10px',
+            background: 'transparent', border: `1px solid ${PAI.borderStrong}`,
+            borderRadius: 44, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            color: PAI.fg2,
+          }}>
+            <Ic size={14} path={<><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>} />
+          </button>
+
+          {/* "Explore in ▼" — matches SubHeader.jsx outline pill exactly */}
+          <button
+            onClick={() => setExploreOpen(o => !o)}
+            style={{
+              height: 28, padding: '0 12px',
+              background: 'transparent', border: `1px solid ${PAI.borderStrong}`,
+              borderRadius: 44, cursor: 'pointer',
+              fontSize: 12, fontWeight: 500, fontFamily: 'inherit',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              color: PAI.fg2,
+            }}
+          >
+            <Ic size={12} path={<><path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7"/></>} />
+            Explore in
+            <Ic size={11} path={<><path d="m6 9 6 6 6-6"/></>} />
+          </button>
+        </div>
+      );
+    }
+
+    function WorkspaceApp() {
+      const [current, setCurrent] = useState('workspace/library');
+      const [collapsed, setCollapsed] = useState(false);
+
+      const handleNav = (id) => {
+        if (id === 'kg' || id === 'home') { window.location.href = KG_URL; return; }
+        setCurrent(id);
+      };
+
+      const renderPage = () => {
+        if (current === 'workspace/saved') return <SavedPage />;
+        return <LibraryPage />;
+      };
+
+      return (
+        <WorkspaceProvider onNav={handleNav}>
+          <div style={{
+            display: 'flex', flexDirection: 'column',
+            height: '100vh', overflow: 'hidden',
+            fontFamily: "'Inter', system-ui",
+            color: PAI.fg1, background: 'var(--shell-bg, #F7F9FC)',
+          }}>
+            <Topbar />
+
+            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+              <LeftNav
+                current={current}
+                onNav={handleNav}
+                collapsed={collapsed}
+                onToggleCollapse={() => setCollapsed(c => !c)}
+              />
+
+              <main style={{
+                flex: 1, minWidth: 0,
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
+                background: '#F7F9FC',
+              }}>
+                <WorkspaceSubHeader />
+                {renderPage()}
+              </main>
+            </div>
+          </div>
+        </WorkspaceProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<WorkspaceApp />);
+  </script>
+</body>
+</html>
