@@ -16,6 +16,7 @@ import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
 import DiscoverDevicePage   from './pages/DiscoverDevicePage.jsx'
 import DiscoverCloudPage    from './pages/DiscoverCloudPage.jsx'
 import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
+import CompliancePage       from './pages/CompliancePage.jsx'
 
 function SplashScreen({ onDone }) {
   const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
@@ -927,7 +928,8 @@ function App() {
               {current === 'discover/device'     && <DiscoverDevicePage />}
               {current === 'discover/cloud'      && <DiscoverCloudPage />}
               {current === 'discover/identity'   && <DiscoverIdentityPage />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && <ComingSoon />}
+              {current === 'report/compliance'   && <CompliancePage />}
+              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && <ComingSoon />}
               {isKG && <PageKG />}
             </div>
           </div>
