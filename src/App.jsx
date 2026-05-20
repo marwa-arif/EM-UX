@@ -44,7 +44,6 @@ function SplashScreen({ onDone }) {
   const after = (...phases) => phases.includes(phase);
 
   const dotColor   = isDark ? 'white' : '#101010';
-  const sepColor   = isDark ? 'rgba(255,255,255,0.25)' : '#C8C6F0';
   const barTrack   = isDark ? 'rgba(255,255,255,0.07)' : '#E8E8F4';
   const emWordmark = isDark ? '/assets/logo/em-wordmark-white.svg' : '/assets/logo/em-wordmark.svg';
   const paiMark    = isDark ? '/assets/logo/pai-wordmark-white.svg' : '/assets/logo/pai-wordmark-black.svg';
@@ -138,14 +137,6 @@ function SplashScreen({ onDone }) {
               }} />
             ))}
           </svg>
-
-          {/* Separator */}
-          <div style={{
-            width: 1, height: 36,
-            background: `linear-gradient(to bottom, transparent, ${sepColor}, transparent)`,
-            opacity: after('word','sub','out') ? 1 : 0,
-            transition: 'opacity 400ms ease',
-          }} />
 
           {/* EM wordmark */}
           <img
@@ -782,7 +773,7 @@ function App() {
     return (
       <>
         {showSplash && <SplashScreen onDone={onSplashDone} />}
-        <WorkspacePage onNav={handleNav} initialRoute={current} />
+        <WorkspacePage onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
   }

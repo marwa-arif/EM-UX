@@ -11,8 +11,10 @@ const DASHBOARD_TITLES = {
   'workspace/dashboard/discover': 'Discover Dashboard',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library' }) {
-  const [current, setCurrent] = useState(initialRoute)
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme }) {
+  const [current, setCurrent] = useState(
+    initialRoute === 'workspace' ? 'workspace/library' : initialRoute
+  )
   const [collapsed, setCollapsed] = useState(false)
 
   const handleNav = (id) => {
@@ -35,7 +37,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
         fontFamily: "'Inter', system-ui",
         color: 'var(--pai-fg1)', background: 'var(--shell-bg)',
       }}>
-        <Topbar />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           <LeftNav
             current={current}
