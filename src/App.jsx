@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
+import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
@@ -862,6 +864,10 @@ function App() {
     },
   };
 
+  if (!PAGE_META[current] && current !== 'kg') {
+    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', '/exposure/overview'); }} />;
+  }
+
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
 
@@ -966,4 +972,12 @@ function App() {
   );
 }
 
-export default App;
+function AppWithBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithBoundary;
