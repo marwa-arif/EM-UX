@@ -17,6 +17,9 @@ import DiscoverDevicePage   from './pages/DiscoverDevicePage.jsx'
 import DiscoverCloudPage    from './pages/DiscoverCloudPage.jsx'
 import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
 import CompliancePage       from './pages/CompliancePage.jsx'
+import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
+import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
+import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 
 function SplashScreen({ onDone }) {
   const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
@@ -671,6 +674,7 @@ function App() {
   });
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
+  const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [collapsed, setCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
@@ -682,6 +686,7 @@ function App() {
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
+  const [complianceExpanded, setComplianceExpanded] = useState({});
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -928,8 +933,11 @@ function App() {
               {current === 'discover/device'     && <DiscoverDevicePage />}
               {current === 'discover/cloud'      && <DiscoverCloudPage />}
               {current === 'discover/identity'   && <DiscoverIdentityPage />}
-              {current === 'report/compliance'   && <CompliancePage />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && <ComingSoon />}
+              {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
+              {current === 'report/assessments'       && <AssessmentsPage />}
+              {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
+              {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
+              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
               {isKG && <PageKG />}
             </div>
           </div>

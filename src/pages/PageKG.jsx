@@ -2,7 +2,7 @@
 // Layout: Summary card (top, with view toggle + node search), graph canvas (SVG),
 // then the filtered Details table.
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react'
 import { PAI, Icons, Ic } from '../ui.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
@@ -1471,7 +1471,7 @@ function SegmentedTabs({ value, options, onChange, fullWidth, compact }) {
   const btnRefs = useRef([]);
   const [thumb, setThumb] = useState({ left: 3, width: 0 });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const idx = options.indexOf(value);
     const btn = btnRefs.current[idx];
     if (btn) setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
