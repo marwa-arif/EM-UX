@@ -4,7 +4,9 @@
 @font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Bold.woff2') format('woff2'); }
 
 html, body, #root { height: 100%; margin: 0; }
-body, svg text { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+/* SVG text (count badges, axis labels, etc.) does not inherit from body — explicitly set Inter so numerals render in the correct typeface */
+svg text { font-family: 'Inter', system-ui; }
 body { background: #F7F9FC; color: #101010; }
 
 :root {
@@ -100,6 +102,18 @@ body { background: #F7F9FC; color: #101010; }
 }
 
 button { font-family: inherit; }
+
+/* ── KG variable aliases (map KG-specific tokens to design-system tokens) ── */
+:root {
+  --bg-surface:    var(--card-bg);
+  --bg-raised:     var(--shell-raised);
+  --bg-sunken:     var(--shell-raised);
+  --border:        var(--shell-border);
+  --border-subtle: var(--shell-border);
+  --fg-1:          var(--shell-text);
+  --fg-2:          var(--shell-text-2);
+  --fg-3:          var(--shell-text-muted);
+}
 
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }

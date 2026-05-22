@@ -68,6 +68,17 @@
   pointer-events: none;
 }
 
+.asmts-search-clear {
+  position: absolute;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px; padding: 0; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--shell-text-muted); border-radius: 999px;
+}
+.asmts-search-clear:hover { color: var(--shell-text); }
+
 /* ── Table ─────────────────────────────────────────────────────── */
 
 .asmts-table-wrap {

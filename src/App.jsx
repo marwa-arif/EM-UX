@@ -189,38 +189,61 @@ function SplashScreen({ onDone }) {
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
   "ampX": 6,
-  "ampY": 4,
-  "speedX": 1,
+  "ampY": 3,
+  "speedX": 0.7,
   "speedY": 0.5,
   "variation": 50,
   "edges": [
-    ["account", "identity", "Associated with"],
-    ["identity", "finding", "Has"],
-    ["application", "host", "Running on"],
-    ["vulnerability", "finding", "Has"],
-    ["assessment", "finding", "Associated with"],
-    ["cluster", "finding", "Has"],
-    ["container", "finding", "Has"],
-    ["cloudAccount", "finding", "Has"],
-    ["storage", "finding", "Has"],
-    ["netSvc", "finding", "Has"],
-    ["network", "finding", "Has"],
-    ["host", "finding", "Has"],
-    ["host", "vulnerability", "Has"],
-    ["person", "ticket", "Associated with"],
-    ["person", "identity", "Has"],
-    ["person", "finding", "Has"],
-    ["identity", "ticket", "Created"],
-    ["account", "group", "Member of"],
-    ["group", "group", "Member of"],
-    ["identity", "host", "Associated with"],
-    ["application", "vulnerability", "Has"],
-    ["container", "vulnerability", "Has"],
-    ["cloudAccount", "cluster", "Has"],
-    ["cloudAccount", "container", "Has"],
-    ["cloudAccount", "host", "Has"],
-    ["cloudAccount", "storage", "Has"],
-    ["person", "host", "Owns"]
+    ["account","identity","Associated with"],
+    ["account","finding","Has"],
+    ["application","host","Running on"],
+    ["application","vulnerability","Has"],
+    ["assessment","finding","Associated with"],
+    ["cloudAccount","finding","Has"],
+    ["cloudAccount","storage","Has"],
+    ["cloudAccount","container","Has"],
+    ["cloudAccount","host","Has"],
+    ["cloudAccount","cluster","Has"],
+    ["cluster","cluster","Has",null,"MapReduce Cluster","Compute Instance Group"],
+    ["cluster","finding","Has"],
+    ["cluster","container","Has",null,"Container Group"],
+    ["cluster","container","Has",null,"Container Service"],
+    ["cluster","cluster","Has",null,"Kubernetes Cluster","Compute Instance Group"],
+    ["cluster","host","Has",null,"Compute Instance Group","Virtual Machine"],
+    ["cluster","cloudAccount","Belongs to",true],
+    ["container","cluster","Belongs to",true,null,"Container Service"],
+    ["container","cloudAccount","Belongs to",true],
+    ["container","finding","Has"],
+    ["container","vulnerability","Has"],
+    ["container","cluster","Belongs to",true,null,"Container Group"],
+    ["host","person","Owned by"],
+    ["host","cloudAccount","Belongs to",true],
+    ["host","identity","Has"],
+    ["host","finding","Has"],
+    ["host","application","Hosting",true],
+    ["host","vulnerability","Has"],
+    ["host","cluster","Belongs to",true,"Virtual Machine","Compute Instance Group"],
+    ["host","storage","Has",null,"Virtual Machine","Volume"],
+    ["identity","person","Associated with"],
+    ["identity","account","Has",true],
+    ["identity","finding","Has"],
+    ["identity","host","Associated with",true],
+    ["network","finding","Has"],
+    ["netSvc","finding","Has"],
+    ["person","host","Owns",true],
+    ["person","identity","Has",true],
+    ["person","finding","Has"],
+    ["storage","storage","Has",null,null,"Queue Service"],
+    ["storage","finding","Has"],
+    ["storage","storage","Belongs to",null,"Table Service"],
+    ["storage","storage","Has",null,null,"Bucket"],
+    ["storage","cloudAccount","Belongs to",true,"Storage Resource"],
+    ["storage","storage","Belongs to",null,"File System Service"],
+    ["storage","host","To",true,"Volume Associates","Virtual Machine"],
+    ["vulnerability","host","On",true],
+    ["vulnerability","container","On",true],
+    ["vulnerability","finding","Has"],
+    ["vulnerability","application","On",true]
   ]
 }/*EDITMODE-END*/;
 
@@ -292,9 +315,12 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     const next = edges.map((e, idx) => {
       if (idx !== i) return e;
       const copy = [...e];
-      if (field === 'src') copy[0] = value;
-      if (field === 'tgt') copy[1] = value;
-      if (field === 'label') copy[2] = value || null;
+      if (field === 'src')      copy[0] = value;
+      if (field === 'tgt')      copy[1] = value;
+      if (field === 'label')    copy[2] = value || null;
+      if (field === 'hidden')   copy[3] = !!value;
+      if (field === 'srcAlias') copy[4] = value || null;
+      if (field === 'tgtAlias') copy[5] = value || null;
       return copy;
     });
     setEdges(next);
@@ -325,7 +351,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     if (savedEdges.length !== edges.length) return true;
     for (let i = 0; i < edges.length; i++) {
       const a = edges[i], b = savedEdges[i];
-      if (a[0] !== b[0] || a[1] !== b[1] || (a[2] || null) !== (b[2] || null)) return true;
+      if (a[0] !== b[0] || a[1] !== b[1] || (a[2] || null) !== (b[2] || null) || (!!a[3]) !== (!!b[3]) || (a[4] || null) !== (b[4] || null) || (a[5] || null) !== (b[5] || null)) return true;
     }
     return false;
   })();

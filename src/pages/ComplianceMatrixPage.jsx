@@ -406,7 +406,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                     <td className="comp-matrix-row-label" title={row.label}>
                       {row.label}
                     </td>
-                    {cols.map(col => {
+                    {cols.map((col, ci) => {
                       const score    = row.scores[col.id] ?? null
                       const prevScore = prevRow?.scores[col.id] ?? null
                       const delta    = canCompare ? (score === null || prevScore === null || prevScore === 0 ? null : (score - prevScore) / prevScore * 100) : undefined
@@ -455,7 +455,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                         <td
                           key={col.id}
                           className="comp-matrix-cell"
-                          style={{ ...style, cursor: score !== null ? 'pointer' : 'default' }}
+                          style={{ ...style, cursor: score !== null ? 'pointer' : 'default', animationDelay: `${(ri + ci) * 28}ms` }}
                           onMouseEnter={e => handleCellEnter(e, row.label, col.full ?? col.label, score, prevScore)}
                           onMouseMove={handleCellMove}
                           onMouseLeave={handleCellLeave}

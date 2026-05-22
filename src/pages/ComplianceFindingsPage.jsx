@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
@@ -155,6 +156,7 @@ const ROWS = [
 
 export default function ComplianceFindingsPage({ filter = null, onClearFilter }) {
   const [inclClosed, setInclClosed]     = useState(false)
+  const [search, setSearch]             = useState('')
   const [page, setPage]                 = useState(1)
   const [rowsPerPage, setRowsPerPage]   = useState(25)
   const [downloadOpen, setDownloadOpen] = useState(false)
@@ -193,18 +195,25 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
   }, [closeCreateTicket])
 
   // Apply matrix filter: match rows whose entity type loosely maps to the selected column/row
-  const filteredRows = filter
-    ? ROWS.filter(row => {
-        const rowMatch = filter.row ? row.entity.toLowerCase().includes(filter.row.toLowerCase()) ||
-          (filter.groupBy === 'Entity Type' && (
-            (filter.row === 'Host / Device'  && row.type === 'device') ||
-            (filter.row === 'Cloud Account'  && row.type === 'cloud') ||
-            (filter.row === 'Identity'       && row.type === 'identity') ||
-            (filter.row === 'Storage'        && row.type === 'storage')
-          )) : true
-        return rowMatch
-      })
-    : ROWS
+  const filteredRows = (() => {
+    let rows = filter
+      ? ROWS.filter(row => {
+          const rowMatch = filter.row ? row.entity.toLowerCase().includes(filter.row.toLowerCase()) ||
+            (filter.groupBy === 'Entity Type' && (
+              (filter.row === 'Host / Device'  && row.type === 'device') ||
+              (filter.row === 'Cloud Account'  && row.type === 'cloud') ||
+              (filter.row === 'Identity'       && row.type === 'identity') ||
+              (filter.row === 'Storage'        && row.type === 'storage')
+            )) : true
+          return rowMatch
+        })
+      : ROWS
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      rows = rows.filter(r => [r.title, r.entity, r.evidence].join(' ').toLowerCase().includes(q))
+    }
+    return rows
+  })()
 
   const total = filter
     ? filteredRows.length
@@ -238,6 +247,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                   <Toggle checked={inclClosed} onChange={v => { setInclClosed(v); setPage(1) }} />
                 </label>
               )}
+              <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
               <div ref={downloadRef} style={{ position: 'relative' }}>
                 <button
                   className={`comp-drawer-download-btn${downloadOpen ? ' comp-sort-btn--active' : ''}`}

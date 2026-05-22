@@ -39,7 +39,7 @@
   border: 1px solid var(--pai-border); color: var(--pai-fg3); cursor: default;
 }
 .kg-btn-reset--dirty {
-  border-color: #F5C0C0; color: var(--pai-red-high); cursor: pointer;
+  border-color: var(--pai-crit-bg-hover); color: var(--pai-red-high); cursor: pointer;
 }
 .kg-collapse-btn {
   height: 28px; padding: 0 12px;
@@ -126,7 +126,7 @@
 .kg-page-btn {
   min-width: 28px; height: 28px; padding: 0 6px;
   border: 1px solid var(--pai-border); border-radius: 4px;
-  background: #fff; color: var(--pai-fg2); font-size: 11px; font-family: inherit;
+  background: var(--card-bg); color: var(--pai-fg2); font-size: 11px; font-family: inherit;
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
   transition: background 100ms;
 }
@@ -231,14 +231,14 @@
 
 .kg-panel__rel-graph { border: 1px solid var(--pai-border); border-radius: 4px; overflow: hidden; }
 .kg-panel__rel-header {
-  padding: 8px 12px; background: #FAFAFA; border-bottom: 1px solid var(--pai-border);
+  padding: 8px 12px; background: var(--shell-raised); border-bottom: 1px solid var(--pai-border);
   font-size: 11px; font-weight: 600; color: var(--pai-fg1);
   display: flex; align-items: center; gap: 6px;
 }
 .kg-panel__rel-body { padding: 12px; display: flex; align-items: center; gap: 12px; }
 
 .kg-panel__tabs {
-  border-bottom: 1px solid var(--pai-border); background: #fff;
+  border-bottom: 1px solid var(--pai-border);
   flex-shrink: 0; padding-left: 20px; display: flex; background: var(--card-bg);
 }
 .kg-panel__tab {
@@ -419,7 +419,7 @@
 /* ── Hover tooltip ────────────────────────────────────────────────── */
 .kg-tooltip {
   position: absolute; z-index: 30;
-  background: #fff; border: 1px solid var(--pai-border);
+  background: var(--card-bg); border: 1px solid var(--pai-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(16,16,16,0.08), 0 2px 6px rgba(16,16,16,0.04);
   pointer-events: none; font-family: inherit;
@@ -444,7 +444,7 @@
 .kg-zoom-indicator {
   position: absolute; left: 16px; bottom: 12px;
   height: 26px; padding: 0 10px;
-  background: #fff; border: 1px solid var(--pai-border);
+  background: var(--card-bg); border: 1px solid var(--pai-border);
   border-radius: 6px; box-shadow: 0 1px 2px rgba(16,16,16,0.04);
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 500; color: var(--pai-fg2);

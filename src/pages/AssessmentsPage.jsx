@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react'
 import { AssessmentDrawer, FW_DISPLAY, FW_CONTROLS, SelectDropdown } from './CompliancePage.jsx'
+import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import '../styles/compliance.css'
 import '../styles/assessments.css'
@@ -200,15 +201,7 @@ export default function AssessmentsPage() {
       {/* Header bar */}
       <div className="asmts-header">
         <span className="asmts-title">Assessments ({filtered.length.toLocaleString()})</span>
-        <div className="asmts-search-wrap">
-          <input
-            className="asmts-search"
-            placeholder="Search Any"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-          />
-          <span className="asmts-search-icon"><IcSearch /></span>
-        </div>
+        <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={220} />
       </div>
 
       {/* Table */}

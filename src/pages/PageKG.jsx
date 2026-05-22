@@ -2,48 +2,65 @@
 // Layout: Summary card (top, with view toggle + node search), graph canvas (SVG),
 // then the filtered Details table.
 
-import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react'
-import { PAI, Icons, Ic } from '../ui.jsx'
-import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
-import TablePagination from '../components/TablePagination.jsx'
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { PAI, Icons, Ic } from '../ui.jsx';
 
 // ─────────────────────────────────────────────────────────────────────
 // Entity type catalog — colors + icon glyph (drawn inline, no SVG file)
 // Colors are muted/desaturated chip-tints matching the screenshot.
 // ─────────────────────────────────────────────────────────────────────
 const ENTITY_TYPES = {
-  account:        { label: 'Account',           tint: '#F1ECF9', stroke: '#D3C3EC', icon: '#9269CF', count: 15301,    fragments: 15349,  group: 'identity', glyph: 'account' },
-  identity:       { label: 'Identity',          tint: '#F4E6F9', stroke: '#DCB3ED', icon: '#A842D2', count: 71442,    fragments: 146922, group: 'identity', glyph: 'identity' },
-  group:          { label: 'Group',             tint: '#E3F6F7', stroke: '#A9E5E7', icon: '#27BDC2', count: 2,                           group: 'identity', glyph: 'group' },
-  person:         { label: 'Person',            tint: '#E4EDF1', stroke: '#ABC8D3', icon: '#2E7690', count: 304,      fragments: 1016,   group: 'identity', glyph: 'person' },
-  application:    { label: 'Application',       tint: '#F4EEE6', stroke: '#DECCB1', icon: '#AD803D', count: 4376,     fragments: 42717,  group: 'cloud',    glyph: 'application' },
-  vulnerability:  { label: 'Vulnerability',     tint: '#F4E9E9', stroke: '#DFBCBC', icon: '#AE5757', count: 55230,    fragments: 311397, group: 'host',     glyph: 'vulnerability' },
-  assessment:     { label: 'Assessment',        tint: '#F4ECE5', stroke: '#DEC4AF', icon: '#AC6C36', count: 497,                         group: 'host',     glyph: 'assessment' },
-  cluster:        { label: 'Cluster',           tint: '#E5E5F5', stroke: '#AEAEE1', icon: '#3434B4', count: 231,                         group: 'cloud',    glyph: 'cluster' },
-  container:      { label: 'Container',         tint: '#EBE4F2', stroke: '#C2ADD7', icon: '#66329C', count: 358,      fragments: 358,    group: 'cloud',    glyph: 'container' },
-  cloudAccount:   { label: 'Cloud Account',     tint: '#E6E7F5', stroke: '#B1B4DF', icon: '#3B43B0', count: 15,                          group: 'cloud',    glyph: 'cloud' },
-  finding:        { label: 'Finding',           tint: '#E9E4F6', stroke: '#BCABE4', icon: '#582DBB', count: 15518350, fragments: 15518350,group: 'host',     glyph: 'finding', primary: true },
-  ticket:         { label: 'Ticket',            tint: '#E6F6F4', stroke: '#B1E3DE', icon: '#3DBAAD', count: 10,                          group: 'host',     glyph: 'ticket' },
-  host:           { label: 'Host',              tint: '#E3E9F1', stroke: '#AABBD3', icon: '#2B5690', count: 58687,    fragments: 225709, group: 'host',     glyph: 'host' },
-  network:        { label: 'Network',           tint: '#DEF0EA', stroke: '#99D0BF', icon: '#00895E', count: 77,                          group: 'cloud',    glyph: 'network' },
-  netSvc:         { label: 'Network Services',  tint: '#F0F4E4', stroke: '#D0DCAD', icon: '#89A833', count: 253,                         group: 'cloud',    glyph: 'netsvc' },
-  netIface:       { label: 'Network Interface', tint: '#F6E6F0', stroke: '#E3B1D1', icon: '#BA3D8C', count: 3303,                        group: 'cloud',    glyph: 'netiface' },
-  storage:        { label: 'Storage',           tint: '#E5F1F7', stroke: '#B0D5E7', icon: '#3A96C4', count: 5541,     fragments: 5541,   group: 'cloud',    glyph: 'storage' },
+  account:        { label: 'Account',           tint: '#F1ECF9', stroke: '#D3C3EC', icon: '#9269CF', count: 15301,    fragments: 15349,    group: 'identity', glyph: 'account' },
+  identity:       { label: 'Identity',          tint: '#F4E6F9', stroke: '#DCB3ED', icon: '#A842D2', count: 71442,    fragments: 146922,   group: 'identity', glyph: 'identity' },
+  group:          { label: 'Group',             tint: '#E3F6F7', stroke: '#A9E5E7', icon: '#27BDC2', count: 2,        fragments: 2,        group: 'identity', glyph: 'group' },
+  person:         { label: 'Person',            tint: '#E4EDF1', stroke: '#ABC8D3', icon: '#2E7690', count: 304,      fragments: 1016,     group: 'identity', glyph: 'person' },
+  application:    { label: 'Application',       tint: '#F4EEE6', stroke: '#DECCB1', icon: '#AD803D', count: 4376,     fragments: 42717,    group: 'cloud',    glyph: 'application' },
+  vulnerability:  { label: 'Vulnerability',     tint: '#F4E9E9', stroke: '#DFBCBC', icon: '#AE5757', count: 55230,    fragments: 311397,   group: 'host',     glyph: 'vulnerability' },
+  assessment:     { label: 'Assessment',        tint: '#F4ECE5', stroke: '#DEC4AF', icon: '#AC6C36', count: 497,      fragments: 497,      group: 'host',     glyph: 'assessment' },
+  cluster:        { label: 'Cluster',           tint: '#E5E5F5', stroke: '#AEAEE1', icon: '#3434B4', count: 231,      fragments: 231,      group: 'cloud',    glyph: 'cluster' },
+  container:      { label: 'Container',         tint: '#EBE4F2', stroke: '#C2ADD7', icon: '#66329C', count: 358,      fragments: 358,      group: 'cloud',    glyph: 'container' },
+  cloudAccount:   { label: 'Cloud Account',     tint: '#E6E7F5', stroke: '#B1B4DF', icon: '#3B43B0', count: 15,       fragments: 15,       group: 'cloud',    glyph: 'cloud' },
+  finding:        { label: 'Finding',           tint: '#E9E4F6', stroke: '#BCABE4', icon: '#582DBB', count: 15518350, fragments: 15518350, group: 'host',     glyph: 'finding', primary: true },
+  ticket:         { label: 'Ticket',            tint: '#E6F6F4', stroke: '#B1E3DE', icon: '#3DBAAD', count: 10,       fragments: 10,       group: 'host',     glyph: 'ticket' },
+  host:           { label: 'Host',              tint: '#E3E9F1', stroke: '#AABBD3', icon: '#2B5690', count: 58687,    fragments: 225709,   group: 'host',     glyph: 'host' },
+  network:        { label: 'Network',           tint: '#DEF0EA', stroke: '#99D0BF', icon: '#00895E', count: 77,       fragments: 77,       group: 'cloud',    glyph: 'network' },
+  netSvc:         { label: 'Network Services',  tint: '#F0F4E4', stroke: '#D0DCAD', icon: '#89A833', count: 253,      fragments: 253,      group: 'cloud',    glyph: 'netsvc' },
+  netIface:       { label: 'Network Interface', tint: '#F6E6F0', stroke: '#E3B1D1', icon: '#BA3D8C', count: 3303,     fragments: 3303,     group: 'cloud',    glyph: 'netiface' },
+  storage:        { label: 'Storage',           tint: '#E5F1F7', stroke: '#B0D5E7', icon: '#3A96C4', count: 5541,     fragments: 5541,     group: 'cloud',    glyph: 'storage' },
 };
 
+// Node positions — calibrated against a 940×420 canvas to match reference.
+// Layout: finding at center, all other entities arranged ALPHABETICALLY
+// by display label around an ellipse — starting just left of top with
+// Account, sweeping clockwise back to Vulnerability.
 const NODE_POS = (() => {
   const cx = 470, cy = 220, rx = 400, ry = 162;
   const order = [
-    'group', 'identity', 'account', 'person',
-    'application', 'cluster', 'container',
-    'cloudAccount', 'network', 'netSvc', 'netIface',
-    'storage', 'vulnerability', 'host',
-    'assessment', 'ticket',
+    'account',       // Account
+    'application',   // Application
+    'assessment',    // Assessment
+    'cloudAccount',  // Cloud Account
+    'cluster',       // Cluster
+    'container',     // Container
+    'group',         // Group
+    'host',          // Host
+    'identity',      // Identity
+    'network',       // Network
+    'netIface',      // Network Interface
+    'netSvc',        // Network Services
+    'person',        // Person
+    'storage',       // Storage
+    'ticket',        // Ticket
+    'vulnerability', // Vulnerability
   ];
   const N = order.length;
   const pos = { finding: { x: cx, y: cy } };
+  // Start at the top (-π/2) and sweep clockwise. Bias the first slot a
+  // touch left of dead-top so Account reads as the start of the ring,
+  // matching the reference.
+  const start = -Math.PI / 2 - (Math.PI / N);
   for (let i = 0; i < N; i++) {
-    const t = Math.PI * 0.85 + (i / N) * 2 * Math.PI;
+    const t = start + (i / N) * 2 * Math.PI;
     pos[order[i]] = {
       x: Math.round(cx + rx * Math.cos(t)),
       y: Math.round(cy + ry * Math.sin(t)),
@@ -52,57 +69,102 @@ const NODE_POS = (() => {
   return pos;
 })();
 
+// Edges — [src, tgt, label, hidden?, srcAlias?, tgtAlias?]
 const INITIAL_EDGES = [
   ['account', 'identity', 'Associated with'],
-  ['identity', 'application', null],
-  ['identity', 'finding', 'Has'],
-  ['application', 'finding', 'Has'],
-  ['vulnerability', 'finding', 'Has'],
-  ['assessment', 'finding', 'Has'],
-  ['cluster', 'finding', 'Has'],
-  ['container', 'finding', 'Has'],
+  ['account', 'finding', 'Has'],
+  ['application', 'host', 'Running on'],
+  ['application', 'vulnerability', 'Has'],
+  ['assessment', 'finding', 'Associated with'],
   ['cloudAccount', 'finding', 'Has'],
-  ['storage', 'finding', 'Has'],
-  ['netIface', 'finding', 'Has'],
-  ['netSvc', 'finding', null],
-  ['network', 'finding', 'Has'],
+  ['cloudAccount', 'storage', 'Has'],
+  ['cloudAccount', 'container', 'Has'],
+  ['cloudAccount', 'host', 'Has'],
+  ['cloudAccount', 'cluster', 'Has'],
+  ['cluster', 'cluster', 'Has', null, 'MapReduce Cluster', 'Compute Instance Group'],
+  ['cluster', 'finding', 'Has'],
+  ['cluster', 'container', 'Has', null, 'Container Group'],
+  ['cluster', 'container', 'Has', null, 'Container Service'],
+  ['cluster', 'cluster', 'Has', null, 'Kubernetes Cluster', 'Compute Instance Group'],
+  ['cluster', 'host', 'Has', null, 'Compute Instance Group', 'Virtual Machine'],
+  ['cluster', 'cloudAccount', 'Belongs to', true],
+  ['container', 'cluster', 'Belongs to', true, null, 'Container Service'],
+  ['container', 'cloudAccount', 'Belongs to', true],
+  ['container', 'finding', 'Has'],
+  ['container', 'vulnerability', 'Has'],
+  ['container', 'cluster', 'Belongs to', true, null, 'Container Group'],
+  ['host', 'person', 'Owned by'],
+  ['host', 'cloudAccount', 'Belongs to', true],
+  ['host', 'identity', 'Has'],
   ['host', 'finding', 'Has'],
-  ['host', 'vulnerability', 'Running on'],
-  ['ticket', 'finding', 'Associated with'],
-  ['person', 'ticket', 'Owns'],
-  ['person', 'identity', 'Associated with'],
-  ['person', 'finding', null],
-  ['identity', 'ticket', 'Created'],
-  ['account', 'group', 'Member of'],
-  ['group', 'group', 'Member of'],
+  ['host', 'application', 'Hosting', true],
+  ['host', 'vulnerability', 'Has'],
+  ['host', 'cluster', 'Belongs to', true, 'Virtual Machine', 'Compute Instance Group'],
+  ['host', 'storage', 'Has', null, 'Virtual Machine', 'Volume'],
+  ['identity', 'person', 'Associated with'],
+  ['identity', 'account', 'Has', true],
+  ['identity', 'finding', 'Has'],
+  ['identity', 'host', 'Associated with', true],
+  ['network', 'finding', 'Has'],
+  ['netSvc', 'finding', 'Has'],
+  ['person', 'host', 'Owns', true],
+  ['person', 'identity', 'Has', true],
+  ['person', 'finding', 'Has'],
+  ['storage', 'storage', 'Has', null, null, 'Queue Service'],
+  ['storage', 'finding', 'Has'],
+  ['storage', 'storage', 'Belongs to', null, 'Table Service'],
+  ['storage', 'storage', 'Has', null, null, 'Bucket'],
+  ['storage', 'cloudAccount', 'Belongs to', true, 'Storage Resource'],
+  ['storage', 'storage', 'Belongs to', null, 'File System Service'],
+  ['storage', 'host', 'To', true, 'Volume Associates', 'Virtual Machine'],
+  ['vulnerability', 'host', 'On', true],
+  ['vulnerability', 'container', 'On', true],
+  ['vulnerability', 'finding', 'Has'],
+  ['vulnerability', 'application', 'On', true],
 ];
 
-const EDGE_COUNTS = {
-  'account|identity':      { account: 8420,  identity: 15281   },
-  'identity|application':  { identity: 12400, application: 4178 },
-  'identity|finding':      { identity: 71462, finding: 2341820  },
-  'application|finding':   { application: 4178, finding: 892340 },
-  'vulnerability|finding': { vulnerability: 55230, finding: 4218920 },
-  'assessment|finding':    { assessment: 497,  finding: 12800   },
-  'cluster|finding':       { cluster: 231,    finding: 58430    },
-  'container|finding':     { container: 316,  finding: 89200    },
-  'cloudAccount|finding':  { cloudAccount: 15, finding: 182400  },
-  'storage|finding':       { storage: 5141,   finding: 312800   },
-  'netIface|finding':      { netIface: 3303,  finding: 428900   },
-  'netSvc|finding':        { netSvc: 253,     finding: 28400    },
-  'network|finding':       { network: 77,     finding: 94200    },
-  'host|finding':          { host: 54687,     finding: 8921400  },
-  'host|vulnerability':    { host: 54687,     vulnerability: 55230 },
-  'ticket|finding':        { ticket: 10,      finding: 2840     },
-  'person|ticket':         { person: 304,     ticket: 10        },
-  'person|identity':       { person: 304,     identity: 71462   },
-  'person|finding':        { person: 304,     finding: 48200    },
-  'identity|ticket':       { identity: 71462, ticket: 10        },
-  'account|group':         { account: 15281,  group: 2          },
-  'group|group':           { group: 2,        group: 2          },
-  'cloudAccount|storage':  { cloudAccount: 2, storage: 94364    },
+// ── Per-edge entity counts ───────────────────────────────────────────
+// When a relationship is selected, the two endpoint nodes show a reduced
+// count (only the entities actually participating in that relationship).
+// Map keyed by sorted "a|b" (alphabetical) so order doesn't matter.
+const EDGE_ENTITY_COUNTS = {
+  // [src, tgt] => { srcCount, tgtCount }
+  'cloudAccount|storage':       { cloudAccount: 2,   storage: 94364 },
+  'cluster|finding':            { cluster: 47,       finding: 412903 },
+  'container|finding':          { container: 89,     finding: 287104 },
+  'cloudAccount|finding':       { cloudAccount: 11,  finding: 1248901 },
+  'storage|finding':            { storage: 318,      finding: 92410 },
+  'netIface|finding':           { netIface: 64,      finding: 184221 },
+  'host|finding':               { host: 1284,        finding: 8410922 },
+  'application|finding':        { application: 412,  finding: 1108922 },
+  'identity|finding':           { identity: 928,     finding: 421003 },
+  'finding|person':             { finding: 184228,   person: 1042 },
+  'finding|vulnerability':      { finding: 1480922,  vulnerability: 6128 },
+  'assessment|finding':         { assessment: 38,    finding: 84122 },
+  'account|identity':           { account: 4188,     identity: 4188 },
+  'application|identity':       { application: 612,  identity: 1840 },
+  'cluster|host':               { cluster: 47,       host: 412 },
+  'container|host':             { container: 1208,   host: 412 },
+  'host|netIface':              { host: 1240,        netIface: 4022 },
+  'host|storage':               { host: 928,         storage: 12048 },
+  'netIface|network':           { netIface: 4022,    network: 184 },
+  'netSvc|network':             { netSvc: 1240,      network: 184 },
+  'host|ticket':                { host: 124,         ticket: 8 },
+  'identity|person':            { identity: 1042,    person: 1042 },
+  'person|identity':            { person: 1042,      identity: 1042 },
+  'identity|application':       { identity: 1840,    application: 612 },
+  'identity|ticket':            { identity: 6,       ticket: 6 },
+  'account|group':              { account: 2104,     group: 318 },
+  'group|group':                { group: 124,        group: 124 },
 };
+function edgeCountsFor(a, b) {
+  const k1 = `${a}|${b}`, k2 = `${b}|${a}`;
+  return EDGE_ENTITY_COUNTS[k1] || EDGE_ENTITY_COUNTS[k2] || null;
+}
 
+// ── Inline entity glyphs (24x24 design-system icons via <img>) ───────
+// Maps a glyph kind to the design-system SVG filename. Colors are baked
+// into the SVG itself, so we don't tint via CSS — pass the file straight.
 const GLYPH_TO_FILE = {
   account: 'entity-account.svg',
   identity: 'entity-identity.svg',
@@ -128,7 +190,7 @@ function EntityGlyph({ kind, size = 18 }) {
   if (!file) return null;
   return (
     <img
-      src={`/assets/icons/${file}`}
+      src={`assets/icons/${file}`}
       width={size} height={size}
       style={{ display: 'block', pointerEvents: 'none' }}
       alt=""
@@ -136,18 +198,20 @@ function EntityGlyph({ kind, size = 18 }) {
   );
 }
 
+// ── Number formatter (commas, exact value) ──────────────────────────
 function fmtN(n) {
   return n.toLocaleString('en-US');
 }
 
-// ── Entity Node ───────────────────────────────────────────────────────
+// ── Entity Node — circle bubble + count badge + label below ──────────
 function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered, onDragStart, dragging, floatOffset, countOverride }) {
   const r = 22;
   const fx = floatOffset ? floatOffset.x : 0;
   const fy = floatOffset ? floatOffset.y : 0;
-  const bubbleStroke = selected ? def.icon : def.stroke;
-  const bubbleStrokeW = selected ? 2.5 : (hovered ? 2 : 1.4);
-  const opacity = dimmed ? 0.32 : 1;
+  const accent = def.icon || def.stroke;
+  const bubbleStroke = selected ? accent : (hovered ? accent : def.stroke);
+  const bubbleStrokeW = selected ? 2.5 : (hovered ? 1.8 : 1.4);
+  const opacity = dimmed ? 0.6 : 1;
   return (
     <g
       transform={`translate(${pos.x + fx}, ${pos.y + fy})`}
@@ -156,8 +220,9 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
     >
+      {/* Soft outer ring on selection */}
       {selected && (
-        <circle cx="0" cy="0" r={r + 6} fill={def.icon + '1a'} />
+        <circle cx="0" cy="0" r={r + 6} fill={accent} fillOpacity="0.12" />
       )}
       <circle
         cx="0" cy="0" r={r}
@@ -166,32 +231,35 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         strokeWidth={bubbleStrokeW}
         style={{ transition: 'all 150ms cubic-bezier(.2,.8,.2,1)' }}
       />
+      {/* Count badge top-right (auto-sized) */}
       {(() => {
-        const txt = fmtN(countOverride !== undefined ? countOverride : def.count);
+        const txt = fmtN(countOverride != null ? countOverride : def.count);
+        // Approximate width: 5.5px per char at 10px Inter, plus padding.
         const w = Math.max(36, txt.length * 5.5 + 12);
         return (
           <g transform={`translate(${r-2},${-r+2})`}>
-            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16" fill="var(--card-bg)" stroke="var(--shell-border)" strokeWidth="1" />
+            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16" fill="var(--bg-surface, #fff)" stroke="var(--border, #E6E6E6)" strokeWidth="1" />
             <text textAnchor="middle" dominantBaseline="central" y="0.5"
-                  style={{ fontSize: 10, fontWeight: 700, fill: 'var(--shell-text-2)', fontVariantNumeric: 'tabular-nums', fontFamily: "'Inter', system-ui" }}>
+                  style={{ fontSize: 10, fontWeight: 600, fill: 'var(--fg-2, #282828)', fontVariantNumeric: 'tabular-nums' }}>
               {txt}
             </text>
           </g>
         );
       })()}
+      {/* Glyph centered (offset to compensate for 18px icon) */}
       <foreignObject x={-11} y={-11} width={22} height={22} style={{ pointerEvents: 'none' }}>
         <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22 }}>
           <EntityGlyph kind={def.glyph} size={22} />
         </div>
       </foreignObject>
+      {/* Label below */}
       <text
         x="0" y={r + 14}
         textAnchor="middle"
         style={{
           fontSize: 11, fontWeight: selected ? 600 : 500,
-          fill: selected ? def.icon : 'var(--shell-text)',
+          fill: selected ? accent : 'var(--fg-2, #282828)',
           letterSpacing: '0.01em',
-          fontFamily: "'Inter', system-ui",
         }}
       >
         {def.label}
@@ -200,8 +268,15 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
   );
 }
 
-// ── Edge ──────────────────────────────────────────────────────────────
-function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover, onEdgeClick, edgeKey, hoveredEdge, hoveredNode, anySelected, floatOffsets, pointerEvents }) {
+// Strip the `#N` self-loop disambiguator from an edge key.
+function splitEdgeKey(k) {
+  const [a, bRaw] = k.split('|');
+  const b = bRaw ? bRaw.split('#')[0] : bRaw;
+  return [a, b];
+}
+
+// ── Edge — straight line w/ optional label ───────────────────────────
+function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeClick, edgeKey, hoveredEdge, hoveredNode, anySelected, floatOffsets, selfIdx = 0, selfTotal = 0 }) {
   const isHovered = hoveredEdge === edgeKey;
   const isNodeHovered = hoveredNode && (a === hoveredNode || b === hoveredNode);
   const fa = floatOffsets && floatOffsets[a] ? floatOffsets[a] : { x: 0, y: 0 };
@@ -211,63 +286,16 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
   const pb = basePb && { x: basePb.x + fb.x, y: basePb.y + fb.y };
   if (!pa || !pb) return null;
 
-  const colorA = ENTITY_TYPES[reversed ? b : a]?.icon || '#6360D8';
-  const colorB = ENTITY_TYPES[reversed ? a : b]?.icon || '#6360D8';
-  const gradId = `eg-${edgeKey.replace('|', '-')}`;
-  const stroke = selected ? `url(#${gradId})` : 'var(--shell-border-2)';
+  const stroke = selected ? '#6360D8' : '#D6D6D6';
   const strokeW = selected ? 1.6 : 1;
-  const opacity = dimmed ? 0.18 : 1;
+  const opacity = dimmed ? 0.6 : 1;
   const isSelfLoop = a === b;
 
-  if (isSelfLoop) {
-    const r = 22;
-    const loopR = 14;
-    const startAngle = -135 * Math.PI / 180;
-    const endAngle = -45 * Math.PI / 180;
-    const sx = pa.x + Math.cos(startAngle) * r;
-    const sy = pa.y + Math.sin(startAngle) * r;
-    const ex = pa.x + Math.cos(endAngle) * r;
-    const ey = pa.y + Math.sin(endAngle) * r;
-    const d = `M ${sx} ${sy} A ${loopR} ${loopR} 0 1 1 ${ex} ${ey}`;
-    const labelX = pa.x;
-    const labelY = pa.y - r - loopR * 1.6;
-    return (
-      <g style={{ opacity, transition: 'opacity 150ms cubic-bezier(.2,.8,.2,1)', pointerEvents: pointerEvents || 'auto' }}
-         onMouseEnter={() => onEdgeHover && onEdgeHover(edgeKey)}
-         onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
-         onClick={(e) => { e.stopPropagation(); onEdgeClick && onEdgeClick(a, b, edgeKey); }}
-      >
-        {selected && (
-          <defs>
-            <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={sx} y1={sy} x2={ex} y2={ey}>
-              <stop offset="0%" stopColor={colorA} />
-              <stop offset="100%" stopColor={colorB} />
-            </linearGradient>
-          </defs>
-        )}
-        <path d={d} fill="none" stroke="transparent" strokeWidth="10" style={{ cursor: 'pointer' }} />
-        <path d={d} fill="none"
-              stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : 'var(--shell-border-2)'))}
-              strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
-              style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
-        />
-        {label && (() => {
-          const lbl = label.length > 22 ? label.slice(0, 20) + '…' : label;
-          return (
-            <g transform={`translate(${labelX},${labelY})`}>
-              <title>{label}</title>
-              <text textAnchor="middle" dominantBaseline="central"
-                    style={{ fontSize: 9.5, fill: selected ? 'var(--shell-text)' : 'var(--shell-text-muted)', fontWeight: selected ? 600 : 400, fontFamily: "'Inter', system-ui" }}>
-                {lbl}
-              </text>
-            </g>
-          );
-        })()}
-      </g>
-    );
-  }
+  if (isSelfLoop) return null;
 
-  const ra = 22, rb = 22;
+  // shrink endpoints to circle radii
+  const ra = a === 'finding' ? 28 : 22;
+  const rb = b === 'finding' ? 28 : 22;
   const dx = pb.x - pa.x, dy = pb.y - pa.y;
   const len = Math.hypot(dx, dy) || 1;
   const x1 = pa.x + (dx/len) * ra, y1 = pa.y + (dy/len) * ra;
@@ -278,31 +306,29 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
     <g style={{ opacity, transition: 'opacity 150ms cubic-bezier(.2,.8,.2,1)' }}
        onMouseEnter={() => onEdgeHover && onEdgeHover(edgeKey)}
        onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
-       onClick={(e) => { e.stopPropagation(); onEdgeClick && onEdgeClick(a, b, edgeKey); }}
+       onClick={(e) => { if (!onEdgeClick) return; e.stopPropagation(); onEdgeClick(a, b, edgeKey); }}
     >
-      {selected && (
-        <defs>
-          <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={x1} y1={y1} x2={x2} y2={y2}>
-            <stop offset="0%" stopColor={colorA} />
-            <stop offset="100%" stopColor={colorB} />
-          </linearGradient>
-        </defs>
-      )}
-      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="10" style={{ cursor: 'pointer' }} />
+      {/* invisible thick hit area for easier hovering */}
       <line x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke={selected ? stroke : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : 'var(--shell-border-2)'))}
+            stroke="transparent" strokeWidth="10"
+            style={{ cursor: onEdgeClick ? 'pointer' : 'default' }}
+      />
+      <line x1={x1} y1={y1} x2={x2} y2={y2}
+            stroke={selected ? '#6360D8' : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : stroke))}
             strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
             strokeDasharray={selected ? 'none' : '0'}
             style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
       />
       {label && (() => {
-        const lbl = label.length > 22 ? label.slice(0, 20) + '…' : label;
+        const lbl = label.length > 22 ? label.slice(0, 20) + '\u2026' : label;
         return (
-          <g transform={`translate(${mx},${my})`}>
+          <g transform={`translate(${mx},${my})`} style={{ pointerEvents: 'none' }}>
             <title>{label}</title>
-            <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3" fill="var(--shell-bg)" />
+            <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3"
+                  fill={selected ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)'}
+                  stroke={selected ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'} strokeWidth="0.8" />
             <text textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: 9.5, fill: selected ? 'var(--shell-text)' : 'var(--shell-text-muted)', fontWeight: selected ? 600 : 400 }}>
+                  style={{ fontSize: 9.5, fill: selected ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted, #8A8A8A)', fontWeight: selected ? 600 : 400 }}>
               {lbl}
             </text>
           </g>
@@ -312,10 +338,11 @@ function Edge({ a, b, label, selected, reversed, dimmed, positions, onEdgeHover,
   );
 }
 
-// ── Graph canvas ──────────────────────────────────────────────────────
-function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEdgeSet, edgeSelectionEndpoints, selectedEdgeKey, edgeReversed, edgeCounts, multiSelectMode, multiSelected, hoveredId, setHoveredId, viewMode, positions, setPositions, view, setView, zoomBy, resetView, edges, search }) {
+// ── Graph canvas ─────────────────────────────────────────────────────
+function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighborSet, neighborEdgeSet, edgeSelectionEndpoints, hoveredId, setHoveredId, viewMode, positions, setPositions, view, setView, zoomBy, resetView, edges, search, highlightOnly, multiSelectedSet, panelOpen }) {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
+  // Drag state stored in ref to avoid rerender thrash
   const drag = useRef({ id: null, dx: 0, dy: 0, moved: false, downId: null });
   const pan = useRef({ active: false, sx: 0, sy: 0, vx: 0, vy: 0, moved: false });
   const [dragId, setDragId] = useState(null);
@@ -324,6 +351,45 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [floatOffsets, setFloatOffsets] = useState({});
 
+  // Smoothly animated panel-shift factor (0 = panel closed, 1 = open).
+  // Used to compress node x-positions toward the center when the right
+  // selection panel is showing.
+  const [panelShift, setPanelShift] = useState(0);
+  const panelShiftRef = useRef(0);
+  useEffect(() => {
+    const target = panelOpen ? 1 : 0;
+    let raf = 0;
+    const start = performance.now();
+    const from = panelShift;
+    const dur = 280;
+    const ease = (t) => 1 - Math.pow(1 - t, 3); // easeOutCubic
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const v = from + (target - from) * ease(t);
+      setPanelShift(v);
+      panelShiftRef.current = v;
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelOpen]);
+
+  // Compress horizontal positions toward findings (cx=470) by up to 22%.
+  const SHIFT_CX = 470;
+  const SHIFT_AMOUNT = 0.22;
+  const displayPositions = useMemo(() => {
+    if (panelShift === 0) return positions;
+    const k = 1 - panelShift * SHIFT_AMOUNT;
+    const out = {};
+    for (const id in positions) {
+      const p = positions[id];
+      out[id] = { x: SHIFT_CX + (p.x - SHIFT_CX) * k, y: p.y };
+    }
+    return out;
+  }, [positions, panelShift]);
+
+  // Per-node deterministic phase + a 0..1 jitter factor for variation
   const floatParams = useMemo(() => {
     const p = {};
     Object.keys(ENTITY_TYPES).forEach((id, i) => {
@@ -331,6 +397,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
       p[id] = {
         phaseX: (h % 100) / 100 * Math.PI * 2,
         phaseY: ((h * 7) % 100) / 100 * Math.PI * 2,
+        // Per-node jitter (-1..1) — scaled by `variation` tweak at runtime
         jAmpX: ((h * 3) % 21 - 10) / 10,
         jAmpY: ((h * 5) % 21 - 10) / 10,
         jSpdX: ((h * 11) % 21 - 10) / 10,
@@ -340,6 +407,7 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     return p;
   }, []);
 
+  // Drive float animation — reads window.__floatTweaks each frame so changes are live
   useEffect(() => {
     let raf, start = performance.now();
     const tick = (now) => {
@@ -349,13 +417,13 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
       const ampY = enabled ? (tw.ampY ?? 2.5) : 0;
       const spdX = tw.speedX ?? 0.55;
       const spdY = tw.speedY ?? 0.45;
-      const v = (tw.variation ?? 50) / 100;
+      const v = (tw.variation ?? 50) / 100; // 0..1
 
       const t = (now - start) / 1000;
       const next = {};
       for (const id in floatParams) {
         const p = floatParams[id];
-        if (drag.current.id === id && drag.current.moved) { next[id] = { x: 0, y: 0 }; continue; }
+        if (drag.current.id === id) { next[id] = { x: 0, y: 0 }; continue; }
         const aX = ampX * (1 + p.jAmpX * 0.5 * v);
         const aY = ampY * (1 + p.jAmpY * 0.5 * v);
         const sX = spdX * (1 + p.jSpdX * 0.4 * v);
@@ -373,28 +441,30 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
   }, [floatParams]);
 
   const visibleEntities = useMemo(() => {
-    if (viewMode === 'All') return Object.keys(ENTITY_TYPES);
-    if (viewMode === 'Host')     return Object.keys(ENTITY_TYPES).filter(k => ENTITY_TYPES[k].group === 'host' || k === 'finding' || k === 'host');
-    if (viewMode === 'Cloud')    return Object.keys(ENTITY_TYPES).filter(k => ENTITY_TYPES[k].group === 'cloud' || k === 'finding');
-    if (viewMode === 'Identity') return Object.keys(ENTITY_TYPES).filter(k => ENTITY_TYPES[k].group === 'identity' || k === 'finding');
+    if (viewMode === 'None') return Object.keys(ENTITY_TYPES);
+    if (viewMode === 'Device')   return ['host'];
+    if (viewMode === 'Cloud')    return ['cloudAccount', 'cluster', 'container', 'host', 'netSvc', 'network', 'storage'];
+    if (viewMode === 'Identity') return ['person', 'identity', 'account'];
     return Object.keys(ENTITY_TYPES);
   }, [viewMode]);
 
   const visibleSet = new Set(visibleEntities);
 
+  // Search-match set: ids whose label matches the current search term.
+  // When search is empty, every visible entity counts as a match (no dim).
   const q = (search || '').trim().toLowerCase();
   const searchMatch = new Set(
     q ? visibleEntities.filter(id => (ENTITY_TYPES[id]?.label || '').toLowerCase().includes(q)) : visibleEntities
   );
   const matchActive = q.length > 0;
 
+  // A node is dimmed only by search. Selection no longer dims other nodes.
   const isDimmed = (id) => {
-    if (selected && !neighborSet.has(id) && id !== selected) return true;
     if (matchActive && !searchMatch.has(id)) return true;
     return false;
   };
+  // Edge dimming: only by search. Selection no longer dims other edges.
   const isEdgeDimmed = (key) => {
-    if (selected && !neighborEdgeSet.has(key)) return true;
     if (matchActive) {
       const [a, b] = key.split('|');
       if (!searchMatch.has(a) && !searchMatch.has(b)) return true;
@@ -402,6 +472,10 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     return false;
   };
 
+  // Pixel-space padding so the node circle (r≈22) and its label stay fully visible.
+  const PAD_X = 30, PAD_TOP = 30, PAD_BOT = 44;
+
+  // Convert client (mouse) coords → SVG viewBox coords.
   const toSvgPoint = (clientX, clientY) => {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
@@ -413,9 +487,15 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     return { x: p.x, y: p.y };
   };
 
+  // Live SVG bounding rect in client pixels — re-read every drag tick.
+  const svgRect = () => {
+    const svg = svgRef.current;
+    return svg ? svg.getBoundingClientRect() : { left: 0, top: 0, right: 0, bottom: 0 };
+  };
+
   const onNodeDown = (id, e) => {
     const p = toSvgPoint(e.clientX, e.clientY);
-    const cur = positions[id];
+    const cur = displayPositions[id];
     drag.current = { id, dx: p.x - cur.x, dy: p.y - cur.y, moved: false, downId: id };
     setDragId(id);
   };
@@ -427,9 +507,20 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
         const id = drag.current.id;
         const nx = p.x - drag.current.dx;
         const ny = p.y - drag.current.dy;
-        const cur = positions[id];
+        const cur = displayPositions[id];
         if (Math.hypot(nx - cur.x, ny - cur.y) > 2) drag.current.moved = true;
-        setPositions(prev => ({ ...prev, [id]: { x: nx, y: ny } }));
+        // Project the SVG's actual visible client rect into viewBox coords so the
+        // clamp tracks the true canvas boundary at any container size or zoom level.
+        const r = svgRect();
+        const tl = toSvgPoint(r.left,  r.top);
+        const br = toSvgPoint(r.right, r.bottom);
+        // Clamp nx/ny in display (viewBox) space, then un-project through the
+        // horizontal-compression transform to get the logical position to store.
+        const cnx = Math.max(tl.x + PAD_X, Math.min(br.x - PAD_X, nx));
+        const cny = Math.max(tl.y + PAD_TOP, Math.min(br.y - PAD_BOT, ny));
+        const k = 1 - panelShift * SHIFT_AMOUNT;
+        const lx = SHIFT_CX + (cnx - SHIFT_CX) / (k || 1);
+        setPositions(prev => ({ ...prev, [id]: { x: lx, y: cny } }));
       } else if (pan.current.active) {
         const dx = e.clientX - pan.current.sx;
         const dy = e.clientY - pan.current.sy;
@@ -446,6 +537,8 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
       const { id, moved, downId } = drag.current;
       if (id && !moved && downId) {
         onSelect(downId);
+        // Mark that this click was a node selection so the container's
+        // onClick handler (which fires after) doesn't clear it.
         drag.current.consumed = true;
       }
       drag.current = { id: null, dx: 0, dy: 0, moved: false, downId: null,
@@ -462,6 +555,43 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
     };
   }, [positions, setPositions, onSelect, view, setView]);
 
+  // Re-clamp all node positions when the container resizes (sidebar toggle, window resize).
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || typeof ResizeObserver === 'undefined') return;
+
+    const reclampAll = () => {
+      const r = svgRect();
+      const tl = toSvgPoint(r.left,  r.top);
+      const br = toSvgPoint(r.right, r.bottom);
+      const minX = tl.x + PAD_X,   maxX = br.x - PAD_X;
+      const minY = tl.y + PAD_TOP, maxY = br.y - PAD_BOT;
+      if (!(maxX > minX) || !(maxY > minY)) return;
+
+      setPositions(prev => {
+        const k = 1 - panelShiftRef.current * SHIFT_AMOUNT;
+        let changed = false;
+        const next = {};
+        for (const id in prev) {
+          const p = prev[id];
+          // Convert logical → display, clamp in display space, convert back.
+          const dispX = SHIFT_CX + (p.x - SHIFT_CX) * k;
+          const cdx = Math.max(minX, Math.min(maxX, dispX));
+          const nx  = SHIFT_CX + (cdx - SHIFT_CX) / (k || 1);
+          const ny  = Math.max(minY, Math.min(maxY, p.y));
+          if (nx !== p.x || ny !== p.y) changed = true;
+          next[id] = { x: nx, y: ny };
+        }
+        return changed ? next : prev;
+      });
+    };
+
+    const ro = new ResizeObserver(reclampAll);
+    ro.observe(svg);
+    return () => ro.disconnect();
+  }, [setPositions]);
+
+  // Wheel = zoom around cursor
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -486,12 +616,26 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
   return (
     <div
       ref={containerRef}
-      className={`kg-graph${panning ? ' kg-graph--panning' : ''}`}
       onMouseMove={(e) => {
         const r = containerRef.current.getBoundingClientRect();
-        setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top, containerW: r.width });
+        setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top });
+      }}
+      style={{
+        position: 'relative',
+        background: 'var(--bg-surface, #fff)',
+        border: 'none',
+        borderRadius: 4,
+        height: 440,
+        margin: '0 12px',
+        backgroundImage: 'radial-gradient(var(--border, #E5E7EB) 1px, transparent 1px)',
+        backgroundSize: '14px 14px',
+        backgroundPosition: '0 0',
+        userSelect: 'none',
+        cursor: panning ? 'grabbing' : 'grab',
+        overflow: 'visible',
       }}
       onMouseDown={(e) => {
+        // Begin pan when clicking empty canvas (svg background)
         if (e.target.tagName === 'svg' || e.target === containerRef.current) {
           pan.current = { active: true, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
           setPanning(true);
@@ -499,48 +643,166 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
       }}
       onClick={(e) => {
         if (drag.current.moved || pan.current.moved) return;
+        // Consumed by a node-click that already set selection — don't clear it.
         if (drag.current.consumed) { drag.current.consumed = false; return; }
+        // Only clear when click was on the canvas itself, not bubbled from
+        // a node/edge interactive element.
+        const t = e.target;
+        if (t.tagName === 'svg' || t === containerRef.current) {
+          onSelect(null);
+        }
       }}
     >
-      <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <style>{`text { font-family: 'Inter', system-ui !important; }`}</style>
-        </defs>
-        {edges.filter(([a,b]) => visibleSet.has(a) && visibleSet.has(b)).map(([a,b,label], i) => {
-          const key = `${a}|${b}`;
+      <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" overflow="visible">
+        {/* Self-relations rendered as petals — short outward stub lines
+            radiating from the node with the label at the tip. Multiple
+            self-relations fan across the top so each gets its own slot. */}
+        {(() => {
+          const selfByNode = {};
+          edges.forEach(e => {
+            const [a,b,,hidden] = e;
+            if (hidden || a !== b || !visibleSet.has(a)) return;
+            (selfByNode[a] = selfByNode[a] || []).push(e);
+          });
+          const out = [];
+          Object.entries(selfByNode).forEach(([id, list]) => {
+            const base = displayPositions[id];
+            if (!base) return;
+            const fo = floatOffsets[id] || { x: 0, y: 0 };
+            const pa = { x: base.x + fo.x, y: base.y + fo.y };
+            const def = ENTITY_TYPES[id];
+            const r = id === 'finding' ? 28 : 22;
+            const stubLen = 30;
+            const dotR = 2.5;
+            const total = list.length;
+            const spread = total === 1 ? 0 : (Math.PI * 1.25);
+            const baseAngle = -Math.PI / 2;
+            const dimmed = isDimmed(id);
+            const op = dimmed ? 0.5 : 1;
+            list.forEach((edge, i) => {
+              const [, , label, , srcAlias, tgtAlias] = edge;
+              const subLabel = label || srcAlias || tgtAlias || 'Self';
+              const angle = baseAngle + (total === 1 ? 0 : -spread/2 + (i/(total-1)) * spread);
+              const cos = Math.cos(angle), sin = Math.sin(angle);
+              const sx = pa.x + cos * r;
+              const sy = pa.y + sin * r;
+              const ex = pa.x + cos * (r + stubLen);
+              const ey = pa.y + sin * (r + stubLen);
+              const labelDist = r + stubLen + 6;
+              const lx = pa.x + cos * labelDist;
+              const ly = pa.y + sin * labelDist;
+              const textAnchor = cos > 0.3 ? 'start' : (cos < -0.3 ? 'end' : 'middle');
+              const lbl = subLabel.length > 22 ? subLabel.slice(0, 20) + '\u2026' : subLabel;
+              const w = lbl.length * 5.8 + 12;
+              const rectX = textAnchor === 'start' ? 0 : (textAnchor === 'end' ? -w : -w/2);
+              const key = `${id}|${id}#${i}`;
+              const isH = hoveredEdge === key;
+              const isSel = selectedEdgeKey === key;
+              const accent = isSel ? '#6360D8' : (isH ? '#A2A1F7' : '#D6D6D6');
+              const accentW = isSel ? 1.6 : (isH ? 1.6 : 1);
+              out.push(
+                <g key={`pet-${id}-${i}`}
+                   onMouseEnter={() => setHoveredEdge(key)}
+                   onMouseLeave={() => setHoveredEdge(null)}
+                   onClick={(e) => { e.stopPropagation(); onEdgeSelect && onEdgeSelect(id, id, key); }}
+                   style={{ opacity: op, cursor: 'pointer', transition: 'opacity 150ms' }}
+                >
+                  {/* invisible thick hit area along the stub */}
+                  <line x1={sx} y1={sy} x2={ex} y2={ey}
+                        stroke="transparent" strokeWidth="10"
+                  />
+                  <line x1={sx} y1={sy} x2={ex} y2={ey}
+                        stroke={accent} strokeWidth={accentW}
+                        style={{ pointerEvents: 'none', transition: 'stroke 150ms, stroke-width 150ms' }}
+                  />
+                  <circle cx={ex} cy={ey} r={dotR}
+                          fill={accent}
+                          style={{ pointerEvents: 'none', transition: 'fill 150ms' }}
+                  />
+                  <g transform={`translate(${lx},${ly})`}
+                     onMouseEnter={() => setHoveredEdge(key)}
+                     onMouseLeave={() => setHoveredEdge(null)}
+                     style={{ cursor: 'pointer' }}>
+                    <rect x={rectX} y="-7" width={w} height="14" rx="3"
+                          fill={isSel ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)'}
+                          stroke={isSel ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'} strokeWidth="0.8" />
+                    <text textAnchor={textAnchor} dominantBaseline="central"
+                          x={textAnchor === 'start' ? 6 : (textAnchor === 'end' ? -6 : 0)}
+                          style={{ fontSize: 9.5, fill: isSel ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted, #8A8A8A)', fontWeight: isSel ? 600 : 400, pointerEvents: 'none' }}>
+                      {lbl}
+                    </text>
+                  </g>
+                </g>
+              );
+            });
+          });
+          return out;
+        })()}
+        {(() => {
+          const visibleEdges = edges.filter(([a,b,,hidden]) => !hidden && visibleSet.has(a) && visibleSet.has(b));
+          // Count self-loops per node and assign each its index in that node's loop stack.
+          const selfCounts = {};
+          visibleEdges.forEach(([a,b]) => { if (a === b) selfCounts[a] = (selfCounts[a] || 0) + 1; });
+          const selfIdxByPos = new Map();
+          const selfRunning = {};
+          visibleEdges.forEach(([a,b], i) => {
+            if (a === b) {
+              selfRunning[a] = (selfRunning[a] || 0);
+              selfIdxByPos.set(i, selfRunning[a]++);
+            }
+          });
+          return visibleEdges.map(([a,b,label], i) => {
+            const selfIdx = a === b ? selfIdxByPos.get(i) : 0;
+            const selfTotal = a === b ? selfCounts[a] : 0;
+            // Self-loops on the same node share endpoints — give each a unique
+            // key so hover/select target one loop at a time. Suffix uses `#`
+            // which never appears in entity ids; consumers strip it.
+            const key = a === b ? `${a}|${b}#${selfIdx}` : `${a}|${b}`;
+            return (
+              <Edge key={i} a={a} b={b} label={label}
+                    edgeKey={key}
+                    hoveredEdge={hoveredEdge}
+                    hoveredNode={hoveredId}
+                    anySelected={!!selected}
+                    onEdgeHover={setHoveredEdge}
+                    onEdgeClick={onEdgeSelect}
+                    positions={displayPositions}
+                    floatOffsets={floatOffsets}
+                    selfIdx={selfIdx}
+                    selfTotal={selfTotal}
+                    selected={!highlightOnly && edgeSelectionEndpoints && edgeSelectionEndpoints.has(a) && edgeSelectionEndpoints.has(b)}
+                    dimmed={isEdgeDimmed(key) && isEdgeDimmed(`${b}|${a}`)} />
+            );
+          });
+        })()}
+        {visibleEntities.map(id => {
+          let countOverride = null;
+          if (viewMode === 'Cloud' && id === 'host') countOverride = 5303;
+          if (selectedEdgeKey && edgeSelectionEndpoints && edgeSelectionEndpoints.has(id)) {
+            const [ea, eb] = splitEdgeKey(selectedEdgeKey);
+            const ec = edgeCountsFor(ea, eb);
+            if (ec && ec[id] != null) countOverride = ec[id];
+          }
           return (
-            <Edge key={i} a={a} b={b} label={label}
-                  edgeKey={key}
-                  hoveredEdge={hoveredEdge}
-                  hoveredNode={hoveredId}
-                  anySelected={!!selected}
-                  onEdgeHover={setHoveredEdge}
-                  onEdgeClick={multiSelectMode ? null : onEdgeSelect}
-                  pointerEvents={multiSelectMode ? 'none' : 'auto'}
-                  positions={positions}
-                  floatOffsets={floatOffsets}
-                  selected={selectedEdgeKey === key}
-                  reversed={selectedEdgeKey === key && edgeReversed}
-                  dimmed={isEdgeDimmed(key) && isEdgeDimmed(`${b}|${a}`)} />
-          );
-        })}
-        {visibleEntities.map(id => (
           <EntityNode
-            key={id} id={id}
+            key={id}
+            id={id}
             def={ENTITY_TYPES[id]}
-            pos={positions[id]}
+            pos={displayPositions[id]}
             floatOffset={floatOffsets[id]}
-            selected={multiSelectMode ? multiSelected.has(id) : (selected === id || (edgeSelectionEndpoints && edgeSelectionEndpoints.has(id)))}
-            countOverride={edgeCounts ? edgeCounts[id] : undefined}
+            selected={selected === id || (edgeSelectionEndpoints && edgeSelectionEndpoints.has(id)) || (multiSelectedSet && multiSelectedSet.has(id))}
             dimmed={isDimmed(id)}
-            hovered={hoveredId === id}
+            hovered={hoveredId === id || (hoveredEdge && (splitEdgeKey(hoveredEdge)[0] === id || splitEdgeKey(hoveredEdge)[1] === id))}
             onHover={setHoveredId}
             onDragStart={onNodeDown}
             dragging={dragId === id}
+            countOverride={countOverride}
           />
-        ))}
+          );
+        })}
       </svg>
 
+      {/* Empty-state overlay */}
       {visibleEntities.length === 0 ? (
         <EmptyOverlay
           icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg>}
@@ -551,24 +813,26 @@ function GraphCanvas({ selected, onSelect, onEdgeSelect, neighborSet, neighborEd
         <EmptyOverlay
           icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>}
           title="No nodes match"
-          subtitle={`Nothing matches “${q}”. Try a different search.`}
+          subtitle={`Nothing matches \u201c${q}\u201d. Try a different search.`}
         />
       ) : null}
 
+      {/* Hover tooltip overlay */}
       {(hoveredId || hoveredEdge) && !dragId && (
         <HoverTooltip
           nodeId={hoveredId}
           edgeKey={hoveredEdge}
           mousePos={mousePos}
           edges={edges}
-          reversed={hoveredEdge && hoveredEdge === selectedEdgeKey && edgeReversed}
         />
       )}
     </div>
   );
 }
 
-// ── Sample table data ─────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────
+// Sample table rows. Each row is tagged with an entity type.
+// ──────────────────────────────────────────────────────────────────────
 const TYPE_TO_TABLE_LABEL = {
   host: { type: 'Workstation', sources: ['ms','crwd'], os: 'Windows', glyph: 'host' },
   person: { type: 'Human', sources: ['ms','crwd','azure','+2'], os: 'Windows', glyph: 'person' },
@@ -590,131 +854,111 @@ const TYPE_TO_TABLE_LABEL = {
 };
 
 const ROWS = [
-  { label: 'support-portal.acme.io',       type: 'host',         ip: '198.1.2.1, 192.168.1.5', last: '2023-10-21', active: '2024-08-11' },
-  { label: 'edge-router-03',                type: 'host',         ip: '10.0.4.18',              last: '2024-02-04', active: '2024-09-22' },
-  { label: 'win-build-08.corp.local',       type: 'host',         ip: '10.12.2.44',             last: '2024-04-19', active: '2024-09-30' },
-  { label: 'mac-mini-arm64-12',             type: 'host',         ip: '10.5.18.221',            last: '2024-06-30', active: '2024-09-15' },
-  { label: 'kiosk-02.retail.acme.io',       type: 'host',         ip: '172.16.4.5',             last: '2024-01-12', active: '2024-08-08' },
-  { label: 'JANE LEWIS',                    type: 'person',       ip: '198.168.2.1',            last: '2024-08-11', active: '2023-10-21' },
-  { label: 'MARK PHILLIPS',                 type: 'person',       ip: '—',                      last: '2024-09-15', active: '2024-09-30' },
-  { label: 'jane.lewis@acme.io',            type: 'identity',     ip: '—',                      last: '2024-08-11', active: '2024-09-22' },
-  { label: 'mark.phillips@acme.io',         type: 'identity',     ip: '—',                      last: '2024-08-11', active: '2024-09-30' },
-  { label: 'svc-deploy@acme.io',            type: 'identity',     ip: '—',                      last: '2024-04-02', active: '2024-09-30' },
-  { label: 'acme-prod-aws',                 type: 'account',      ip: '—',                      last: '2024-09-22', active: '2024-09-30' },
-  { label: 'acme-stage-azure',              type: 'account',      ip: '—',                      last: '2024-09-15', active: '2024-09-30' },
-  { label: 'acme-portal v4.2',              type: 'application',  ip: '—',                      last: '2024-08-30', active: '2024-09-30' },
-  { label: 'finance-dashboard',             type: 'application',  ip: '—',                      last: '2024-09-02', active: '2024-09-29' },
-  { label: 'CVE-2024-3094',                 type: 'vulnerability', ip: '—',                     last: '2024-04-01', active: '2024-09-29' },
-  { label: 'CVE-2024-21412',                type: 'vulnerability', ip: '—',                     last: '2024-03-12', active: '2024-09-21' },
-  { label: 'Open SSH on 0.0.0.0',           type: 'finding',      ip: '198.1.2.1',              last: '2024-09-12', active: '2024-09-30' },
-  { label: 'S3 bucket public-read',         type: 'finding',      ip: '—',                      last: '2024-09-19', active: '2024-09-30' },
-  { label: 'IAM user without MFA',          type: 'finding',      ip: '—',                      last: '2024-09-21', active: '2024-09-30' },
-  { label: 'Q3 SOC2 self-attestation',      type: 'assessment',   ip: '—',                      last: '2024-09-01', active: '2024-09-30' },
-  { label: 'prod-eks-east-1',               type: 'cluster',      ip: '—',                      last: '2024-08-12', active: '2024-09-30' },
-  { label: 'auth-svc-7d4c89f6cf-l9b2x',     type: 'container',    ip: '10.43.4.12',             last: '2024-09-22', active: '2024-09-30' },
-  { label: 'aws-acct-908127364582',         type: 'cloudAccount', ip: '—',                      last: '2024-09-22', active: '2024-09-30' },
-  { label: 'vpc-prod-east1',                type: 'network',      ip: '10.0.0.0/16',            last: '2024-08-08', active: '2024-09-29' },
-  { label: 'eni-0f12a8b394',                type: 'netIface',     ip: '10.0.4.18',              last: '2024-09-15', active: '2024-09-30' },
-  { label: 's3://acme-data-prod',           type: 'storage',      ip: '—',                      last: '2024-09-10', active: '2024-09-30' },
-  { label: 'JIRA-SEC-1208',                 type: 'ticket',       ip: '—',                      last: '2024-09-15', active: '2024-09-29' },
-  { label: 'JIRA-SEC-1145',                 type: 'ticket',       ip: '—',                      last: '2024-09-04', active: '2024-09-22' },
-  { label: 'platform-eng',                  type: 'group',        ip: '—',                      last: '2024-09-01', active: '2024-09-30' },
+  // host rows
+  { label: 'support-portal.acme.io',       type: 'host', ip: '198.1.2.1, 192.168.1.5', last: '2023-10-21', active: '2024-08-11' },
+  { label: 'edge-router-03',                type: 'host', ip: '10.0.4.18',              last: '2024-02-04', active: '2024-09-22' },
+  { label: 'win-build-08.corp.local',       type: 'host', ip: '10.12.2.44',             last: '2024-04-19', active: '2024-09-30' },
+  { label: 'mac-mini-arm64-12',             type: 'host', ip: '10.5.18.221',            last: '2024-06-30', active: '2024-09-15' },
+  { label: 'kiosk-02.retail.acme.io',       type: 'host', ip: '172.16.4.5',             last: '2024-01-12', active: '2024-08-08' },
+  // person/identity rows
+  { label: 'JANE LEWIS',                    type: 'person', ip: '198.168.2.1',          last: '2024-08-11', active: '2023-10-21' },
+  { label: 'MARK PHILLIPS',                 type: 'person', ip: '—',                    last: '2024-09-15', active: '2024-09-30' },
+  { label: 'jane.lewis@acme.io',            type: 'identity', ip: '—',                  last: '2024-08-11', active: '2024-09-22' },
+  { label: 'mark.phillips@acme.io',         type: 'identity', ip: '—',                  last: '2024-08-11', active: '2024-09-30' },
+  { label: 'svc-deploy@acme.io',            type: 'identity', ip: '—',                  last: '2024-04-02', active: '2024-09-30' },
+  // account
+  { label: 'acme-prod-aws',                 type: 'account', ip: '—',                   last: '2024-09-22', active: '2024-09-30' },
+  { label: 'acme-stage-azure',              type: 'account', ip: '—',                   last: '2024-09-15', active: '2024-09-30' },
+  // application
+  { label: 'acme-portal v4.2',              type: 'application', ip: '—',               last: '2024-08-30', active: '2024-09-30' },
+  { label: 'finance-dashboard',             type: 'application', ip: '—',               last: '2024-09-02', active: '2024-09-29' },
+  // vulnerability
+  { label: 'CVE-2024-3094',                 type: 'vulnerability', ip: '—',             last: '2024-04-01', active: '2024-09-29' },
+  { label: 'CVE-2024-21412',                type: 'vulnerability', ip: '—',             last: '2024-03-12', active: '2024-09-21' },
+  // finding
+  { label: 'Open SSH on 0.0.0.0',           type: 'finding', ip: '198.1.2.1',           last: '2024-09-12', active: '2024-09-30' },
+  { label: 'S3 bucket public-read',         type: 'finding', ip: '—',                   last: '2024-09-19', active: '2024-09-30' },
+  { label: 'IAM user without MFA',          type: 'finding', ip: '—',                   last: '2024-09-21', active: '2024-09-30' },
+  // assessment
+  { label: 'Q3 SOC2 self-attestation',      type: 'assessment', ip: '—',                last: '2024-09-01', active: '2024-09-30' },
+  // cluster / container
+  { label: 'prod-eks-east-1',               type: 'cluster', ip: '—',                   last: '2024-08-12', active: '2024-09-30' },
+  { label: 'auth-svc-7d4c89f6cf-l9b2x',     type: 'container', ip: '10.43.4.12',        last: '2024-09-22', active: '2024-09-30' },
+  // cloud / network
+  { label: 'aws-acct-908127364582',         type: 'cloudAccount', ip: '—',              last: '2024-09-22', active: '2024-09-30' },
+  { label: 'vpc-prod-east1',                type: 'network', ip: '10.0.0.0/16',         last: '2024-08-08', active: '2024-09-29' },
+  { label: 'eni-0f12a8b394',                type: 'netIface', ip: '10.0.4.18',          last: '2024-09-15', active: '2024-09-30' },
+  { label: 's3://acme-data-prod',           type: 'storage', ip: '—',                   last: '2024-09-10', active: '2024-09-30' },
+  // ticket
+  { label: 'JIRA-SEC-1208',                 type: 'ticket', ip: '—',                    last: '2024-09-15', active: '2024-09-29' },
+  { label: 'JIRA-SEC-1145',                 type: 'ticket', ip: '—',                    last: '2024-09-04', active: '2024-09-22' },
+  // group
+  { label: 'platform-eng',                  type: 'group', ip: '—',                     last: '2024-09-01', active: '2024-09-30' },
 ];
 
-const SOURCE_ICONS = {
-  ms: (
-    <svg viewBox="0 0 21 21" width="13" height="13" style={{ display: 'block' }}>
-      <rect x="0" y="0" width="9.5" height="9.5" fill="#F25022"/>
-      <rect x="11.5" y="0" width="9.5" height="9.5" fill="#7FBA00"/>
-      <rect x="0" y="11.5" width="9.5" height="9.5" fill="#00A4EF"/>
-      <rect x="11.5" y="11.5" width="9.5" height="9.5" fill="#FFB900"/>
-    </svg>
-  ),
-  crwd: (
-    <svg viewBox="0 0 20 20" width="13" height="13" style={{ display: 'block' }}>
-      <rect width="20" height="20" rx="2" fill="#E10D1A"/>
-      <path d="M10 3.5C6.4 3.5 3.5 6.4 3.5 10S6.4 16.5 10 16.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M10 6.8C8.2 6.8 6.8 8.2 6.8 10S8.2 13.2 10 13.2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="10" cy="10" r="1.5" fill="white"/>
-    </svg>
-  ),
-  azure: (
-    <svg viewBox="0 0 18 18" width="13" height="13" style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id="azGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#114A8B"/>
-          <stop offset="100%" stopColor="#0078D4"/>
-        </linearGradient>
-      </defs>
-      <path d="M4.5 1h9L18 14H0L4.5 1z" fill="url(#azGrad)"/>
-      <path d="M0 14l5-6.5 2.5 6.5z" fill="#0078D4" fillOpacity="0.55"/>
-    </svg>
-  ),
-  aws: (
-    <svg viewBox="0 0 26 16" width="18" height="12" style={{ display: 'block' }}>
-      <rect width="26" height="16" rx="2.5" fill="#FF9900"/>
-      <text x="13" y="11.5" textAnchor="middle" fontSize="7.5" fontWeight="800" fill="white"
-            fontFamily="'Arial', sans-serif" letterSpacing="0.5">AWS</text>
-    </svg>
-  ),
-  k8s: (
-    <svg viewBox="0 0 20 20" width="13" height="13" style={{ display: 'block' }}>
-      <circle cx="10" cy="10" r="10" fill="#326CE5"/>
-      <line x1="10" y1="2.5" x2="10" y2="7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="10" y1="13" x2="10" y2="17.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="2.5" y1="10" x2="7" y2="10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="13" y1="10" x2="17.5" y2="10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="4.4" y1="4.4" x2="7.8" y2="7.8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="12.2" y1="12.2" x2="15.6" y2="15.6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="15.6" y1="4.4" x2="12.2" y2="7.8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="7.8" y1="12.2" x2="4.4" y2="15.6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="10" cy="10" r="2.5" fill="white"/>
-    </svg>
-  ),
-  jira: (
-    <svg viewBox="0 0 24 24" width="13" height="13" style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id="jiraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0052CC"/>
-          <stop offset="100%" stopColor="#2684FF"/>
-        </linearGradient>
-      </defs>
-      <path d="M12 0L0 12l12 12 12-12L12 0z" fill="url(#jiraGrad)"/>
-      <path d="M12 5v10M7.5 10l4.5 5 4.5-5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-};
-
-const SOURCE_TITLES = { ms: 'Microsoft', crwd: 'CrowdStrike', azure: 'Azure', aws: 'AWS', k8s: 'Kubernetes', jira: 'Jira' };
-
+// ── Data source pill (logo image chip) ───────────────────────────────
 function SourceBadge({ src }) {
-  const LOGOS = {
-    ms:    '/assets/Data source logos/logo-intunes.svg',
+  const logoMap = {
+    ms:    '/assets/Data source logos/MS Defender.svg',
     crwd:  '/assets/Data source logos/logo-crowdstrike.svg',
     azure: '/assets/Data source logos/logo-azure.svg',
     aws:   '/assets/Data source logos/logo-aws.svg',
+    k8s:   '/assets/Data source logos/AWS EKS Container.svg',
+    jira:  '/assets/Data source logos/Jira.svg',
   };
-  const BADGES = {
-    k8s:  { label: 'K8',  bg: '#326CE5', fg: '#fff' },
-    jira: { label: 'JR',  bg: '#0052CC', fg: '#fff' },
-    '+2': { label: '+2',  bg: '#E6E6E6', fg: '#282828' },
-    '+1': { label: '+1',  bg: '#E6E6E6', fg: '#282828' },
+  const overflowMap = {
+    '+2': '+2',
+    '+1': '+1',
   };
-  if (LOGOS[src]) {
-    return <img src={LOGOS[src]} alt={src} className="kg-source-logo" />;
+
+  if (overflowMap[src]) {
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 20, height: 20, borderRadius: 4,
+        background: 'var(--bg-sunken, #E6E6E6)', color: 'var(--fg-2, #282828)',
+        fontSize: 9, fontWeight: 700, letterSpacing: '0.03em',
+        flexShrink: 0,
+      }}>{overflowMap[src]}</span>
+    );
   }
-  const m = BADGES[src] || { label: src, bg: '#E6E6E6', fg: '#282828' };
+
+  const logo = logoMap[src];
+  if (logo) {
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 20, height: 20,
+        flexShrink: 0, overflow: 'hidden',
+      }}>
+        <img src={logo} width={16} height={16} alt={src} style={{ display: 'block', objectFit: 'contain' }} />
+      </span>
+    );
+  }
+
+  // fallback text
   return (
-    <span className="kg-source-badge" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 20, height: 20, borderRadius: 4,
+      background: 'var(--bg-sunken, #E6E6E6)', color: 'var(--fg-2, #282828)',
+      fontSize: 9, fontWeight: 700,
+      flexShrink: 0,
+    }}>{src}</span>
   );
 }
 
+// ── OS Family icon ───────────────────────────────────────────────────
 function OSPill({ os }) {
-  if (os === '—') return <span className="kg-os-null">—</span>;
-  const map = { Windows: { color: '#0078D4' }, Linux: { color: '#222' }, macOS: { color: '#999' } };
-  const m = map[os] || { color: '#999' };
+  if (os === '—') return <span style={{ color: PAI.fg3 }}>—</span>;
+  const map = {
+    Windows: { color: '#0078D4' },
+    Linux:   { color: 'var(--shell-text)' },
+    macOS:   { color: 'var(--shell-text-muted)' },
+  };
+  const m = map[os] || { color: 'var(--shell-text-muted)' };
   return (
-    <span className="kg-os-pill">
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill={m.color}>
         <path d="M3 4h8v8H3zM13 4h8v8h-8zM3 14h8v8H3zM13 14h8v8h-8z"/>
       </svg>
@@ -723,10 +967,78 @@ function OSPill({ os }) {
   );
 }
 
+// ── Design-system pill search — icon on right inside an indigo-tinted
+//    circular swatch; pill border (44px), 32px tall.
+function DSPillSearch({ value, onChange, placeholder, width = 220 }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center',
+      height: 32, paddingLeft: 14, paddingRight: 4,
+      boxSizing: 'border-box',
+      background: 'var(--bg-surface, #fff)',
+      border: `1px solid ${focused ? '#6360D8' : 'var(--border, #E6E6E6)'}`,
+      boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',
+      borderRadius: 44, width,
+      transition: 'border-color 120ms, box-shadow 120ms',
+    }}>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        style={{
+          flex: 1, border: 'none', outline: 'none', background: 'transparent',
+          fontSize: 13, fontFamily: 'inherit', color: 'var(--fg-1, #101010)',
+          minWidth: 0,
+        }}
+      />
+      {value && (
+        <button
+          onMouseDown={e => { e.preventDefault(); onChange(''); }}
+          style={{
+            width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--fg-3, #888)', borderRadius: 999, flexShrink: 0, marginLeft: 4,
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      )}
+      <span style={{
+        width: 24, height: 24, marginLeft: 4,
+        borderRadius: '50%',
+        background: 'var(--pai-indigo-tint)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--pai-indigo)',
+        flexShrink: 0,
+      }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+      </span>
+    </div>
+  );
+}
+
+// ── Header column — design-system .ds-th: F5F5F5 bg, 10px uppercase,
+//    .06em letter-spacing, no inter-column dividers, single bottom border
 function Th({ children }) {
   return (
-    <th>
-      <span className="kg-th-inner">
+    <th style={{
+      textAlign: 'left',
+      padding: '8px 12px',
+      background: 'var(--bg-raised, #F5F5F5)',
+      borderBottom: '1px solid var(--border, #E6E6E6)',
+      fontSize: 10, fontWeight: 600, color: 'var(--fg-3, #6E6E6E)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         {children}
         <Ic size={10} path={<><path d="m7 9 5-5 5 5M7 15l5 5 5-5"/></>} />
       </span>
@@ -734,33 +1046,55 @@ function Th({ children }) {
   );
 }
 
-function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
-  const [page, setPage]               = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  useEffect(() => { setPage(1); }, [rows]);
-
-  const start     = (page - 1) * rowsPerPage;
-  const pagedRows = rows.slice(start, start + rowsPerPage);
-
+// ── Details Table ────────────────────────────────────────────────────
+function DetailsTable({ rows, totalCount, search, onSearch }) {
+  const PAGE_SIZE = 10;
+  // We never render more than PAGE_SIZE rows on screen, even if the source
+  // dataset has more — pagination is *visual* (the underlying ROWS are a
+  // sample). The displayed page-1 size is min(totalCount, PAGE_SIZE).
+  const displayRows = rows.slice(0, Math.min(rows.length, PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const showFrom = totalCount === 0 ? 0 : 1;
+  const showTo = Math.min(PAGE_SIZE, totalCount);
   return (
-    <div className="card kg-details">
-      <div className="kg-details__header">
-        <div className="kg-details__title">
-          Details <span className="kg-details__title-count">({fmtN(totalCount)})</span>
+    <div style={{
+      background: 'var(--bg-surface, #fff)',
+      border: '1px solid var(--border, #E6E6E6)',
+      borderRadius: 6,
+      margin: '0 12px 16px',
+      overflow: 'hidden',
+    }}>
+      {/* header bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--border, #E6E6E6)',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>
+          Details <span style={{ color: PAI.fg3, fontWeight: 500 }}>({fmtN(totalCount)})</span>
         </div>
-        <div className="kg-details__spacer" />
+        <div style={{ flex: 1 }} />
         <DSPillSearch value={search} onChange={onSearch} placeholder="Search Any" width={220} />
-        <button className="ds-btn sz-md t-outline">
+        <button className="ds-btn sz-md t-outline" style={{
+          height: 32, padding: '0 12px', background: 'var(--bg-surface, #fff)', border: '1px solid var(--border, #E6E6E6)',
+          borderRadius: 44, color: PAI.fg1, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+        }}>
           Add Column <Ic size={12} path={<><path d="M12 5v14M5 12h14"/></>}/>
         </button>
-        <button className="ds-btn sz-md t-primary">
+        <button className="ds-btn sz-md t-primary" style={{
+          height: 32, padding: '0 14px', background: 'var(--pai-indigo)', color: '#fff',
+          border: 'none', borderRadius: 44, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+        }}>
           {Icons.download} Download
           <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
         </button>
       </div>
 
-      <div className="kg-details__body">
-        <table>
+      {/* table */}
+      <div style={{ overflow: 'auto', maxHeight: 320 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
           <thead>
             <tr>
               <Th>Display Label</Th>
@@ -773,731 +1107,748 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
             </tr>
           </thead>
           <tbody>
-            {pagedRows.length === 0 ? (
-              <tr><td colSpan="7" className="kg-details__empty">No records match this filter.</td></tr>
-            ) : pagedRows.map((r, i) => {
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ padding: 32, textAlign: 'center', color: PAI.fg3 }}>
+                  No records match this filter.
+                </td>
+              </tr>
+            ) : displayRows.map((r, i) => {
               const meta = TYPE_TO_TABLE_LABEL[r.type];
+              const ent = ENTITY_TYPES[r.type];
               return (
-                <tr key={i} className="kg-details__row" onClick={() => onRowClick && onRowClick(r)}>
-                  <td className="kg-td-label">{r.label}</td>
-                  <td>
-                    <span className="kg-td-type">
-                      <span className="kg-td-type__icon"><EntityGlyph kind={meta.glyph} size={20} /></span>
+                <tr key={i} style={{
+                  borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+                  transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+                >
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, fontWeight: 500, whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</td>
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        width: 22, height: 22,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <EntityGlyph kind={meta.glyph} size={20} />
+                      </span>
                       {meta.type}
                     </span>
                   </td>
-                  <td>
-                    <span className="kg-td-sources">
+                  <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                    <span style={{ display:'inline-flex', alignItems: 'center', gap: 4 }}>
                       {meta.sources.map((s, j) => <SourceBadge key={j} src={s} />)}
                     </span>
                   </td>
-                  <td><OSPill os={meta.os} /></td>
-                  <td className="kg-td-numeric">{r.ip}</td>
-                  <td className="kg-td-numeric">{r.last}</td>
-                  <td className="kg-td-numeric">{r.active}</td>
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}><OSPill os={meta.os} /></td>
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.ip}</td>
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.last}</td>
+                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.active}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-
-      <TablePagination
-        total={rows.length}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
-      />
+      {totalCount > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16,
+          padding: '10px 16px',
+          borderTop: '1px solid var(--border, #E6E6E6)',
+          fontSize: 12, color: PAI.fg3,
+          fontFamily: 'inherit',
+        }}>
+          {/* page-size selector */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+            {[10, 50, 100, 150].map((n, i) => (
+              <button
+                key={n}
+                style={{
+                  background: 'transparent', border: 'none', padding: 0,
+                  fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
+                  color: i === 0 ? PAI.fg1 : PAI.fg3,
+                  fontWeight: i === 0 ? 700 : 400,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >{n}</button>
+            ))}
+          </div>
+          <div style={{ color: PAI.fg3 }}>
+            Showing rows <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{showFrom}</span> to <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{showTo}</span> of <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtN(totalCount)}</span>
+          </div>
+          <div style={{ flex: 1 }} />
+          {/* page numbers */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+            {[1, 2, 3].slice(0, Math.min(3, totalPages)).map((p, i) => (
+              <button
+                key={p}
+                disabled={p > totalPages}
+                style={{
+                  background: 'transparent', border: 'none', padding: 0,
+                  fontSize: 12, fontFamily: 'inherit',
+                  cursor: p > totalPages ? 'default' : 'pointer',
+                  color: i === 0 ? PAI.fg1 : (p > totalPages ? '#D6D6D6' : PAI.fg3),
+                  fontWeight: i === 0 ? 700 : 400,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >{p}</button>
+            ))}
+            <button disabled={totalPages <= 1} style={{
+              background: 'transparent', border: 'none', padding: 0,
+              fontSize: 14, fontFamily: 'inherit',
+              cursor: totalPages <= 1 ? 'default' : 'pointer',
+              color: totalPages <= 1 ? '#D6D6D6' : PAI.fg3,
+              display: 'inline-flex', alignItems: 'center',
+            }}>›</button>
+            <button disabled={totalPages <= 1} style={{
+              background: 'transparent', border: 'none', padding: 0,
+              fontSize: 14, fontFamily: 'inherit',
+              cursor: totalPages <= 1 ? 'default' : 'pointer',
+              color: totalPages <= 1 ? '#D6D6D6' : PAI.fg3,
+              display: 'inline-flex', alignItems: 'center',
+            }}>»</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── PageKG ────────────────────────────────────────────────────────────
+// ── Entity KPI card grid — Entities tab view ─────────────────────────
+function EntityKpiGrid() {
+  const entities = Object.entries(ENTITY_TYPES).sort((a, b) => a[1].label.localeCompare(b[1].label));
+  return (
+    <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+      {entities.map(([id, def]) => {
+            const frags = def.fragments || def.count;
+            const pct = frags ? (def.count / frags) * 100 : 100;
+            const pctStr = Number.isInteger(pct) ? `${pct}%` : `${pct.toFixed(2)}%`;
+            return (
+              <div key={id} style={{
+                border: '1px solid var(--border, #E6E6E6)',
+                borderRadius: 4, padding: 16,
+                display: 'flex', flexDirection: 'column', gap: 16,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 44,
+                    background: 'var(--bg-raised, #F5F5F5)',
+                    border: '1px solid var(--border, #E6E6E6)',
+                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <EntityGlyph kind={def.glyph} size={16} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap' }}>
+                    {def.label}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
+                  <div style={{ borderLeft: '2px solid #6360D8', paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-3, #6E6E6E)', lineHeight: 1.17 }}>Resolved</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap', lineHeight: 1.17, fontVariantNumeric: 'tabular-nums' }}>
+                      {fmtN(def.count)}{' '}<span style={{ fontWeight: 400 }}>({pctStr})</span>
+                    </span>
+                  </div>
+                  <div style={{ borderLeft: '2px solid #31A56D', paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-3, #6E6E6E)', lineHeight: 1.17 }}>Fragments</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap', lineHeight: 1.17, fontVariantNumeric: 'tabular-nums' }}>
+                      {fmtN(frags)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// PageKG — composes graph + table + selection state
+// ─────────────────────────────────────────────────────────────────────
 function PageKG() {
+  const [summaryTab, setSummaryTab] = useState('Relationships');
   const [selected, setSelected] = useState(null);
-  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  // When `highlightOnly` is true, the selected node gets a visual ring
+  // but does NOT dim other nodes/edges or filter the details table.
+  // Set when selection comes from a tab switch (Host/Identity).
+  const [highlightOnly, setHighlightOnly] = useState(false);
+  // Multi-select mode: independent of single-selection. When ON, clicking
+  // nodes toggles them in `multiSelected` (a Set of entity ids).
+  const [multiMode, setMultiMode] = useState(false);
   const [multiSelected, setMultiSelected] = useState(() => new Set());
   const [hoveredId, setHoveredId] = useState(null);
-  const [viewMode, setViewMode] = useState('All');
+  const [viewMode, setViewMode] = useState('None');
   const [search, setSearch] = useState('');
   const [tableSearch, setTableSearch] = useState('');
+  // Set of edge keys that are currently OFF (deselected). When a node is
+  // selected, all its edges start as on (active); user can deselect chips
+  // to drop those relationships from the filter without losing them.
   const [deselectedChips, setDeselectedChips] = useState(() => new Set());
+  // When an edge is clicked, restrict chips to ONLY that edge. Cleared when
+  // a node is clicked (which shows all of its relationships).
   const [selectedEdgeKey, setSelectedEdgeKey] = useState(null);
-  const [edgeReversed, setEdgeReversed] = useState(false);
   const [positions, setPositions] = useState(() => ({ ...NODE_POS }));
   const [view, setView] = useState({ x: 0, y: 0, w: 940, h: 440 });
-  const [isDirty, setIsDirty] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [panelRow, setPanelRow] = useState(null);
-  const [panelTab, setPanelTab] = useState('summary');
-  const [relCollapsed, setRelCollapsed] = useState(false);
-  const [relSelectedNode, setRelSelectedNode] = useState(null);
   const [edges, setEdges] = useState(() => {
+    // Prefer persisted edges from tweaks (App writes them onto window before mount)
     const fromTweaks = (window.__floatTweaks && window.__floatTweaks.edges);
-    if (Array.isArray(fromTweaks) && fromTweaks.length) return fromTweaks.map(e => [...e]);
+    if (Array.isArray(fromTweaks) && fromTweaks.length) {
+      return fromTweaks.map(e => [...e]);
+    }
     return INITIAL_EDGES.map(e => [...e]);
   });
 
+  // Expose edge editing API + entity list to the Tweaks panel
   useEffect(() => {
     window.__kgSetEdges = setEdges;
     window.__kgGetEdges = () => edges;
-    window.__kgEntityList = Object.keys(ENTITY_TYPES).map(id => ({ id, label: ENTITY_TYPES[id].label }));
+    window.__kgEntityList = Object.keys(ENTITY_TYPES).map(id => ({
+      id, label: ENTITY_TYPES[id].label,
+    }));
     window.dispatchEvent(new CustomEvent('kg-edges-changed'));
   }, [edges]);
 
+  // Set of entity ids visible under the current viewMode (used for both
+  // chip filtering and auto-clearing stale selections).
   const visibleSetByView = useMemo(() => {
-    if (viewMode === 'All') return new Set(Object.keys(ENTITY_TYPES));
-    const ids = Object.keys(ENTITY_TYPES).filter(k => {
-      if (k === 'finding') return true;
-      const g = ENTITY_TYPES[k]?.group;
-      if (viewMode === 'Host')     return g === 'host' || k === 'host';
-      if (viewMode === 'Cloud')    return g === 'cloud';
-      if (viewMode === 'Identity') return g === 'identity';
-      return true;
-    });
-    return new Set(ids);
+    if (viewMode === 'None') return new Set(Object.keys(ENTITY_TYPES));
+    if (viewMode === 'Device')   return new Set(['host']);
+    if (viewMode === 'Cloud')    return new Set(['cloudAccount', 'cluster', 'container', 'host', 'netSvc', 'network', 'storage']);
+    if (viewMode === 'Identity') return new Set(['person', 'identity', 'account']);
+    return new Set(Object.keys(ENTITY_TYPES));
   }, [viewMode]);
 
-  const TAB_DEFAULT = { Host: 'host', Cloud: 'cloudAccount', Identity: 'identity' };
+  // On tab switch: preserve node selection (chips persist) but drop any edge
+  // selection whose endpoints are no longer both visible in the new view.
+  // Chip deselections reset so the filter starts fresh in the new context.
   useEffect(() => {
-    const visible = visibleSetByView;
-    const def = TAB_DEFAULT[viewMode];
-    if (def && !multiSelectMode) {
-      setSelected(def); setSelectedEdgeKey(null); setDeselectedChips(new Set());
-    } else if (selected && !visible.has(selected)) {
-      setSelected(null); setSelectedEdgeKey(null); setDeselectedChips(new Set());
-    } else {
-      if (Object.values(TAB_DEFAULT).includes(selected)) setSelected(null);
-      if (selectedEdgeKey) {
-        const [a, b] = selectedEdgeKey.split('|');
-        if (!visible.has(a) || !visible.has(b)) setSelectedEdgeKey(null);
+    if (selectedEdgeKey) {
+      const [a, b] = splitEdgeKey(selectedEdgeKey);
+      if (!visibleSetByView.has(a) || !visibleSetByView.has(b)) {
+        setSelectedEdgeKey(null);
       }
     }
+    if (highlightOnly) setHighlightOnly(false);
+    setDeselectedChips(new Set());
   }, [viewMode]);
 
   const zoomBy = (factor) => {
     setView(v => {
       const newW = Math.max(280, Math.min(2200, v.w * factor));
       const newH = newW * (440/940);
+      // zoom around center
       const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
       return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH };
     });
   };
   const resetView = () => setView({ x: 0, y: 0, w: 940, h: 440 });
-  const setPositionsDirty = (updater) => { setPositions(updater); setIsDirty(true); };
-  const setViewDirty = (updater) => { setView(updater); setIsDirty(true); };
 
+  // Reset chip state whenever the selected node changes.
   useEffect(() => {
-    setDeselectedChips(new Set()); setEdgeReversed(false); setSelectedEdgeKey(null);
+    setDeselectedChips(new Set());
+    // Node-click path clears the edge-only filter; edge-click path sets it
+    // immediately AFTER this effect (via setTimeout in onEdgeSelect).
+    setSelectedEdgeKey(null);
   }, [selected]);
 
-  useEffect(() => { setRelSelectedNode(null); }, [panelRow]);
-
+  // All relationship chips for the selected node — one per connecting edge.
+  // When `selectedEdgeKey` is set, restrict to ONLY that edge.
   const relationshipChips = useMemo(() => {
     if (!selected) return [];
+    // Strip the #idx self-loop disambiguator for key comparison.
+    const baseSelectedKey = selectedEdgeKey ? selectedEdgeKey.replace(/#\d+$/, '') : null;
     return edges
+      .filter(([,,,hidden]) => !hidden)
       .filter(([a,b]) => a === selected || b === selected)
-      .filter(([a,b]) => !selectedEdgeKey || `${a}|${b}` === selectedEdgeKey)
-      .filter(([a,b]) => { const other = a === selected ? b : a; return visibleSetByView.has(other); })
-      .map(([a,b,label]) => {
+      .filter(([a,b]) => !baseSelectedKey || `${a}|${b}` === baseSelectedKey)
+      // Only keep chips whose "other" endpoint is visible under the current view.
+      .filter(([a,b]) => {
         const other = a === selected ? b : a;
+        return visibleSetByView.has(other);
+      })
+      .map(([a, b, label, , srcAlias, tgtAlias]) => {
+        const reversed = b === selected;  // selected is canonical target → reversed view
+        const other = reversed ? a : b;
         const key = `${a}|${b}`;
-        return { key, source: ENTITY_TYPES[selected]?.label || selected, relation: label || 'Connected to', target: ENTITY_TYPES[other]?.label || other, otherId: other };
+        // When reversed, the display aliases swap: canonical tgtAlias becomes our
+        // source alias and canonical srcAlias becomes our target alias.
+        const dispSrcAlias = reversed ? tgtAlias : srcAlias;
+        const dispTgtAlias = reversed ? srcAlias : tgtAlias;
+        return {
+          key,
+          source: dispSrcAlias || ENTITY_TYPES[selected]?.label || selected,
+          relation: label || 'Connected to',
+          target: dispTgtAlias || ENTITY_TYPES[other]?.label || other,
+          otherId: other,
+        };
       });
   }, [selected, edges, selectedEdgeKey, visibleSetByView]);
 
+  // Build adjacency for selection halo — full set (visual halo always shows
+  // all connections of the selected node, regardless of chip state).
   const { neighborSet, neighborEdgeSet } = useMemo(() => {
-    if (!selected) return { neighborSet: new Set(), neighborEdgeSet: new Set() };
-    const ns = new Set([selected]), es = new Set();
-    edges.forEach(([a,b]) => {
+    if (!selected || highlightOnly) return { neighborSet: new Set(), neighborEdgeSet: new Set() };
+    const ns = new Set([selected]);
+    const es = new Set();
+    edges.forEach(([a,b,,hidden]) => {
+      if (hidden) return;
       if (a === selected) { ns.add(b); es.add(`${a}|${b}`); es.add(`${b}|${a}`); }
       else if (b === selected) { ns.add(a); es.add(`${a}|${b}`); es.add(`${b}|${a}`); }
     });
     return { neighborSet: ns, neighborEdgeSet: es };
   }, [selected, edges]);
 
+  // Active neighbor set for FILTERING — only neighbors whose chip is on.
+  // Also build active edge set so the graph can dim deselected edges.
   const { activeNeighborSet, activeNeighborEdgeSet } = useMemo(() => {
-    if (!selected) return { activeNeighborSet: new Set(), activeNeighborEdgeSet: new Set() };
-    const ns = new Set([selected]), es = new Set();
+    if (!selected || highlightOnly) return { activeNeighborSet: new Set(), activeNeighborEdgeSet: new Set() };
+    const ns = new Set([selected]);
+    const es = new Set();
     relationshipChips.forEach(c => {
       if (!deselectedChips.has(c.key)) {
         ns.add(c.otherId);
         const [a, b] = c.key.split('|');
-        es.add(`${a}|${b}`); es.add(`${b}|${a}`);
+        es.add(`${a}|${b}`);
+        es.add(`${b}|${a}`);
       }
     });
     return { activeNeighborSet: ns, activeNeighborEdgeSet: es };
   }, [selected, relationshipChips, deselectedChips]);
 
+  // Filter rows by selected node OR (if an edge is selected) its active
+  // (chip-on) neighbors. With only a node selected, the table is restricted
+  // to rows of that entity type — and the chip bar shows a single chip
+  // labeled with the node name.
   const filteredRows = useMemo(() => {
     let rs = ROWS;
-    if (multiSelectMode) {
-      if (multiSelected.size > 0) rs = rs.filter(r => multiSelected.has(r.type));
-    } else if (selected && !selectedEdgeKey) {
-      rs = rs.filter(r => r.type === selected);
-    } else if (selectedEdgeKey) {
-      const [a, b] = selectedEdgeKey.split('|');
-      rs = rs.filter(r => r.type === a || r.type === b);
+    if (multiMode && multiSelected.size > 0) {
+      // Only filter by entities that are visible in the current view tab.
+      const inView = new Set([...multiSelected].filter(t => visibleSetByView.has(t)));
+      // If no selection is in-view, show empty table (chips are disabled).
+      rs = inView.size > 0 ? rs.filter(r => inView.has(r.type)) : [];
+    } else if (selected) {
+      if (!visibleSetByView.has(selected)) {
+        rs = [];
+      } else if (selectedEdgeKey) {
+        // Source-entity rows only, capped to the per-edge source count.
+        const ec = edgeCountsFor(...splitEdgeKey(selectedEdgeKey));
+        rs = rs.filter(r => r.type === selected);
+        if (ec && ec[selected] != null) rs = rs.slice(0, ec[selected]);
+      } else {
+        rs = rs.filter(r => r.type === selected);
+      }
     }
     if (tableSearch.trim()) {
       const q = tableSearch.trim().toLowerCase();
       rs = rs.filter(r => {
         const meta = TYPE_TO_TABLE_LABEL[r.type] || {};
-        const haystack = [r.label, r.type, r.ip, r.last, r.active, meta.type, meta.os, ...(meta.sources || [])].filter(Boolean).join(' ').toLowerCase();
+        const haystack = [
+          r.label, r.type, r.ip, r.last, r.active,
+          meta.type, meta.os,
+          ...(meta.sources || []),
+        ].filter(Boolean).join(' ').toLowerCase();
         return haystack.includes(q);
       });
     }
     return rs;
-  }, [selected, selectedEdgeKey, multiSelectMode, multiSelected, tableSearch]);
+  }, [selected, selectedEdgeKey, activeNeighborSet, tableSearch, multiMode, multiSelected, highlightOnly, visibleSetByView]);
 
+  // Total count for header.
+  // - Multi-select: sum of selected entities that are visible in the current view.
+  // - Single-node: entity's own count, but only if visible in the current view.
+  // - Otherwise (nothing selected, or selection is out of view): sum of view's entities.
   const totalCount = useMemo(() => {
-    if (multiSelectMode) {
-      if (multiSelected.size === 0) return 15730247;
+    if (multiMode && multiSelected.size > 0) {
+      const inView = [...multiSelected].filter(t => visibleSetByView.has(t));
+      if (inView.length > 0) {
+        let sum = 0;
+        inView.forEach(t => { if (ENTITY_TYPES[t]) sum += ENTITY_TYPES[t].count; });
+        return sum;
+      }
+      // All selected chips are out of this view.
+      return 0;
+    }
+    if (selected && !visibleSetByView.has(selected)) {
+      // Selected entity not in this view — disabled chip, table is empty.
+      return 0;
+    }
+    if (!selected) {
+      if (viewMode === 'None') return 15730247;
       let sum = 0;
-      multiSelected.forEach(t => { if (ENTITY_TYPES[t]) sum += ENTITY_TYPES[t].count; });
+      visibleSetByView.forEach(k => { if (ENTITY_TYPES[k]) sum += ENTITY_TYPES[k].count; });
       return sum;
     }
-    if (!selected) return 15730247;
-    if (!selectedEdgeKey) return ENTITY_TYPES[selected]?.count || 0;
-    const [a] = selectedEdgeKey.split('|');
-    const counts = EDGE_COUNTS[selectedEdgeKey];
-    return counts ? (counts[a] || 0) : (ENTITY_TYPES[a]?.count || 0);
-  }, [selected, selectedEdgeKey, multiSelectMode, multiSelected]);
+    if (selectedEdgeKey) {
+      const [ea, eb] = splitEdgeKey(selectedEdgeKey);
+      const ec = edgeCountsFor(ea, eb);
+      if (ec && ec[selected] != null) return ec[selected];
+      return ENTITY_TYPES[selected]?.count ?? 0;
+    }
+    return ENTITY_TYPES[selected]?.count ?? 0;
+  }, [selected, activeNeighborSet, multiMode, multiSelected, highlightOnly, selectedEdgeKey, viewMode, visibleSetByView]);
 
   return (
-    <div className="page">
+    <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Summary card */}
-      <div className="card kg-card">
-        <div className="kg-card__header">
-          <div className="kg-card__title">Summary</div>
-          <div className="kg-card__spacer" />
-          <SegmentedTabs value={'Relationships'} options={['Relationships','Entities','Data Sources']} />
-          <button className="kg-collapse-btn">
+      <div style={{
+        background: 'var(--bg-surface, #fff)',
+        border: '1px solid var(--border, #E6E6E6)',
+        borderRadius: 6,
+        margin: '0 12px',
+        overflow: 'hidden',
+      }}>
+        {/* Card header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 16px 0',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Summary</div>
+          <div style={{ flex: 1 }} />
+          <SegmentedTabs
+            value={summaryTab}
+            onChange={setSummaryTab}
+            options={['Relationships','Entities','Data Sources']}
+          />
+          <button style={{
+            height: 28, padding: '0 12px', background: 'transparent',
+            border: 'none', color: PAI.fg2, fontSize: 12, fontWeight: 500,
+            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontFamily: 'inherit',
+          }}>
             <Ic size={12} path={<><path d="m18 15-6-6-6 6"/></>}/>
             Collapse
           </button>
         </div>
 
-        <div className="kg-toolbar">
-          <span className="kg-toolbar__label">Attack Surface:</span>
-          <ViewTabs value={viewMode} onChange={v => { setViewMode(v); setIsDirty(true); }} options={['All','Host','Cloud','Identity']}/>
-          <div className="kg-toolbar__spacer" />
-          <DSPillSearch value={search} onChange={v => { setSearch(v); if (v) setIsDirty(true); }} placeholder="Search Nodes" width={220} />
+        {summaryTab === 'Entities' && <EntityKpiGrid />}
+
+        {/* Toolbar — Relationships tab only */}
+        {summaryTab === 'Relationships' && <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 16px',
+        }}>
+          <span style={{
+            fontSize: 12, color: 'var(--fg-3, #6E6E6E)', fontWeight: 500,
+          }}>Attack Surface:</span>
+          <ViewTabs value={viewMode} onChange={setViewMode} options={['None','Device','Cloud','Identity']}/>
+          <div style={{ flex: 1 }} />
+          <DSPillSearch value={search} onChange={setSearch} placeholder="Search Nodes" width={220} />
           <button
             onClick={() => {
-              const next = !multiSelectMode;
-              setMultiSelectMode(next); setIsDirty(true);
-              if (next) {
-                if (selected) setMultiSelected(new Set([selected]));
-                setSelected(null); setSelectedEdgeKey(null); setEdgeReversed(false);
-              } else {
-                setMultiSelected(new Set());
-              }
+              setMultiMode(m => {
+                const next = !m;
+                if (next) {
+                  // Turning ON: seed the multi-select set with the currently
+                  // selected node (if any) so it stays highlighted and joins
+                  // the selection. Don't clear `selected` — we restore it on
+                  // the way out.
+                  setHighlightOnly(false);
+                  setSelectedEdgeKey(null);
+                  setMultiSelected(prev => {
+                    const seed = new Set(prev);
+                    if (selected) seed.add(selected);
+                    return seed;
+                  });
+                } else {
+                  // Turning OFF: clear ALL selections.
+                  setMultiSelected(new Set());
+                  setSelected(null);
+                  setSelectedEdgeKey(null);
+                  setDeselectedChips(new Set());
+                  setHighlightOnly(false);
+                }
+                return next;
+              });
             }}
-            title="Select multiple nodes to compare their entity counts"
-            className={`kg-btn-toggle${multiSelectMode ? ' kg-btn-toggle--on' : ''}`}
+            className="ds-btn sz-md t-outline"
+            style={{
+              height: 32, padding: '0 14px',
+              background: multiMode ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)',
+              border: `1px solid ${multiMode ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'}`,
+              borderRadius: 44,
+              color: multiMode ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted)',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
           >
-            Multi-select{multiSelected.size > 0 && ` (${multiSelected.size})`}
+            Multi-select{multiMode && multiSelected.size > 0 ? ` (${multiSelected.size})` : ''}
           </button>
-          <button
-            onClick={isDirty ? () => { setSelected(null); setSelectedEdgeKey(null); setMultiSelectMode(false); setMultiSelected(new Set()); setSearch(''); setViewMode('All'); setPositions({ ...NODE_POS }); resetView(); setIsDirty(false); } : undefined}
-            className={`kg-btn-reset${isDirty ? ' kg-btn-reset--dirty' : ''}`}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 7.2561C8.84388 7.2562 9.5127 7.92682 9.5127 8.76978C9.5126 9.61265 8.84382 10.2824 8 10.2825C7.15609 10.2825 6.48642 9.61271 6.48633 8.76978C6.48633 7.92676 7.15603 7.2561 8 7.2561Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
-              <path d="M3.26953 8.76914C3.26953 9.70481 3.54697 10.6195 4.06676 11.3974C4.58655 12.1754 5.32534 12.7818 6.18972 13.1399C7.05409 13.4979 8.00523 13.5916 8.92285 13.4091C9.84047 13.2265 10.6834 12.776 11.3449 12.1143C12.0065 11.4527 12.457 10.6098 12.6395 9.69208C12.8221 8.77439 12.7284 7.82317 12.3704 6.95873C12.0123 6.09428 11.406 5.35543 10.6281 4.8356C9.87356 4.3314 8.99047 4.05522 8.08433 4.03906" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M7.80005 5.6189L5.68774 4.02417L7.80005 2.42944V5.6189Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
-            </svg>
-            Reset
-          </button>
-        </div>
+          {(() => {
+            // Reset is "enabled" (red) when ANY graph change has occurred:
+            // selection, search, view tab change, node drag, or zoom/pan.
+            const positionsChanged = Object.keys(NODE_POS).some(k => {
+              const a = positions[k], b = NODE_POS[k];
+              return !a || a.x !== b.x || a.y !== b.y;
+            });
+            const viewChanged = view.x !== 0 || view.y !== 0 || view.w !== 940 || view.h !== 440;
+            const active = !!(selected || selectedEdgeKey || (multiMode && multiSelected.size > 0) || search || positionsChanged || viewChanged);
+            return (
+              <button
+                onClick={() => { setSelected(null); setHighlightOnly(false); setSearch(''); setPositions({ ...NODE_POS }); resetView(); setMultiMode(false); setMultiSelected(new Set()); }}
+                style={{
+                  height: 32, padding: '0 14px',
+                  background: 'var(--bg-surface, #fff)',
+                  border: `1px solid ${active ? 'var(--pai-red-high)' : 'var(--border, #E6E6E6)'}`,
+                  borderRadius: 44,
+                  color: active ? 'var(--pai-red-high)' : 'var(--shell-text-muted)',
+                  fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8.00178 10.5582C8.99928 10.5582 9.79262 9.76371 9.79262 8.7674C9.79262 7.7711 8.99928 6.97656 8.00178 6.97656C7.00428 6.97656 6.21094 7.7711 6.21094 8.7674C6.21094 9.76371 7.00428 10.5582 8.00178 10.5582Z" fill="currentColor"/>
+                  <path d="M3.26953 8.76914C3.26953 9.70481 3.54697 10.6195 4.06676 11.3974C4.58655 12.1754 5.32534 12.7818 6.18972 13.1399C7.05409 13.4979 8.00523 13.5916 8.92285 13.4091C9.84047 13.2265 10.6834 12.776 11.3449 12.1143C12.0065 11.4527 12.457 10.6098 12.6395 9.69208C12.8221 8.77439 12.7284 7.82317 12.3704 6.95873C12.0123 6.09428 11.406 5.35543 10.6281 4.8356C9.87356 4.3314 8.99047 4.05522 8.08433 4.03906" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7.7998 5.61719L5.6875 4.02246L7.7998 2.42773V5.61719Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
+                </svg>
+                Reset
+              </button>
+            );
+          })()}
+        </div>}
 
-        {/* Graph + zoom rail */}
-        <div style={{ position: 'relative' }}>
+        {/* Graph + zoom rail — Relationships tab only */}
+        {summaryTab === 'Relationships' && <div style={{ position: 'relative' }}>
           <GraphCanvas
             selected={selected}
+            selectedEdgeKey={selectedEdgeKey}
+            highlightOnly={highlightOnly}
+            multiSelectedSet={multiMode ? multiSelected : null}
+            panelOpen={false}
             onSelect={(id) => {
-              setIsDirty(true);
-              if (multiSelectMode) {
-                if (!id) { setMultiSelected(new Set()); return; }
-                setMultiSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-              } else {
-                if (!id) { setSelected(null); setSelectedEdgeKey(null); }
-                else { setSelected(prev => prev === id ? null : id); setSelectedEdgeKey(null); }
+              if (multiMode) {
+                if (id === null) return;
+                setMultiSelected(prev => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+                return;
               }
+              // In highlight-only mode (Host/Identity/Cloud tab), clicking a
+              // node breaks out of highlight-only and selects that node normally.
+              // Clicking the hero node itself just clears (toggle off).
+              if (highlightOnly) {
+                if (id === null) return;  // empty-canvas click is handled below
+                setHighlightOnly(false);
+                setSelected(prev => prev === id ? null : id);
+                return;
+              }
+              // If we're on a tab with a hero node and the user clicks empty
+              // canvas (id === null), restore the hero selection in highlight-only mode.
+              const heroByTab = {};
+              if (id === null && heroByTab[viewMode]) {
+                setSelected(heroByTab[viewMode]);
+                setHighlightOnly(true);
+                setSelectedEdgeKey(null);
+                setDeselectedChips(new Set());
+                return;
+              }
+              setSelected(prev => prev === id ? null : id);
             }}
             onEdgeSelect={(a, b, key) => {
-              if (multiSelectMode) return;
-              setIsDirty(true);
-              if (selectedEdgeKey === key) { setSelected(null); setSelectedEdgeKey(null); return; }
+              setHighlightOnly(false);
+              const heroByTab = {};
+              // Re-clicking the already-selected edge clears the selection.
+              // On Host/Identity tab, restore the hero in highlight-only mode.
+              if (selectedEdgeKey === key) {
+                if (heroByTab[viewMode]) {
+                  setSelected(heroByTab[viewMode]);
+                  setHighlightOnly(true);
+                  setSelectedEdgeKey(null);
+                  setDeselectedChips(new Set());
+                } else {
+                  setSelected(null);
+                  setSelectedEdgeKey(null);
+                }
+                return;
+              }
+              // Pick the non-'finding' endpoint as primary selection so the
+              // graph centers on a meaningful entity. Then restrict chips/
+              // highlights to ONLY this edge.
               const primary = (a === 'finding' && b !== 'finding') ? b : a;
               setSelected(primary);
+              // Defer so the selected-change effect (which clears state) runs first.
               setTimeout(() => setSelectedEdgeKey(key), 0);
             }}
-            multiSelectMode={multiSelectMode}
-            multiSelected={multiSelected}
-            neighborSet={(selected || multiSelectMode) ? { has: () => true } : activeNeighborSet}
-            neighborEdgeSet={(selected || multiSelectMode) ? { has: () => true } : activeNeighborEdgeSet}
-            selectedEdgeKey={selectedEdgeKey}
-            edgeReversed={edgeReversed}
-            edgeCounts={selectedEdgeKey ? (EDGE_COUNTS[selectedEdgeKey] || null) : null}
-            edgeSelectionEndpoints={selectedEdgeKey ? new Set(selectedEdgeKey.split('|')) : null}
+            neighborSet={activeNeighborSet}
+            neighborEdgeSet={activeNeighborEdgeSet}
+            edgeSelectionEndpoints={selectedEdgeKey ? new Set(splitEdgeKey(selectedEdgeKey)) : null}
             hoveredId={hoveredId}
             setHoveredId={setHoveredId}
             viewMode={viewMode}
             positions={positions}
-            setPositions={setPositionsDirty}
+            setPositions={setPositions}
             view={view}
-            setView={setViewDirty}
+            setView={setView}
             edges={edges}
             search={search}
           />
-          <div className="kg-zoom-rail">
+          {/* Bottom-left rail: zoom in / zoom out */}
+          <div style={{
+            position: 'absolute', left: 24, bottom: 24,
+            display: 'flex', flexDirection: 'column', gap: 8,
+            zIndex: 5,
+          }}>
             <RailBtn onClick={() => zoomBy(0.8)} icon={<Ic size={14} path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></>}/>}/>
             <RailBtn onClick={() => zoomBy(1.25)} icon={<Ic size={14} path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></>}/>}/>
           </div>
-        </div>
+          {/* Bottom-left zoom indicator (hidden) */}
+          {/* <ZoomIndicator view={view}/> */}
+        </div>}
 
-        {/* Footer: hint / filter chips */}
-        {edges.length === 0 ? (
-          <div className="kg-footer">
-            <span className="kg-footer__hint kg-footer__hint--italic">No relationships configured.</span>
-          </div>
-        ) : multiSelectMode ? (
-          <div className="kg-footer">
-            {multiSelected.size === 0 ? (
-              <span className="kg-footer__hint">Click nodes to multi-select and filter the details table.</span>
-            ) : (
-              <>
-                <span className="kg-footer__label">Details table filtered by:</span>
-                {[...multiSelected].map(id => (
-                  <span key={id} className="kg-filter-chip">
-                    {ENTITY_TYPES[id]?.label || id}
-                    {ENTITY_TYPES[id]?.count !== undefined && (
-                      <span>({fmtN(ENTITY_TYPES[id].count)})</span>
-                    )}
-                    <button className="kg-filter-chip__btn kg-filter-chip__close"
-                      onClick={() => setMultiSelected(prev => { const n = new Set(prev); n.delete(id); return n; })}>×</button>
-                  </span>
-                ))}
-              </>
-            )}
-          </div>
-        ) : selected ? (() => {
-          const isEdge = !!selectedEdgeKey;
-          let chipText;
-          if (isEdge) {
-            const [a, b] = selectedEdgeKey.split('|');
-            const rel = edges.find(([ea, eb]) => ea === a && eb === b)?.[2] || 'connected to';
-            const src = edgeReversed ? b : a;
-            const tgt = edgeReversed ? a : b;
-            chipText = `${ENTITY_TYPES[src]?.label || src} ${rel} ${ENTITY_TYPES[tgt]?.label || tgt}`;
-          } else {
-            chipText = ENTITY_TYPES[selected]?.label || selected;
+        {/* Footer chip bar — relationships of selection */}
+        {summaryTab === 'Relationships' && (() => {
+          if (multiMode) {
+            if (multiSelected.size > 0) {
+              return (
+                <MultiSelectChipBar
+                  ids={[...multiSelected]}
+                  visibleSet={visibleSetByView}
+                  onRemove={(id) => {
+                    setMultiSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+                  }}
+                  onClear={() => setMultiSelected(new Set())}
+                />
+              );
+            }
+            return <EmptyChipBar message="Click nodes to filter the details table." />;
           }
-          return (
-            <div className="kg-footer">
-              <span className="kg-footer__label">Details table filtered by:</span>
-              <span className="kg-filter-chip">
-                {chipText}
-                {!isEdge && ENTITY_TYPES[selected]?.count !== undefined && (
-                  <span>({fmtN(ENTITY_TYPES[selected].count)})</span>
-                )}
-                {isEdge && (
-                  <button className="kg-filter-chip__btn"
-                    onClick={() => setEdgeReversed(r => !r)}
-                    title="Reverse relationship"
-                    style={{ transform: edgeReversed ? 'scaleX(-1)' : 'none' }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                    </svg>
-                  </button>
-                )}
-                <button className="kg-filter-chip__btn kg-filter-chip__close"
-                  onClick={() => { setSelected(null); setSelectedEdgeKey(null); }}>×</button>
-              </span>
-            </div>
-          );
-        })() : (
-          <div className="kg-footer">
-            <span className="kg-footer__hint">Click a node or relationship to filter the details table.</span>
-          </div>
-        )}
-      </div>
-
-      <DetailsTable
-        rows={filteredRows}
-        totalCount={totalCount}
-        search={tableSearch}
-        onSearch={setTableSearch}
-        onRowClick={(row) => { setPanelRow(row); setPanelOpen(true); setPanelTab('summary'); }}
-      />
-
-      {/* Panel overlay */}
-      <div
-        onClick={() => setPanelOpen(false)}
-        className={`kg-panel-overlay${panelOpen ? '' : ' kg-panel-overlay--hidden'}`}
-      />
-
-      {/* Detail panel */}
-      <div className={`kg-panel${panelOpen ? ' kg-panel--open' : ' kg-panel--closed'}`}>
-        {panelRow && (() => {
-          const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
-          const ent  = ENTITY_TYPES[panelRow.type]        || {};
-          const PATH_BASE = [
-            { id: 'internet',    fill: '#1A5244',             glyph: null,               label: 'Internet' },
-            { id: 'application', fill: '#5D4A24',             glyph: 'application',      label: 'Application' },
-            { id: 'server',      fill: ent.icon || '#2B5690', glyph: meta.glyph || 'host', label: meta.type || 'Server' },
-          ];
-          const PATH_RIGHT = {
-            person:        { id: 'person',        glyph: 'person',        label: 'Person' },
-            account:       { id: 'account',       glyph: 'account',       label: 'Account' },
-            vulnerability: { id: 'vulnerability', glyph: 'vulnerability', label: 'Vulnerability' },
-            finding:       { id: 'finding',       glyph: 'finding',       label: 'Findings' },
-          };
-          const pathNodes = relSelectedNode ? [...PATH_BASE, PATH_RIGHT[relSelectedNode]] : PATH_BASE;
-          const GlobeIconPath = ({ active }) => (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke={active ? 'var(--pai-indigo)' : 'var(--pai-fg3)'}
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <path d="M12 3a15 15 0 0 1 3.5 9A15 15 0 0 1 12 21 15 15 0 0 1 8.5 12 15 15 0 0 1 12 3z"/>
-            </svg>
-          );
-          const toggleNode = (id) => setRelSelectedNode(n => n === id ? null : id);
-          const isActive   = (id) => relSelectedNode === id;
-
-          return (
-            <>
-              {/* ── Full-height left path sidebar ─────────────────── */}
-              <div className="kg-panel__nav-path">
-                {pathNodes.map((node, i) => {
-                  const isLast = i === pathNodes.length - 1;
-                  const isClickable = !['internet', 'application', 'server'].includes(node.id);
-                  return (
-                    <React.Fragment key={node.id}>
-                      {i > 0 && <div className="kg-panel__rel-path-conn"/>}
-                      <div
-                        className="kg-panel__rel-path-item"
-                        onClick={() => isClickable ? toggleNode(node.id) : null}
-                        style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                      >
-                        <div className={`kg-panel__rel-path-node${isLast ? ' kg-panel__rel-path-node--active' : ''}`}>
-                          {node.glyph ? (
-                            <div style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: isLast ? 'none' : 'grayscale(1) opacity(0.55)' }}>
-                              <EntityGlyph kind={node.glyph} size={20}/>
-                            </div>
-                          ) : <GlobeIconPath active={isLast}/>}
-                        </div>
-                        <span className={`kg-panel__rel-path-label${isLast ? ' kg-panel__rel-path-label--active' : ''}`}>
-                          {node.label}
-                        </span>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-
-              {/* ── Main content ──────────────────────────────────── */}
-              <div className="kg-panel__main">
-
-              {/* ── Compact topbar header ─────────────────────────── */}
-              <div className="kg-panel__header">
-                <div className="kg-panel__topbar">
-                  <span className="kg-panel__name">{panelRow.label}</span>
-                  <span className="kg-panel__type-badge">{meta.type || panelRow.type}</span>
-                  <span className="kg-panel__severity-badge">Critical</span>
-                  <span className="kg-panel__score-num">970</span>
-                  <button className="kg-panel__sim-link">
-                    View Score Simulation
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17L17 7M17 7H7M17 7v10"/>
-                    </svg>
-                  </button>
-                  <span style={{ flex: 1 }} />
-                  <button className="kg-panel__icon-btn" title="Open in new tab">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                      <polyline points="15 3 21 3 21 9"/>
-                      <line x1="10" y1="14" x2="21" y2="3"/>
-                    </svg>
-                  </button>
-                  <button onClick={() => setPanelOpen(false)} className="kg-panel__collapse-btn">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m18 15-6-6-6 6"/>
-                    </svg>
-                    Collapse
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Entity Relationship Summary ────────────────────── */}
-              <div className="kg-panel__rel-section">
-                <div className="kg-panel__rel-section-header">
-                  Entity Relationship Summary
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-                  </svg>
-                  <button className="kg-collapse-btn" onClick={() => setRelCollapsed(c => !c)}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transform: relCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}>
-                      <path d="m18 15-6-6-6 6"/>
-                    </svg>
-                    Collapse
-                  </button>
-                </div>
-                {!relCollapsed && (
-                  <div className="kg-panel__rel-canvas">
-                        <svg className="kg-panel__rel-svg" viewBox="0 0 620 260" preserveAspectRatio="xMidYMid meet">
-                          {/* left-chain edges */}
-                          <line x1="100" y1="118" x2="168" y2="118" stroke="#C8C8D4" strokeWidth="1.5"/>
-                          <line x1="224" y1="118" x2="316" y2="118" stroke="#C8C8D4" strokeWidth="1.5"/>
-
-                          {/* server → right curves — highlight selected */}
-                          <path d="M 386,110 C 460,80 476,38 516,38"    fill="none" stroke={isActive('person')        ? '#6360D8' : '#C8C8D4'} strokeWidth={isActive('person')        ? 2 : 1.5}/>
-                          <path d="M 386,114 C 455,106 472,98 516,98"   fill="none" stroke={isActive('account')       ? '#6360D8' : '#C8C8D4'} strokeWidth={isActive('account')       ? 2 : 1.5}/>
-                          <path d="M 386,122 C 455,130 472,160 516,160" fill="none" stroke={isActive('vulnerability') ? '#6360D8' : '#CFBCBC'} strokeWidth={isActive('vulnerability') ? 2 : 1.5}/>
-                          <path d="M 386,126 C 462,162 476,210 516,222" fill="none" stroke={isActive('finding')       ? '#6360D8' : '#C4B8DC'} strokeWidth={isActive('finding')       ? 2 : 1.5}/>
-
-                          {/* Internet node */}
-                          <circle cx="72" cy="118" r="28" fill="#1A5244"/>
-                          <g transform="translate(60,106)" stroke="#fff" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="9"/>
-                            <line x1="3" y1="12" x2="21" y2="12"/>
-                            <path d="M12 3a15 15 0 0 1 3.5 9A15 15 0 0 1 12 21 15 15 0 0 1 8.5 12 15 15 0 0 1 12 3z"/>
-                          </g>
-                          <text x="72" y="156" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit" fontWeight="500">Internet</text>
-
-                          {/* Application/Endpoint node */}
-                          <circle cx="196" cy="118" r="28" fill="#5D4A24"/>
-                          <foreignObject x="185" y="107" width="22" height="22" style={{ pointerEvents: 'none' }}>
-                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
-                              <EntityGlyph kind="application" size={22}/>
-                            </div>
-                          </foreignObject>
-                          <text x="196" y="156" textAnchor="middle" fontSize="10" fill={PAI.fg1} fontFamily="inherit" fontWeight="600">Application</text>
-                          <text x="196" y="167" textAnchor="middle" fontSize="9" fill={PAI.fg3} fontFamily="inherit">Endpoint</text>
-
-                          {/* Server (central entity) node */}
-                          <circle cx="352" cy="118" r="34" fill={ent.icon || '#7C3050'}/>
-                          <foreignObject x="340" y="106" width="24" height="24" style={{ pointerEvents: 'none' }}>
-                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }}>
-                              <EntityGlyph kind={meta.glyph || 'host'} size={24}/>
-                            </div>
-                          </foreignObject>
-                          <text x="352" y="163" textAnchor="middle" fontSize="10" fill={PAI.fg1} fontFamily="inherit" fontWeight="600">Server</text>
-                          <text x="352" y="174" textAnchor="middle" fontSize="8.5" fill={PAI.fg3} fontFamily="inherit">
-                            {panelRow.label.length > 22 ? panelRow.label.slice(0, 21) + '…' : panelRow.label}
-                          </text>
-
-                          {/* Person node */}
-                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('person')}>
-                            {isActive('person') && <circle cx="544" cy="38" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
-                            <circle cx="544" cy="38" r="26" fill="#2A6070" stroke={isActive('person') ? '#6360D8' : 'none'} strokeWidth="2"/>
-                            <circle cx="564" cy="18" r="10" fill="#6360D8"/>
-                            <text x="564" y="22" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">1</text>
-                            <foreignObject x="533" y="27" width="22" height="22" style={{ pointerEvents: 'none' }}>
-                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
-                                <EntityGlyph kind="person" size={22}/>
-                              </div>
-                            </foreignObject>
-                            <text x="544" y="74" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Person</text>
-                          </g>
-
-                          {/* Account node */}
-                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('account')}>
-                            {isActive('account') && <circle cx="544" cy="98" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
-                            <circle cx="544" cy="98" r="26" fill="#2A6070" stroke={isActive('account') ? '#6360D8' : 'none'} strokeWidth="2"/>
-                            <circle cx="564" cy="78" r="10" fill="#6360D8"/>
-                            <text x="564" y="82" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">2</text>
-                            <foreignObject x="533" y="87" width="22" height="22" style={{ pointerEvents: 'none' }}>
-                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
-                                <EntityGlyph kind="account" size={22}/>
-                              </div>
-                            </foreignObject>
-                            <text x="544" y="134" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Account</text>
-                          </g>
-
-                          {/* Vulnerability node */}
-                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('vulnerability')}>
-                            {isActive('vulnerability') && <circle cx="544" cy="160" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
-                            <circle cx="544" cy="160" r="26" fill="#822A2A" stroke={isActive('vulnerability') ? '#6360D8' : 'none'} strokeWidth="2"/>
-                            <circle cx="564" cy="140" r="10" fill="#6360D8"/>
-                            <text x="564" y="144" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">8</text>
-                            <foreignObject x="533" y="149" width="22" height="22" style={{ pointerEvents: 'none' }}>
-                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
-                                <EntityGlyph kind="vulnerability" size={22}/>
-                              </div>
-                            </foreignObject>
-                            <text x="544" y="196" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Vulnerability</text>
-                          </g>
-
-                          {/* Findings node */}
-                          <g style={{ cursor: 'pointer' }} onClick={() => toggleNode('finding')}>
-                            {isActive('finding') && <circle cx="544" cy="222" r="32" fill="none" stroke="#6360D8" strokeWidth="1.5" opacity="0.4"/>}
-                            <circle cx="544" cy="222" r="26" fill="#46287E" stroke={isActive('finding') ? '#6360D8' : 'none'} strokeWidth="2"/>
-                            <circle cx="564" cy="202" r="10" fill="#6360D8"/>
-                            <text x="564" y="206" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">43</text>
-                            <foreignObject x="533" y="211" width="22" height="22" style={{ pointerEvents: 'none' }}>
-                              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22, filter: 'brightness(0) invert(1)' }}>
-                                <EntityGlyph kind="finding" size={22}/>
-                              </div>
-                            </foreignObject>
-                            <text x="544" y="258" textAnchor="middle" fontSize="10" fill={PAI.fg2} fontFamily="inherit">Findings</text>
-                          </g>
-                        </svg>
-
-                        {/* Zoom controls */}
-                        <div className="kg-panel__zoom-ctl">
-                          <button className="kg-panel__zoom-ctl-btn" title="Zoom in">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-                            </svg>
-                          </button>
-                          <button className="kg-panel__zoom-ctl-btn" title="Zoom out">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
-                            </svg>
-                          </button>
-                          <button className="kg-panel__zoom-ctl-btn" title="Fit to view">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="3"/><path d="M3 12h1M20 12h1M12 3v1M12 20v1"/><path d="M5.6 5.6l.7.7M17.7 17.7l.7.7M5.6 18.4l.7-.7M17.7 6.3l.7-.7"/>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                )}
-              </div>
-
-              {/* ── Tabs ──────────────────────────────────────────── */}
-              <div className="kg-panel__tabs">
-                {['Summary', 'Timeline', 'Evolution', 'Derivation', 'Contributing Sources', 'Entity Resolution'].map(t => {
-                  const key = t.toLowerCase().replace(/ /g, '-');
-                  return (
-                    <button key={t} onClick={() => setPanelTab(key)}
-                      className={`kg-panel__tab${panelTab === key ? ' kg-panel__tab--active' : ''}`}>
-                      {t}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* ── Body ──────────────────────────────────────────── */}
-              <div className="kg-panel__body">
-                {panelTab === 'summary' && (
-                  <>
-                    {/* General */}
-                    <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon kg-panel__section-header--upper">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-                        </svg>
-                        General
-                      </div>
-                      <div className="kg-panel__info-grid kg-panel__info-grid--3col">
-                        {[
-                          ['Display Label',       panelRow.label,    false],
-                          ['OS',                  meta.os || 'CentOS 8', false],
-                          ['Data Source',         '3 sources',       false],
-                          ['Hardware Serial Name','SNP1J0HG47J2',    false],
-                          ['Business Unit',       'Customer Service',false],
-                          ['Role',                'Web Server, Database', false],
-                          ['FQDN',                panelRow.type === 'host' ? panelRow.label.replace('.io', '-local.acme.com') : '—', true],
-                          ['A&D Device ID',       '91b4911a-5716-4287-ba98-725fc0fea099', false],
-                          ['Type',                meta.type || panelRow.type, false],
-                          ['MAC Address',         '78:4B:E6:65:31:71', false],
-                          ['Internet Facing',     'True',            false],
-                          ['Environment',         'Production',      false],
-                        ].map(([k, v, isLink]) => (
-                          <div key={k} className="kg-panel__info-cell">
-                            <div className="kg-panel__info-label">{k}</div>
-                            <div className="kg-panel__info-value">
-                              {isLink && v !== '—'
-                                ? <span style={{ color: 'var(--pai-indigo)', cursor: 'pointer' }}>{v}</span>
-                                : v}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Security and Compliance */}
-                    <div className="kg-panel__section">
-                      <div className="kg-panel__section-header kg-panel__section-header--icon kg-panel__section-header--upper">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                        Security and Compliance
-                      </div>
-                      <div className="kg-panel__info-grid kg-panel__info-grid--3col">
-                        {[
-                          ['Defender Risk Score',    'High'],
-                          ['Defender Health Status', 'TRUE'],
-                          ['EDR Onboarding Status',  'TRUE'],
-                          ['VM Onboarding Status',   'TRUE'],
-                          ['FW Enabled',             'TRUE'],
-                        ].map(([k, v]) => (
-                          <div key={k} className="kg-panel__info-cell">
-                            <div className="kg-panel__info-label">{k}</div>
-                            <div className={`kg-panel__info-value${v === 'TRUE' ? ' kg-panel__badge--true' : v === 'High' ? ' kg-panel__badge--risk' : ''}`}>{v}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {['timeline', 'evolution', 'derivation', 'contributing-sources', 'entity-resolution'].includes(panelTab) && (
-                  <div className="kg-panel__placeholder">
-                    {panelTab.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.
-                  </div>
-                )}
-              </div>
-              </div>{/* kg-panel__main */}
-            </>
-          );
+          if (selected) {
+            const selDef = ENTITY_TYPES[selected];
+            const selectedLabel = selDef ? selDef.label : selected;
+            const selectedInView = visibleSetByView.has(selected);
+            // When a node is selected but no edge is selected, show a single
+            // node chip. When an edge is selected, show the relationship chips.
+            if (!selectedEdgeKey) {
+              return (
+                <FilterChipBar
+                  chips={relationshipChips}
+                  deselected={deselectedChips}
+                  selectedLabel={selectedLabel}
+                  selectedCount={selDef ? selDef.count : 0}
+                  nodeOnly={true}
+                  nodeDisabled={!selectedInView}
+                  onClearNode={(highlightOnly && selectedInView) ? null : () => { setSelected(null); setSelectedEdgeKey(null); setDeselectedChips(new Set()); }}
+                  onToggle={(k) => {
+                    setDeselectedChips(prev => {
+                      const n = new Set(prev);
+                      if (n.has(k)) n.delete(k); else n.add(k);
+                      return n;
+                    });
+                  }}
+                />
+              );
+            }
+            return (
+              <FilterChipBar
+                chips={relationshipChips}
+                deselected={deselectedChips}
+                selectedLabel={selectedLabel}
+                selectedCount={selDef ? selDef.count : 0}
+                onToggle={(k) => {
+                  setDeselectedChips(prev => {
+                    const n = new Set(prev);
+                    if (n.has(k)) n.delete(k); else n.add(k);
+                    return n;
+                  });
+                }}
+              />
+            );
+          }
+          return <EmptyChipBar message="Click nodes to filter the details table." />;
         })()}
+
       </div>
+
+
+      <DetailsTable rows={filteredRows} totalCount={totalCount}
+                    search={tableSearch} onSearch={setTableSearch}/>
     </div>
   );
 }
 
-// ── SegmentedTabs ─────────────────────────────────────────────────────
-function SegmentedTabs({ value, options, onChange, fullWidth, compact }) {
+// ── Segmented tabs (large) ───────────────────────────────────────────
+// Visual style adapted from the design system's dual-toggle: pill track
+// with a sliding indigo thumb and label color that flips on the active
+// segment.
+function SegmentedTabs({ value, options, onChange }) {
   const containerRef = useRef(null);
   const btnRefs = useRef([]);
+  const labelRefs = useRef([]);
   const [thumb, setThumb] = useState({ left: 3, width: 0 });
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const idx = options.indexOf(value);
     const btn = btnRefs.current[idx];
-    if (btn) setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
+    if (btn) {
+      // Thumb fills the active tab exactly — container has no padding,
+      // so the pill spans the full button bounds.
+      setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
   }, [value, options.join('|')]);
 
   return (
-    <div ref={containerRef} className={`seg-tabs${fullWidth ? ' seg-tabs--full' : ''}`}>
-      {/* Animated thumb — position is JS-measured, must stay inline */}
-      <div className="seg-tabs__thumb" style={{ left: thumb.left, width: thumb.width, opacity: thumb.width ? 1 : 0 }} />
+    <div ref={containerRef} style={{
+      position: 'relative',
+      display: 'inline-flex',
+      alignItems: 'center',
+      height: 32,
+      boxSizing: 'border-box',
+      padding: 0,
+      background: PAI.bgRaised,
+      borderRadius: 999,
+      gap: 0,
+    }}>
+      {/* sliding white thumb — sized to match active segment */}
+      <div style={{
+        position: 'absolute',
+        top: 0, bottom: 0,
+        left: thumb.left,
+        width: thumb.width,
+        background: 'var(--bg-surface, #fff)',
+        border: '1px solid var(--border, #E6E6E6)',
+        borderRadius: 999,
+        transition: 'left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1)',
+        boxShadow: '0 1px 2px rgba(16,16,16,0.04)',
+        boxSizing: 'border-box',
+        opacity: thumb.width ? 1 : 0,
+      }} />
       {options.map((o, i) => {
         const active = o === value;
-        const showDivider = i > 0 && !active && options[i - 1] !== value;
+        // Dividers between segments are hidden — the sliding thumb already
+        // indicates active state clearly enough on its own.
+        const showDivider = false;
         return (
           <button
             key={o}
             ref={el => btnRefs.current[i] = el}
             onClick={() => onChange && onChange(o)}
-            className={[
-              'seg-tabs__btn',
-              compact ? 'seg-tabs__btn--compact' : '',
-              fullWidth ? 'seg-tabs__btn--full' : '',
-              active ? 'seg-tabs__btn--active' : '',
-            ].filter(Boolean).join(' ')}
+            style={{
+              position: 'relative', zIndex: 1,
+              padding: '0 16px',
+              height: 32,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', border: 'none', cursor: onChange ? 'pointer' : 'default',
+              fontFamily: 'inherit', fontSize: 13,
+              color: active ? PAI.fg1 : PAI.fg3,
+              fontWeight: active ? 600 : 500,
+              transition: 'color 150ms',
+              whiteSpace: 'nowrap',
+              lineHeight: 1,
+            }}
           >
-            {showDivider && <span className="seg-tabs__divider" />}
-            {o}
+            {showDivider && (
+              <span style={{
+                position: 'absolute',
+                left: 0, top: 4, bottom: 4,
+                width: 1, background: '#D9D9DC',
+                pointerEvents: 'none',
+              }} />
+            )}
+            <span ref={el => labelRefs.current[i] = el}>{o}</span>
           </button>
         );
       })}
@@ -1505,73 +1856,240 @@ function SegmentedTabs({ value, options, onChange, fullWidth, compact }) {
   );
 }
 
+// ── View tabs (None / Device / Cloud / Identity) — segmented-tab style ──
 function ViewTabs({ value, onChange, options }) {
   return <SegmentedTabs value={value} options={options} onChange={onChange} />;
 }
 
+// ── Empty state overlay (centered on canvas) ────────────────────────
 function EmptyOverlay({ icon, title, subtitle }) {
   return (
-    <div className="kg-empty-overlay">
-      <div className="kg-empty-overlay__box">
-        <div className="kg-empty-overlay__icon">{icon}</div>
-        <div className="kg-empty-overlay__title">{title}</div>
-        <div className="kg-empty-overlay__subtitle">{subtitle}</div>
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      pointerEvents: 'none',
+    }}>
+      <div style={{
+        background: 'var(--bg-surface, rgba(255,255,255,0.92))',
+        border: '1px solid var(--border, #E6E6E6)',
+        borderRadius: 10,
+        padding: '20px 28px',
+        boxShadow: '0 4px 12px rgba(16,16,16,0.06)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 8,
+        maxWidth: 340, textAlign: 'center',
+        color: PAI.fg2,
+      }}>
+        <div style={{ color: PAI.fg3 }}>{icon}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: PAI.fg1 }}>{title}</div>
+        <div style={{ fontSize: 12, color: PAI.fg3 }}>{subtitle}</div>
       </div>
     </div>
   );
 }
 
 function RailBtn({ icon, onClick }) {
+  const [hover, setHover] = useState(false);
   return (
-    <button onClick={onClick} className="kg-rail-btn">{icon}</button>
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        width: 32, height: 32, padding: 0,
+        background: hover ? '#E8E8E8' : '#F5F5F5',
+        border: 'none', borderRadius: 6,
+        cursor: 'pointer', color: PAI.fg2,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >{icon}</button>
   );
 }
 
+// ── Zoom level indicator (bottom-left) ───────────────────────────────
+// view.w == 940 corresponds to 100%. Smaller w  = zoomed in.
 function ZoomIndicator({ view }) {
   const pct = Math.round((940 / view.w) * 100);
   return (
-    <div className="kg-zoom-indicator">
+    <div style={{
+      position: 'absolute', left: 16, bottom: 12,
+      height: 26, padding: '0 10px',
+      background: 'var(--bg-surface, #fff)',
+      border: '1px solid var(--border, #E6E6E6)',
+      borderRadius: 6,
+      boxShadow: '0 1px 2px rgba(16,16,16,0.04)',
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      fontSize: 12, fontWeight: 500, color: PAI.fg2,
+      fontFamily: 'inherit',
+      pointerEvents: 'none',
+      userSelect: 'none',
+    }}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m21 21-4.3-4.3"/>
       </svg>
       <span>{pct}%</span>
     </div>
   );
 }
 
-function FilterChipBar({ chips, deselected, selectedLabel, onToggle }) {
+// ── Filter chip bar — relationships of the selected node ────────────
+const CHIPBAR_HEIGHT = 46;
+const CHIPBAR_BASE_STYLE = {
+  height: CHIPBAR_HEIGHT,
+  minHeight: CHIPBAR_HEIGHT,
+  maxHeight: CHIPBAR_HEIGHT,
+  padding: '0 16px',
+  borderTop: '1px solid var(--border-subtle, #F0F0F0)',
+  display: 'flex', alignItems: 'center', gap: 10,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
+};
+// ── Empty chip bar — default state messaging ─────────────────────────
+function EmptyChipBar({ message }) {
+  return (
+    <div style={CHIPBAR_BASE_STYLE}>
+      <span style={{ fontSize: 11, color: PAI.fg3 }}>{message}</span>
+    </div>
+  );
+}
+
+// ── Multi-select chip bar — chips for each multi-selected entity ────
+function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
+  return (
+    <div style={CHIPBAR_BASE_STYLE}>
+      <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        {ids.map(id => {
+          const def = ENTITY_TYPES[id];
+          if (!def) return null;
+          const disabled = visibleSet && !visibleSet.has(id);
+          return (
+            <span
+              key={id}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 24, padding: '0 6px 0 12px',
+                background: disabled ? 'var(--bg-raised, #F2F2F2)' : 'var(--pai-indigo-tint)',
+                border: `1px solid ${disabled ? 'var(--border, #DEDEDE)' : 'var(--pai-indigo-light)'}`,
+                borderRadius: 44,
+                color: disabled ? PAI.fg3 : 'var(--pai-indigo-hover)',
+                fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+                flexShrink: 0, whiteSpace: 'nowrap',
+                opacity: disabled ? 0.7 : 1,
+              }}
+            >
+              <span>{def.label} <span>({fmtN(def.count)})</span></span>
+              <button
+                onClick={() => onRemove(id)}
+                aria-label={`Remove ${def.label}`}
+                style={{
+                  width: 16, height: 16, padding: 0,
+                  background: 'transparent', border: 'none',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: disabled ? PAI.fg3 : 'var(--pai-indigo-muted)', borderRadius: 999,
+                }}
+              >
+                <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      <button
+        onClick={onClear}
+        style={{
+          background: 'transparent', border: 'none', padding: 0,
+          color: PAI.fg2, fontSize: 11, fontWeight: 500, cursor: 'pointer',
+          fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2,
+          flexShrink: 0,
+        }}
+      >Clear</button>
+    </div>
+  );
+}
+
+function FilterChipBar({ chips, deselected, selectedLabel, selectedCount, onToggle, nodeOnly, nodeDisabled, onClearNode }) {
+  if (nodeOnly) {
+    return (
+      <div style={CHIPBAR_BASE_STYLE}>
+        <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          height: 24, padding: onClearNode ? '0 6px 0 12px' : '0 12px',
+          background: nodeDisabled ? 'var(--bg-raised, #F2F2F2)' : 'var(--pai-indigo-tint)',
+          border: `1px solid ${nodeDisabled ? 'var(--border, #DEDEDE)' : 'var(--pai-indigo-light)'}`,
+          borderRadius: 44,
+          color: nodeDisabled ? PAI.fg3 : 'var(--pai-indigo-hover)',
+          fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+          opacity: nodeDisabled ? 0.7 : 1,
+        }}>
+          <span>{selectedLabel} <span>({fmtN(selectedCount)})</span></span>
+          {onClearNode && (
+            <button
+              onClick={onClearNode}
+              aria-label={`Remove ${selectedLabel}`}
+              style={{
+                width: 16, height: 16, padding: 0,
+                background: 'transparent', border: 'none',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: nodeDisabled ? PAI.fg3 : 'var(--pai-indigo-muted)', borderRadius: 999,
+              }}
+            >
+              <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (chips.length === 0) {
     return (
-      <div className="kg-chip-bar__empty">
-        <span className="kg-chip-bar__empty-msg">
+      <div style={CHIPBAR_BASE_STYLE}>
+        <span style={{ fontSize: 11, color: PAI.fg3, flex: 1 }}>
           <strong style={{ fontWeight: 600, color: PAI.fg2 }}>{selectedLabel}</strong> has no relationships in this view.
         </span>
       </div>
     );
   }
   return (
-    <div className="kg-chip-bar">
-      <span className="kg-chip-bar__label">Details Table filtered by:</span>
-      <div className="kg-chip-bar__chips">
+    <div style={CHIPBAR_BASE_STYLE}>
+      <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
         {chips.map(c => {
-          const off = deselected.has(c.key);
+          if (deselected.has(c.key)) return null;
           return (
-            <button
+            <span
               key={c.key}
-              onClick={() => onToggle(c.key)}
-              title={off ? 'Click to include in filter' : 'Click to exclude from filter'}
-              className={`kg-rel-chip${off ? ' kg-rel-chip--off' : ''}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 24, padding: '0 6px 0 12px',
+                background: 'var(--pai-indigo-tint)',
+                border: '1px solid var(--pai-indigo-light)',
+                borderRadius: 44,
+                color: 'var(--pai-indigo-hover)',
+                fontSize: 11, fontWeight: 500, fontFamily: 'inherit',
+                flexShrink: 0,
+              }}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
-                <span className="kg-rel-chip__src">{c.source}</span>
-                <span className={`kg-rel-chip__rel${off ? ' kg-rel-chip__rel--off' : ' kg-rel-chip__rel--on'}`}>{c.relation}</span>
-                <span className="kg-rel-chip__tgt">{c.target}</span>
-                {ENTITY_TYPES[c.otherId]?.count !== undefined && (
-                  <span className="kg-rel-chip__tgt">({fmtN(ENTITY_TYPES[c.otherId].count)})</span>
-                )}
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
+                <span style={{ fontWeight: 600 }}>{c.source}</span>
+                <span style={{ fontWeight: 400, color: 'var(--pai-indigo-muted)' }}>{c.relation}</span>
+                <span style={{ fontWeight: 600 }}>{c.target}</span>
               </span>
-            </button>
+              <button
+                onClick={() => onToggle(c.key)}
+                aria-label="Remove filter"
+                style={{
+                  width: 16, height: 16, padding: 0,
+                  background: 'transparent', border: 'none',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--pai-indigo-muted)', borderRadius: 999,
+                }}
+              >
+                <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
+              </button>
+            </span>
           );
         })}
       </div>
@@ -1581,41 +2099,79 @@ function FilterChipBar({ chips, deselected, selectedLabel, onToggle }) {
 
 export { PageKG, SegmentedTabs };
 
-// ── HoverTooltip ──────────────────────────────────────────────────────
-function HoverTooltip({ nodeId, edgeKey, mousePos, edges, reversed }) {
-  let content = null;
-
+// ── HoverTooltip ─────────────────────────────────────────────────────
+function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
+  // Find context
+  let kind = null, content = null;
   if (nodeId) {
     const def = ENTITY_TYPES[nodeId];
+    kind = 'node';
     content = (
       <div>
-        <div className="kg-tooltip__header" style={{ background: def.tint + '40' }}>
-          <div style={{ display: 'flex' }}><EntityGlyph kind={def.glyph} size={18} /></div>
-          <div className="kg-tooltip__header-label" style={{ color: def.icon || def.stroke }}>{def.label}</div>
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: def.tint + '40',
+        }}>
+          <div style={{ display: 'flex' }}>
+            <EntityGlyph kind={def.glyph} size={18} />
+          </div>
+          <div style={{ color: def.icon || def.stroke, fontSize: 12, fontWeight: 600 }}>{def.label}</div>
         </div>
-        <div className="kg-tooltip__body">
+        <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
           <Row k="Entity Count" v={fmtN(def.count)} />
           <Row k="Fragments" v={fmtN(def.fragments || def.count)} />
-          <Row k="Resolved" v={`${(def.count / (def.fragments || def.count) * 100).toFixed(2)}%`} />
+          <Row k="Resolved (%)" v={(() => {
+            const frags = def.fragments || def.count;
+            if (!frags) return '—';
+            const pct = (def.count / frags) * 100;
+            return `${Number.isInteger(pct) ? pct : pct.toFixed(2)}%`;
+          })()} />
         </div>
       </div>
     );
   } else if (edgeKey) {
-    const [a, b] = edgeKey.split('|');
-    const edgeDef = (edges || []).find(([x,y]) => (x===a&&y===b) || (x===b&&y===a));
+    const [a, b] = splitEdgeKey(edgeKey);
+    // Self-loops carry a `#N` disambiguator — pick the Nth matching edge.
+    const isSelf = a === b;
+    const selfIdx = (() => {
+      const m = /#(\d+)$/.exec(edgeKey || '');
+      return m ? parseInt(m[1], 10) : 0;
+    })();
+    let edgeDef;
+    if (isSelf) {
+      let n = 0;
+      edgeDef = (edges || []).find(([x,y]) => {
+        if (x === a && y === b) { if (n === selfIdx) return true; n++; }
+        return false;
+      });
+    } else {
+      edgeDef = (edges || []).find(([x,y]) => (x===a&&y===b) || (x===b&&y===a));
+    }
     if (!edgeDef) return null;
-    const [rawSrc, rawTgt, rel] = edgeDef;
-    const src = reversed ? rawTgt : rawSrc;
-    const tgt = reversed ? rawSrc : rawTgt;
+    const [src, tgt, rel] = edgeDef;
     const srcDef = ENTITY_TYPES[src], tgtDef = ENTITY_TYPES[tgt];
+    // Per-edge alias overrides — position 4 = source alias, position 5 = target alias.
+    // Only swap aliases for *non-self* edges that are reversed relative to the hovered key.
+    const reversed = !isSelf && (edgeDef[0] === b && edgeDef[1] === a);
+    const srcAlias = reversed ? edgeDef[5] : edgeDef[4];
+    const tgtAlias = reversed ? edgeDef[4] : edgeDef[5];
+    const srcLabel = srcAlias || srcDef.label;
+    const tgtLabel = tgtAlias || tgtDef.label;
+    kind = 'edge';
     content = (
       <div>
-        <div className="kg-tooltip__edge-header">
-          {srcDef.label} <span className="kg-tooltip__edge-rel">{rel || 'connected to'}</span> {tgtDef.label}
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+          fontSize: 12, fontWeight: 600, color: PAI.fg1,
+        }}>
+          {srcLabel} <span style={{ color: PAI.fg3, fontWeight: 500 }}>{rel || 'connected to'}</span> {tgtLabel}
         </div>
-        <div className="kg-tooltip__body kg-tooltip__body--wide">
-          <Row k="Source Entity" v={srcDef.label} />
-          <Row k="Target Entity" v={tgtDef.label} />
+        <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+          <Row k="Source Entity" v={srcLabel} />
+          <Row k="Target Entity" v={tgtLabel} />
           <Row k="Relationship Count" v={'2'} />
         </div>
       </div>
@@ -1623,14 +2179,20 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges, reversed }) {
   }
   if (!content) return null;
 
-  const TOOLTIP_W = 240;
-  const containerW = mousePos.containerW || 900;
-  const flipLeft = mousePos.x + 16 + TOOLTIP_W > containerW;
-  const left = flipLeft ? mousePos.x - TOOLTIP_W - 8 : mousePos.x + 16;
+  // Position with offset from mouse, clamped to container
+  const left = Math.min(mousePos.x + 16, 760);
   const top = Math.min(mousePos.y + 16, 320);
 
   return (
-    <div className="kg-tooltip" style={{ left, top }}>
+    <div style={{
+      position: 'absolute', left, top, zIndex: 30,
+      background: 'var(--bg-surface, #fff)',
+      border: '1px solid var(--border, #E6E6E6)',
+      borderRadius: 8,
+      boxShadow: '0 8px 24px rgba(16,16,16,0.08), 0 2px 6px rgba(16,16,16,0.04)',
+      pointerEvents: 'none',
+      fontFamily: 'Inter, system-ui, sans-serif',
+    }}>
       {content}
     </div>
   );
@@ -1638,9 +2200,83 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges, reversed }) {
 
 function Row({ k, v }) {
   return (
-    <div className="kg-tooltip-row">
-      <span className="kg-tooltip-row__key">{k}</span>
-      <span className="kg-tooltip-row__val">{v}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <span style={{ fontSize: 11, color: PAI.fg3 }}>{k}</span>
+      <span style={{ fontSize: 12, color: PAI.fg1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+    </div>
+  );
+}
+
+// ── SelectionPanel — pinned right-side panel showing selected entities ───
+function SelectionPanel({ ids, onRemove }) {
+  if (!ids || ids.length === 0) return null;
+  return (
+    <div style={{
+      position: 'absolute', right: 16, top: 16, zIndex: 6,
+      width: 264,
+      maxHeight: 'calc(100% - 32px)',
+      display: 'flex', flexDirection: 'column',
+      background: 'var(--bg-surface, #fff)',
+      border: '1px solid var(--border, #E6E6E6)',
+      borderRadius: 10,
+      boxShadow: '0 6px 20px rgba(16,16,16,0.06), 0 1px 2px rgba(16,16,16,0.04)',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '10px 12px',
+        borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+        fontSize: 11, color: PAI.fg3,
+        flexShrink: 0,
+      }}>
+        Details table filtered by:
+      </div>
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+        overflowY: 'auto', minHeight: 0,
+      }}>
+        {ids.map((id, idx) => {
+          const def = ENTITY_TYPES[id];
+          if (!def) return null;
+          const accent = def.icon || def.stroke;
+          return (
+            <div key={id} style={{
+              borderTop: idx === 0 ? 'none' : '1px solid #F0F0F0',
+              flexShrink: 0,
+            }}>
+              <div style={{
+                padding: '8px 10px 8px 12px',
+                borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: def.tint + '40',
+              }}>
+                <div style={{ display: 'flex' }}>
+                  <EntityGlyph kind={def.glyph} size={18} />
+                </div>
+                <div style={{ color: accent, fontSize: 12, fontWeight: 600, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{def.label}</div>
+                <button
+                  onClick={() => onRemove(id)}
+                  aria-label="Deselect"
+                  style={{
+                    width: 20, height: 20, borderRadius: 4,
+                    border: 'none', background: 'transparent', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    color: PAI.fg3, padding: 0, flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F2F2F2'; e.currentTarget.style.color = PAI.fg1; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = PAI.fg3; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <Row k="Entity Count" v={fmtN(def.count)} />
+                <Row k="Fragments" v={fmtN(def.fragments || def.count)} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
