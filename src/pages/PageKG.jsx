@@ -5,28 +5,38 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PAI, Icons, Ic } from '../ui.jsx';
 
+function useDark() {
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('theme-dark')));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Entity type catalog — colors + icon glyph (drawn inline, no SVG file)
 // Colors are muted/desaturated chip-tints matching the screenshot.
 // ─────────────────────────────────────────────────────────────────────
 const ENTITY_TYPES = {
-  account:        { label: 'Account',           tint: '#F1ECF9', stroke: '#D3C3EC', icon: '#9269CF', count: 15301,    fragments: 15349,    group: 'identity', glyph: 'account' },
-  identity:       { label: 'Identity',          tint: '#F4E6F9', stroke: '#DCB3ED', icon: '#A842D2', count: 71442,    fragments: 146922,   group: 'identity', glyph: 'identity' },
-  group:          { label: 'Group',             tint: '#E3F6F7', stroke: '#A9E5E7', icon: '#27BDC2', count: 2,        fragments: 2,        group: 'identity', glyph: 'group' },
-  person:         { label: 'Person',            tint: '#E4EDF1', stroke: '#ABC8D3', icon: '#2E7690', count: 304,      fragments: 1016,     group: 'identity', glyph: 'person' },
-  application:    { label: 'Application',       tint: '#F4EEE6', stroke: '#DECCB1', icon: '#AD803D', count: 4376,     fragments: 42717,    group: 'cloud',    glyph: 'application' },
-  vulnerability:  { label: 'Vulnerability',     tint: '#F4E9E9', stroke: '#DFBCBC', icon: '#AE5757', count: 55230,    fragments: 311397,   group: 'host',     glyph: 'vulnerability' },
-  assessment:     { label: 'Assessment',        tint: '#F4ECE5', stroke: '#DEC4AF', icon: '#AC6C36', count: 497,      fragments: 497,      group: 'host',     glyph: 'assessment' },
-  cluster:        { label: 'Cluster',           tint: '#E5E5F5', stroke: '#AEAEE1', icon: '#3434B4', count: 231,      fragments: 231,      group: 'cloud',    glyph: 'cluster' },
-  container:      { label: 'Container',         tint: '#EBE4F2', stroke: '#C2ADD7', icon: '#66329C', count: 358,      fragments: 358,      group: 'cloud',    glyph: 'container' },
-  cloudAccount:   { label: 'Cloud Account',     tint: '#E6E7F5', stroke: '#B1B4DF', icon: '#3B43B0', count: 15,       fragments: 15,       group: 'cloud',    glyph: 'cloud' },
-  finding:        { label: 'Finding',           tint: '#E9E4F6', stroke: '#BCABE4', icon: '#582DBB', count: 15518350, fragments: 15518350, group: 'host',     glyph: 'finding', primary: true },
-  ticket:         { label: 'Ticket',            tint: '#E6F6F4', stroke: '#B1E3DE', icon: '#3DBAAD', count: 10,       fragments: 10,       group: 'host',     glyph: 'ticket' },
-  host:           { label: 'Host',              tint: '#E3E9F1', stroke: '#AABBD3', icon: '#2B5690', count: 58687,    fragments: 225709,   group: 'host',     glyph: 'host' },
-  network:        { label: 'Network',           tint: '#DEF0EA', stroke: '#99D0BF', icon: '#00895E', count: 77,       fragments: 77,       group: 'cloud',    glyph: 'network' },
-  netSvc:         { label: 'Network Services',  tint: '#F0F4E4', stroke: '#D0DCAD', icon: '#89A833', count: 253,      fragments: 253,      group: 'cloud',    glyph: 'netsvc' },
-  netIface:       { label: 'Network Interface', tint: '#F6E6F0', stroke: '#E3B1D1', icon: '#BA3D8C', count: 3303,     fragments: 3303,     group: 'cloud',    glyph: 'netiface' },
-  storage:        { label: 'Storage',           tint: '#E5F1F7', stroke: '#B0D5E7', icon: '#3A96C4', count: 5541,     fragments: 5541,     group: 'cloud',    glyph: 'storage' },
+  account:        { label: 'Account',           tint: '#F1ECF9', stroke: '#D3C3EC', tintDark: '#1E1228', strokeDark: '#3D2558', icon: '#9269CF', count: 15301,    fragments: 15349,    group: 'identity', glyph: 'account' },
+  identity:       { label: 'Identity',          tint: '#F4E6F9', stroke: '#DCB3ED', tintDark: '#22102E', strokeDark: '#4D1E68', icon: '#A842D2', count: 71442,    fragments: 146922,   group: 'identity', glyph: 'identity' },
+  group:          { label: 'Group',             tint: '#E3F6F7', stroke: '#A9E5E7', tintDark: '#0D2A2B', strokeDark: '#1A5254', icon: '#27BDC2', count: 2,        fragments: 2,        group: 'identity', glyph: 'group' },
+  person:         { label: 'Person',            tint: '#E4EDF1', stroke: '#ABC8D3', tintDark: '#0E1F28', strokeDark: '#1D3E50', icon: '#2E7690', count: 304,      fragments: 1016,     group: 'identity', glyph: 'person' },
+  application:    { label: 'Application',       tint: '#F4EEE6', stroke: '#DECCB1', tintDark: '#261B0D', strokeDark: '#4E381A', icon: '#AD803D', count: 4376,     fragments: 42717,    group: 'cloud',    glyph: 'application' },
+  vulnerability:  { label: 'Vulnerability',     tint: '#F4E9E9', stroke: '#DFBCBC', tintDark: '#261313', strokeDark: '#4E2626', icon: '#AE5757', count: 55230,    fragments: 311397,   group: 'host',     glyph: 'vulnerability' },
+  assessment:     { label: 'Assessment',        tint: '#F4ECE5', stroke: '#DEC4AF', tintDark: '#241808', strokeDark: '#4A3018', icon: '#AC6C36', count: 497,      fragments: 497,      group: 'host',     glyph: 'assessment' },
+  cluster:        { label: 'Cluster',           tint: '#E5E5F5', stroke: '#AEAEE1', tintDark: '#0D0D28', strokeDark: '#1A1A50', icon: '#3434B4', count: 231,      fragments: 231,      group: 'cloud',    glyph: 'cluster' },
+  container:      { label: 'Container',         tint: '#EBE4F2', stroke: '#C2ADD7', tintDark: '#180C24', strokeDark: '#321848', icon: '#66329C', count: 358,      fragments: 358,      group: 'cloud',    glyph: 'container' },
+  cloudAccount:   { label: 'Cloud Account',     tint: '#E6E7F5', stroke: '#B1B4DF', tintDark: '#0D1028', strokeDark: '#1A2050', icon: '#3B43B0', count: 15,       fragments: 15,       group: 'cloud',    glyph: 'cloud' },
+  finding:        { label: 'Finding',           tint: '#E9E4F6', stroke: '#BCABE4', tintDark: '#130A2A', strokeDark: '#281455', icon: '#582DBB', count: 15518350, fragments: 15518350, group: 'host',     glyph: 'finding', primary: true },
+  ticket:         { label: 'Ticket',            tint: '#E6F6F4', stroke: '#B1E3DE', tintDark: '#0D2A27', strokeDark: '#1A524E', icon: '#3DBAAD', count: 10,       fragments: 10,       group: 'host',     glyph: 'ticket' },
+  host:           { label: 'Host',              tint: '#E3E9F1', stroke: '#AABBD3', tintDark: '#0A1520', strokeDark: '#163060', icon: '#2B5690', count: 58687,    fragments: 225709,   group: 'host',     glyph: 'host' },
+  network:        { label: 'Network',           tint: '#DEF0EA', stroke: '#99D0BF', tintDark: '#0A2018', strokeDark: '#143E30', icon: '#00895E', count: 77,       fragments: 77,       group: 'cloud',    glyph: 'network' },
+  netSvc:         { label: 'Network Services',  tint: '#F0F4E4', stroke: '#D0DCAD', tintDark: '#1C230D', strokeDark: '#38461A', icon: '#89A833', count: 253,      fragments: 253,      group: 'cloud',    glyph: 'netsvc' },
+  netIface:       { label: 'Network Interface', tint: '#F6E6F0', stroke: '#E3B1D1', tintDark: '#280D1E', strokeDark: '#50183A', icon: '#BA3D8C', count: 3303,     fragments: 3303,     group: 'cloud',    glyph: 'netiface' },
+  storage:        { label: 'Storage',           tint: '#E5F1F7', stroke: '#B0D5E7', tintDark: '#0C2030', strokeDark: '#184060', icon: '#3A96C4', count: 5541,     fragments: 5541,     group: 'cloud',    glyph: 'storage' },
 };
 
 // Node positions — calibrated against a 940×420 canvas to match reference.
@@ -204,14 +214,17 @@ function fmtN(n) {
 }
 
 // ── Entity Node — circle bubble + count badge + label below ──────────
-function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered, onDragStart, dragging, floatOffset, countOverride }) {
+function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered, onDragStart, dragging, floatOffset, countOverride, isDark }) {
   const r = 22;
   const fx = floatOffset ? floatOffset.x : 0;
   const fy = floatOffset ? floatOffset.y : 0;
   const accent = def.icon || def.stroke;
-  const bubbleStroke = selected ? accent : (hovered ? accent : def.stroke);
+  const nodeTint = isDark ? (def.tintDark || def.tint) : def.tint;
+  const nodeStroke = isDark ? (def.strokeDark || def.stroke) : def.stroke;
+  const bubbleStroke = selected ? accent : (hovered ? accent : nodeStroke);
   const bubbleStrokeW = selected ? 2.5 : (hovered ? 1.8 : 1.4);
   const opacity = dimmed ? 0.6 : 1;
+  const badgeBg = isDark ? 'var(--card-bg)' : 'var(--bg-surface, #fff)';
   return (
     <g
       transform={`translate(${pos.x + fx}, ${pos.y + fy})`}
@@ -226,7 +239,7 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
       )}
       <circle
         cx="0" cy="0" r={r}
-        fill={def.tint}
+        fill={nodeTint}
         stroke={bubbleStroke}
         strokeWidth={bubbleStrokeW}
         style={{ transition: 'all 150ms cubic-bezier(.2,.8,.2,1)' }}
@@ -238,9 +251,11 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         const w = Math.max(36, txt.length * 5.5 + 12);
         return (
           <g transform={`translate(${r-2},${-r+2})`}>
-            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16" fill="var(--bg-surface, #fff)" stroke="var(--border, #E6E6E6)" strokeWidth="1" />
+            <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16"
+                  style={{ fill: badgeBg, stroke: 'var(--border)', strokeWidth: 1 }} />
             <text textAnchor="middle" dominantBaseline="central" y="0.5"
-                  style={{ fontSize: 10, fontWeight: 600, fill: 'var(--fg-2, #282828)', fontVariantNumeric: 'tabular-nums' }}>
+                  fontFamily="Inter, system-ui, sans-serif" fontWeight="600"
+                  style={{ fontSize: 10, fill: 'var(--fg-2)', fontVariantNumeric: 'tabular-nums' }}>
               {txt}
             </text>
           </g>
@@ -256,8 +271,10 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
       <text
         x="0" y={r + 14}
         textAnchor="middle"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight={selected ? 600 : 500}
         style={{
-          fontSize: 11, fontWeight: selected ? 600 : 500,
+          fontSize: 11,
           fill: selected ? accent : 'var(--fg-2, #282828)',
           letterSpacing: '0.01em',
         }}
@@ -286,7 +303,7 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
   const pb = basePb && { x: basePb.x + fb.x, y: basePb.y + fb.y };
   if (!pa || !pb) return null;
 
-  const stroke = selected ? '#6360D8' : '#D6D6D6';
+  const stroke = selected ? 'var(--pai-indigo)' : 'var(--shell-border-2)';
   const strokeW = selected ? 1.6 : 1;
   const opacity = dimmed ? 0.6 : 1;
   const isSelfLoop = a === b;
@@ -314,7 +331,7 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
             style={{ cursor: onEdgeClick ? 'pointer' : 'default' }}
       />
       <line x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke={selected ? '#6360D8' : (isHovered ? '#A2A1F7' : (isNodeHovered ? '#A2A1F7' : stroke))}
+            stroke={selected ? 'var(--pai-indigo)' : (isHovered ? 'var(--pai-indigo-muted)' : (isNodeHovered ? 'var(--pai-indigo-muted)' : stroke))}
             strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
             strokeDasharray={selected ? 'none' : '0'}
             style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
@@ -325,10 +342,10 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
           <g transform={`translate(${mx},${my})`} style={{ pointerEvents: 'none' }}>
             <title>{label}</title>
             <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3"
-                  fill={selected ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)'}
-                  stroke={selected ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'} strokeWidth="0.8" />
+                  style={{ fill: 'var(--card-bg)', stroke: 'none' }} />
             <text textAnchor="middle" dominantBaseline="central"
-                  style={{ fontSize: 9.5, fill: selected ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted, #8A8A8A)', fontWeight: selected ? 600 : 400 }}>
+                  fontFamily="Inter, system-ui, sans-serif" fontWeight={selected ? 600 : 400}
+                  style={{ fontSize: 9.5, fill: selected ? 'var(--pai-indigo)' : 'var(--shell-text-muted, #8A8A8A)' }}>
               {lbl}
             </text>
           </g>
@@ -342,6 +359,7 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
 function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighborSet, neighborEdgeSet, edgeSelectionEndpoints, hoveredId, setHoveredId, viewMode, positions, setPositions, view, setView, zoomBy, resetView, edges, search, highlightOnly, multiSelectedSet, panelOpen }) {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
+  const isDark = useDark();
   // Drag state stored in ref to avoid rerender thrash
   const drag = useRef({ id: null, dx: 0, dy: 0, moved: false, downId: null });
   const pan = useRef({ active: false, sx: 0, sy: 0, vx: 0, vy: 0, moved: false });
@@ -698,7 +716,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
               const key = `${id}|${id}#${i}`;
               const isH = hoveredEdge === key;
               const isSel = selectedEdgeKey === key;
-              const accent = isSel ? '#6360D8' : (isH ? '#A2A1F7' : '#D6D6D6');
+              const accent = isSel ? 'var(--pai-indigo)' : (isH ? 'var(--pai-indigo-muted)' : 'var(--shell-border-2)');
               const accentW = isSel ? 1.6 : (isH ? 1.6 : 1);
               out.push(
                 <g key={`pet-${id}-${i}`}
@@ -724,11 +742,11 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
                      onMouseLeave={() => setHoveredEdge(null)}
                      style={{ cursor: 'pointer' }}>
                     <rect x={rectX} y="-7" width={w} height="14" rx="3"
-                          fill={isSel ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)'}
-                          stroke={isSel ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'} strokeWidth="0.8" />
+                          style={{ fill: 'var(--card-bg)', stroke: 'none' }} />
                     <text textAnchor={textAnchor} dominantBaseline="central"
                           x={textAnchor === 'start' ? 6 : (textAnchor === 'end' ? -6 : 0)}
-                          style={{ fontSize: 9.5, fill: isSel ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted, #8A8A8A)', fontWeight: isSel ? 600 : 400, pointerEvents: 'none' }}>
+                          fontFamily="Inter, system-ui, sans-serif" fontWeight={isSel ? 600 : 400}
+                          style={{ fontSize: 9.5, fill: isSel ? 'var(--pai-indigo)' : 'var(--shell-text-muted, #8A8A8A)', pointerEvents: 'none' }}>
                       {lbl}
                     </text>
                   </g>
@@ -797,6 +815,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
             onDragStart={onNodeDown}
             dragging={dragId === id}
             countOverride={countOverride}
+            isDark={isDark}
           />
           );
         })}
@@ -1118,7 +1137,7 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
               const ent = ENTITY_TYPES[r.type];
               return (
                 <tr key={i} style={{
-                  borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+                  borderBottom: '1px solid var(--border)',
                   transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
@@ -1188,7 +1207,7 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
                   background: 'transparent', border: 'none', padding: 0,
                   fontSize: 12, fontFamily: 'inherit',
                   cursor: p > totalPages ? 'default' : 'pointer',
-                  color: i === 0 ? PAI.fg1 : (p > totalPages ? '#D6D6D6' : PAI.fg3),
+                  color: i === 0 ? PAI.fg1 : (p > totalPages ? 'var(--pai-disabled)' : PAI.fg3),
                   fontWeight: i === 0 ? 700 : 400,
                   fontVariantNumeric: 'tabular-nums',
                 }}
@@ -1198,14 +1217,14 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
               background: 'transparent', border: 'none', padding: 0,
               fontSize: 14, fontFamily: 'inherit',
               cursor: totalPages <= 1 ? 'default' : 'pointer',
-              color: totalPages <= 1 ? '#D6D6D6' : PAI.fg3,
+              color: totalPages <= 1 ? 'var(--pai-disabled)' : PAI.fg3,
               display: 'inline-flex', alignItems: 'center',
             }}>›</button>
             <button disabled={totalPages <= 1} style={{
               background: 'transparent', border: 'none', padding: 0,
               fontSize: 14, fontFamily: 'inherit',
               cursor: totalPages <= 1 ? 'default' : 'pointer',
-              color: totalPages <= 1 ? '#D6D6D6' : PAI.fg3,
+              color: totalPages <= 1 ? 'var(--pai-disabled)' : PAI.fg3,
               display: 'inline-flex', alignItems: 'center',
             }}>»</button>
           </div>
@@ -1286,6 +1305,7 @@ function PageKG() {
   // selected, all its edges start as on (active); user can deselect chips
   // to drop those relationships from the filter without losing them.
   const [deselectedChips, setDeselectedChips] = useState(() => new Set());
+  const [reversedChips, setReversedChips] = useState(() => new Set());
   // When an edge is clicked, restrict chips to ONLY that edge. Cleared when
   // a node is clicked (which shows all of its relationships).
   const [selectedEdgeKey, setSelectedEdgeKey] = useState(null);
@@ -1332,6 +1352,7 @@ function PageKG() {
     }
     if (highlightOnly) setHighlightOnly(false);
     setDeselectedChips(new Set());
+    setReversedChips(new Set());
   }, [viewMode]);
 
   const zoomBy = (factor) => {
@@ -1348,6 +1369,7 @@ function PageKG() {
   // Reset chip state whenever the selected node changes.
   useEffect(() => {
     setDeselectedChips(new Set());
+    setReversedChips(new Set());
     // Node-click path clears the edge-only filter; edge-click path sets it
     // immediately AFTER this effect (via setTimeout in onEdgeSelect).
     setSelectedEdgeKey(null);
@@ -1557,6 +1579,7 @@ function PageKG() {
                   setSelected(null);
                   setSelectedEdgeKey(null);
                   setDeselectedChips(new Set());
+                  setReversedChips(new Set());
                   setHighlightOnly(false);
                 }
                 return next;
@@ -1644,6 +1667,7 @@ function PageKG() {
                 setHighlightOnly(true);
                 setSelectedEdgeKey(null);
                 setDeselectedChips(new Set());
+                setReversedChips(new Set());
                 return;
               }
               setSelected(prev => prev === id ? null : id);
@@ -1659,6 +1683,7 @@ function PageKG() {
                   setHighlightOnly(true);
                   setSelectedEdgeKey(null);
                   setDeselectedChips(new Set());
+                  setReversedChips(new Set());
                 } else {
                   setSelected(null);
                   setSelectedEdgeKey(null);
@@ -1746,10 +1771,18 @@ function PageKG() {
               <FilterChipBar
                 chips={relationshipChips}
                 deselected={deselectedChips}
+                reversed={reversedChips}
                 selectedLabel={selectedLabel}
                 selectedCount={selDef ? selDef.count : 0}
                 onToggle={(k) => {
                   setDeselectedChips(prev => {
+                    const n = new Set(prev);
+                    if (n.has(k)) n.delete(k); else n.add(k);
+                    return n;
+                  });
+                }}
+                onReverse={(k) => {
+                  setReversedChips(prev => {
                     const n = new Set(prev);
                     if (n.has(k)) n.delete(k); else n.add(k);
                     return n;
@@ -1844,7 +1877,7 @@ function SegmentedTabs({ value, options, onChange }) {
               <span style={{
                 position: 'absolute',
                 left: 0, top: 4, bottom: 4,
-                width: 1, background: '#D9D9DC',
+                width: 1, background: 'var(--shell-border-2)',
                 pointerEvents: 'none',
               }} />
             )}
@@ -1896,7 +1929,7 @@ function RailBtn({ icon, onClick }) {
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
         width: 32, height: 32, padding: 0,
-        background: hover ? '#E8E8E8' : '#F5F5F5',
+        background: hover ? 'var(--shell-hover)' : 'var(--shell-raised)',
         border: 'none', borderRadius: 6,
         cursor: 'pointer', color: PAI.fg2,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1940,7 +1973,7 @@ const CHIPBAR_BASE_STYLE = {
   minHeight: CHIPBAR_HEIGHT,
   maxHeight: CHIPBAR_HEIGHT,
   padding: '0 16px',
-  borderTop: '1px solid var(--border-subtle, #F0F0F0)',
+  borderTop: '1px solid var(--border)',
   display: 'flex', alignItems: 'center', gap: 10,
   boxSizing: 'border-box',
   overflow: 'hidden',
@@ -2009,7 +2042,7 @@ function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
   );
 }
 
-function FilterChipBar({ chips, deselected, selectedLabel, selectedCount, onToggle, nodeOnly, nodeDisabled, onClearNode }) {
+function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel, selectedCount, onToggle, onReverse, nodeOnly, nodeDisabled, onClearNode }) {
   if (nodeOnly) {
     return (
       <div style={CHIPBAR_BASE_STYLE}>
@@ -2058,12 +2091,15 @@ function FilterChipBar({ chips, deselected, selectedLabel, selectedCount, onTogg
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
         {chips.map(c => {
           if (deselected.has(c.key)) return null;
+          const isRev = reversed.has(c.key);
+          const dispSrc = isRev ? c.target : c.source;
+          const dispTgt = isRev ? c.source : c.target;
           return (
             <span
               key={c.key}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 24, padding: '0 6px 0 12px',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                height: 24, padding: '0 6px 0 10px',
                 background: 'var(--pai-indigo-tint)',
                 border: '1px solid var(--pai-indigo-light)',
                 borderRadius: 44,
@@ -2073,10 +2109,30 @@ function FilterChipBar({ chips, deselected, selectedLabel, selectedCount, onTogg
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
-                <span style={{ fontWeight: 600 }}>{c.source}</span>
+                <span style={{ fontWeight: 600 }}>{dispSrc}</span>
                 <span style={{ fontWeight: 400, color: 'var(--pai-indigo-muted)' }}>{c.relation}</span>
-                <span style={{ fontWeight: 600 }}>{c.target}</span>
+                <span style={{ fontWeight: 600 }}>{dispTgt}</span>
               </span>
+              {onReverse && (
+                <button
+                  onClick={() => onReverse(c.key)}
+                  aria-label="Reverse relationship"
+                  title="Reverse relationship"
+                  style={{
+                    width: 16, height: 16, padding: 0,
+                    background: 'transparent', border: 'none',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: isRev ? 'var(--pai-indigo)' : 'var(--pai-indigo-muted)', borderRadius: 999,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 1l4 4-4 4"/>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                    <path d="M7 23l-4-4 4-4"/>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={() => onToggle(c.key)}
                 aria-label="Remove filter"
@@ -2101,18 +2157,20 @@ export { PageKG, SegmentedTabs };
 
 // ── HoverTooltip ─────────────────────────────────────────────────────
 function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
+  const isDark = useDark();
   // Find context
   let kind = null, content = null;
   if (nodeId) {
     const def = ENTITY_TYPES[nodeId];
     kind = 'node';
+    const headerBg = isDark ? (def.tintDark || def.tint) : def.tint + '40';
     content = (
       <div>
         <div style={{
           padding: '8px 12px',
-          borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+          borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', gap: 8,
-          background: def.tint + '40',
+          background: headerBg,
         }}>
           <div style={{ display: 'flex' }}>
             <EntityGlyph kind={def.glyph} size={18} />
@@ -2164,7 +2222,7 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
       <div>
         <div style={{
           padding: '8px 12px',
-          borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+          borderBottom: '1px solid var(--border)',
           fontSize: 12, fontWeight: 600, color: PAI.fg1,
         }}>
           {srcLabel} <span style={{ color: PAI.fg3, fontWeight: 500 }}>{rel || 'connected to'}</span> {tgtLabel}
@@ -2209,6 +2267,7 @@ function Row({ k, v }) {
 
 // ── SelectionPanel — pinned right-side panel showing selected entities ───
 function SelectionPanel({ ids, onRemove }) {
+  const isDark = useDark();
   if (!ids || ids.length === 0) return null;
   return (
     <div style={{
@@ -2225,7 +2284,7 @@ function SelectionPanel({ ids, onRemove }) {
       {/* Header */}
       <div style={{
         padding: '10px 12px',
-        borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+        borderBottom: '1px solid var(--border)',
         fontSize: 11, color: PAI.fg3,
         flexShrink: 0,
       }}>
@@ -2241,14 +2300,14 @@ function SelectionPanel({ ids, onRemove }) {
           const accent = def.icon || def.stroke;
           return (
             <div key={id} style={{
-              borderTop: idx === 0 ? 'none' : '1px solid #F0F0F0',
+              borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
               flexShrink: 0,
             }}>
               <div style={{
                 padding: '8px 10px 8px 12px',
-                borderBottom: '1px solid var(--border-subtle, #F0F0F0)',
+                borderBottom: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: def.tint + '40',
+                background: isDark ? (def.tintDark || def.tint) : def.tint + '40',
               }}>
                 <div style={{ display: 'flex' }}>
                   <EntityGlyph kind={def.glyph} size={18} />
