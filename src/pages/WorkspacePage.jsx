@@ -60,9 +60,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                 'Workspace'
               }
               breadcrumb={
-                isDashboard  ? ['Dashboard', 'Workspace', dashTitle] :
-                isConfigPage ? ['Dashboard', 'Workspace', 'Configure Screen'] :
-                ['Dashboard', 'Workspace']
+                isDashboard  ? ['Home', 'Workspace', dashTitle] :
+                isConfigPage ? ['Home', 'Workspace', 'Configure Screen'] :
+                ['Home', 'Workspace']
               }
               breadcrumbClicks={
                 isDashboard  ? [() => handleNav('kg'), () => handleNav('workspace/library')] :
