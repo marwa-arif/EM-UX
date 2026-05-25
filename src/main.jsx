@@ -1,4 +1,4 @@
-import '/colors_and_type.css'
+import './styles/colors_and_type.css'
 import './styles/global.css'
 import './styles/common.css'
 import './styles/ui.css'
