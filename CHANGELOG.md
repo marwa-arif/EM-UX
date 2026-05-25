@@ -17,6 +17,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.4.1] — 2026-05-25
+### Fixed
+- Renamed breadcrumb root label from "Dashboard" to "Home" across all pages
+
+---
+
 ## [0.4.0] — 2026-05-25
 ### Added
 - ActiveFilterPanel: full entity tree view (Host, Storage, Network, Container, Network Services, Cluster, Identity) with Has Finding sub-nodes and Finding leaf nodes

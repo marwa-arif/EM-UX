@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.4.1",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Renamed breadcrumb root label from \"Dashboard\" to \"Home\" across all pages"
+      ]
+    }
+  },
+  {
     "version": "0.4.0",
     "date": "2026-05-25",
     "changes": {
