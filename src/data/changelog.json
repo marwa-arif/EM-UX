@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.3.2",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Renamed breadcrumb root label from \"Dashboard\" to \"Home\" across all pages (App.jsx, WorkspacePage.jsx)"
+      ]
+    }
+  },
+  {
     "version": "0.3.1",
     "date": "2026-05-25",
     "changes": {

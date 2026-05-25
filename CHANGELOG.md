@@ -17,6 +17,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.3.2] — 2026-05-25
+### Fixed
+- Renamed breadcrumb root label from "Dashboard" to "Home" across all pages (App.jsx, WorkspacePage.jsx)
+
+---
+
 ## [0.3.1] — 2026-05-25
 ### Added
 - `filter-panel.css` — dedicated stylesheet for FilterPanel component
