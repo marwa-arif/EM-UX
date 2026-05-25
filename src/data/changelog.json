@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.3.0",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [
+        "LeftNav app-mode switcher: chevron dropdown on org-name-row with **Studio** and **Navigator** options",
+        "Studio mode: nav body hidden, header shows \"Studio\", main content shows Coming Soon screen",
+        "Navigator option in dropdown navigates to full-page Navigator screen",
+        "Studio dropdown shows \"EM Dashboard\" option to switch back to EM mode",
+        "`IcBuildingBlock` and `IcEMDashboard` inline SVG icons for the switcher"
+      ],
+      "Changed": [
+        "KG table row-click now correctly reopens the slide-over detail panel",
+        "Root-level orphaned files removed; folder structure standardised"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.2.0",
     "date": "2026-05-25",
     "changes": {

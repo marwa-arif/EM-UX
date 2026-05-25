@@ -16,6 +16,19 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.3.0] — 2026-05-25
+### Added
+- LeftNav app-mode switcher: chevron dropdown on org-name-row with **Studio** and **Navigator** options
+- Studio mode: nav body hidden, header shows "Studio", main content shows Coming Soon screen
+- Navigator option in dropdown navigates to full-page Navigator screen
+- Studio dropdown shows "EM Dashboard" option to switch back to EM mode
+- `IcBuildingBlock` and `IcEMDashboard` inline SVG icons for the switcher
+### Changed
+- KG table row-click now correctly reopens the slide-over detail panel
+- Root-level orphaned files removed; folder structure standardised
+
+---
+
 ## [0.2.0] — 2026-05-25
 ### Added
 - ComplianceMatrixPage with sticky x/y axes, comparison badges (Change % with trend icon, absolute score), and structured tooltip
