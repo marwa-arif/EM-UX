@@ -6,6 +6,7 @@ import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
 import LibraryPage from './LibraryPage.jsx'
 import SavedPage from './SavedPage.jsx'
 import DashboardCanvas from './DashboardCanvas.jsx'
+import DataConfigPage from './DataConfigPage.jsx'
 
 const DASHBOARD_TITLES = {
   'workspace/dashboard/discover': 'Discover Dashboard',
@@ -25,9 +26,10 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     setCurrent(id)
   }
 
-  const isDashboard = current.startsWith('workspace/dashboard')
-  const dashTitle   = DASHBOARD_TITLES[current] ?? 'New Dashboard'
-  const templateId  = current === 'workspace/dashboard/discover' ? 'discover' : null
+  const isDashboard  = current.startsWith('workspace/dashboard')
+  const isConfigPage = current === 'workspace/configure-screen'
+  const dashTitle    = DASHBOARD_TITLES[current] ?? 'New Dashboard'
+  const templateId   = current === 'workspace/dashboard/discover' ? 'discover' : null
 
   return (
     <WorkspaceProvider onNav={handleNav}>
@@ -52,14 +54,20 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
             background: 'var(--ctrl-bg)',
           }}>
             <SubHeader
-              title={isDashboard ? dashTitle : 'Workspace'}
-              breadcrumb={isDashboard
-                ? ['Dashboard', 'Workspace', dashTitle]
-                : ['Dashboard', 'Workspace']
+              title={
+                isDashboard  ? dashTitle :
+                isConfigPage ? 'Configure Screen' :
+                'Workspace'
               }
-              breadcrumbClicks={isDashboard
-                ? [() => handleNav('kg'), () => handleNav('workspace/library')]
-                : [() => handleNav('kg')]
+              breadcrumb={
+                isDashboard  ? ['Dashboard', 'Workspace', dashTitle] :
+                isConfigPage ? ['Dashboard', 'Workspace', 'Configure Screen'] :
+                ['Dashboard', 'Workspace']
+              }
+              breadcrumbClicks={
+                isDashboard  ? [() => handleNav('kg'), () => handleNav('workspace/library')] :
+                isConfigPage ? [() => handleNav('kg'), () => handleNav('workspace/library')] :
+                [() => handleNav('kg')]
               }
               actions={null}
               showMenu={false}
@@ -67,9 +75,11 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
             />
             {current === 'workspace/saved'
               ? <SavedPage />
-              : isDashboard
-                ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
-                : <LibraryPage />
+              : isConfigPage
+                ? <DataConfigPage />
+                : isDashboard
+                  ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
+                  : <LibraryPage />
             }
           </main>
         </div>

@@ -98,6 +98,11 @@ body { background: #F7F9FC; color: #101010; }
   --pai-thinking-amber:      #F5A623;   /* AI thinking dot amber */
   --pai-toast-warn-bg:       #FFF8E8;   /* copy-friction toast background */
   --pai-toast-warn-fg:       #956010;   /* copy-friction toast text */
+
+  /* Extended palette — library / workspace accents */
+  --pai-orange:              #f97316;   /* report / template badge orange */
+  --pai-teal-dark:           #286B88;   /* dashboard badge dark teal */
+  --pai-emerald:             #10b981;   /* avatar / growth emerald */
 }
 
 button { font-family: inherit; }

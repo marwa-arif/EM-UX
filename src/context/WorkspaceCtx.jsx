@@ -83,6 +83,8 @@ function WorkspaceProvider({ children, onNav }) {
   const [savedVisibility, setSavedVisibility] = React.useState('all');
   const [savedSearch, setSavedSearch] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [uploadedFile, setUploadedFile] = React.useState(null);   // File object
+  const [uploadSource, setUploadSource] = React.useState('html'); // 'html' | 'design'
 
   const addWidget = React.useCallback((w) => {
     setWidgets(prev => {
@@ -128,6 +130,8 @@ function WorkspaceProvider({ children, onNav }) {
       savedVisibility, setSavedVisibility,
       savedSearch, setSavedSearch,
       deleteTarget, openDeleteModal, closeDeleteModal,
+      uploadedFile, setUploadedFile,
+      uploadSource, setUploadSource,
     }}>
       {children}
     </WorkspaceContext.Provider>
