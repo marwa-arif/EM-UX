@@ -27,28 +27,28 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
   const model = [
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
     { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
-        { id: 'exposure/overview',  label: 'Overview' },
-        { id: 'exposure/findings',  label: 'Findings' },
+        { id: 'exposure/overview',  label: 'Overview',  icon: 'nav-overview' },
+        { id: 'exposure/findings',  label: 'Findings',  icon: 'nav-findings' },
     ]},
     { id: 'discover',   label: 'Discover',        icon: 'navbar-discover',   children: [
-        { id: 'discover/device',   label: 'Device' },
-        { id: 'discover/cloud',    label: 'Cloud' },
-        { id: 'discover/identity', label: 'Identity' },
+        { id: 'discover/device',   label: 'Device',   icon: 'nav-discover-device' },
+        { id: 'discover/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
+        { id: 'discover/identity', label: 'Identity', icon: 'nav-discover-identity' },
     ]},
     { id: 'report',     label: 'Report',          icon: 'navbar-report',     children: [
-        { id: 'report/compliance',          label: 'Compliance' },
-        { id: 'report/assessments',         label: 'Assessments' },
-        { id: 'report/compliance-matrix',   label: 'Compliance Matrix' },
-        { id: 'report/compliance-findings', label: 'Compliance Findings' },
+        { id: 'report/compliance',          label: 'Compliance',          icon: 'nav-report-compliance' },
+        { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
+        { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
+        { id: 'report/compliance-findings', label: 'Compliance Findings', icon: 'nav-findings' },
     ]},
     { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
     { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [
-        { id: 'data-quality/overview', label: 'Overview' },
-        { id: 'data-quality/in-depth', label: 'In-Depth' },
+        { id: 'data-quality/overview', label: 'Overview',  icon: 'nav-overview' },
+        { id: 'data-quality/in-depth', label: 'In-Depth',  icon: 'nav-dq-indepth' },
     ]},
     { id: 'remediation',label: 'Remediation',     icon: 'navbar-remediation', children: [
-        { id: 'remediation/queue',  label: 'Queue' },
-        { id: 'remediation/closed', label: 'Closed' },
+        { id: 'remediation/queue',  label: 'Queue',  icon: 'nav-remediation-queue' },
+        { id: 'remediation/closed', label: 'Closed', icon: 'nav-remediation-closed' },
     ]},
   ];
 
@@ -225,6 +225,22 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
                 onClick={() => onNav(c.id)}
                 className={`nav-item__child${active ? ' nav-item__child--active' : ''}`}
               >
+                {c.icon && (
+                  <span
+                    className="nav-item__child-icon"
+                    style={{
+                      maskImage: `url('/assets/icons/${c.icon}.svg')`,
+                      WebkitMaskImage: `url('/assets/icons/${c.icon}.svg')`,
+                      maskSize: 'contain',
+                      WebkitMaskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskPosition: 'center',
+                      maskMode: 'alpha',
+                    }}
+                  />
+                )}
                 {c.label}
               </button>
             );

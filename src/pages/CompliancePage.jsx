@@ -611,7 +611,7 @@ function Sparkline({ pct, seed }) {
         style={{ display: 'block', cursor: 'crosshair' }}
       >
         <path ref={fillPathRef} d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.10"/>
-        <path ref={linePathRef} d={line} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path ref={linePathRef} d={line} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
 
       {/* Dot rendered as DOM element to stay circular despite non-uniform SVG scaling */}
@@ -760,6 +760,72 @@ const IcRemediation = () => (
   </svg>
 )
 
+// ── Findings KPI rows (replaces stacked bar in both drawers) ──────
+function FindingsKpi({ closed, open, pct }) {
+  const total   = closed + open
+  const openPct = 100 - pct
+  const rows = [
+    {
+      label: 'Closed findings',
+      count: closed,
+      pct,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pai-indigo)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Open findings',
+      count: open,
+      pct: openPct,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pai-indigo)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="var(--pai-indigo)"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Total findings',
+      count: total,
+      pct: 100,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.59062 8H2.51562M11.5156 3.5H2.51562M6.06476 12.5H2.51562" stroke="var(--pai-indigo)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="9.15663" cy="9.15419" r="2.65663" stroke="var(--pai-indigo)" strokeWidth="1.4"/>
+          <path d="M11.0378 11.0356L13.5 13.4977" stroke="var(--pai-indigo)" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+      ),
+    },
+  ]
+  return (
+    <div style={{ width: '100%' }}>
+      {rows.map((row, i) => (
+        <div key={row.label} style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '8px 0',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--shell-border)' : 'none',
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 999, flexShrink: 0,
+            background: 'var(--pai-indigo-tint)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {row.icon}
+          </div>
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>{row.label}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', minWidth: 56, textAlign: 'right', flexShrink: 0 }}>
+            {row.count.toLocaleString()}
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text-muted)', minWidth: 32, textAlign: 'right', flexShrink: 0 }}>
+            {row.pct}%
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Assessment drawer ─────────────────────────────────────────────
 const TREND_METRICS = ['Compliance Score', 'Findings Trend']
 
@@ -771,7 +837,7 @@ function AssessmentDrawer({ node, onClose }) {
   const [trendMenuOpen, setTrendMenuOpen] = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip] = useState(false)
-  const [barHover, setBarHover] = useState(null) // { type: 'closed'|'open', x, y }
+
   const [findingsPage, setFindingsPage]       = useState(1)
   const [findingsPerPage, setFindingsPerPage] = useState(10)
   const [remediationRow, setRemediationRow]   = useState(null) // { i, rect }
@@ -846,7 +912,7 @@ function AssessmentDrawer({ node, onClose }) {
       <div className="comp-drawer-backdrop" onClick={handleClose} />
       {/* External close button — sits to the left of the panel */}
       <button className="comp-drawer-close-ext" onClick={handleClose}>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
           <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
         </svg>
       </button>
@@ -970,38 +1036,9 @@ function AssessmentDrawer({ node, onClose }) {
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div style={{ width: '100%', height: 1, background: 'var(--shell-border)' }} />
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Findings Breakdown</span>
-                  <div className="comp-stacked-bar" style={{ height: 8, display: 'flex', position: 'relative' }}>
-                    {[
-                      { type: 'closed', label: 'Closed', count: node.closed, pct: node.pct,         color: 'var(--pai-green)',    style: { width: `${node.pct}%`, borderRadius: '4px 0 0 4px' } },
-                      { type: 'open',   label: 'Open',   count: node.open,   pct: 100 - node.pct,   color: 'var(--pai-red-high)', style: { flex: 1,                borderRadius: '0 4px 4px 0' } },
-                    ].map(({ type, label, count, pct, color, style }) => (
-                      <div
-                        key={type}
-                        style={{ background: color, cursor: 'default', ...style }}
-                        onMouseEnter={e => setBarHover({ type, x: e.clientX, y: e.clientY })}
-                        onMouseMove={e => setBarHover(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
-                        onMouseLeave={() => setBarHover(null)}
-                      />
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-                    {[
-                      { label: 'Closed', val: node.closed.toLocaleString(), color: 'var(--pai-green)' },
-                      { label: 'Open',   val: node.open.toLocaleString(),   color: 'var(--pai-red-high)' },
-                    ].map(({ label, val, color }) => (
-                      <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ color: 'var(--shell-text-muted)' }}>{label}:</span>
-                        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{val}</span>
-                      </span>
-                    ))}
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                      <span style={{ color: 'var(--shell-text-muted)' }}>Total:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{total.toLocaleString()}</span>
-                    </span>
-                  </div>
+                  <FindingsKpi closed={node.closed} open={node.open} pct={node.pct} />
                 </div>
               </div>
 
@@ -1236,7 +1273,7 @@ function AssessmentDrawer({ node, onClose }) {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 <button className="comp-drawer-action-icon" onClick={() => setRemediationRow(null)}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
                     <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
                   </svg>
                 </button>
@@ -1272,32 +1309,6 @@ function AssessmentDrawer({ node, onClose }) {
         </>
       )}
 
-      {barHover && (() => {
-        const isOpen = barHover.type === 'open'
-        const label  = isOpen ? 'Open' : 'Closed'
-        const count  = isOpen ? node.open : node.closed
-        const pct    = (count / total) * 100
-        const color  = isOpen ? 'var(--pai-red-high)' : 'var(--pai-green)'
-        return (
-          <div style={{
-            position: 'fixed', left: barHover.x + 14, top: barHover.y - 64,
-            background: 'var(--card-bg)', border: `1px solid ${color}`,
-            borderRadius: 8, padding: '10px 14px', zIndex: 9999, pointerEvents: 'none',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 140,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{label}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-              <span style={{ fontWeight: 600, color }}>{count.toLocaleString()}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginTop: 4 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-              <span style={{ fontWeight: 600, color }}>{pct.toFixed(2)}%</span>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* Framework popover */}
       {fwPopover !== null && (
@@ -1398,7 +1409,6 @@ function FunctionDrawer({ node, level, onClose }) {
   const [trendMenuOpen, setTrendMenuOpen]       = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip]       = useState(false)
-  const [barHover, setBarHover]                 = useState(null)
   const [findingsPage, setFindingsPage]         = useState(1)
   const [findingsPerPage, setFindingsPerPage]   = useState(10)
   const [remediationRow, setRemediationRow]     = useState(null)
@@ -1470,7 +1480,7 @@ function FunctionDrawer({ node, level, onClose }) {
     <>
       <div className="comp-drawer-backdrop" onClick={handleClose} />
       <button className="comp-drawer-close-ext" onClick={handleClose}>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
           <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
         </svg>
       </button>
@@ -1521,7 +1531,14 @@ function FunctionDrawer({ node, level, onClose }) {
                       <img src={icon} width={16} height={16} alt="" style={{ objectFit: 'contain' }} />
                     </div>
                   ))}
-                  <span style={{ fontSize: 11, color: 'var(--pai-indigo)', fontWeight: 600, marginLeft: 4 }}>+3</span>
+                  <button
+                    className="comp-fw-overflow-btn"
+                    style={{ marginLeft: -6 }}
+                    onClick={e => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setFwPopover(fwPopover ? null : { rect })
+                    }}
+                  >+3</button>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1562,38 +1579,9 @@ function FunctionDrawer({ node, level, onClose }) {
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div style={{ width: '100%', height: 1, background: 'var(--shell-border)' }} />
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Findings Breakdown</span>
-                  <div className="comp-stacked-bar" style={{ height: 8, display: 'flex', position: 'relative' }}>
-                    {[
-                      { type: 'closed', label: 'Closed', count: node.closed, pct: node.pct,       color: 'var(--pai-green)',    style: { width: `${node.pct}%`, borderRadius: '4px 0 0 4px' } },
-                      { type: 'open',   label: 'Open',   count: node.open,   pct: 100 - node.pct, color: 'var(--pai-red-high)', style: { flex: 1,               borderRadius: '0 4px 4px 0' } },
-                    ].map(({ type, label, count, pct, color, style }) => (
-                      <div
-                        key={type}
-                        style={{ background: color, cursor: 'default', ...style }}
-                        onMouseEnter={e => setBarHover({ type, x: e.clientX, y: e.clientY })}
-                        onMouseMove={e => setBarHover(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
-                        onMouseLeave={() => setBarHover(null)}
-                      />
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-                    {[
-                      { label: 'Closed', val: node.closed.toLocaleString(), color: 'var(--pai-green)' },
-                      { label: 'Open',   val: node.open.toLocaleString(),   color: 'var(--pai-red-high)' },
-                    ].map(({ label, val, color }) => (
-                      <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ color: 'var(--shell-text-muted)' }}>{label}:</span>
-                        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{val}</span>
-                      </span>
-                    ))}
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                      <span style={{ color: 'var(--shell-text-muted)' }}>Total:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{total.toLocaleString()}</span>
-                    </span>
-                  </div>
+                  <FindingsKpi closed={node.closed} open={node.open} pct={node.pct} />
                 </div>
               </div>
 
@@ -1786,7 +1774,7 @@ function FunctionDrawer({ node, level, onClose }) {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 <button className="comp-drawer-action-icon" onClick={() => setRemediationRow(null)}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
                     <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
                   </svg>
                 </button>
@@ -1822,26 +1810,6 @@ function FunctionDrawer({ node, level, onClose }) {
         </>
       )}
 
-      {barHover && (() => {
-        const isOpen = barHover.type === 'open'
-        const label  = isOpen ? 'Open' : 'Closed'
-        const count  = isOpen ? node.open : node.closed
-        const pct    = (count / total) * 100
-        const color  = isOpen ? 'var(--pai-red-high)' : 'var(--pai-green)'
-        return (
-          <div style={{ position: 'fixed', left: barHover.x + 14, top: barHover.y - 64, background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '10px 14px', zIndex: 9999, pointerEvents: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 140, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{label}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-              <span style={{ fontWeight: 600, color }}>{count.toLocaleString()}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginTop: 4 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-              <span style={{ fontWeight: 600, color }}>{pct.toFixed(2)}%</span>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* Framework popover */}
       {fwPopover !== null && (
@@ -2133,22 +2101,22 @@ function applySortToNodes(nodes, sortBy) {
 // ── Download button ───────────────────────────────────────────────
 const IcFilePdf = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
     <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">PDF</text>
   </svg>
 )
 const IcFileCsv = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
     <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">CSV</text>
   </svg>
 )
 const IcFileExcel = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
     <text x="12" y="17" textAnchor="middle" fontSize="5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">XLS</text>
   </svg>
 )
@@ -2466,7 +2434,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                 <col style={{ width: 80 }} />
                 <col style={{ width: 80 }} />
                 <col style={{ width: '24%' }} />
-                <col style={{ width: 90 }} />
+                <col style={{ width: 100 }} />
               </colgroup>
               <thead>
                 <tr>

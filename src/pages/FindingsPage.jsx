@@ -154,7 +154,7 @@ const IcDoc = () => (
 );
 
 // ── Remediate Now widget ──────────────────────────────────────────
-function ActNowWidget() {
+function ActNowWidget({ onNav }) {
   return (
     <div className="card fin-actnow-card">
       <div className="fin-intel-hdr">
@@ -172,7 +172,7 @@ function ActNowWidget() {
           <div key={i} className={`fin-actnow-item fin-actnow-sev-${item.sev}`}>
             <div className="fin-actnow-row1">
               <span className="fin-actnow-action">{item.action}</span>
-              <button className="fin-remediate-btn">Remediate</button>
+              <button className="fin-remediate-btn" onClick={() => onNav?.('error')}>Remediate</button>
             </div>
             <div className="fin-actnow-row2">
               <span className="fin-actnow-scope">{item.scope}</span>
@@ -312,7 +312,7 @@ function StackedBarChart({ title, rows, xLabel }) {
 }
 
 // ── Page root ─────────────────────────────────────────────────────
-export default function FindingsPage() {
+export default function FindingsPage({ onNav }) {
   const [search, setSearch]           = useState('');
   const [page, setPage]               = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -334,7 +334,7 @@ export default function FindingsPage() {
 
       {/* ── Intelligence row: Act Now + Operational Health ── */}
       <div className="fin-intel-row">
-        <ActNowWidget />
+        <ActNowWidget onNav={onNav} />
         <ProgramStatusWidget />
       </div>
 

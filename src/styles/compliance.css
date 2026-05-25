@@ -687,6 +687,17 @@
   overflow: hidden;
 }
 
+.comp-domain-table th:last-child,
+.comp-domain-table td:last-child {
+  width: 100px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.comp-domain-table td:last-child {
+  text-align: right;
+}
+
 .comp-domain-table tr:hover td {
   background: var(--shell-hover);
 }

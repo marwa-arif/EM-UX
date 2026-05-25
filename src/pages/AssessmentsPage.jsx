@@ -214,7 +214,7 @@ export default function AssessmentsPage() {
                 <span className="asmts-th-inner">Name <IcSort dir={sortCol === 'name' ? sortDir : null} /></span>
               </th>
               <th>Findings</th>
-              <th {...sortProps('rating')}>
+              <th {...sortProps('rating')} style={{ minWidth: 120 }}>
                 <span className="asmts-th-inner">Rating <IcSort dir={sortCol === 'rating' ? sortDir : null} /></span>
               </th>
               <th {...sortProps('score')}>

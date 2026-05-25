@@ -710,7 +710,7 @@ function App() {
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
-  const [activeFilterCount, setActiveFilterCount] = useState(0);
+  const [filtersByPage, setFiltersByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
   const [complianceExpanded, setComplianceExpanded] = useState({});
@@ -804,6 +804,21 @@ function App() {
     history.pushState(null, '', url);
   };
 
+  // Per-page filter accessors
+  const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
+  const activeFilterCount = curPageFilters.count;
+  const activeFilters     = curPageFilters.chips;
+
+  const setPageFilters = (pageId, count, chips) =>
+    setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
+
+  // Explore in: navigate to destId carrying the current page's filters
+  const handleExplore = (destId) => {
+    const src = filtersByPage[current] || { count: 0, chips: [] };
+    setFiltersByPage(prev => ({ ...prev, [destId]: { count: src.count, chips: src.chips } }));
+    handleNav(destId);
+  };
+
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
       <>
@@ -825,75 +840,74 @@ function App() {
   const PAGE_META = {
     'exposure/overview': {
       title: 'Overview',
-      breadcrumb: ['Dashboard', 'Exposure', 'Overview'],
+      breadcrumb: ['Home', 'Exposure', 'Overview'],
       breadcrumbHrefs: [null, null, null],
     },
     'exposure/findings': {
       title: 'Findings',
-      breadcrumb: ['Dashboard', 'Exposure', 'Findings'],
+      breadcrumb: ['Home', 'Exposure', 'Findings'],
       breadcrumbHrefs: [null, null, null],
     },
     'discover/device': {
       title: 'Device',
-      breadcrumb: ['Dashboard', 'Discover', 'Device'],
+      breadcrumb: ['Home', 'Discover', 'Device'],
       breadcrumbHrefs: [null, null, null],
     },
     'discover/cloud': {
       title: 'Cloud',
-      breadcrumb: ['Dashboard', 'Discover', 'Cloud'],
+      breadcrumb: ['Home', 'Discover', 'Cloud'],
       breadcrumbHrefs: [null, null, null],
     },
     'discover/identity': {
       title: 'Identity',
-      breadcrumb: ['Dashboard', 'Discover', 'Identity'],
+      breadcrumb: ['Home', 'Discover', 'Identity'],
       breadcrumbHrefs: [null, null, null],
     },
     'report/compliance': {
       title: 'Compliance',
-      breadcrumb: ['Dashboard', 'Report', 'Compliance'],
+      breadcrumb: ['Home', 'Report', 'Compliance'],
       breadcrumbHrefs: [null, null, null],
     },
     'report/assessments': {
       title: 'Assessments',
-      breadcrumb: ['Dashboard', 'Report', 'Assessments'],
+      breadcrumb: ['Home', 'Report', 'Assessments'],
       breadcrumbHrefs: [null, null, null],
     },
     'report/compliance-matrix': {
       title: 'Compliance Matrix',
-      breadcrumb: ['Dashboard', 'Report', 'Compliance Matrix'],
+      breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
       breadcrumbHrefs: [null, null, null],
     },
     'report/compliance-findings': {
       title: 'Compliance Findings',
-      breadcrumb: ['Dashboard', 'Report', 'Compliance Findings'],
+      breadcrumb: ['Home', 'Report', 'Compliance Findings'],
       breadcrumbHrefs: [null, null, null],
     },
     'data-quality/overview': {
       title: 'Overview',
-      breadcrumb: ['Dashboard', 'Data Quality', 'Overview'],
+      breadcrumb: ['Home', 'Data Quality', 'Overview'],
       breadcrumbHrefs: [null, null, null],
     },
     'data-quality/in-depth': {
       title: 'In-Depth',
-      breadcrumb: ['Dashboard', 'Data Quality', 'In-Depth'],
+      breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
       breadcrumbHrefs: [null, null, null],
     },
     'remediation/queue': {
       title: 'Queue',
-      breadcrumb: ['Dashboard', 'Remediation', 'Queue'],
+      breadcrumb: ['Home', 'Remediation', 'Queue'],
       breadcrumbHrefs: [null, null, null],
     },
     'remediation/closed': {
       title: 'Closed',
-      breadcrumb: ['Dashboard', 'Remediation', 'Closed'],
+      breadcrumb: ['Home', 'Remediation', 'Closed'],
       breadcrumbHrefs: [null, null, null],
     },
     kg: {
       title: 'Knowledge Graph',
-      breadcrumb: ['Dashboard', 'Knowledge Graph'],
+      breadcrumb: ['Home', 'Knowledge Graph'],
       breadcrumbHrefs: ['/knowledge-graph', null],
       onAdd: () => {},
-      onExplore: () => {},
     },
   };
 
@@ -910,7 +924,17 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); }}
       visitedTabs={visitedTabs}
-      filterProps={{ onApply: (c) => setActiveFilterCount(c), onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      filterProps={{ onApply: (c, chips, merge = false) => {
+        if (merge) {
+          setFiltersByPage(prev => {
+            const cur = prev[current] || { count: 0, chips: [] };
+            const merged = [...cur.chips, ...(chips || [])];
+            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+          });
+        } else {
+          setPageFilters(current, c, chips || []);
+        }
+      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
@@ -959,10 +983,19 @@ function App() {
                 breadcrumb={pageMeta.breadcrumb}
                 breadcrumbHrefs={pageMeta.breadcrumbHrefs}
                 activeFilterCount={activeFilterCount}
+                activeFilters={activeFilters}
+                onRemoveFilter={(idx) => {
+                  setFiltersByPage(prev => {
+                    const cur = prev[current] || { count: 0, chips: [] };
+                    const updated = cur.chips.filter((_, i) => i !== idx);
+                    return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                  });
+                }}
+                onClearFilters={() => setPageFilters(current, 0, [])}
                 filterActive={rightPanel === 'filter'}
                 onFilter={() => openRightTab('filter')}
                 onAdd={pageMeta.onAdd}
-                onExplore={pageMeta.onExplore}
+                onExplore={handleExplore}
                 onEdit={DISCOVER_PAGES.has(current) ? () => {
                   setCurrent('workspace/dashboard/discover');
                   history.pushState(null, '', '/workspace');
@@ -970,7 +1003,7 @@ function App() {
               />
               <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
-                {current === 'exposure/findings'   && <FindingsPage />}
+                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}
                 {current === 'discover/cloud'      && <DiscoverCloudPage />}
                 {current === 'discover/identity'   && <DiscoverIdentityPage />}
@@ -991,7 +1024,7 @@ function App() {
         <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
-          onApply={(count) => { setActiveFilterCount(count); setGraphFilterOpen(false); }}
+          onApply={(count) => { setPageFilters(current, count, activeFilters); setGraphFilterOpen(false); }}
           top={canvasTop}
         />
       )}
