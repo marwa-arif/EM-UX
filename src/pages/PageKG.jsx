@@ -1062,7 +1062,7 @@ function Th({ children }) {
 }
 
 // ── Details Table ────────────────────────────────────────────────────
-function DetailsTable({ rows, totalCount, search, onSearch }) {
+function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
   const PAGE_SIZE = 10;
   // We never render more than PAGE_SIZE rows on screen, even if the source
   // dataset has more — pagination is *visual* (the underlying ROWS are a
@@ -1135,9 +1135,11 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
                 <tr key={i} style={{
                   borderBottom: '1px solid var(--border)',
                   transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
+                  cursor: onRowClick ? 'pointer' : 'default',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
+                onClick={() => onRowClick && onRowClick(r)}
                 >
                   <td style={{ padding: '10px 12px', color: PAI.fg1, fontWeight: 500, whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</td>
                   <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}>
@@ -1307,6 +1309,9 @@ function PageKG() {
   const [selectedEdgeKey, setSelectedEdgeKey] = useState(null);
   const [positions, setPositions] = useState(() => ({ ...NODE_POS }));
   const [view, setView] = useState({ x: 0, y: 0, w: 940, h: 440 });
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelRow, setPanelRow] = useState(null);
+  const [panelTab, setPanelTab] = useState('summary');
   const [edges, setEdges] = useState(() => {
     // Prefer persisted edges from tweaks (App writes them onto window before mount)
     const fromTweaks = (window.__floatTweaks && window.__floatTweaks.edges);
@@ -1635,7 +1640,7 @@ function PageKG() {
             selectedEdgeKey={selectedEdgeKey}
             highlightOnly={highlightOnly}
             multiSelectedSet={multiMode ? multiSelected : null}
-            panelOpen={false}
+            panelOpen={panelOpen}
             onSelect={(id) => {
               if (multiMode) {
                 if (id === null) return;
@@ -1794,7 +1799,241 @@ function PageKG() {
 
 
       <DetailsTable rows={filteredRows} totalCount={totalCount}
-                    search={tableSearch} onSearch={setTableSearch}/>
+                    search={tableSearch} onSearch={setTableSearch}
+                    onRowClick={(row) => { setPanelRow(row); setPanelOpen(true); setPanelTab('summary'); }}/>
+
+      {/* ── Panel overlay ── */}
+      <div
+        onClick={() => setPanelOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)',
+          zIndex: 299, display: panelOpen ? 'block' : 'none',
+        }}
+      />
+
+      {/* ── Detail panel ── */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: '55%',
+        background: 'var(--card-bg, #fff)', borderLeft: '1px solid var(--shell-border, #E6E6E6)',
+        zIndex: 300,
+        transform: panelOpen ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.28s cubic-bezier(.2,.8,.2,1)',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
+        fontFamily: "'Inter', system-ui",
+      }}>
+        {panelRow && (() => {
+          const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
+          const ent  = ENTITY_TYPES[panelRow.type]        || {};
+          return (
+            <>
+              {/* Panel header */}
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--shell-border, #E6E6E6)', flexShrink: 0, background: 'var(--card-bg, #fff)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                  {/* Entity icon circle */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    background: ent.tint || 'var(--pai-bg-raised)',
+                    border: `2px solid ${ent.stroke || 'var(--shell-border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <EntityGlyph kind={meta.glyph} size={22} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 15, fontWeight: 700, color: PAI.fg1,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340,
+                      }}>
+                        {panelRow.label}
+                      </span>
+                      <span style={{
+                        border: `1px solid ${ent.stroke || 'var(--shell-border)'}`, color: ent.icon || PAI.indigo,
+                        borderRadius: 44, padding: '2px 8px', fontSize: 11, fontWeight: 600, flexShrink: 0,
+                      }}>
+                        {meta.type || panelRow.type}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
+                        IP: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{panelRow.ip}</span>
+                      </span>
+                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
+                        OS: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{meta.os}</span>
+                      </span>
+                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
+                        Last Active: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{panelRow.active}</span>
+                      </span>
+                    </div>
+                  </div>
+                  {/* Close button */}
+                  <button
+                    onClick={() => setPanelOpen(false)}
+                    style={{
+                      background: 'none', border: 'none', color: PAI.fg3,
+                      cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', flexShrink: 0,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Entity Relationship mini-graph */}
+                <div style={{ border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{
+                    padding: '8px 12px', background: 'var(--shell-raised, #FAFAFA)', borderBottom: '1px solid var(--shell-border, #E6E6E6)',
+                    fontSize: 11, fontWeight: 600, color: PAI.fg1,
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    Entity Relationship Summary
+                  </div>
+                  <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <svg width="280" height="90" style={{ display: 'block', overflow: 'visible', flex: 1 }}>
+                      <line x1="90" y1="44" x2="190" y2="44" stroke="var(--shell-border, #D6D6D6)" strokeWidth="1.5"/>
+                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill={PAI.fg3} fontFamily="inherit">Has</text>
+                      {/* Entity node */}
+                      <circle cx="60" cy="44" r="28" fill={ent.tint || 'var(--pai-bg-raised)'} stroke={ent.stroke || 'var(--shell-border)'} strokeWidth="1.5"/>
+                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
+                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <EntityGlyph kind={meta.glyph} size={20} />
+                        </div>
+                      </foreignObject>
+                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill={PAI.fg2} fontWeight="600" fontFamily="inherit">
+                        {(meta.type || panelRow.type).slice(0, 12)}
+                      </text>
+                      {/* Finding node */}
+                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
+                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
+                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <EntityGlyph kind="finding" size={20} />
+                        </div>
+                      </foreignObject>
+                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
+                      {/* Count badge */}
+                      <circle cx="244" cy="20" r="9" fill="var(--pai-indigo, #6360D8)"/>
+                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
+                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0,4) : fmtN(ent.count || 0)}
+                      </text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div style={{ borderBottom: '1px solid var(--shell-border, #E6E6E6)', background: 'var(--card-bg, #fff)', flexShrink: 0, paddingLeft: 20, display: 'flex' }}>
+                {['summary', 'evolution', 'derivation'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setPanelTab(t)}
+                    style={{
+                      padding: '8px 14px', fontSize: 12, fontWeight: panelTab === t ? 600 : 500,
+                      border: 'none', background: 'transparent', cursor: 'pointer',
+                      color: panelTab === t ? PAI.indigo : PAI.fg3,
+                      borderBottom: panelTab === t ? `2px solid ${PAI.indigo}` : '2px solid transparent',
+                      marginBottom: -1, fontFamily: 'inherit',
+                      transition: 'color 150ms, border-color 150ms',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              {/* Panel body */}
+              <div style={{ flex: 1, overflowY: 'auto', background: 'var(--shell-bg, #F7F9FC)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                {panelTab === 'summary' && (
+                  <>
+                    {/* General Information */}
+                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600, color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)' }}>
+                        General Information
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                        {[
+                          ['Display Label', panelRow.label],
+                          ['Type',          meta.type || panelRow.type],
+                          ['OS Family',     meta.os],
+                          ['IP Address',    panelRow.ip],
+                          ['Last Found',    panelRow.last],
+                          ['Last Active',   panelRow.active],
+                        ].map(([k, v], i) => (
+                          <div key={k} style={{
+                            padding: '8px 14px',
+                            borderBottom: i < 4 ? '1px solid var(--shell-raised, #F5F5F5)' : 'none',
+                            borderRight: i % 2 === 0 ? '1px solid var(--shell-raised, #F5F5F5)' : 'none',
+                          }}>
+                            <div style={{ fontSize: 10, color: PAI.fg3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{k}</div>
+                            <div style={{ fontSize: 12, color: PAI.fg1, wordBreak: 'break-all' }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Data Sources */}
+                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600, color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)' }}>
+                        Data Sources
+                      </div>
+                      <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
+                      </div>
+                    </div>
+
+                    {/* Findings severity breakdown */}
+                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600,
+                        color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      }}>
+                        <span>Findings</span>
+                        <span style={{ fontWeight: 400, color: PAI.fg3, fontSize: 11 }}>({fmtN(ent.count || 0)})</span>
+                      </div>
+                      <div style={{ padding: '12px 14px' }}>
+                        {[
+                          { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
+                          { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
+                          { label: 'Medium',   pct: 68, color: 'var(--pai-high-fg)' },
+                          { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
+                        ].map(s => (
+                          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                            <span style={{ width: 54, fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>{s.label}</span>
+                            <div style={{ flex: 1, height: 6, background: 'var(--shell-raised, #F5F5F5)', borderRadius: 3, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${s.pct}%`, background: s.color, borderRadius: 3 }} />
+                            </div>
+                            <span style={{ width: 44, fontSize: 11, fontWeight: 600, color: PAI.fg2, flexShrink: 0, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                              {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {panelTab === 'evolution' && (
+                  <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, padding: '24px 20px', color: PAI.fg3, fontSize: 12, textAlign: 'center', lineHeight: 1.7 }}>
+                    Evolution history for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
+                    Track how attributes changed over time across data sources.
+                  </div>
+                )}
+
+                {panelTab === 'derivation' && (
+                  <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, padding: '24px 20px', color: PAI.fg3, fontSize: 12, textAlign: 'center', lineHeight: 1.7 }}>
+                    Derivation graph for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
+                    Shows how this entity was resolved from source fragments.
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+      </div>
     </div>
   );
 }
