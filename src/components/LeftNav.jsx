@@ -1,7 +1,29 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 
-function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
+function IcBuildingBlock() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1"   y="1"   width="6" height="6" rx="1.5" fill="currentColor"/>
+      <rect x="9"   y="1"   width="6" height="6" rx="1.5" fill="currentColor"/>
+      <rect x="1"   y="9"   width="6" height="6" rx="1.5" fill="currentColor"/>
+      <rect x="9"   y="9"   width="6" height="6" rx="1.5" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function IcEMDashboard() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="6" height="5" rx="1" fill="currentColor"/>
+      <rect x="9" y="1" width="6" height="5" rx="1" fill="currentColor"/>
+      <rect x="1" y="8" width="6" height="7" rx="1" fill="currentColor"/>
+      <rect x="9" y="8" width="6" height="7" rx="1" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onModeChange }) {
   const model = [
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
     { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
@@ -33,23 +55,61 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
   const activeParent = current?.split('/')[0];
   const activeChild  = current;
   const [openId, setOpenId] = useState(() => activeParent ?? null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const headerRef = useRef(null);
 
   const toggle = (id) => setOpenId(prev => prev === id ? null : id);
-
   const width = collapsed ? 52 : 220;
+  const isStudio = mode === 'studio';
+
+  // Close dropdown when clicking outside the header
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e) => {
+      if (headerRef.current && !headerRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
+
+  const handleOption = (option) => {
+    setDropdownOpen(false);
+    if (option === 'navigator') {
+      onNav('navigator-page');
+    } else if (option === 'studio') {
+      onModeChange?.('studio');
+    } else if (option === 'em') {
+      onModeChange?.('em');
+    }
+  };
 
   return (
     <aside className="leftnav" style={{ width }}>
-      <div className={`leftnav__header${collapsed ? ' leftnav__header--collapsed' : ''}`}>
+      <div
+        ref={headerRef}
+        className={`leftnav__header${collapsed ? ' leftnav__header--collapsed' : ''}`}
+      >
         {!collapsed && (
           <div className="leftnav__org">
-            <div className="leftnav__org-name-row">
-              <div className="leftnav__org-name">EM Dashboard</div>
-              <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
+            <div
+              className="leftnav__org-name-row leftnav__org-name-row--clickable"
+              onClick={() => setDropdownOpen(o => !o)}
+            >
+              <div className="leftnav__org-name">
+                {isStudio ? 'Studio' : 'EM Dashboard'}
+              </div>
+              <span className={`leftnav__org-chevron${dropdownOpen ? ' leftnav__org-chevron--open' : ''}`}>
+                <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
+              </span>
             </div>
-            <div className="leftnav__org-sub">Exposure Management</div>
+            {!isStudio && (
+              <div className="leftnav__org-sub">Exposure Management</div>
+            )}
           </div>
         )}
+
         <button
           onClick={onToggleCollapse}
           title={collapsed ? 'Expand' : 'Collapse'}
@@ -60,24 +120,56 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse }) {
             : <><path d="m15 18-6-6 6-6"/></>
           } />
         </button>
+
+        {dropdownOpen && !collapsed && (
+          <div className="leftnav__mode-dropdown">
+            {isStudio ? (
+              <button
+                className="leftnav__mode-option"
+                onClick={() => handleOption('em')}
+              >
+                <IcEMDashboard />
+                <span className="leftnav__mode-option-label">EM Dashboard</span>
+              </button>
+            ) : (
+              <button
+                className="leftnav__mode-option"
+                onClick={() => handleOption('studio')}
+              >
+                <IcBuildingBlock />
+                <span className="leftnav__mode-option-label">Studio</span>
+                <span className="leftnav__mode-option-soon">Soon</span>
+              </button>
+            )}
+            <button
+              className="leftnav__mode-option"
+              onClick={() => handleOption('navigator')}
+            >
+              <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="leftnav__mode-option-img" />
+              <span className="leftnav__mode-option-label">Navigator</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="leftnav__body">
-        {model.map(item => (
-          <React.Fragment key={item.id}>
-            <NavItem
-              item={item}
-              collapsed={collapsed}
-              isActiveParent={activeParent === item.id}
-              activeChild={activeChild}
-              isOpen={openId === item.id}
-              onToggle={() => toggle(item.id)}
-              onNav={onNav}
-            />
-            {item.dividerAfter && <div className="leftnav__divider" />}
-          </React.Fragment>
-        ))}
-      </div>
+      {!isStudio && (
+        <div className="leftnav__body">
+          {model.map(item => (
+            <React.Fragment key={item.id}>
+              <NavItem
+                item={item}
+                collapsed={collapsed}
+                isActiveParent={activeParent === item.id}
+                activeChild={activeChild}
+                isOpen={openId === item.id}
+                onToggle={() => toggle(item.id)}
+                onNav={onNav}
+              />
+              {item.dividerAfter && <div className="leftnav__divider" />}
+            </React.Fragment>
+          ))}
+        </div>
+      )}
     </aside>
   );
 }

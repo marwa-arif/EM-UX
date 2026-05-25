@@ -1,0 +1,196 @@
+/* ── Assessments page ──────────────────────────────────────────── */
+
+.asmts-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  background: var(--shell-bg);
+}
+
+.asmts-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.asmts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--shell-border);
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.asmts-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text);
+  white-space: nowrap;
+}
+
+.asmts-search-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.asmts-search {
+  height: 32px;
+  width: 220px;
+  padding: 0 32px 0 12px;
+  border-radius: 44px;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-raised);
+  color: var(--shell-text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.asmts-search::placeholder { color: var(--shell-text-muted); }
+.asmts-search:focus { border-color: var(--pai-indigo); }
+
+.asmts-search-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--shell-text-muted);
+  display: flex;
+  pointer-events: none;
+}
+
+.asmts-search-clear {
+  position: absolute;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px; padding: 0; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--shell-text-muted); border-radius: 999px;
+}
+.asmts-search-clear:hover { color: var(--shell-text); }
+
+/* ── Table ─────────────────────────────────────────────────────── */
+
+.asmts-table-wrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* sticky header on top of ds-table base */
+.asmts-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.asmts-th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.asmts-row { cursor: default; }
+
+.asmts-name-cell {
+  max-width: 420px;
+  font-size: 12px;
+  color: var(--shell-text);
+  line-height: 1.4;
+}
+
+.asmts-name-link {
+  cursor: pointer;
+}
+.asmts-name-link:hover {
+  color: var(--pai-indigo);
+}
+
+/* Findings */
+.asmts-findings-cell {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.asmts-findings-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--shell-text);
+}
+
+.asmts-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.asmts-dot--green { background: var(--pai-green); }
+.asmts-dot--red   { background: var(--pai-crit-fg); }
+
+/* Rating pill */
+.asmts-rating-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 44px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Score */
+.asmts-score-cell {
+  font-weight: 600;
+}
+
+/* Entity pill */
+.asmts-entity-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 44px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--shell-raised);
+  border: 1px solid var(--shell-border);
+  color: var(--shell-text);
+  white-space: nowrap;
+}
+
+/* Action button */
+.asmts-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--shell-text-muted);
+  cursor: pointer;
+  transition: background 100ms, color 100ms;
+}
+
+.asmts-action-btn:hover {
+  background: var(--shell-hover);
+  color: var(--shell-text);
+}

@@ -321,6 +321,18 @@ export default function ExposureOverviewPage() {
           <div className="exp-contrib-hdr-right">
             <div className="exp-search-box">
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search for Asset Type" className="exp-search-input" />
+              {search && (
+                <button
+                  onMouseDown={e => { e.preventDefault(); setSearch(''); }}
+                  style={{
+                    width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'var(--shell-text-muted)', borderRadius: 999, flexShrink: 0, marginRight: 4,
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              )}
               <div className="exp-search-icon-wrap">
                 <IcSearch />
               </div>

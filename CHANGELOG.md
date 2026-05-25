@@ -9,12 +9,56 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-05-19 11:38 | branch: develop | 44c229d Merge feature/ui-updates into develop (v0.1.2 — CSS common.css refactor) -->
 <!-- pull: 2026-05-19 18:31 | branch: feature/ui-updates | 6f2cf09 Refactor DonutChart to shared component, update findings tooltips and chart styling -->
 <!-- pull: 2026-05-20 10:54 | branch: develop | cac10fe Merge feature/ui-updates into develop -->
+<!-- pull: 2026-05-25 09:39 | branch: feature/ui-updates | ffd274f fix: KG dark mode — entity node dark tints and SVG CSS variable fixes -->
+<!-- pull: 2026-05-25 11:06 | branch: feature/ui-updates | 17dc21e chore: bump to v0.3.0 -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.3.1] — 2026-05-25
+### Added
+- `filter-panel.css` — dedicated stylesheet for FilterPanel component
+- `library.css` — dedicated stylesheet for LibraryPage component
+### Changed
+- Eliminated inline `style={{}}` props from DiscoverDevicePage, DiscoverIdentityPage, DiscoverCloudPage, FilterPanel — replaced with CSS classes and CSS custom-property injection
+- `device.css` extended with new utility classes: `dev-tip-card`, `dev-findings-bar`, `dev-crit-seg`, `dev-toggle`, `dev-donut-center`, `dev-type-legend`, `dev-single-legend`, `dev-crit-tooltip`, `dev-stat-header-controls`, `dev-drawer-controls` and more
+
+---
+
+## [0.3.0] — 2026-05-25
+### Added
+- LeftNav app-mode switcher: chevron dropdown on org-name-row with **Studio** and **Navigator** options
+- Studio mode: nav body hidden, header shows "Studio", main content shows Coming Soon screen
+- Navigator option in dropdown navigates to full-page Navigator screen
+- Studio dropdown shows "EM Dashboard" option to switch back to EM mode
+- `IcBuildingBlock` and `IcEMDashboard` inline SVG icons for the switcher
+### Changed
+- KG table row-click now correctly reopens the slide-over detail panel
+- Root-level orphaned files removed; folder structure standardised
+
+---
+
+## [0.2.0] — 2026-05-25
+### Added
+- ComplianceMatrixPage with sticky x/y axes, comparison badges (Change % with trend icon, absolute score), and structured tooltip
+- AssessmentsPage and ComplianceFindingsPage
+- Sparkline stroke-dashoffset draw animation on mount
+- ScaleX fill animation for framework progress bars
+- Clip-path reveal animation for stacked findings breakdown bars
+### Changed
+- Compliance matrix cell hover redesigned using `currentColor` / per-cell `--hover-border` CSS variable
+- Compliance chart legend: circles, per-severity text colors, semi-bold
+- Change % formula corrected to `(current − prev) / prev × 100` with 2dp precision
+### Fixed
+- KG dark mode: all hardcoded hex values in `PageKG.jsx` and `kg.css` replaced with design system tokens
+- KG entity node circles, tooltip headers, and selection panel headers now switch correctly on theme toggle
+- SVG edge label pill fill moved from attribute to `style` so CSS custom properties resolve in dark mode
+- Remaining hardcoded hex (edge lines, dividers, pagination, zoom buttons) replaced with tokens
 
 ---
 

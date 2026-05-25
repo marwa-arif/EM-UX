@@ -1,5 +1,62 @@
 [
   {
+    "version": "0.3.1",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [
+        "`filter-panel.css` — dedicated stylesheet for FilterPanel component",
+        "`library.css` — dedicated stylesheet for LibraryPage component"
+      ],
+      "Changed": [
+        "Eliminated inline `style={{}}` props from DiscoverDevicePage, DiscoverIdentityPage, DiscoverCloudPage, FilterPanel — replaced with CSS classes and CSS custom-property injection",
+        "`device.css` extended with new utility classes: `dev-tip-card`, `dev-findings-bar`, `dev-crit-seg`, `dev-toggle`, `dev-donut-center`, `dev-type-legend`, `dev-single-legend`, `dev-crit-tooltip`, `dev-stat-header-controls`, `dev-drawer-controls` and more"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.3.0",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [
+        "LeftNav app-mode switcher: chevron dropdown on org-name-row with **Studio** and **Navigator** options",
+        "Studio mode: nav body hidden, header shows \"Studio\", main content shows Coming Soon screen",
+        "Navigator option in dropdown navigates to full-page Navigator screen",
+        "Studio dropdown shows \"EM Dashboard\" option to switch back to EM mode",
+        "`IcBuildingBlock` and `IcEMDashboard` inline SVG icons for the switcher"
+      ],
+      "Changed": [
+        "KG table row-click now correctly reopens the slide-over detail panel",
+        "Root-level orphaned files removed; folder structure standardised"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.2.0",
+    "date": "2026-05-25",
+    "changes": {
+      "Added": [
+        "ComplianceMatrixPage with sticky x/y axes, comparison badges (Change % with trend icon, absolute score), and structured tooltip",
+        "AssessmentsPage and ComplianceFindingsPage",
+        "Sparkline stroke-dashoffset draw animation on mount",
+        "ScaleX fill animation for framework progress bars",
+        "Clip-path reveal animation for stacked findings breakdown bars"
+      ],
+      "Changed": [
+        "Compliance matrix cell hover redesigned using `currentColor` / per-cell `--hover-border` CSS variable",
+        "Compliance chart legend: circles, per-severity text colors, semi-bold",
+        "Change % formula corrected to `(current − prev) / prev × 100` with 2dp precision"
+      ],
+      "Fixed": [
+        "KG dark mode: all hardcoded hex values in `PageKG.jsx` and `kg.css` replaced with design system tokens",
+        "KG entity node circles, tooltip headers, and selection panel headers now switch correctly on theme toggle",
+        "SVG edge label pill fill moved from attribute to `style` so CSS custom properties resolve in dark mode",
+        "Remaining hardcoded hex (edge lines, dividers, pagination, zoom buttons) replaced with tokens"
+      ]
+    }
+  },
+  {
     "version": "0.1.2",
     "date": "2026-05-19",
     "url": "/versions/0.1.2/",

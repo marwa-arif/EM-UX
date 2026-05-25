@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
+import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
@@ -14,42 +16,234 @@ import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
 import DiscoverDevicePage   from './pages/DiscoverDevicePage.jsx'
 import DiscoverCloudPage    from './pages/DiscoverCloudPage.jsx'
 import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
+import CompliancePage       from './pages/CompliancePage.jsx'
+import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
+import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
+import AssessmentsPage        from './pages/AssessmentsPage.jsx'
+
+function SplashScreen({ onDone }) {
+  const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
+  const [phase, setPhase] = useState('idle'); // idle | dots | word | sub | out
+
+  // 6 dots in constellation order (top → bottom)
+  const dots = [
+    "M45.6001 5.86863C43.7483 7.72044 43.7483 10.7228 45.6001 12.5746C47.4519 14.4264 50.4543 14.4264 52.3061 12.5746C54.1579 10.7228 54.1579 7.72044 52.3061 5.86863C50.4543 4.01682 47.4519 4.01682 45.6001 5.86863Z",
+    "M31.172 15.7265C28.553 18.3455 28.553 22.5917 31.172 25.2107C33.7909 27.8297 38.0372 27.8297 40.6562 25.2107C43.2752 22.5917 43.2752 18.3455 40.6562 15.7265C38.0372 13.1075 33.7909 13.1075 31.172 15.7265Z",
+    "M45.2432 32.5381C43.7681 34.0132 43.7681 36.4048 45.2432 37.8799C46.7183 39.355 49.1099 39.355 50.585 37.8799C52.0601 36.4048 52.0601 34.0132 50.585 32.5381C49.1099 31.063 46.7183 31.063 45.2432 32.5381Z",
+    "M17.714 29.9422C14.7862 32.8701 14.786 37.6173 17.7138 40.5452C20.6417 43.473 25.3889 43.4728 28.3168 40.545C31.2447 37.6171 31.2449 32.8699 28.317 29.942C25.3891 27.0141 20.6419 27.0143 17.714 29.9422Z",
+    "M31.3126 43.5624C28.6936 46.1814 28.6936 50.4276 31.3126 53.0466C33.9316 55.6656 38.1778 55.6656 40.7968 53.0466C43.4158 50.4276 43.4158 46.1814 40.7968 43.5624C38.1778 40.9434 33.9316 40.9434 31.3126 43.5624Z",
+    "M45.7251 57.8374C43.8733 59.6892 43.8733 62.6916 45.7251 64.5434C47.5769 66.3952 50.5793 66.3952 52.4311 64.5434C54.2829 62.6916 54.2829 59.6892 52.4311 57.8374C50.5793 55.9856 47.5769 55.9856 45.7251 57.8374Z",
+  ];
+
+  const DOT_STAGGER = 110; // ms between each dot
+  const allDotsMs = DOT_STAGGER * dots.length; // 660ms
+
+  useEffect(() => {
+    const t0 = setTimeout(() => setPhase('dots'), 120);
+    const t1 = setTimeout(() => setPhase('word'), 120 + allDotsMs + 80);
+    const t2 = setTimeout(() => setPhase('sub'),  120 + allDotsMs + 480);
+    const t3 = setTimeout(() => setPhase('out'),  2600);
+    const t4 = setTimeout(() => onDone(),          3150);
+    return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
+  }, [onDone]);
+
+  const after = (...phases) => phases.includes(phase);
+
+  const dotColor   = isDark ? 'white' : '#101010';
+  const barTrack   = isDark ? 'rgba(255,255,255,0.07)' : '#E8E8F4';
+  const emWordmark = isDark ? '/assets/logo/em-wordmark-white.svg' : '/assets/logo/em-wordmark.svg';
+  const paiMark    = isDark ? '/assets/logo/pai-wordmark-white.svg' : '/assets/logo/pai-wordmark-black.svg';
+
+  return (
+    <>
+      <style>{`
+        @keyframes dot-pop {
+          0%   { opacity: 0; transform: scale(0.25); }
+          70%  { opacity: 1; transform: scale(1.15); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes em-text-in {
+          from { opacity: 0; transform: translateX(22px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes em-sub-in {
+          from { opacity: 0; transform: translateX(22px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes em-bar {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
+        }
+        @keyframes blob-drift-a {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33%      { transform: translate(35px, -22px) scale(1.08); }
+          66%      { transform: translate(-18px, 28px) scale(0.95); }
+        }
+        @keyframes blob-drift-b {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          40%      { transform: translate(-28px, 18px) scale(1.1); }
+          70%      { transform: translate(22px, -32px) scale(1.05); }
+        }
+        @keyframes blob-drift-c {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          50%      { transform: translate(14px, 22px) scale(1.12); }
+        }
+      `}</style>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: isDark ? '#0D0D18' : '#F7F7FF',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 16, overflow: 'hidden',
+        opacity: phase === 'out' ? 0 : 1,
+        transition: 'opacity 550ms ease',
+      }}>
+
+        {/* Blobs */}
+        <div style={{
+          position: 'absolute', width: 520, height: 520, top: '-8%', left: '8%',
+          borderRadius: '50%',
+          background: isDark
+            ? 'radial-gradient(circle, rgba(99,96,216,0.40) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(99,96,216,0.32) 0%, transparent 60%)',
+          animation: 'blob-drift-a 9s ease-in-out infinite',
+          pointerEvents: 'none', filter: 'blur(48px)',
+        }} />
+        <div style={{
+          position: 'absolute', width: 440, height: 440, bottom: '-5%', right: '8%',
+          borderRadius: '50%',
+          background: isDark
+            ? 'radial-gradient(circle, rgba(71,173,203,0.32) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(71,173,203,0.26) 0%, transparent 60%)',
+          animation: 'blob-drift-b 11s ease-in-out infinite',
+          pointerEvents: 'none', filter: 'blur(56px)',
+        }} />
+        <div style={{
+          position: 'absolute', width: 320, height: 320, top: '50%', left: '52%',
+          borderRadius: '50%',
+          background: isDark
+            ? 'radial-gradient(circle, rgba(99,96,216,0.22) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(99,96,216,0.20) 0%, transparent 60%)',
+          animation: 'blob-drift-c 13s ease-in-out infinite',
+          pointerEvents: 'none', filter: 'blur(64px)',
+        }} />
+
+        {/* Logo row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, position: 'relative', zIndex: 1 }}>
+          {/* Dot constellation */}
+          <svg width="58" height="71" viewBox="0 0 58 71" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {dots.map((d, i) => (
+              <path key={i} d={d} fill={dotColor} style={{
+                opacity: 0,
+                transformBox: 'fill-box',
+                transformOrigin: 'center',
+                animation: after('dots','word','sub','out')
+                  ? `dot-pop 350ms cubic-bezier(0.34,1.3,0.64,1) ${i * DOT_STAGGER}ms forwards`
+                  : 'none',
+              }} />
+            ))}
+          </svg>
+
+          {/* EM wordmark */}
+          <img
+            src={emWordmark}
+            height={28}
+            alt="Exposure Management"
+            style={{
+              animation: after('word','sub','out') ? 'em-text-in 520ms cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
+              opacity: after('idle','dots') ? 0 : undefined,
+            }}
+          />
+        </div>
+
+        {/* PAI wordmark */}
+        <img
+          src={paiMark}
+          height={28}
+          alt="Prevalent AI"
+          style={{
+            position: 'relative', zIndex: 1,
+            animation: after('sub','out') ? 'em-sub-in 520ms cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
+            opacity: after('idle','dots','word') ? 0 : undefined,
+          }}
+        />
+
+        {/* Loading bar */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+          background: barTrack,
+        }}>
+          <div style={{
+            height: '100%',
+            background: 'linear-gradient(90deg, #6360D8 0%, #47ADCB 100%)',
+            transformOrigin: 'left center',
+            animation: after('dots','word','sub','out') ? 'em-bar 2200ms cubic-bezier(0.4,0,0.6,1) forwards' : 'none',
+            transform: 'scaleX(0)',
+          }} />
+        </div>
+      </div>
+    </>
+  );
+}
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
   "ampX": 6,
-  "ampY": 4,
-  "speedX": 1,
+  "ampY": 3,
+  "speedX": 0.7,
   "speedY": 0.5,
   "variation": 50,
   "edges": [
-    ["account", "identity", "Associated with"],
-    ["identity", "finding", "Has"],
-    ["application", "host", "Running on"],
-    ["vulnerability", "finding", "Has"],
-    ["assessment", "finding", "Associated with"],
-    ["cluster", "finding", "Has"],
-    ["container", "finding", "Has"],
-    ["cloudAccount", "finding", "Has"],
-    ["storage", "finding", "Has"],
-    ["netSvc", "finding", "Has"],
-    ["network", "finding", "Has"],
-    ["host", "finding", "Has"],
-    ["host", "vulnerability", "Has"],
-    ["person", "ticket", "Associated with"],
-    ["person", "identity", "Has"],
-    ["person", "finding", "Has"],
-    ["identity", "ticket", "Created"],
-    ["account", "group", "Member of"],
-    ["group", "group", "Member of"],
-    ["identity", "host", "Associated with"],
-    ["application", "vulnerability", "Has"],
-    ["container", "vulnerability", "Has"],
-    ["cloudAccount", "cluster", "Has"],
-    ["cloudAccount", "container", "Has"],
-    ["cloudAccount", "host", "Has"],
-    ["cloudAccount", "storage", "Has"],
-    ["person", "host", "Owns"]
+    ["account","identity","Associated with"],
+    ["account","finding","Has"],
+    ["application","host","Running on"],
+    ["application","vulnerability","Has"],
+    ["assessment","finding","Associated with"],
+    ["cloudAccount","finding","Has"],
+    ["cloudAccount","storage","Has"],
+    ["cloudAccount","container","Has"],
+    ["cloudAccount","host","Has"],
+    ["cloudAccount","cluster","Has"],
+    ["cluster","cluster","Has",null,"MapReduce Cluster","Compute Instance Group"],
+    ["cluster","finding","Has"],
+    ["cluster","container","Has",null,"Container Group"],
+    ["cluster","container","Has",null,"Container Service"],
+    ["cluster","cluster","Has",null,"Kubernetes Cluster","Compute Instance Group"],
+    ["cluster","host","Has",null,"Compute Instance Group","Virtual Machine"],
+    ["cluster","cloudAccount","Belongs to",true],
+    ["container","cluster","Belongs to",true,null,"Container Service"],
+    ["container","cloudAccount","Belongs to",true],
+    ["container","finding","Has"],
+    ["container","vulnerability","Has"],
+    ["container","cluster","Belongs to",true,null,"Container Group"],
+    ["host","person","Owned by"],
+    ["host","cloudAccount","Belongs to",true],
+    ["host","identity","Has"],
+    ["host","finding","Has"],
+    ["host","application","Hosting",true],
+    ["host","vulnerability","Has"],
+    ["host","cluster","Belongs to",true,"Virtual Machine","Compute Instance Group"],
+    ["host","storage","Has",null,"Virtual Machine","Volume"],
+    ["identity","person","Associated with"],
+    ["identity","account","Has",true],
+    ["identity","finding","Has"],
+    ["identity","host","Associated with",true],
+    ["network","finding","Has"],
+    ["netSvc","finding","Has"],
+    ["person","host","Owns",true],
+    ["person","identity","Has",true],
+    ["person","finding","Has"],
+    ["storage","storage","Has",null,null,"Queue Service"],
+    ["storage","finding","Has"],
+    ["storage","storage","Belongs to",null,"Table Service"],
+    ["storage","storage","Has",null,null,"Bucket"],
+    ["storage","cloudAccount","Belongs to",true,"Storage Resource"],
+    ["storage","storage","Belongs to",null,"File System Service"],
+    ["storage","host","To",true,"Volume Associates","Virtual Machine"],
+    ["vulnerability","host","On",true],
+    ["vulnerability","container","On",true],
+    ["vulnerability","finding","Has"],
+    ["vulnerability","application","On",true]
   ]
 }/*EDITMODE-END*/;
 
@@ -121,9 +315,12 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     const next = edges.map((e, idx) => {
       if (idx !== i) return e;
       const copy = [...e];
-      if (field === 'src') copy[0] = value;
-      if (field === 'tgt') copy[1] = value;
-      if (field === 'label') copy[2] = value || null;
+      if (field === 'src')      copy[0] = value;
+      if (field === 'tgt')      copy[1] = value;
+      if (field === 'label')    copy[2] = value || null;
+      if (field === 'hidden')   copy[3] = !!value;
+      if (field === 'srcAlias') copy[4] = value || null;
+      if (field === 'tgtAlias') copy[5] = value || null;
       return copy;
     });
     setEdges(next);
@@ -154,7 +351,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     if (savedEdges.length !== edges.length) return true;
     for (let i = 0; i < edges.length; i++) {
       const a = edges[i], b = savedEdges[i];
-      if (a[0] !== b[0] || a[1] !== b[1] || (a[2] || null) !== (b[2] || null)) return true;
+      if (a[0] !== b[0] || a[1] !== b[1] || (a[2] || null) !== (b[2] || null) || (!!a[3]) !== (!!b[3]) || (a[4] || null) !== (b[4] || null) || (a[5] || null) !== (b[5] || null)) return true;
     }
     return false;
   })();
@@ -497,9 +694,14 @@ function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
     if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
-    if (path === '/knowledge-graph' || path === '/') return 'kg';
-    return path.slice(1) || 'kg';
+    if (path === '/knowledge-graph') return 'kg';
+    if (path === '/') return 'exposure/overview';
+    return path.slice(1) || 'exposure/overview';
   });
+  const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
+  const [showSplash, setShowSplash] = useState(true);
+  const onSplashDone = useCallback(() => setShowSplash(false), []);
+  const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [collapsed, setCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
@@ -511,6 +713,7 @@ function App() {
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
+  const [complianceExpanded, setComplianceExpanded] = useState({});
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -543,8 +746,9 @@ function App() {
     const onPop = () => {
       const path = window.location.pathname;
       if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
-      else if (path === '/knowledge-graph' || path === '/') setCurrent('kg');
-      else setCurrent(path.slice(1) || 'kg');
+      else if (path === '/knowledge-graph') setCurrent('kg');
+      else if (path === '/') setCurrent('exposure/overview');
+      else setCurrent(path.slice(1) || 'exposure/overview');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -601,11 +805,21 @@ function App() {
   };
 
   if (current === 'workspace' || current.startsWith('workspace/')) {
-    return <WorkspacePage onNav={handleNav} initialRoute={current} />
+    return (
+      <>
+        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        <WorkspacePage onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
+      </>
+    );
   }
 
   if (current === 'navigator' || current.startsWith('navigator/')) {
-    return <NavigatorPage onNav={handleNav} current={current} initialQuery={navigatorQuery} />
+    return (
+      <>
+        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        <NavigatorPage onNav={handleNav} current={current} initialQuery={navigatorQuery} />
+      </>
+    );
   }
 
   const PAGE_META = {
@@ -683,6 +897,10 @@ function App() {
     },
   };
 
+  if (!PAGE_META[current] && current !== 'kg') {
+    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', '/exposure/overview'); }} />;
+  }
+
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
 
@@ -709,47 +927,67 @@ function App() {
       fontFamily: "'Inter', system-ui",
       color: PAI.fg1, background: 'var(--shell-bg)',
     }}>
+      {showSplash && <SplashScreen onDone={onSplashDone} />}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
 
-      <div ref={isKG ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav
           current={current}
           onNav={handleNav}
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed(!collapsed)}
+          mode={appMode}
+          onModeChange={setAppMode}
         />
 
-        <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
-          <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {appMode === 'studio' ? (
+          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
             <SubHeader
-              title={pageMeta.title}
-              breadcrumb={pageMeta.breadcrumb}
-              breadcrumbHrefs={pageMeta.breadcrumbHrefs}
-              activeFilterCount={activeFilterCount}
-              filterActive={rightPanel === 'filter'}
-              onFilter={() => openRightTab('filter')}
-              onAdd={pageMeta.onAdd}
-              onExplore={pageMeta.onExplore}
-              onEdit={DISCOVER_PAGES.has(current) ? () => {
-                setCurrent('workspace/dashboard/discover');
-                history.pushState(null, '', '/workspace');
-              } : undefined}
+              title="Studio"
+              breadcrumb={['Studio']}
+              breadcrumbHrefs={[null]}
             />
             <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-              {current === 'exposure/overview'   && <ExposureOverviewPage />}
-              {current === 'exposure/findings'   && <FindingsPage />}
-              {current === 'discover/device'     && <DiscoverDevicePage />}
-              {current === 'discover/cloud'      && <DiscoverCloudPage />}
-              {current === 'discover/identity'   && <DiscoverIdentityPage />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && <ComingSoon />}
-              {isKG && <PageKG />}
+              <ComingSoon />
             </div>
-          </div>
-          {sharedRightPanel}
-        </main>
+          </main>
+        ) : (
+          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
+            <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <SubHeader
+                title={pageMeta.title}
+                breadcrumb={pageMeta.breadcrumb}
+                breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+                activeFilterCount={activeFilterCount}
+                filterActive={rightPanel === 'filter'}
+                onFilter={() => openRightTab('filter')}
+                onAdd={pageMeta.onAdd}
+                onExplore={pageMeta.onExplore}
+                onEdit={DISCOVER_PAGES.has(current) ? () => {
+                  setCurrent('workspace/dashboard/discover');
+                  history.pushState(null, '', '/workspace');
+                } : undefined}
+              />
+              <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+                {current === 'exposure/overview'   && <ExposureOverviewPage />}
+                {current === 'exposure/findings'   && <FindingsPage />}
+                {current === 'discover/device'     && <DiscoverDevicePage />}
+                {current === 'discover/cloud'      && <DiscoverCloudPage />}
+                {current === 'discover/identity'   && <DiscoverIdentityPage />}
+                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
+                {current === 'report/assessments'       && <AssessmentsPage />}
+                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
+                {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
+                {isKG && <PageKG />}
+              </div>
+            </div>
+            {sharedRightPanel}
+          </main>
+        )}
       </div>
 
-      {isKG && GraphFilterDrawer && (
+      {isKG && appMode !== 'studio' && GraphFilterDrawer && (
         <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
@@ -758,7 +996,7 @@ function App() {
         />
       )}
 
-      {isKG && (
+      {isKG && appMode !== 'studio' && (
         <TweaksPanel title="Tweaks">
           <style>{`.twk-panel { width: 360px !important; }`}</style>
           <TweakSection label="Graph float animation" />
@@ -786,4 +1024,12 @@ function App() {
   );
 }
 
-export default App;
+function AppWithBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithBoundary;

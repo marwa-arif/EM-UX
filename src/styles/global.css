@@ -4,7 +4,8 @@
 @font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Bold.woff2') format('woff2'); }
 
 html, body, #root { height: 100%; margin: 0; }
-body, svg text { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
+svg text { font-family: 'Inter', system-ui; }
 body { background: #F7F9FC; color: #101010; }
 
 :root {
@@ -97,9 +98,26 @@ body { background: #F7F9FC; color: #101010; }
   --pai-thinking-amber:      #F5A623;   /* AI thinking dot amber */
   --pai-toast-warn-bg:       #FFF8E8;   /* copy-friction toast background */
   --pai-toast-warn-fg:       #956010;   /* copy-friction toast text */
+
+  /* Extended palette — library / workspace accents */
+  --pai-orange:              #f97316;   /* report / template badge orange */
+  --pai-teal-dark:           #286B88;   /* dashboard badge dark teal */
+  --pai-emerald:             #10b981;   /* avatar / growth emerald */
 }
 
 button { font-family: inherit; }
+
+/* ── KG variable aliases (map KG-specific tokens to design-system tokens) ── */
+:root {
+  --bg-surface:    var(--card-bg);
+  --bg-raised:     var(--shell-raised);
+  --bg-sunken:     var(--shell-raised);
+  --border:        var(--shell-border);
+  --border-subtle: var(--shell-border);
+  --fg-1:          var(--shell-text);
+  --fg-2:          var(--shell-text-2);
+  --fg-3:          var(--shell-text-muted);
+}
 
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }
@@ -140,7 +158,7 @@ html.theme-dark {
   --pai-border:               #272727;
   --pai-border-strong:        #3B3A3A;
   --pai-bg-app:               #0E0E0E;
-  --pai-bg-raised:            #1C1C1C;
+  --pai-bg-raised:            #1F1F1F;
   --pai-surface:              #1C1C1C;
   --pai-disabled:             #555555;
   --pai-indigo-tint:          rgba(99,96,216,0.15);

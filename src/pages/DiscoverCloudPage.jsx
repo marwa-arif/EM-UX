@@ -18,19 +18,18 @@ function DonutTooltip({ active, payload }) {
   const p = payload[0].payload;
   const color = p.color;
   return (
-    <div style={{ background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '12px 13px', width: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{p.label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--shell-text)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
+    <div className="dev-tip-card dev-tip-card--sm" style={{ '--tip-border': color }}>
+      <div className="dev-tip-title">{p.label}</div>
+      <div className="dev-tip-row dev-tip-row--bold">
+        <span className="dev-tip-dot-row">
+          <span className="dev-tip-dot" />
           {p.count}
         </span>
-        <span style={{ color }}>{p.pct}</span>
+        <span className="dev-tip-accent">{p.pct}</span>
       </div>
     </div>
   );
 }
-
 
 function makeTrendTooltip(data) {
   return function({ active, payload, label }) {
@@ -41,22 +40,25 @@ function makeTrendTooltip(data) {
     const pct = prev ? (((value - prev) / prev) * 100).toFixed(2) : null;
     const isUp = pct > 0;
     return (
-      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--pai-indigo)', borderRadius: 8, padding: '12px 13px', minWidth: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{fmtDate(label)}</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', marginBottom: pct ? 8 : 0 }}>
+      <div className="dev-tip-card dev-tip-card--md" style={{ '--tip-border': 'var(--pai-indigo)' }}>
+        <div className="dev-tip-title">{fmtDate(label)}</div>
+        <div className={`dev-tip-row dev-tip-row--bold${pct ? ' dev-tip-row--mb' : ''}`}>
           <span>Total</span>
-          <span style={{ color: 'var(--pai-indigo)' }}>{value.toLocaleString()}</span>
+          <span className="dev-tip-accent">{value.toLocaleString()}</span>
         </div>
         {pct && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>
-            <span style={{ color: isUp ? 'var(--pai-crit-fg)' : 'var(--pai-green)', display: 'flex', alignItems: 'center' }}>
-              {isUp
-                ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-              }
-              <span style={{ marginLeft: 2 }}>{Math.abs(pct)}%</span>
-            </span>
-            &nbsp;from last week
+          <div className="dev-tip-trend">
+            {isUp
+              ? <span className="dev-tip-trend-up">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                  <span>{Math.abs(pct)}%</span>
+                </span>
+              : <span className="dev-tip-trend-down">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                  <span>{Math.abs(pct)}%</span>
+                </span>
+            }
+            from last week
           </div>
         )}
       </div>
@@ -86,7 +88,7 @@ const SOURCES = [
 ];
 
 const TYPES = [
-  { label: 'Volume',                 icon: 'volume',     count: 5423, pct: 46,  color: 'var(--pai-indigo)'       },
+  { label: 'Volume',                 icon: 'volume',      count: 5423, pct: 46,  color: 'var(--pai-indigo)'       },
   { label: 'Workstation',            icon: 'workstation', count: 4922, pct: 42,  color: '#5BADB8'                 },
   { label: 'Server',                 icon: 'server',      count: 381,  pct: 3,   color: 'var(--pai-green)'        },
   { label: 'Kubernetes Container',   icon: 'k8s',         count: 353,  pct: 3,   color: 'var(--pai-high-fg)'      },
@@ -272,16 +274,6 @@ const IcTrendDown = ({ size = 12, color = 'var(--pai-green)' }) => (
     <polyline points="17 18 23 18 23 12"/>
   </svg>
 );
-const IcMinus = ({ size = 12, color = 'var(--shell-text-muted)' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
-    <line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>
-);
-const IcLinux = () => (
-  <svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor">
-    <path d="M16 2C9.37 2 4 7.37 4 14c0 3.69 1.58 7 4.09 9.33C9.3 24.4 10 25.7 10 27h12c0-1.3.7-2.6 1.91-3.67C26.42 21 28 17.69 28 14 28 7.37 22.63 2 16 2zm-3 17a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-5c0 2.5-1.5 4-3 4.5V18c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v.5C11.5 18 10 16.5 10 14c0-3.31 2.69-6 6-6s6 2.69 6 6z"/>
-  </svg>
-);
 const IcExplore = () => <img src="/assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
 const IcNewlyAdded = () => (
   <svg width="10" height="10" viewBox="0 0 8.99512 8.98682" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -289,31 +281,16 @@ const IcNewlyAdded = () => (
   </svg>
 );
 
-// Type icon inline SVGs (fallback for icons not in /assets/icons)
+// Type icon inline SVGs
 const TYPE_ICONS = {
   server:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="7" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="7" cy="18" r="1" fill="currentColor" stroke="none"/></svg>,
   workstation: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-  network:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4M12 11l-5 6M12 11l5 6"/></svg>,
-  mobile:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>,
-  printer:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
-  iot:         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>,
-  storage:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>,
   volume:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   k8s:         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>,
   secgroup:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   compute:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>,
   serverless:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-  subnet:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 12h10M12 7v10"/></svg>,
 };
-
-const IcWindows = () => (
-  <svg width="13" height="13" viewBox="0 0 88 88" fill="none">
-    <path d="M0 12.4L36.1 7.4V43H0V12.4z" fill="#0078D4"/>
-    <path d="M40.6 6.7L88 0v43H40.6V6.7z" fill="#0078D4"/>
-    <path d="M0 47h36.1v35.6l-36.1-5V47z" fill="#0078D4"/>
-    <path d="M40.6 47H88v41L40.6 81.3V47z" fill="#0078D4"/>
-  </svg>
-);
 
 const IcSevHigh = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -354,10 +331,10 @@ export default function DiscoverCloudPage() {
   const hoveredTypeRef   = useRef(null);
   const typeRangeDataRef = useRef(null);
   const drawerChartRef   = useRef(null);
-  const [hoveredType,   setHoveredType]   = useState(null);
-  const [selectedType,  setSelectedType]  = useState(null);
+  const [hoveredType,      setHoveredType]      = useState(null);
+  const [selectedType,     setSelectedType]     = useState(null);
   const [drawerTooltipPos, setDrawerTooltipPos] = useState({ x: 0, y: 0 });
-  const [typeTooltipData, setTypeTooltipData] = useState(null);
+  const [typeTooltipData,  setTypeTooltipData]  = useState(null);
   const currentTrendData = TREND_DATA_BY_RANGE[timeRange] ?? TREND_DATA_BY_RANGE['1 Y'];
 
   const SourceTooltip = useCallback(({ active, payload, label }) => {
@@ -366,59 +343,23 @@ export default function DiscoverCloudPage() {
     const total = payload.reduce((sum, e) => sum + (e.value || 0), 0);
     const pct = total > 0 ? ((entry.value / total) * 100).toFixed(2) : '0.00';
     const color = entry.fill;
-    const ROW = { display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, whiteSpace: 'nowrap' };
     return (
-      <div style={{ background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '12px 13px', minWidth: 220, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{label}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-          <div style={{ ...ROW, fontWeight: 700 }}>
-            <span style={{ color: 'var(--shell-text)' }}>{entry.name} Entities</span>
-            <span style={{ color }}>{entry.value.toLocaleString()}</span>
+      <div className="dev-tip-card dev-tip-card--lg" style={{ '--tip-border': color }}>
+        <div className="dev-tip-title">{label}</div>
+        <div className="dev-tip-col">
+          <div className="dev-tip-row dev-tip-row--bold">
+            <span className="dev-tip-text">{entry.name} Entities</span>
+            <span className="dev-tip-accent">{entry.value.toLocaleString()}</span>
           </div>
-          <div style={{ ...ROW, fontWeight: 500 }}>
-            <span style={{ color: 'var(--shell-text)' }}>Total Entities</span>
-            <span style={{ color: 'var(--shell-text-muted)' }}>{total.toLocaleString()}</span>
+          <div className="dev-tip-row dev-tip-row--medium">
+            <span className="dev-tip-text">Total Entities</span>
+            <span className="dev-tip-muted">{total.toLocaleString()}</span>
           </div>
-          <div style={{ ...ROW, fontWeight: 500 }}>
-            <span style={{ color: 'var(--shell-text)' }}>Percentage</span>
-            <span style={{ color }}>{pct}%</span>
+          <div className="dev-tip-row dev-tip-row--medium">
+            <span className="dev-tip-text">Percentage</span>
+            <span className="dev-tip-accent">{pct}%</span>
           </div>
         </div>
-      </div>
-    );
-  }, []);
-
-  const TypeTooltip = useCallback(({ active, payload, label }) => {
-    if (!active || !payload?.length || !hoveredTypeRef.current) return null;
-    const key = hoveredTypeRef.current;
-    const entry = payload.find(p => p.dataKey === key);
-    if (!entry) return null;
-    const type = TYPES.find(t => t.label === key);
-    const color = type?.color ?? 'var(--pai-indigo)';
-    const data = typeRangeDataRef.current ?? [];
-    const idx = data.findIndex(d => d.name === label);
-    const prev = idx > 0 ? data[idx - 1][key] : null;
-    const pct = prev != null && prev > 0 ? (((entry.value - prev) / prev) * 100).toFixed(2) : null;
-    const isUp = pct !== null && Number(pct) >= 0;
-    return (
-      <div style={{ background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '12px 13px', minWidth: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{fmtDate(label)}</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', marginBottom: pct ? 8 : 0 }}>
-          <span>{key}</span>
-          <span style={{ color }}>{entry.value?.toLocaleString()}</span>
-        </div>
-        {pct && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>
-            <span style={{ color: isUp ? 'var(--pai-crit-fg)' : 'var(--pai-green)', display: 'flex', alignItems: 'center' }}>
-              {isUp
-                ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-              }
-              <span style={{ marginLeft: 2 }}>{Math.abs(Number(pct))}%</span>
-            </span>
-            &nbsp;from last period
-          </div>
-        )}
       </div>
     );
   }, []);
@@ -453,7 +394,7 @@ export default function DiscoverCloudPage() {
                   <span>2,492 Newly Added</span>
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="dev-stat-header-controls">
                 <div className="dev-time-pills">
                   {TIME_RANGES.map(r => (
                     <button
@@ -480,11 +421,11 @@ export default function DiscoverCloudPage() {
               </div>
             </div>
 
-            <div className="dev-chart-area" style={{ flex: 1, minHeight: 0 }}>
+            <div className="dev-chart-area">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={currentTrendData} margin={{ top: 16, right: 16, bottom: 0, left: 8 }}>
                   <defs>
-                    <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="trendFillCloud" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor="var(--pai-indigo)" stopOpacity={0.25} />
                       <stop offset="100%" stopColor="var(--pai-indigo)" stopOpacity={0} />
                     </linearGradient>
@@ -505,7 +446,7 @@ export default function DiscoverCloudPage() {
                     name="Total"
                     stroke="var(--pai-indigo)"
                     strokeWidth={2}
-                    fill="url(#trendFill)"
+                    fill="url(#trendFillCloud)"
                     dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
                     activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
                   />
@@ -520,7 +461,7 @@ export default function DiscoverCloudPage() {
             {/* Data Source */}
             <div className="card dev-card dev-source-card">
               <div className="dev-card-title">Data Source</div>
-              <div style={{ flex: 1, minHeight: 0 }}>
+              <div className="dev-chart-fill">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={SOURCES_CHART_DATA}
@@ -538,7 +479,9 @@ export default function DiscoverCloudPage() {
                       tickLine={false}
                     />
                     <Tooltip content={SourceTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
-                    <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]} onMouseEnter={() => { hoveredBarRef.current = 'Corroborated'; }} onMouseLeave={() => { hoveredBarRef.current = null; }} />
+                    <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]}
+                      onMouseEnter={() => { hoveredBarRef.current = 'Corroborated'; }}
+                      onMouseLeave={() => { hoveredBarRef.current = null; }} />
                     <Bar
                       dataKey="Unique"
                       stackId="a"
@@ -547,7 +490,7 @@ export default function DiscoverCloudPage() {
                       onMouseEnter={() => { hoveredBarRef.current = 'Unique'; }}
                       onMouseLeave={() => { hoveredBarRef.current = null; }}
                       label={({ x, y, width, height, index }) => {
-                        const total = SOURCES_CHART_DATA[index].Corroborated + SOURCES_CHART_DATA[index].Unique
+                        const total = SOURCES_CHART_DATA[index].Corroborated + SOURCES_CHART_DATA[index].Unique;
                         return (
                           <text
                             x={x + width + 16}
@@ -557,22 +500,22 @@ export default function DiscoverCloudPage() {
                             fill="var(--shell-text-muted)"
                             fontFamily="Inter,system-ui"
                           >{total}%</text>
-                        )
+                        );
                       }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="dev-chart-legend" style={{ marginTop: 8 }}>
-                <span className="dev-legend-dot" style={{ background: 'var(--pai-chart-teal)' }} /><span>Corroborated</span>
-                <span className="dev-legend-dot" style={{ background: 'var(--pai-chart-purple)', marginLeft: 16 }} /><span>Unique</span>
+              <div className="dev-chart-legend">
+                <span className="dev-legend-dot dev-legend-dot--teal" /><span>Corroborated</span>
+                <span className="dev-legend-dot dev-legend-dot--purple" /><span>Unique</span>
               </div>
             </div>
 
             {/* Type + Donut */}
             <div className="card dev-card dev-type-card">
               <div className="dev-card-title">Type</div>
-              <div className="dev-donut-wrap" style={{ position: 'relative' }}>
+              <div className="dev-donut-wrap">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -596,20 +539,16 @@ export default function DiscoverCloudPage() {
                     <Tooltip content={DonutTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div style={{
-                  position: 'absolute', top: '50%', left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center', pointerEvents: 'none',
-                }}>
-                  <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}>Total</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>11,763</div>
+                <div className="dev-donut-center">
+                  <div className="dev-donut-center__label">Total</div>
+                  <div className="dev-donut-center__value">11,763</div>
                 </div>
               </div>
               <div className="dev-type-list">
                 {TYPES.map((t, i) => (
                   <div key={i} className="dev-type-row">
                     <div className="dev-type-row-left">
-                      <span className="dev-type-icon" style={{ color: t.color }}>{TYPE_ICONS[t.icon]}</span>
+                      <span className="dev-type-icon" style={{ '--type-color': t.color }}>{TYPE_ICONS[t.icon]}</span>
                       <span className="dev-type-name">{t.label}</span>
                     </div>
                     <div className="dev-type-row-right">
@@ -655,16 +594,14 @@ export default function DiscoverCloudPage() {
                       </td>
                       <td className="dev-td dev-td-name">{r.text}</td>
                       <td className="dev-td dev-td-findings">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120 }}>
-                          <div style={{ flex: 1, height: 6, background: 'var(--ctrl-bg)', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{ width: `${r.failPct}%`, height: '100%', background: 'var(--pai-crit-fg)', borderRadius: 3, transformOrigin: 'left', animation: 'devBarGrow 0.6s ease-out forwards' }} />
+                        <div className="dev-findings-bar">
+                          <div className="dev-findings-bar__track">
+                            <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', minWidth: 36, textAlign: 'right' }}>{r.failPct}%</span>
+                          <span className="dev-findings-bar__pct">{r.failPct}%</span>
                         </div>
                       </td>
-                      <td className="dev-td">
-                        {r.cat}
-                      </td>
+                      <td className="dev-td">{r.cat}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -690,22 +627,18 @@ export default function DiscoverCloudPage() {
                 {CRITICALITY.map((c, i) => (
                   <div
                     key={i}
+                    className="dev-crit-seg"
+                    data-dimmed={hoveredCrit !== null && hoveredCrit !== i ? 'true' : undefined}
+                    style={{ '--seg-flex': c.pct, '--seg-color': c.color }}
                     onMouseEnter={(e) => { setHoveredCrit(i); setCritTooltip({ i, x: e.clientX, y: e.clientY }); }}
                     onMouseMove={(e) => setCritTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                     onMouseLeave={() => { setHoveredCrit(null); setCritTooltip(null); }}
-                    style={{
-                      flex: c.pct,
-                      background: hoveredCrit === null || hoveredCrit === i ? c.color : 'var(--card-border)',
-                      borderRadius: 3,
-                      transition: 'background 150ms ease',
-                      cursor: 'pointer',
-                    }}
                   />
                 ))}
               </div>
               <div className="dev-crit-legend">
                 {CRITICALITY.map((c, i) => (
-                  <div key={i} className="dev-crit-leg-item" style={{ borderLeftColor: c.color }}>
+                  <div key={i} className="dev-crit-leg-item" style={{ '--crit-color': c.color }}>
                     <span className="dev-crit-leg-label">{c.label}</span>
                     <div className="dev-crit-leg-bottom">
                       <span className="dev-crit-leg-count">{c.count}</span>
@@ -743,7 +676,7 @@ export default function DiscoverCloudPage() {
                       <td className="dev-td dev-td-name">{a.name}</td>
                       <td className="dev-td">{a.type}</td>
                       <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
-                      <td className="dev-td" style={{ color: 'var(--pai-crit-fg)', fontWeight: 600 }}>{a.score.toLocaleString()}</td>
+                      <td className="dev-td dev-td-score">{a.score.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -793,14 +726,12 @@ export default function DiscoverCloudPage() {
                 <span className="dev-drawer-title">Trend Explore</span>
               </div>
               <div className="dev-drawer-body">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <div style={{ flexShrink: 0 }}>
-                    <div style={{ fontSize: 12, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}>Total</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--shell-text)', lineHeight: 1, letterSpacing: -0.5, fontFamily: 'Inter,system-ui', marginTop: 4 }}>
-                      {statValue.toLocaleString()}
-                    </div>
+                <div className="dev-drawer-controls">
+                  <div className="dev-drawer-stat">
+                    <div className="dev-drawer-stat__label">Total</div>
+                    <div className="dev-drawer-stat__value">{statValue.toLocaleString()}</div>
                   </div>
-                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                  <div className="dev-drawer-range-center">
                     <div className="dev-time-pills">
                       {TIME_RANGES.map(r => (
                         <button key={r} className={`dev-time-pill${drawerRange === r ? ' dev-time-pill--active' : ''}`} onClick={() => setDrawerRange(r)}>{r}</button>
@@ -813,32 +744,43 @@ export default function DiscoverCloudPage() {
                     options={['All','Type','Origin','Deployment Type','Environment','Asset Criticality']}
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--shell-text-2, #444)', fontFamily: 'Inter,system-ui', marginBottom: 16 }}>
+                <div className="dev-baseline-row">
                   <span>Baseline View</span>
-                  <label style={{ position: 'relative', display: 'inline-block', width: 32, height: 18, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={baselineView} onChange={e => setBaselineView(e.target.checked)} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: 18, background: baselineView ? 'var(--shell-accent)' : 'var(--ctrl-bg, #D8D8D8)', transition: 'background 150ms', display: 'block' }}>
-                      <span style={{ position: 'absolute', top: 2, left: baselineView ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
+                  <label className={`dev-toggle${baselineView ? ' dev-toggle--on' : ''}`}>
+                    <input type="checkbox" className="dev-toggle__input" checked={baselineView} onChange={e => setBaselineView(e.target.checked)} />
+                    <span className="dev-toggle__track">
+                      <span className="dev-toggle__thumb" />
                     </span>
                   </label>
                 </div>
-                <div ref={drawerChartRef} style={{ position: 'relative' }} onMouseMove={(e) => { const r = drawerChartRef.current?.getBoundingClientRect(); if (r) setDrawerTooltipPos({ x: e.clientX - r.left + 14, y: e.clientY - r.top - 40 }); }}>
+                <div
+                  className="dev-drawer-chart-wrap"
+                  ref={drawerChartRef}
+                  onMouseMove={(e) => { const r = drawerChartRef.current?.getBoundingClientRect(); if (r) setDrawerTooltipPos({ x: e.clientX - r.left + 14, y: e.clientY - r.top - 40 }); }}
+                >
                   {typeTooltipData && (
-                    <div style={{ position: 'absolute', left: drawerTooltipPos.x, top: drawerTooltipPos.y, pointerEvents: 'none', zIndex: 100, background: 'var(--card-bg)', border: `1px solid ${typeTooltipData.color}`, borderRadius: 8, padding: '12px 13px', minWidth: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{fmtDate(typeTooltipData.label)}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', marginBottom: typeTooltipData.pct !== null ? 8 : 0 }}>
+                    <div
+                      className="dev-type-tooltip"
+                      style={{ '--tt-color': typeTooltipData.color, left: drawerTooltipPos.x, top: drawerTooltipPos.y }}
+                    >
+                      <div className="dev-tip-title">{fmtDate(typeTooltipData.label)}</div>
+                      <div className={`dev-tip-row dev-tip-row--bold${typeTooltipData.pct !== null ? ' dev-tip-row--mb' : ''}`}>
                         <span>{typeTooltipData.key}</span>
-                        <span style={{ color: typeTooltipData.color }}>{typeTooltipData.value?.toLocaleString()}</span>
+                        <span className="dev-tt-accent">{typeTooltipData.value?.toLocaleString()}</span>
                       </div>
                       {typeTooltipData.pct !== null && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>
-                          <span style={{ color: Number(typeTooltipData.pct) >= 0 ? 'var(--pai-crit-fg)' : 'var(--pai-green)', display: 'flex', alignItems: 'center' }}>
-                            {Number(typeTooltipData.pct) >= 0
-                              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                              : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>}
-                            <span style={{ marginLeft: 2 }}>{Math.abs(Number(typeTooltipData.pct))}%</span>
-                          </span>
-                          &nbsp;from last period
+                        <div className="dev-tip-trend">
+                          {Number(typeTooltipData.pct) >= 0
+                            ? <span className="dev-tip-trend-up">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                <span>{Math.abs(Number(typeTooltipData.pct))}%</span>
+                              </span>
+                            : <span className="dev-tip-trend-down">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                                <span>{Math.abs(Number(typeTooltipData.pct))}%</span>
+                              </span>
+                          }
+                          from last period
                         </div>
                       )}
                     </div>
@@ -854,27 +796,31 @@ export default function DiscoverCloudPage() {
                           tickFormatter={yFmt}
                           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                         <Tooltip content={() => null} isAnimationActive={false} cursor={{ strokeWidth: 0 }} />
-                        {TYPES.map(t => { const effectiveHL = selectedType !== null ? selectedType : hoveredType; const isActive = !effectiveHL || effectiveHL === t.label; return (
-                          <Line key={t.label} type="monotone" dataKey={t.label} stroke={t.color} strokeWidth={2}
-                            isAnimationActive={false}
-                            strokeOpacity={isActive ? 1 : 0.2}
-                            dot={(dotProps) => { const { cx, cy } = dotProps; return <circle key={`d-${t.label}-${cx}`} cx={cx} cy={cy} r={4} fill={t.color} strokeWidth={0} opacity={isActive ? 1 : 0.2} />; }}
-                            activeDot={(dotProps) => {
-                              const { cx, cy, value, payload } = dotProps;
-                              const ttLabel = payload?.name;
-                              const data = typeRangeDataRef.current ?? [];
-                              const idx = data.findIndex(d => d.name === ttLabel);
-                              const prev = idx > 0 ? data[idx - 1]?.[t.label] : null;
-                              const pct = prev != null && prev > 0 ? (((value - prev) / prev) * 100).toFixed(2) : null;
-                              return (
-                                <circle key={`${t.label}-${cx}`} cx={cx} cy={cy} r={5} fill={t.color} strokeWidth={0} opacity={isActive ? 1 : 0.2}
-                                  onMouseEnter={() => { hoveredTypeRef.current = t.label; setHoveredType(t.label); setTypeTooltipData({ key: t.label, label: ttLabel, value, color: t.color, pct }); }}
-                                  onMouseLeave={() => { hoveredTypeRef.current = null; setHoveredType(null); setTypeTooltipData(null); }}
-                                />
-                              );
-                            }}
-                          />
-                        ); })}
+                        {TYPES.map(t => {
+                          const effectiveHL = selectedType !== null ? selectedType : hoveredType;
+                          const isActive = !effectiveHL || effectiveHL === t.label;
+                          return (
+                            <Line key={t.label} type="monotone" dataKey={t.label} stroke={t.color} strokeWidth={2}
+                              isAnimationActive={false}
+                              strokeOpacity={isActive ? 1 : 0.2}
+                              dot={(dotProps) => { const { cx, cy } = dotProps; return <circle key={`d-${t.label}-${cx}`} cx={cx} cy={cy} r={4} fill={t.color} strokeWidth={0} opacity={isActive ? 1 : 0.2} />; }}
+                              activeDot={(dotProps) => {
+                                const { cx, cy, value, payload } = dotProps;
+                                const ttLabel = payload?.name;
+                                const data = typeRangeDataRef.current ?? [];
+                                const idx = data.findIndex(d => d.name === ttLabel);
+                                const prev = idx > 0 ? data[idx - 1]?.[t.label] : null;
+                                const pct = prev != null && prev > 0 ? (((value - prev) / prev) * 100).toFixed(2) : null;
+                                return (
+                                  <circle key={`${t.label}-${cx}`} cx={cx} cy={cy} r={5} fill={t.color} strokeWidth={0} opacity={isActive ? 1 : 0.2}
+                                    onMouseEnter={() => { hoveredTypeRef.current = t.label; setHoveredType(t.label); setTypeTooltipData({ key: t.label, label: ttLabel, value, color: t.color, pct }); }}
+                                    onMouseLeave={() => { hoveredTypeRef.current = null; setHoveredType(null); setTypeTooltipData(null); }}
+                                  />
+                                );
+                              }}
+                            />
+                          );
+                        })}
                       </LineChart>
                     ) : (
                       <AreaChart data={drawerData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
@@ -897,26 +843,42 @@ export default function DiscoverCloudPage() {
                     )}
                   </ResponsiveContainer>
                   {isTypeFilter ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', fontSize: 12, fontFamily: 'Inter,system-ui', marginTop: 8 }}>
+                    <div className="dev-type-legend">
                       {TYPES.map(t => {
                         const f = typeRangeData[0]?.[t.label] ?? 0;
                         const l = typeRangeData[typeRangeData.length - 1]?.[t.label] ?? 0;
                         const pVal = f > 0 ? (((l - f) / f) * 100) : 0;
                         const up = pVal >= 0;
                         return (
-                          <span key={t.label} onClick={() => setSelectedType(prev => prev === t.label ? null : t.label)} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', opacity: selectedType && selectedType !== t.label ? 0.3 : 1, transition: 'opacity 150ms' }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.color, display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ color: t.color }}>{t.label}</span>
-                            {!baselineView && <span style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>{up ? <IcTrendUp size={12} color={t.color} /> : <IcTrendDown size={12} color={t.color} />}<span style={{ color: t.color, fontWeight: 600 }}>{Math.abs(pVal).toFixed(2)}%</span></span>}
+                          <span
+                            key={t.label}
+                            className="dev-type-leg-item"
+                            data-dimmed={selectedType && selectedType !== t.label ? 'true' : undefined}
+                            style={{ '--type-color': t.color }}
+                            onClick={() => setSelectedType(prev => prev === t.label ? null : t.label)}
+                          >
+                            <span className="dev-type-leg-dot" />
+                            <span className="dev-type-leg-label">{t.label}</span>
+                            {!baselineView && (
+                              <span className="dev-type-leg-trend">
+                                {up ? <IcTrendUp size={12} color={t.color} /> : <IcTrendDown size={12} color={t.color} />}
+                                <span className="dev-type-leg-pct">{Math.abs(pVal).toFixed(2)}%</span>
+                              </span>
+                            )}
                           </span>
                         );
                       })}
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, fontFamily: 'Inter,system-ui', marginTop: 8 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--pai-indigo)', display: 'inline-block', flexShrink: 0 }} />
-                      <span style={{ color: 'var(--pai-indigo)' }}>Total</span>
-                      {!baselineView && <>{isUp ? <IcTrendUp size={12} color="var(--pai-indigo)" /> : <IcTrendDown size={12} color="var(--pai-indigo)" />}<span style={{ color: 'var(--pai-indigo)', fontWeight: 600 }}>{Math.abs(Number(trendPct)).toFixed(2)}%</span></>}
+                    <div className="dev-single-legend">
+                      <span className="dev-single-leg-dot" />
+                      <span className="dev-single-leg-label">Total</span>
+                      {!baselineView && (
+                        <>
+                          {isUp ? <IcTrendUp size={12} color="var(--pai-indigo)" /> : <IcTrendDown size={12} color="var(--pai-indigo)" />}
+                          <span className="dev-single-leg-pct">{Math.abs(Number(trendPct)).toFixed(2)}%</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -925,28 +887,30 @@ export default function DiscoverCloudPage() {
           </>
         );
       })()}
-    {critTooltip !== null && (() => {
-      const c = CRITICALITY[critTooltip.i];
-      return (
-        <div style={{
-          position: 'fixed', left: c.label === 'Low' ? critTooltip.x - 200 : critTooltip.x + 14, top: critTooltip.y - 64,
-          background: 'var(--card-bg)', border: '1px solid var(--card-border)',
-          borderRadius: 8, padding: '10px 14px', zIndex: 9999, pointerEvents: 'none',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 140,
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{c.label}</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12 }}>
-            <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-            <span style={{ fontWeight: 600, color: c.color }}>{c.count}</span>
+
+      {critTooltip !== null && (() => {
+        const c = CRITICALITY[critTooltip.i];
+        return (
+          <div
+            className="dev-crit-tooltip"
+            style={{
+              '--crit-color': c.color,
+              left: c.label === 'Low' ? critTooltip.x - 200 : critTooltip.x + 14,
+              top: critTooltip.y - 64,
+            }}
+          >
+            <div className="dev-crit-tooltip__title">{c.label}</div>
+            <div className="dev-crit-tooltip__row">
+              <span className="dev-crit-tooltip__label">Count</span>
+              <span className="dev-crit-tooltip__value">{c.count}</span>
+            </div>
+            <div className="dev-crit-tooltip__row">
+              <span className="dev-crit-tooltip__label">Percentage</span>
+              <span className="dev-crit-tooltip__value">{c.pct.toFixed(2)}%</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginTop: 4 }}>
-            <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-            <span style={{ fontWeight: 600, color: c.color }}>{c.pct.toFixed(2)}%</span>
-          </div>
-        </div>
-      );
-    })()}
+        );
+      })()}
     </div>
   );
 }

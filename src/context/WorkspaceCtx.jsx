@@ -26,8 +26,20 @@ function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
           fontSize: 13, fontFamily: 'inherit', color: 'var(--pai-fg1)', minWidth: 0,
         }}
       />
+      {value && (
+        <button
+          onMouseDown={e => { e.preventDefault(); onChange(''); }}
+          style={{
+            width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--pai-fg3)', borderRadius: 999, flexShrink: 0, marginLeft: 4,
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      )}
       <span style={{
-        width: 24, height: 24, marginLeft: 6, borderRadius: '50%',
+        width: 24, height: 24, marginLeft: 4, borderRadius: '50%',
         background: 'var(--pai-indigo-tint)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         color: 'var(--pai-indigo)', flexShrink: 0,
@@ -71,6 +83,8 @@ function WorkspaceProvider({ children, onNav }) {
   const [savedVisibility, setSavedVisibility] = React.useState('all');
   const [savedSearch, setSavedSearch] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [uploadedFile, setUploadedFile] = React.useState(null);   // File object
+  const [uploadSource, setUploadSource] = React.useState('html'); // 'html' | 'design'
 
   const addWidget = React.useCallback((w) => {
     setWidgets(prev => {
@@ -116,6 +130,8 @@ function WorkspaceProvider({ children, onNav }) {
       savedVisibility, setSavedVisibility,
       savedSearch, setSavedSearch,
       deleteTarget, openDeleteModal, closeDeleteModal,
+      uploadedFile, setUploadedFile,
+      uploadSource, setUploadSource,
     }}>
       {children}
     </WorkspaceContext.Provider>

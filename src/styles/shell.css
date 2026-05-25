@@ -78,8 +78,46 @@
 .leftnav__header--collapsed { padding: 0 10px; }
 .leftnav__org { flex: 1; min-width: 0; }
 .leftnav__org-name-row { display: flex; align-items: center; gap: 6px; }
-.leftnav__org-name { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.2; }
+.leftnav__org-name-row--clickable { cursor: pointer; user-select: none; }
+.leftnav__org-name-row--clickable:hover .leftnav__org-name { color: var(--shell-accent); }
+.leftnav__org-name { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.2; transition: color 120ms; }
 .leftnav__org-sub { font-size: 11px; color: var(--shell-text-muted); margin-top: 2px; }
+.leftnav__org-chevron {
+  display: inline-flex; color: var(--shell-text-muted); flex-shrink: 0;
+  transition: transform 150ms cubic-bezier(.2,.8,.2,1), color 120ms;
+}
+.leftnav__org-chevron--open { transform: rotate(180deg); color: var(--shell-accent); }
+
+/* App-mode dropdown */
+.leftnav__header { position: relative; }
+.leftnav__mode-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 8px;
+  width: 188px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+  z-index: 200;
+  padding: 4px;
+}
+.leftnav__mode-option {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 10px;
+  background: transparent; border: none; border-radius: 6px;
+  cursor: pointer; font-size: 12px; font-weight: 500;
+  color: var(--shell-text); font-family: inherit; text-align: left;
+  transition: background 120ms;
+}
+.leftnav__mode-option:hover { background: var(--shell-hover); }
+.leftnav__mode-option-img { flex-shrink: 0; }
+.leftnav__mode-option-label { flex: 1; }
+.leftnav__mode-option-soon {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--pai-indigo-secondary); color: #fff;
+  border-radius: 44px; padding: 1px 6px; flex-shrink: 0;
+}
+
 .leftnav__toggle-btn {
   width: 24px; height: 24px; padding: 0;
   border: 1px solid var(--shell-border); background: var(--card-bg);
