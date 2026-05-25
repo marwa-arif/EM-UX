@@ -486,10 +486,17 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
     return false;
   };
 
-  // Pixel-space padding so the node circle (r≈22) and its label stay fully visible.
+  // Project SVG element corners → viewBox coords so all clamps track the
+  // actual rendered canvas regardless of element size or zoom level.
+  // Padding: PAD_X keeps nodes off the side walls; PAD_TOP/BOT clears the
+  // node geometry (r=22, halo r+6=28, label ~42).
   const PAD_X = 30, PAD_TOP = 30, PAD_BOT = 44;
 
-  // Convert client (mouse) coords → SVG viewBox coords.
+  const svgRect = () => {
+    const svg = svgRef.current;
+    return svg ? svg.getBoundingClientRect() : { left: 0, top: 0, right: 0, bottom: 0 };
+  };
+
   const toSvgPoint = (clientX, clientY) => {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
@@ -497,14 +504,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
     pt.x = clientX; pt.y = clientY;
     const ctm = svg.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
-    const p = pt.matrixTransform(ctm.inverse());
-    return { x: p.x, y: p.y };
-  };
-
-  // Live SVG bounding rect in client pixels — re-read every drag tick.
-  const svgRect = () => {
-    const svg = svgRef.current;
-    return svg ? svg.getBoundingClientRect() : { left: 0, top: 0, right: 0, bottom: 0 };
+    return pt.matrixTransform(ctm.inverse());
   };
 
   const onNodeDown = (id, e) => {
@@ -523,13 +523,9 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         const ny = p.y - drag.current.dy;
         const cur = displayPositions[id];
         if (Math.hypot(nx - cur.x, ny - cur.y) > 2) drag.current.moved = true;
-        // Project the SVG's actual visible client rect into viewBox coords so the
-        // clamp tracks the true canvas boundary at any container size or zoom level.
         const r = svgRect();
-        const tl = toSvgPoint(r.left,  r.top);
+        const tl = toSvgPoint(r.left, r.top);
         const br = toSvgPoint(r.right, r.bottom);
-        // Clamp nx/ny in display (viewBox) space, then un-project through the
-        // horizontal-compression transform to get the logical position to store.
         const cnx = Math.max(tl.x + PAD_X, Math.min(br.x - PAD_X, nx));
         const cny = Math.max(tl.y + PAD_TOP, Math.min(br.y - PAD_BOT, ny));
         const k = 1 - panelShift * SHIFT_AMOUNT;
@@ -544,7 +540,11 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         const r = svg.getBoundingClientRect();
         const scaleX = view.w / r.width;
         const scaleY = view.h / r.height;
-        setView(v => ({ ...v, x: pan.current.vx - dx * scaleX, y: pan.current.vy - dy * scaleY }));
+        setView(v => ({
+          ...v,
+          x: pan.current.vx - dx * scaleX,
+          y: pan.current.vy - dy * scaleY,
+        }));
       }
     };
     const onUp = () => {
@@ -576,23 +576,19 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
 
     const reclampAll = () => {
       const r = svgRect();
-      const tl = toSvgPoint(r.left,  r.top);
+      const tl = toSvgPoint(r.left, r.top);
       const br = toSvgPoint(r.right, r.bottom);
-      const minX = tl.x + PAD_X,   maxX = br.x - PAD_X;
+      const minX = tl.x + PAD_X, maxX = br.x - PAD_X;
       const minY = tl.y + PAD_TOP, maxY = br.y - PAD_BOT;
       if (!(maxX > minX) || !(maxY > minY)) return;
 
       setPositions(prev => {
-        const k = 1 - panelShiftRef.current * SHIFT_AMOUNT;
         let changed = false;
         const next = {};
         for (const id in prev) {
           const p = prev[id];
-          // Convert logical → display, clamp in display space, convert back.
-          const dispX = SHIFT_CX + (p.x - SHIFT_CX) * k;
-          const cdx = Math.max(minX, Math.min(maxX, dispX));
-          const nx  = SHIFT_CX + (cdx - SHIFT_CX) / (k || 1);
-          const ny  = Math.max(minY, Math.min(maxY, p.y));
+          const nx = Math.max(minX, Math.min(maxX, p.x));
+          const ny = Math.max(minY, Math.min(maxY, p.y));
           if (nx !== p.x || ny !== p.y) changed = true;
           next[id] = { x: nx, y: ny };
         }
@@ -620,7 +616,9 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         const newH = newW * (440/940);
         const cx = v.x + v.w * px;
         const cy = v.y + v.h * py;
-        return { x: cx - newW * px, y: cy - newH * py, w: newW, h: newH };
+        const rawX = cx - newW * px;
+        const rawY = cy - newH * py;
+        return { x: rawX, y: rawY, w: newW, h: newH };
       });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -646,7 +644,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         backgroundPosition: '0 0',
         userSelect: 'none',
         cursor: panning ? 'grabbing' : 'grab',
-        overflow: 'visible',
+        overflow: 'hidden',
       }}
       onMouseDown={(e) => {
         // Begin pan when clicking empty canvas (svg background)
@@ -667,7 +665,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         }
       }}
     >
-      <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" overflow="visible">
+      <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
         {/* Self-relations rendered as petals — short outward stub lines
             radiating from the node with the label at the tip. Multiple
             self-relations fan across the top so each gets its own slot. */}
@@ -1062,7 +1060,7 @@ function Th({ children }) {
 }
 
 // ── Details Table ────────────────────────────────────────────────────
-function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
+function DetailsTable({ rows, totalCount, search, onSearch }) {
   const PAGE_SIZE = 10;
   // We never render more than PAGE_SIZE rows on screen, even if the source
   // dataset has more — pagination is *visual* (the underlying ROWS are a
@@ -1135,11 +1133,9 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
                 <tr key={i} style={{
                   borderBottom: '1px solid var(--border)',
                   transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
-                  cursor: onRowClick ? 'pointer' : 'default',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
-                onClick={() => onRowClick && onRowClick(r)}
                 >
                   <td style={{ padding: '10px 12px', color: PAI.fg1, fontWeight: 500, whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</td>
                   <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}>
@@ -1232,6 +1228,646 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// SankeyView — Data Sources tab (Origins → Contribution → Entities)
+// ─────────────────────────────────────────────────────────────────────
+
+const SK_SOURCES = [
+  { id: 'aws',            label: 'AWS',                         color: '#E05C5C' },
+  { id: 'msAzure',        label: 'MS Azure',                    color: '#E07090' },
+  { id: 'msAD',           label: 'MS Active Directory',         color: '#D4B800' },
+  { id: 'msAzureAD',      label: 'MS Azure AD',                 color: '#4BBDBA' },
+  { id: 'qualys',         label: 'Qualys',                      color: '#5BBFBD' },
+  { id: 'msIntune',       label: 'MS Intune',                   color: '#4CAF50' },
+  { id: 'wiz',            label: 'Wiz',                         color: '#E91E8C' },
+  { id: 'msDefender',     label: 'MS Defender',                 color: '#FF9800' },
+  { id: 'winSecLogs',     label: 'Windows Security Logs',       color: '#9E8EC8' },
+  { id: 'tenableSc',      label: 'Tenable.sc',                  color: '#FFA726' },
+  { id: 'serviceNow',     label: 'ServiceNow',                  color: '#B0A8D8' },
+  { id: 'msADExtract',    label: 'MS Active Directory Extract', color: '#C0B8E8' },
+  { id: 'crowdStrike',    label: 'CrowdStrike',                 color: '#FFB3B3' },
+  { id: 'mega',           label: 'Mega',                        color: '#90A4B8' },
+  { id: 'awsCloudtrail',  label: 'AWS Cloudtrail',              color: '#B8C8D8' },
+  { id: 'awsIAMUsers',    label: 'AWS IAM Users',               color: '#B8C8D8' },
+  { id: 'bambooHR',       label: 'BambooHR',                    color: '#C8D0D8' },
+  { id: 'successFactors', label: 'SuccessFactors',              color: '#C8D0D8' },
+  { id: 'awsIAMCenter',   label: 'AWS IAM Center',              color: '#C8D0D8' },
+];
+
+const SK_ENTITIES = [
+  { id: 'account',   label: 'Account',           color: '#E05C5C' },
+  { id: 'storage',   label: 'Storage',           color: '#E07090' },
+  { id: 'netIface',  label: 'Network Interface', color: '#4BBDBA' },
+  { id: 'container', label: 'Container',         color: '#9E8EC8' },
+  { id: 'network',   label: 'Network',           color: '#4CAF50' },
+  { id: 'cluster',   label: 'Cluster',           color: '#2040A0' },
+  { id: 'netSvc',    label: 'Network Services',  color: '#89A833' },
+  { id: 'cloudAcct', label: 'Cloud Account',     color: '#3B43B0' },
+  { id: 'host',      label: 'Host',              color: '#2B5690' },
+  { id: 'identity',  label: 'Identity',          color: '#A842D2' },
+  { id: 'app',       label: 'Application',       color: '#303030' },
+  { id: 'person',    label: 'Person',            color: '#2E7690' },
+];
+
+// [sourceId, 'unique'|'corroborated', value]
+const SK_SRC_CONTRIB = [
+  // → Unique (total 49,704)
+  ['aws','unique',9747],['msAzure','unique',516],
+  ['msAD','unique',19397],['msAzureAD','unique',7194],
+  ['qualys','unique',5521],['msIntune','unique',4800],
+  ['wiz','unique',1205],['msDefender','unique',1185],
+  ['tenableSc','unique',132],['mega','unique',7],
+  // → Corroborated (total 356,496)
+  ['msAD','corroborated',32375],['msAzureAD','corroborated',68517],
+  ['qualys','corroborated',23214],['msIntune','corroborated',48298],
+  ['wiz','corroborated',3614],['msDefender','corroborated',43911],
+  ['winSecLogs','corroborated',52139],['tenableSc','corroborated',668],
+  ['serviceNow','corroborated',39549],['msADExtract','corroborated',37048],
+  ['crowdStrike','corroborated',3268],['mega','corroborated',3189],
+  ['awsCloudtrail','corroborated',133],['awsIAMUsers','corroborated',1],
+  ['bambooHR','corroborated',152],['successFactors','corroborated',148],
+  ['awsIAMCenter','corroborated',272],
+];
+
+// [contrib, entityId, value]
+const SK_CONTRIB_ENT = [
+  // Unique → entities (total 49,704)
+  ['unique','account',15253],['unique','storage',5541],['unique','netIface',3303],
+  ['unique','container',358],['unique','network',77],['unique','cluster',231],
+  ['unique','netSvc',253],['unique','cloudAcct',15],
+  ['unique','host',9761],['unique','identity',13721],['unique','app',1187],['unique','person',4],
+  // Corroborated → entities (total 356,496)
+  ['corroborated','account',96],
+  ['corroborated','host',215810],['corroborated','identity',133201],
+  ['corroborated','app',6378],['corroborated','person',1011],
+];
+
+function computeSankeyLayout(W, H, opts) {
+  const {
+    sources    = SK_SOURCES,
+    entities   = SK_ENTITIES,
+    srcContrib = SK_SRC_CONTRIB,
+    contribEnt = SK_CONTRIB_ENT,
+  } = opts || {};
+
+  const NW = 8;    // node bar width
+  const LL = 185;  // left label space (source labels right-aligned)
+  const LR = 148;  // right label space (entity labels left-aligned)
+  const NG = 4;    // vertical gap between same-column nodes
+  const CG = 16;   // gap between Unique / Corroborated
+  const PT = 32;   // top padding (column headers)
+  const PB = 8;
+
+  const srcX     = LL;
+  const entX     = W - LR - NW;
+  const contribX = Math.round((srcX + NW + entX) / 2);
+
+  const srcTotals = {};
+  const contribIn = { unique: 0, corroborated: 0 };
+  srcContrib.forEach(([s, c, v]) => { srcTotals[s] = (srcTotals[s] || 0) + v; contribIn[c] += v; });
+  const contribOut = { unique: 0, corroborated: 0 };
+  const entTotals  = {};
+  contribEnt.forEach(([c, e, v]) => { contribOut[c] += v; entTotals[e] = (entTotals[e] || 0) + v; });
+  const totalFlow = Object.values(srcTotals).reduce((s, v) => s + v, 0) || 1;
+  const availH    = H - PT - PB;
+
+  function layoutNodes(items, getVal, x) {
+    const MIN_H = 14;  // font(11) + label-gap(3) — ensures no label overlap at NG=4 spacing
+    const totalGap = (items.length - 1) * NG;
+    const nodeSpace = availH - totalGap;
+    // First pass: proportional with minimum
+    const raw = items.map(it => Math.max(MIN_H, getVal(it.id) / totalFlow * nodeSpace));
+    const rawTotal = raw.reduce((s, v) => s + v, 0);
+    // Scale down proportionally if minimums caused overflow
+    const scale = rawTotal > nodeSpace ? nodeSpace / rawTotal : 1;
+    let y = PT;
+    return items.map((it, i) => {
+      const h = raw[i] * scale;
+      const node = { x, y, h };
+      y += h + NG;
+      return [it.id, node];
+    });
+  }
+
+  const srcNodes = Object.fromEntries(layoutNodes(sources,  id => srcTotals[id] || 0, srcX));
+  const entNodes = Object.fromEntries(layoutNodes(entities, id => entTotals[id] || 0, entX));
+
+  // Use the same px-per-unit scale as source nodes so contribution blocks
+  // don't inflate to full height. Then center them vertically with equal
+  // empty space above and below.
+  const srcNodeSpace = availH - (sources.length - 1) * NG;
+  const uH = Math.max(4, contribIn.unique       / totalFlow * srcNodeSpace);
+  const cH = Math.max(4, contribIn.corroborated / totalFlow * srcNodeSpace);
+  const midTotalH = uH + CG + cH;
+  const midStartY = PT + (availH - midTotalH) / 2;
+  const contribNodes = {
+    unique:       { x: contribX, y: midStartY,           h: uH, label: 'Unique',       color: '#6360D8' },
+    corroborated: { x: contribX, y: midStartY + uH + CG, h: cH, label: 'Corroborated', color: '#4AB5C4' },
+  };
+
+  // Source → contribution ribbons (unique first so they stack at top of each source bar)
+  const srcOff  = {};
+  sources.forEach(s => { srcOff[s.id] = 0; });
+  const cInOff  = { unique: 0, corroborated: 0 };
+  const scRibbons = [];
+  for (const contrib of ['unique', 'corroborated']) {
+    srcContrib.filter(([, c]) => c === contrib).forEach(([src, , val]) => {
+      const sn = srcNodes[src], cn = contribNodes[contrib];
+      if (!sn) return;
+      const rhs = Math.max(0.5, (val / (srcTotals[src]      || 1)) * sn.h);
+      const rhc = Math.max(0.5, (val / (contribIn[contrib]  || 1)) * cn.h);
+      const y0t = sn.y + srcOff[src],     y0b = y0t + rhs;
+      const y1t = cn.y + cInOff[contrib], y1b = y1t + rhc;
+      const mx  = (sn.x + NW + cn.x) / 2;
+      scRibbons.push({
+        key: `sc-${src}-${contrib}`, srcId: src, contrib, val,
+        color: sources.find(s => s.id === src)?.color || '#ccc',
+        path:  `M${sn.x+NW} ${y0t}C${mx} ${y0t},${mx} ${y1t},${cn.x} ${y1t}L${cn.x} ${y1b}C${mx} ${y1b},${mx} ${y0b},${sn.x+NW} ${y0b}Z`,
+        label: `${sources.find(s => s.id === src)?.label || src} → ${contrib === 'unique' ? 'Unique' : 'Corroborated'}`,
+      });
+      srcOff[src]      += rhs;
+      cInOff[contrib]  += rhc;
+    });
+  }
+
+  // Contribution → entity ribbons
+  const cOutOff = { unique: 0, corroborated: 0 };
+  const entOff  = {};
+  entities.forEach(e => { entOff[e.id] = 0; });
+  const ceRibbons = [];
+  for (const contrib of ['unique', 'corroborated']) {
+    contribEnt.filter(([c]) => c === contrib).forEach(([, ent, val]) => {
+      const cn = contribNodes[contrib], en = entNodes[ent];
+      if (!en) return;
+      const rhc = Math.max(0.5, (val / (contribOut[contrib] || 1)) * cn.h);
+      const rhe = Math.max(0.5, (val / (entTotals[ent]      || 1)) * en.h);
+      const y0t = cn.y + cOutOff[contrib], y0b = y0t + rhc;
+      const y1t = en.y + entOff[ent],      y1b = y1t + rhe;
+      const mx  = (cn.x + NW + en.x) / 2;
+      ceRibbons.push({
+        key: `ce-${contrib}-${ent}`, contrib, entId: ent, val,
+        color: contribNodes[contrib].color,
+        path:  `M${cn.x+NW} ${y0t}C${mx} ${y0t},${mx} ${y1t},${en.x} ${y1t}L${en.x} ${y1b}C${mx} ${y1b},${mx} ${y0b},${cn.x+NW} ${y0b}Z`,
+        label: `${contrib === 'unique' ? 'Unique' : 'Corroborated'} → ${entities.find(e => e.id === ent)?.label || ent}`,
+      });
+      cOutOff[contrib] += rhc;
+      entOff[ent]      += rhe;
+    });
+  }
+
+  return { srcNodes, contribNodes, entNodes, scRibbons, ceRibbons, NW, LL, LR, CG, srcTotals, entTotals, contribIn, srcX, entX, contribX };
+}
+
+// ── SankeyFilterPopup — checkbox filter panel for Origin/Contribution/Entities
+function SankeyFilterPopup({ type, items, selected, operator, onApply, onClose, anchorX, svgW }) {
+  const [search, setSearch] = useState('');
+  const [draft, setDraft] = useState(() => new Set(selected));
+  const [draftOp, setDraftOp] = useState(operator || 'OR');
+
+  const filtered = items.filter(it =>
+    !search || it.label.toLowerCase().includes(search.toLowerCase())
+  );
+  const allChecked = filtered.length > 0 && filtered.every(i => draft.has(i.id));
+  const someChecked = !allChecked && filtered.some(i => draft.has(i.id));
+
+  const toggle = (id) => setDraft(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const toggleAll = () => setDraft(prev => {
+    const n = new Set(prev);
+    allChecked ? filtered.forEach(i => n.delete(i.id)) : filtered.forEach(i => n.add(i.id));
+    return n;
+  });
+  const selectInverse = () => setDraft(prev => {
+    const n = new Set();
+    filtered.forEach(i => { if (!prev.has(i.id)) n.add(i.id); });
+    prev.forEach(id => { if (!filtered.find(i => i.id === id)) n.add(id); });
+    return n;
+  });
+
+  const title = type === 'origin' ? 'Filter Origin' :
+                type === 'contrib' ? 'Filter Contribution' : 'Filter Entities';
+  const popupW = 280;
+  const left = Math.max(0, Math.min(anchorX - 20, svgW - popupW));
+
+  return (
+    <div style={{
+      position: 'absolute', top: 30, left,
+      width: popupW, zIndex: 40,
+      background: 'var(--bg-surface, #fff)',
+      border: '1px solid var(--border, #E6E6E6)',
+      borderRadius: 8,
+      boxShadow: '0 8px 24px rgba(16,16,16,0.12)',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '12px 16px 8px',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', flex: 1 }}>{title}</span>
+        <button onClick={onClose} style={{
+          width: 24, height: 24, padding: 0, border: 'none', background: 'transparent',
+          cursor: 'pointer', color: 'var(--fg-3)', display: 'inline-flex',
+          alignItems: 'center', justifyContent: 'center', borderRadius: 4,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ padding: '8px 12px 4px' }}>
+        <DSPillSearch value={search} onChange={setSearch} placeholder="Search" width="100%" />
+      </div>
+
+      {type === 'origin' && (
+        <div style={{ padding: '6px 12px' }}>
+          <SegmentedTabs value={draftOp} options={['AND', 'OR', 'EXACT']} onChange={setDraftOp} fullWidth />
+        </div>
+      )}
+
+      <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={allChecked}
+            ref={el => { if (el) el.indeterminate = someChecked; }}
+            onChange={toggleAll}
+            style={{ width: 14, height: 14, accentColor: 'var(--pai-indigo)', cursor: 'pointer' }}
+          />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)' }}>Select All</span>
+        </label>
+        {filtered.map(item => (
+          <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={draft.has(item.id)}
+              onChange={() => toggle(item.id)}
+              style={{ width: 14, height: 14, accentColor: 'var(--pai-indigo)', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--fg-1)' }}>{item.label}</span>
+          </label>
+        ))}
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '8px 12px',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <button onClick={selectInverse} style={{
+          background: 'transparent', border: 'none', padding: 0,
+          color: 'var(--pai-indigo)', fontSize: 12, fontWeight: 500,
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>Select Inverse</button>
+        <div style={{ flex: 1 }} />
+        <button onClick={onClose} style={{
+          height: 30, padding: '0 14px', marginRight: 8,
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
+          borderRadius: 44, color: 'var(--fg-1)',
+          fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+        }}>Cancel</button>
+        <button onClick={() => { onApply(draft, draftOp); onClose(); }} style={{
+          height: 30, padding: '0 16px',
+          background: 'var(--pai-indigo)', border: 'none',
+          borderRadius: 44, color: '#fff',
+          fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+        }}>Apply</button>
+      </div>
+    </div>
+  );
+}
+
+function SankeyView() {
+  const containerRef = useRef(null);
+  const [svgW, setSvgW] = useState(900);
+  const [activeAssets, setActiveAssets] = useState(true);
+  const [hovered, setHovered] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [tooltip, setTooltip] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [openFilter, setOpenFilter] = useState(null);
+  const [filterOrigin, setFilterOrigin] = useState(() => new Set(SK_SOURCES.map(s => s.id)));
+  const [filterContrib, setFilterContrib] = useState(() => new Set(['unique', 'corroborated']));
+  const [filterEntities, setFilterEntities] = useState(() => new Set(SK_ENTITIES.map(e => e.id)));
+  const [originOperator, setOriginOperator] = useState('OR');
+  const isDark = useDark();
+  const H = 680;
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(es => setSvgW(Math.max(500, es[0].contentRect.width)));
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const filteredSources    = useMemo(() => SK_SOURCES.filter(s => filterOrigin.has(s.id)),    [filterOrigin]);
+  const filteredEntities   = useMemo(() => SK_ENTITIES.filter(e => filterEntities.has(e.id)), [filterEntities]);
+  const filteredSrcContrib = useMemo(() => SK_SRC_CONTRIB.filter(([s, c]) => filterOrigin.has(s) && filterContrib.has(c)), [filterOrigin, filterContrib]);
+  const filteredContribEnt = useMemo(() => SK_CONTRIB_ENT.filter(([c, e]) => filterContrib.has(c) && filterEntities.has(e)), [filterContrib, filterEntities]);
+
+  const layout = useMemo(() => computeSankeyLayout(svgW, H, {
+    sources: filteredSources, entities: filteredEntities,
+    srcContrib: filteredSrcContrib, contribEnt: filteredContribEnt,
+  }), [svgW, filteredSources, filteredEntities, filteredSrcContrib, filteredContribEnt]);
+  const { srcNodes, contribNodes, entNodes, scRibbons, ceRibbons, NW, LL, LR, CG, srcTotals, entTotals, contribIn } = layout;
+
+  // `selected` (click-pinned) takes priority over `hovered` for path highlighting
+  function eff() { return selected || hovered; }
+
+  function isNodeActive(col, id) {
+    const e = eff();
+    if (!e) return true;
+    if (e.type === 'srcNode') {
+      if (col === 'src')     return e.id === id;
+      if (col === 'contrib') return scRibbons.some(r => r.srcId === e.id && r.contrib === id);
+      if (col === 'ent') {
+        const cs = new Set(scRibbons.filter(r => r.srcId === e.id).map(r => r.contrib));
+        return ceRibbons.some(r => cs.has(r.contrib) && r.entId === id);
+      }
+    }
+    if (e.type === 'contribNode') {
+      if (col === 'src')     return scRibbons.some(r => r.contrib === e.id && r.srcId === id);
+      if (col === 'contrib') return e.id === id;
+      if (col === 'ent')     return ceRibbons.some(r => r.contrib === e.id && r.entId === id);
+    }
+    if (e.type === 'entNode') {
+      if (col === 'ent')     return e.id === id;
+      if (col === 'contrib') return ceRibbons.some(r => r.entId === e.id && r.contrib === id);
+      if (col === 'src') {
+        const cs = new Set(ceRibbons.filter(r => r.entId === e.id).map(r => r.contrib));
+        return scRibbons.some(r => cs.has(r.contrib) && r.srcId === id);
+      }
+    }
+    if (e.type === 'sc') {
+      const r = scRibbons.find(r => r.key === e.key);
+      if (col === 'src')     return r?.srcId   === id;
+      if (col === 'contrib') return r?.contrib === id;
+      if (col === 'ent')     return ceRibbons.some(cr => cr.contrib === r?.contrib && cr.entId === id);
+    }
+    if (e.type === 'ce') {
+      const r = ceRibbons.find(r => r.key === e.key);
+      if (col === 'ent')     return r?.entId   === id;
+      if (col === 'contrib') return r?.contrib === id;
+      if (col === 'src')     return scRibbons.some(sr => sr.contrib === r?.contrib && sr.srcId === id);
+    }
+    return false;
+  }
+
+  function scOp(r) {
+    const e = eff();
+    if (!e) return 0.35;
+    if (e.type === 'sc')          return e.key === r.key ? 0.72 : 0.07;
+    if (e.type === 'srcNode')     return e.id  === r.srcId   ? 0.72 : 0.07;
+    if (e.type === 'contribNode') return e.id  === r.contrib ? 0.72 : 0.07;
+    if (e.type === 'ce') {
+      const cr = ceRibbons.find(cr => cr.key === e.key);
+      return cr?.contrib === r.contrib ? 0.72 : 0.07;
+    }
+    if (e.type === 'entNode') {
+      const cs = new Set(ceRibbons.filter(cr => cr.entId === e.id).map(cr => cr.contrib));
+      return cs.has(r.contrib) ? 0.72 : 0.07;
+    }
+    return 0.35;
+  }
+
+  function ceOp(r) {
+    const e = eff();
+    if (!e) return 0.35;
+    if (e.type === 'ce')          return e.key === r.key ? 0.72 : 0.07;
+    if (e.type === 'contribNode') return e.id  === r.contrib ? 0.72 : 0.07;
+    if (e.type === 'entNode')     return e.id  === r.entId   ? 0.72 : 0.07;
+    if (e.type === 'sc') {
+      const sr = scRibbons.find(sr => sr.key === e.key);
+      return sr?.contrib === r.contrib ? 0.72 : 0.07;
+    }
+    if (e.type === 'srcNode') {
+      const cs = new Set(scRibbons.filter(sr => sr.srcId === e.id).map(sr => sr.contrib));
+      return cs.has(r.contrib) ? 0.72 : 0.07;
+    }
+    return 0.35;
+  }
+
+  const FG1   = isDark ? '#D1D1D1' : '#282828';
+  const FG3   = isDark ? '#8A8A8A' : '#6E6E6E';
+  const HDR_Y = 22;
+
+  return (
+    <div>
+      {/* Description + controls */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '12px 16px 8px', gap: 16 }}>
+        <p style={{ fontSize: 12, color: FG3, margin: 0, lineHeight: 1.55 }}>
+          Entity origins showing contribution to the entity from each origin supported by whether it is uniquely found in an origin or corroborated from multiple origins.{' '}
+          <em>Showing only active assets by default.</em>
+        </p>
+        <SegmentedTabs
+          value={activeAssets ? 'Assets' : 'All Entities'}
+          onChange={v => setActiveAssets(v === 'Assets')}
+          options={['Assets', 'All Entities']}
+          height={28}
+        />
+      </div>
+
+      {/* Chart */}
+      <div style={{ padding: '0 16px' }}>
+        <div ref={containerRef} style={{ position: 'relative' }}>
+          <svg
+            width={svgW} height={H}
+            style={{ display: 'block', overflow: 'visible' }}
+            onMouseMove={e => {
+              const rc = e.currentTarget.getBoundingClientRect();
+              setMousePos({ x: e.clientX - rc.left, y: e.clientY - rc.top });
+            }}
+            onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+            onClick={() => setSelected(null)}
+          >
+            {/* Column headers */}
+            {[
+              { id: 'origin',  label: 'Origin',       x: layout.srcX },
+              { id: 'contrib', label: 'Contribution', x: layout.contribX },
+              { id: 'ents',    label: 'Entities',     x: layout.entX + NW + 8 },
+            ].map(({ id, label, x }) => {
+              const isActive = id === 'origin' ? filterOrigin.size < SK_SOURCES.length :
+                               id === 'contrib' ? filterContrib.size < 2 :
+                               filterEntities.size < SK_ENTITIES.length;
+              return (
+                <g key={id}>
+                  <text x={x} y={HDR_Y} fontFamily="Inter, system-ui, sans-serif" fontSize={12} fontWeight={500} fill={FG1} style={{ userSelect: 'none' }}>
+                    {label}
+                  </text>
+                  <g
+                    transform={`translate(${x + label.length * 6.8 + 2}, ${HDR_Y - 10})`}
+                    onClick={(e) => { e.stopPropagation(); setOpenFilter(id); }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <rect x={-3} y={-3} width={16} height={16} fill="transparent" />
+                    <path d="M1 0L9 0L6 4.5L6 9L4 7.5L4 4.5Z"
+                          fill={isActive ? 'var(--pai-indigo)' : FG3}
+                          opacity={isActive ? 1 : 0.65} />
+                  </g>
+                </g>
+              );
+            })}
+
+            {/* Left ribbons: source → contribution */}
+            {scRibbons.map(r => (
+              <path key={r.key} d={r.path} fill={r.color} opacity={scOp(r)}
+                style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                onMouseEnter={() => { setHovered({ type: 'sc', key: r.key }); setTooltip({ text: r.label, value: r.val }); }}
+                onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+              />
+            ))}
+
+            {/* Right ribbons: contribution → entity */}
+            {ceRibbons.map(r => (
+              <path key={r.key} d={r.path} fill={r.color} opacity={ceOp(r)}
+                style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                onMouseEnter={() => { setHovered({ type: 'ce', key: r.key }); setTooltip({ text: r.label, value: r.val }); }}
+                onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+              />
+            ))}
+
+            {/* Source bars + labels */}
+            {SK_SOURCES.map(src => {
+              const n = srcNodes[src.id];
+              if (!n) return null;
+              const active = isNodeActive('src', src.id);
+              return (
+                <g key={src.id}
+                  onMouseEnter={() => { setHovered({ type: 'srcNode', id: src.id }); setTooltip({ text: src.label, value: srcTotals[src.id] || 0 }); }}
+                  onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+                  onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'srcNode' && p.id === src.id ? null : { type: 'srcNode', id: src.id }); }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Transparent hit-rect covers full label + bar area */}
+                  <rect x={n.x - LL + 4} y={n.y - 2} width={LL - 4 + NW} height={Math.max(n.h + 4, 18)} fill="transparent" pointerEvents="all" />
+                  <rect x={n.x} y={n.y} width={NW} height={Math.max(2, n.h)} fill={src.color} rx={1} />
+                  <text
+                    x={n.x} y={n.y + n.h / 2}
+                    textAnchor="end" dominantBaseline="central"
+                    fontFamily="Inter, system-ui, sans-serif" fontSize={11}
+                    fontWeight={hovered?.type === 'srcNode' && hovered.id === src.id ? 600 : 400}
+                    fill={FG1} opacity={active ? 1 : 0.4}
+                    style={{ userSelect: 'none' }}
+                  >{src.label}</text>
+                </g>
+              );
+            })}
+
+            {/* Contribution bars + labels */}
+            {Object.entries(contribNodes).map(([cid, cn]) => {
+              const active = isNodeActive('contrib', cid);
+              return (
+                <g key={cid}
+                  onMouseEnter={() => { setHovered({ type: 'contribNode', id: cid }); setTooltip({ text: cn.label, value: contribIn[cid] || 0 }); }}
+                  onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+                  onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'contribNode' && p.id === cid ? null : { type: 'contribNode', id: cid }); }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Transparent hit-rect covers bar + label above */}
+                  <rect x={cn.x - 40} y={cn.y - 18} width={NW + 80} height={Math.max(cn.h + 18, 36)} fill="transparent" pointerEvents="all" />
+                  <rect x={cn.x} y={cn.y} width={NW} height={Math.max(4, cn.h)} fill={cn.color} rx={1} />
+                  <text
+                    x={cn.x + NW / 2} y={cn.y - 5} textAnchor="middle"
+                    fontFamily="Inter, system-ui, sans-serif" fontSize={11} fontWeight={500}
+                    fill={FG1} opacity={active ? 1 : 0.4}
+                    style={{ userSelect: 'none' }}
+                  >{cn.label}</text>
+                </g>
+              );
+            })}
+
+            {/* Entity bars + labels */}
+            {SK_ENTITIES.map(ent => {
+              const n = entNodes[ent.id];
+              if (!n) return null;
+              const active = isNodeActive('ent', ent.id);
+              return (
+                <g key={ent.id}
+                  onMouseEnter={() => { setHovered({ type: 'entNode', id: ent.id }); setTooltip({ text: ent.label, value: entTotals[ent.id] || 0 }); }}
+                  onMouseLeave={() => { setHovered(null); setTooltip(null); }}
+                  onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'entNode' && p.id === ent.id ? null : { type: 'entNode', id: ent.id }); }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Transparent hit-rect covers bar + full label area to the right */}
+                  <rect x={n.x} y={n.y - 2} width={NW + LR - 4} height={Math.max(n.h + 4, 18)} fill="transparent" pointerEvents="all" />
+                  <rect x={n.x} y={n.y} width={NW} height={Math.max(2, n.h)} fill={ent.color} rx={1} />
+                  <text
+                    x={n.x + NW} y={n.y + n.h / 2}
+                    textAnchor="start" dominantBaseline="central"
+                    fontFamily="Inter, system-ui, sans-serif" fontSize={11}
+                    fontWeight={hovered?.type === 'entNode' && hovered.id === ent.id ? 600 : 400}
+                    fill={FG1} opacity={active ? 1 : 0.4}
+                    style={{ userSelect: 'none' }}
+                  >{ent.label}</text>
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Tooltip */}
+          {tooltip && (
+            <div style={{
+              position: 'absolute',
+              left: Math.min(mousePos.x + 14, svgW - 230),
+              top: Math.max(mousePos.y - 52, 4),
+              background: isDark ? 'var(--card-bg, #1C1C1C)' : '#fff',
+              border: `1px solid ${isDark ? '#333' : '#E6E6E6'}`,
+              borderRadius: 6, padding: '8px 12px', fontSize: 12, lineHeight: 1.4,
+              boxShadow: '0 4px 12px rgba(16,16,16,0.10)',
+              whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 20,
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              <span style={{ color: isDark ? '#D1D1D1' : '#282828' }}>{tooltip.text} : </span>
+              <span style={{ color: '#D98B1D', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                {tooltip.value.toLocaleString('en-US')}
+              </span>
+            </div>
+          )}
+
+          {/* Filter popup backdrop + panel */}
+          {openFilter && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 39 }}
+                onClick={() => setOpenFilter(null)}
+              />
+              <SankeyFilterPopup
+                type={openFilter}
+                items={
+                  openFilter === 'origin'  ? SK_SOURCES.map(s => ({ id: s.id, label: s.label })) :
+                  openFilter === 'contrib' ? [{ id: 'corroborated', label: 'Corroborated' }, { id: 'unique', label: 'Unique' }] :
+                  SK_ENTITIES.map(e => ({ id: e.id, label: e.label }))
+                }
+                selected={
+                  openFilter === 'origin'  ? filterOrigin :
+                  openFilter === 'contrib' ? filterContrib :
+                  filterEntities
+                }
+                operator={openFilter === 'origin' ? originOperator : undefined}
+                anchorX={
+                  openFilter === 'origin'  ? layout.srcX + 43 :
+                  openFilter === 'contrib' ? layout.contribX + 84 :
+                  layout.entX + NW + 8 + 57
+                }
+                svgW={svgW}
+                onClose={() => setOpenFilter(null)}
+                onApply={(draft, op) => {
+                  if (openFilter === 'origin')  { setFilterOrigin(draft); setOriginOperator(op); }
+                  else if (openFilter === 'contrib') setFilterContrib(draft);
+                  else setFilterEntities(draft);
+                }}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Entity KPI card grid — Entities tab view ─────────────────────────
 function EntityKpiGrid() {
   const entities = Object.entries(ENTITY_TYPES).sort((a, b) => a[1].label.localeCompare(b[1].label));
@@ -1309,9 +1945,6 @@ function PageKG() {
   const [selectedEdgeKey, setSelectedEdgeKey] = useState(null);
   const [positions, setPositions] = useState(() => ({ ...NODE_POS }));
   const [view, setView] = useState({ x: 0, y: 0, w: 940, h: 440 });
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [panelRow, setPanelRow] = useState(null);
-  const [panelTab, setPanelTab] = useState('summary');
   const [edges, setEdges] = useState(() => {
     // Prefer persisted edges from tweaks (App writes them onto window before mount)
     const fromTweaks = (window.__floatTweaks && window.__floatTweaks.edges);
@@ -1360,7 +1993,6 @@ function PageKG() {
     setView(v => {
       const newW = Math.max(280, Math.min(2200, v.w * factor));
       const newH = newW * (440/940);
-      // zoom around center
       const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
       return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH };
     });
@@ -1380,17 +2012,29 @@ function PageKG() {
   // When `selectedEdgeKey` is set, restrict to ONLY that edge.
   const relationshipChips = useMemo(() => {
     if (!selected) return [];
-    // Strip the #idx self-loop disambiguator for key comparison.
     const baseSelectedKey = selectedEdgeKey ? selectedEdgeKey.replace(/#\d+$/, '') : null;
-    return edges
+    // For self-loop edges the key carries a #N disambiguator. Extract N so we
+    // can return exactly that one self-loop chip instead of one per self-loop.
+    const selfLoopIdx = selectedEdgeKey ? Number(selectedEdgeKey.match(/#(\d+)$/)?.[1] ?? -1) : -1;
+    const isSelfLoopKey = selfLoopIdx >= 0;
+
+    let candidates = edges
       .filter(([,,,hidden]) => !hidden)
       .filter(([a,b]) => a === selected || b === selected)
       .filter(([a,b]) => !baseSelectedKey || `${a}|${b}` === baseSelectedKey)
-      // Only keep chips whose "other" endpoint is visible under the current view.
       .filter(([a,b]) => {
         const other = a === selected ? b : a;
         return visibleSetByView.has(other);
-      })
+      });
+
+    // Self-loop: all candidates share the same a===b===selected key, so pick
+    // only the one at the clicked petal's index.
+    if (isSelfLoopKey) {
+      const selfEdges = candidates.filter(([a, b]) => a === b);
+      candidates = selfLoopIdx < selfEdges.length ? [selfEdges[selfLoopIdx]] : [];
+    }
+
+    return candidates
       .map(([a, b, label, , srcAlias, tgtAlias]) => {
         const reversed = b === selected;  // selected is canonical target → reversed view
         const other = reversed ? a : b;
@@ -1399,12 +2043,33 @@ function PageKG() {
         // source alias and canonical srcAlias becomes our target alias.
         const dispSrcAlias = reversed ? tgtAlias : srcAlias;
         const dispTgtAlias = reversed ? srcAlias : tgtAlias;
+        // Find the hidden inverse edge. Direction depends on whether the chip
+        // is reversed (selected is canonical target vs source). Also match on
+        // the selected-node alias stored in eTgtAlias so ambiguous same-pair
+        // edges (e.g. cluster↔container Container Group vs Container Service)
+        // resolve to the correct inverse.
+        const invEdge = reversed
+          ? edges.find(([ea, eb, , eh, , eTgtAlias]) =>
+              eh && ea === selected && eb === other &&
+              (!dispTgtAlias || !eTgtAlias || dispTgtAlias === eTgtAlias))
+          : edges.find(([ea, eb, , eh, , eTgtAlias]) =>
+              eh && ea === other && eb === selected &&
+              (!srcAlias || !eTgtAlias || srcAlias === eTgtAlias));
         return {
           key,
           source: dispSrcAlias || ENTITY_TYPES[selected]?.label || selected,
           relation: label || 'Connected to',
           target: dispTgtAlias || ENTITY_TYPES[other]?.label || other,
           otherId: other,
+          canReverse: !!invEdge,
+          invRelation: invEdge ? (invEdge[2] || 'Connected to') : null,
+          // invSource/invTarget swap based on invEdge direction (ea/eb swap when reversed).
+          invSource: reversed
+            ? (invEdge?.[4] || ENTITY_TYPES[selected]?.label || selected)
+            : (invEdge?.[4] || ENTITY_TYPES[other]?.label || other),
+          invTarget: reversed
+            ? (invEdge?.[5] || ENTITY_TYPES[other]?.label || other)
+            : (invEdge?.[5] || ENTITY_TYPES[selected]?.label || selected),
         };
       });
   }, [selected, edges, selectedEdgeKey, visibleSetByView]);
@@ -1546,6 +2211,7 @@ function PageKG() {
         </div>
 
         {summaryTab === 'Entities' && <EntityKpiGrid />}
+        {summaryTab === 'Data Sources' && <SankeyView />}
 
         {/* Toolbar — Relationships tab only */}
         {summaryTab === 'Relationships' && <div style={{
@@ -1640,7 +2306,7 @@ function PageKG() {
             selectedEdgeKey={selectedEdgeKey}
             highlightOnly={highlightOnly}
             multiSelectedSet={multiMode ? multiSelected : null}
-            panelOpen={panelOpen}
+            panelOpen={false}
             onSelect={(id) => {
               if (multiMode) {
                 if (id === null) return;
@@ -1799,241 +2465,7 @@ function PageKG() {
 
 
       <DetailsTable rows={filteredRows} totalCount={totalCount}
-                    search={tableSearch} onSearch={setTableSearch}
-                    onRowClick={(row) => { setPanelRow(row); setPanelOpen(true); setPanelTab('summary'); }}/>
-
-      {/* ── Panel overlay ── */}
-      <div
-        onClick={() => setPanelOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)',
-          zIndex: 299, display: panelOpen ? 'block' : 'none',
-        }}
-      />
-
-      {/* ── Detail panel ── */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '55%',
-        background: 'var(--card-bg, #fff)', borderLeft: '1px solid var(--shell-border, #E6E6E6)',
-        zIndex: 300,
-        transform: panelOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.28s cubic-bezier(.2,.8,.2,1)',
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
-        fontFamily: "'Inter', system-ui",
-      }}>
-        {panelRow && (() => {
-          const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
-          const ent  = ENTITY_TYPES[panelRow.type]        || {};
-          return (
-            <>
-              {/* Panel header */}
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--shell-border, #E6E6E6)', flexShrink: 0, background: 'var(--card-bg, #fff)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-                  {/* Entity icon circle */}
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: ent.tint || 'var(--pai-bg-raised)',
-                    border: `2px solid ${ent.stroke || 'var(--shell-border)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <EntityGlyph kind={meta.glyph} size={22} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{
-                        fontSize: 15, fontWeight: 700, color: PAI.fg1,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340,
-                      }}>
-                        {panelRow.label}
-                      </span>
-                      <span style={{
-                        border: `1px solid ${ent.stroke || 'var(--shell-border)'}`, color: ent.icon || PAI.indigo,
-                        borderRadius: 44, padding: '2px 8px', fontSize: 11, fontWeight: 600, flexShrink: 0,
-                      }}>
-                        {meta.type || panelRow.type}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
-                        IP: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{panelRow.ip}</span>
-                      </span>
-                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
-                        OS: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{meta.os}</span>
-                      </span>
-                      <span style={{ fontSize: 11, color: PAI.fg3 }}>
-                        Last Active: <span style={{ color: PAI.fg2, fontWeight: 500 }}>{panelRow.active}</span>
-                      </span>
-                    </div>
-                  </div>
-                  {/* Close button */}
-                  <button
-                    onClick={() => setPanelOpen(false)}
-                    style={{
-                      background: 'none', border: 'none', color: PAI.fg3,
-                      cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', flexShrink: 0,
-                      borderRadius: 6,
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Entity Relationship mini-graph */}
-                <div style={{ border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{
-                    padding: '8px 12px', background: 'var(--shell-raised, #FAFAFA)', borderBottom: '1px solid var(--shell-border, #E6E6E6)',
-                    fontSize: 11, fontWeight: 600, color: PAI.fg1,
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}>
-                    Entity Relationship Summary
-                  </div>
-                  <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <svg width="280" height="90" style={{ display: 'block', overflow: 'visible', flex: 1 }}>
-                      <line x1="90" y1="44" x2="190" y2="44" stroke="var(--shell-border, #D6D6D6)" strokeWidth="1.5"/>
-                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill={PAI.fg3} fontFamily="inherit">Has</text>
-                      {/* Entity node */}
-                      <circle cx="60" cy="44" r="28" fill={ent.tint || 'var(--pai-bg-raised)'} stroke={ent.stroke || 'var(--shell-border)'} strokeWidth="1.5"/>
-                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <EntityGlyph kind={meta.glyph} size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill={PAI.fg2} fontWeight="600" fontFamily="inherit">
-                        {(meta.type || panelRow.type).slice(0, 12)}
-                      </text>
-                      {/* Finding node */}
-                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
-                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <EntityGlyph kind="finding" size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
-                      {/* Count badge */}
-                      <circle cx="244" cy="20" r="9" fill="var(--pai-indigo, #6360D8)"/>
-                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
-                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0,4) : fmtN(ent.count || 0)}
-                      </text>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tabs */}
-              <div style={{ borderBottom: '1px solid var(--shell-border, #E6E6E6)', background: 'var(--card-bg, #fff)', flexShrink: 0, paddingLeft: 20, display: 'flex' }}>
-                {['summary', 'evolution', 'derivation'].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setPanelTab(t)}
-                    style={{
-                      padding: '8px 14px', fontSize: 12, fontWeight: panelTab === t ? 600 : 500,
-                      border: 'none', background: 'transparent', cursor: 'pointer',
-                      color: panelTab === t ? PAI.indigo : PAI.fg3,
-                      borderBottom: panelTab === t ? `2px solid ${PAI.indigo}` : '2px solid transparent',
-                      marginBottom: -1, fontFamily: 'inherit',
-                      transition: 'color 150ms, border-color 150ms',
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              {/* Panel body */}
-              <div style={{ flex: 1, overflowY: 'auto', background: 'var(--shell-bg, #F7F9FC)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-                {panelTab === 'summary' && (
-                  <>
-                    {/* General Information */}
-                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600, color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)' }}>
-                        General Information
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                        {[
-                          ['Display Label', panelRow.label],
-                          ['Type',          meta.type || panelRow.type],
-                          ['OS Family',     meta.os],
-                          ['IP Address',    panelRow.ip],
-                          ['Last Found',    panelRow.last],
-                          ['Last Active',   panelRow.active],
-                        ].map(([k, v], i) => (
-                          <div key={k} style={{
-                            padding: '8px 14px',
-                            borderBottom: i < 4 ? '1px solid var(--shell-raised, #F5F5F5)' : 'none',
-                            borderRight: i % 2 === 0 ? '1px solid var(--shell-raised, #F5F5F5)' : 'none',
-                          }}>
-                            <div style={{ fontSize: 10, color: PAI.fg3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{k}</div>
-                            <div style={{ fontSize: 12, color: PAI.fg1, wordBreak: 'break-all' }}>{v}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Data Sources */}
-                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600, color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)' }}>
-                        Data Sources
-                      </div>
-                      <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
-                      </div>
-                    </div>
-
-                    {/* Findings severity breakdown */}
-                    <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{
-                        padding: '10px 14px', background: 'var(--shell-raised, #FAFAFA)', fontSize: 12, fontWeight: 600,
-                        color: PAI.fg1, borderBottom: '1px solid var(--shell-border, #E6E6E6)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      }}>
-                        <span>Findings</span>
-                        <span style={{ fontWeight: 400, color: PAI.fg3, fontSize: 11 }}>({fmtN(ent.count || 0)})</span>
-                      </div>
-                      <div style={{ padding: '12px 14px' }}>
-                        {[
-                          { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
-                          { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
-                          { label: 'Medium',   pct: 68, color: 'var(--pai-high-fg)' },
-                          { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
-                        ].map(s => (
-                          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-                            <span style={{ width: 54, fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>{s.label}</span>
-                            <div style={{ flex: 1, height: 6, background: 'var(--shell-raised, #F5F5F5)', borderRadius: 3, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${s.pct}%`, background: s.color, borderRadius: 3 }} />
-                            </div>
-                            <span style={{ width: 44, fontSize: 11, fontWeight: 600, color: PAI.fg2, flexShrink: 0, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                              {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {panelTab === 'evolution' && (
-                  <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, padding: '24px 20px', color: PAI.fg3, fontSize: 12, textAlign: 'center', lineHeight: 1.7 }}>
-                    Evolution history for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Track how attributes changed over time across data sources.
-                  </div>
-                )}
-
-                {panelTab === 'derivation' && (
-                  <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--shell-border, #E6E6E6)', borderRadius: 4, padding: '24px 20px', color: PAI.fg3, fontSize: 12, textAlign: 'center', lineHeight: 1.7 }}>
-                    Derivation graph for <strong style={{ color: PAI.fg1 }}>{panelRow.label}</strong>.<br/>
-                    Shows how this entity was resolved from source fragments.
-                  </div>
-                )}
-              </div>
-            </>
-          );
-        })()}
-      </div>
+                    search={tableSearch} onSearch={setTableSearch}/>
     </div>
   );
 }
@@ -2042,7 +2474,7 @@ function PageKG() {
 // Visual style adapted from the design system's dual-toggle: pill track
 // with a sliding indigo thumb and label color that flips on the active
 // segment.
-function SegmentedTabs({ value, options, onChange }) {
+function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
   const containerRef = useRef(null);
   const btnRefs = useRef([]);
   const labelRefs = useRef([]);
@@ -2061,9 +2493,9 @@ function SegmentedTabs({ value, options, onChange }) {
   return (
     <div ref={containerRef} style={{
       position: 'relative',
-      display: 'inline-flex',
+      display: fullWidth ? 'flex' : 'inline-flex',
       alignItems: 'center',
-      height: 32,
+      height,
       boxSizing: 'border-box',
       padding: 0,
       background: PAI.bgRaised,
@@ -2097,7 +2529,8 @@ function SegmentedTabs({ value, options, onChange }) {
             style={{
               position: 'relative', zIndex: 1,
               padding: '0 16px',
-              height: 32,
+              height,
+              flex: fullWidth ? 1 : undefined,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: 'transparent', border: 'none', cursor: onChange ? 'pointer' : 'default',
               fontFamily: 'inherit', fontSize: 13,
@@ -2327,8 +2760,9 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
         {chips.map(c => {
           if (deselected.has(c.key)) return null;
           const isRev = reversed.has(c.key);
-          const dispSrc = isRev ? c.target : c.source;
-          const dispTgt = isRev ? c.source : c.target;
+          const dispSrc    = isRev ? c.invSource   : c.source;
+          const dispRel    = isRev ? c.invRelation  : c.relation;
+          const dispTgt    = isRev ? c.invTarget    : c.target;
           return (
             <span
               key={c.key}
@@ -2345,14 +2779,14 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
             >
               <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
                 <span style={{ fontWeight: 600 }}>{dispSrc}</span>
-                <span style={{ fontWeight: 400, color: 'var(--pai-indigo-muted)' }}>{c.relation}</span>
+                <span style={{ fontWeight: 400, color: 'var(--pai-indigo-muted)' }}>{dispRel}</span>
                 <span style={{ fontWeight: 600 }}>{dispTgt}</span>
               </span>
-              {onReverse && (
+              {onReverse && c.canReverse && (
                 <button
                   onClick={() => onReverse(c.key)}
                   aria-label="Reverse relationship"
-                  title="Reverse relationship"
+                  title={isRev ? 'Show original relationship' : 'Show inverse relationship'}
                   style={{
                     width: 16, height: 16, padding: 0,
                     background: 'transparent', border: 'none',

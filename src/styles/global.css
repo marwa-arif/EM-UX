@@ -5,7 +5,6 @@
 
 html, body, #root { height: 100%; margin: 0; }
 body { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
-/* SVG text (count badges, axis labels, etc.) does not inherit from body — explicitly set Inter so numerals render in the correct typeface */
 svg text { font-family: 'Inter', system-ui; }
 body { background: #F7F9FC; color: #101010; }
 
@@ -154,7 +153,7 @@ html.theme-dark {
   --pai-border:               #272727;
   --pai-border-strong:        #3B3A3A;
   --pai-bg-app:               #0E0E0E;
-  --pai-bg-raised:            #1C1C1C;
+  --pai-bg-raised:            #1F1F1F;
   --pai-surface:              #1C1C1C;
   --pai-disabled:             #555555;
   --pai-indigo-tint:          rgba(99,96,216,0.15);
