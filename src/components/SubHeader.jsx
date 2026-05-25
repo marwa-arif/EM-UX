@@ -1,29 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
+import ActiveFilterPanel, { SaveFilterModal } from './ActiveFilterPanel.jsx'
 
 const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
-    { label: 'Overview',  icon: 'navbar-exposure' },
-    { label: 'Findings',  icon: 'navbar-findings' },
+    { label: 'Overview',            id: 'exposure/overview',          icon: 'nav-overview' },
+    { label: 'Findings',            id: 'exposure/findings',          icon: 'nav-findings' },
   ]},
   { label: 'Discover', icon: 'navbar-discover', items: [
-    { label: 'Device',    icon: 'navbar-device' },
-    { label: 'Cloud',     icon: 'navbar-kg' },
-    { label: 'Identity',  icon: 'navbar-home' },
+    { label: 'Device',              id: 'discover/device',            icon: 'nav-discover-device' },
+    { label: 'Cloud',               id: 'discover/cloud',             icon: 'nav-discover-cloud' },
+    { label: 'Identity',            id: 'discover/identity',          icon: 'nav-discover-identity' },
   ]},
   { label: 'Report', icon: 'navbar-report', items: [
-    { label: 'Compliance',          icon: 'navbar-compliance' },
-    { label: 'Assessments',         icon: 'navbar-exposure' },
-    { label: 'Compliance Matrix',   icon: 'navbar-compliance' },
-    { label: 'Compliance Findings', icon: 'navbar-findings' },
+    { label: 'Compliance',          id: 'report/compliance',          icon: 'nav-report-compliance' },
+    { label: 'Assessments',         id: 'report/assessments',         icon: 'nav-report-assessments' },
+    { label: 'Compliance Matrix',   id: 'report/compliance-matrix',   icon: 'nav-report-matrix' },
+    { label: 'Compliance Findings', id: 'report/compliance-findings', icon: 'nav-findings' },
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
   const exploreRef = useRef(null);
+  const [filterPillOpen, setFilterPillOpen] = useState(false);
+  const [pillPos, setPillPos] = useState(null);
+  const pillBtnRef = useRef(null);
+  const subheaderRef = useRef(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -39,8 +45,18 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
     return () => document.removeEventListener('mousedown', onDown);
   }, [exploreOpen]);
 
+  const handlePillClick = () => {
+    if (!filterPillOpen && pillBtnRef.current && subheaderRef.current) {
+      const pillRect = pillBtnRef.current.getBoundingClientRect();
+      const shRect = subheaderRef.current.getBoundingClientRect();
+      setPillPos({ top: pillRect.bottom + 6, right: window.innerWidth - shRect.right });
+    }
+    setFilterPillOpen(o => !o);
+  };
+
   return (
-    <div className="subheader">
+    <>
+    <div className="subheader" ref={subheaderRef}>
 
       <div className="subheader__title-block">
         <div className="subheader__title">{title}</div>
@@ -104,7 +120,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
                 {group.items.map(item => (
                   <button
                     key={item.label}
-                    onClick={() => { setExploreOpen(false); onExplore && onExplore(item.label); }}
+                    onClick={() => { setExploreOpen(false); onExplore && onExplore(item.id); }}
                     className="subheader__explore-item"
                   >
                     <img src={`/assets/icons/${item.icon}.svg`} width={14} height={14} alt="" />
@@ -121,18 +137,33 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
 
       {actions !== undefined ? actions : (
         <>
-          <button title="Save filter set" className="subheader__save-btn">
+          <button title="Save filter set" className="subheader__save-btn" onClick={() => setShowSaveModal(true)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pai-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
           </button>
 
-          <span className="subheader__filter-pill">
-            Active Filters
-            {activeFilterCount > 0 && (
-              <span className="subheader__filter-count">{activeFilterCount}</span>
-            )}
-          </span>
+          <div className="subheader__filter-pill-wrap">
+            <button
+              ref={pillBtnRef}
+              onClick={handlePillClick}
+              className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}`}
+            >
+              Active Filters
+              {activeFilterCount > 0 && (
+                <span className="subheader__filter-count">{activeFilterCount}</span>
+              )}
+            </button>
+          </div>
+          {filterPillOpen && (
+            <ActiveFilterPanel
+              activeFilters={activeFilters}
+              onRemove={onRemoveFilter}
+              onClear={onClearFilters}
+              onClose={() => setFilterPillOpen(false)}
+              position={pillPos}
+            />
+          )}
 
           <div className="subheader__vdivider" />
 
@@ -146,6 +177,14 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
       )}
 
     </div>
+
+      {showSaveModal && (
+        <SaveFilterModal
+          onClose={() => setShowSaveModal(false)}
+          onSave={(data) => { console.log('Filter saved:', data) }}
+        />
+      )}
+    </>
   );
 }
 
