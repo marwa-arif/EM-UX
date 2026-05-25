@@ -698,6 +698,7 @@ function App() {
     if (path === '/') return 'exposure/overview';
     return path.slice(1) || 'exposure/overview';
   });
+  const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
@@ -929,49 +930,64 @@ function App() {
       {showSplash && <SplashScreen onDone={onSplashDone} />}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
 
-      <div ref={isKG ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <LeftNav
           current={current}
           onNav={handleNav}
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed(!collapsed)}
+          mode={appMode}
+          onModeChange={setAppMode}
         />
 
-        <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
-          <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {appMode === 'studio' ? (
+          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
             <SubHeader
-              title={pageMeta.title}
-              breadcrumb={pageMeta.breadcrumb}
-              breadcrumbHrefs={pageMeta.breadcrumbHrefs}
-              activeFilterCount={activeFilterCount}
-              filterActive={rightPanel === 'filter'}
-              onFilter={() => openRightTab('filter')}
-              onAdd={pageMeta.onAdd}
-              onExplore={pageMeta.onExplore}
-              onEdit={DISCOVER_PAGES.has(current) ? () => {
-                setCurrent('workspace/dashboard/discover');
-                history.pushState(null, '', '/workspace');
-              } : undefined}
+              title="Studio"
+              breadcrumb={['Studio']}
+              breadcrumbHrefs={[null]}
             />
             <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-              {current === 'exposure/overview'   && <ExposureOverviewPage />}
-              {current === 'exposure/findings'   && <FindingsPage />}
-              {current === 'discover/device'     && <DiscoverDevicePage />}
-              {current === 'discover/cloud'      && <DiscoverCloudPage />}
-              {current === 'discover/identity'   && <DiscoverIdentityPage />}
-              {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
-              {current === 'report/assessments'       && <AssessmentsPage />}
-              {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
-              {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
-              {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
-              {isKG && <PageKG />}
+              <ComingSoon />
             </div>
-          </div>
-          {sharedRightPanel}
-        </main>
+          </main>
+        ) : (
+          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
+            <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <SubHeader
+                title={pageMeta.title}
+                breadcrumb={pageMeta.breadcrumb}
+                breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+                activeFilterCount={activeFilterCount}
+                filterActive={rightPanel === 'filter'}
+                onFilter={() => openRightTab('filter')}
+                onAdd={pageMeta.onAdd}
+                onExplore={pageMeta.onExplore}
+                onEdit={DISCOVER_PAGES.has(current) ? () => {
+                  setCurrent('workspace/dashboard/discover');
+                  history.pushState(null, '', '/workspace');
+                } : undefined}
+              />
+              <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+                {current === 'exposure/overview'   && <ExposureOverviewPage />}
+                {current === 'exposure/findings'   && <FindingsPage />}
+                {current === 'discover/device'     && <DiscoverDevicePage />}
+                {current === 'discover/cloud'      && <DiscoverCloudPage />}
+                {current === 'discover/identity'   && <DiscoverIdentityPage />}
+                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
+                {current === 'report/assessments'       && <AssessmentsPage />}
+                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
+                {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
+                {isKG && <PageKG />}
+              </div>
+            </div>
+            {sharedRightPanel}
+          </main>
+        )}
       </div>
 
-      {isKG && GraphFilterDrawer && (
+      {isKG && appMode !== 'studio' && GraphFilterDrawer && (
         <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
@@ -980,7 +996,7 @@ function App() {
         />
       )}
 
-      {isKG && (
+      {isKG && appMode !== 'studio' && (
         <TweaksPanel title="Tweaks">
           <style>{`.twk-panel { width: 360px !important; }`}</style>
           <TweakSection label="Graph float animation" />
