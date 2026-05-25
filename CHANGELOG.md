@@ -17,6 +17,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.3.1] — 2026-05-25
+### Added
+- `filter-panel.css` — dedicated stylesheet for FilterPanel component
+- `library.css` — dedicated stylesheet for LibraryPage component
+### Changed
+- Eliminated inline `style={{}}` props from DiscoverDevicePage, DiscoverIdentityPage, DiscoverCloudPage, FilterPanel — replaced with CSS classes and CSS custom-property injection
+- `device.css` extended with new utility classes: `dev-tip-card`, `dev-findings-bar`, `dev-crit-seg`, `dev-toggle`, `dev-donut-center`, `dev-type-legend`, `dev-single-legend`, `dev-crit-tooltip`, `dev-stat-header-controls`, `dev-drawer-controls` and more
+
+---
+
 ## [0.3.0] — 2026-05-25
 ### Added
 - LeftNav app-mode switcher: chevron dropdown on org-name-row with **Studio** and **Navigator** options
