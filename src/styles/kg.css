@@ -156,6 +156,11 @@
 .kg-td-sources { display: inline-flex; align-items: center; gap: 4px; }
 .kg-td-numeric { font-variant-numeric: tabular-nums; font-weight: 400; }
 
+/* ── Icon helpers ─────────────────────────────────────────────────── */
+.kg-icon-invert {
+  filter: brightness(0) invert(1);
+}
+
 /* ── Source badge ─────────────────────────────────────────────────── */
 .kg-source-badge {
   display: inline-flex; align-items: center; justify-content: center;
@@ -187,7 +192,7 @@
 
 /* ── Detail panel ─────────────────────────────────────────────────── */
 .kg-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; width: 55%;
+  position: fixed; top: 0; right: 0; bottom: 0; width: 65%;
   background: var(--card-bg); border-left: 1px solid var(--pai-border);
   z-index: 300;
   transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
@@ -357,15 +362,6 @@
   display: flex; align-items: center; gap: 6px;
 }
 
-/* ── Panel: info grid cell borders ───────────────────────────────── */
-.kg-panel__info-grid .kg-panel__info-cell {
-  border-bottom: 1px solid var(--shell-border);
-}
-.kg-panel__info-grid .kg-panel__info-cell:nth-child(2n+1) {
-  border-right: 1px solid var(--shell-border);
-}
-.kg-panel__info-grid .kg-panel__info-cell:last-child { border-bottom: none; }
-.kg-panel__info-grid .kg-panel__info-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
 
 /* ── Panel: badge value modifiers ────────────────────────────────── */
 .kg-panel__badge--true {
@@ -383,9 +379,8 @@
 .kg-panel__tag-table { padding: 2px 0; }
 .kg-panel__tag-row {
   display: flex; align-items: flex-start; gap: 12px;
-  padding: 8px 14px; border-bottom: 1px solid var(--shell-border);
+  padding: 8px 14px;
 }
-.kg-panel__tag-row:last-child { border-bottom: none; }
 .kg-panel__tag-row-label {
   flex-shrink: 0; width: 130px;
   font-size: 10px; font-weight: 600; color: var(--pai-fg3);
@@ -555,14 +550,6 @@
   font-family: inherit; flex-shrink: 0; white-space: nowrap;
 }
 .kg-panel__sim-link:hover { text-decoration: underline; }
-.kg-panel__icon-btn {
-  width: 28px; height: 28px; padding: 0;
-  background: none; border: 1px solid var(--pai-border); border-radius: 6px;
-  cursor: pointer; color: var(--pai-fg3);
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: border-color 120ms, color 120ms;
-}
-.kg-panel__icon-btn:hover { color: var(--pai-fg1); border-color: var(--pai-fg3); }
 
 /* ── Panel: Entity Relationship Summary section ──────────────────────── */
 .kg-panel__rel-section {
@@ -644,17 +631,6 @@
 /* ── Panel: 3-column info grid ───────────────────────────────────────── */
 .kg-panel__info-grid--3col {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-}
-.kg-panel__info-grid--3col .kg-panel__info-cell {
-  border-bottom: 1px solid var(--shell-border);
-  border-right: 1px solid var(--shell-border);
-}
-.kg-panel__info-grid--3col .kg-panel__info-cell:nth-child(3n) {
-  border-right: none;
-}
-.kg-panel__info-grid--3col .kg-panel__info-cell:nth-last-child(-n+3):nth-child(3n+1),
-.kg-panel__info-grid--3col .kg-panel__info-cell:nth-last-child(-n+3):nth-child(3n+1) ~ .kg-panel__info-cell {
-  border-bottom: none;
 }
 
 /* ── Panel: section header uppercase variant ─────────────────────────── */

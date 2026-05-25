@@ -6,12 +6,32 @@ All notable UI changes are tracked here.
 ---
 
 <!-- pull: 2026-05-19 18:31 | branch: feature/ui-updates | 6f2cf09 Refactor DonutChart to shared component, update findings tooltips and chart styling -->
+<!-- pull: 2026-05-25 09:39 | branch: feature/ui-updates | ffd274f fix: KG dark mode — entity node dark tints and SVG CSS variable fixes -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.2.0] — 2026-05-25
+### Added
+- ComplianceMatrixPage with sticky x/y axes, comparison badges (Change % with trend icon, absolute score), and structured tooltip
+- AssessmentsPage and ComplianceFindingsPage
+- Sparkline stroke-dashoffset draw animation on mount
+- ScaleX fill animation for framework progress bars
+- Clip-path reveal animation for stacked findings breakdown bars
+### Changed
+- Compliance matrix cell hover redesigned using `currentColor` / per-cell `--hover-border` CSS variable
+- Compliance chart legend: circles, per-severity text colors, semi-bold
+- Change % formula corrected to `(current − prev) / prev × 100` with 2dp precision
+### Fixed
+- KG dark mode: all hardcoded hex values in `PageKG.jsx` and `kg.css` replaced with design system tokens
+- KG entity node circles, tooltip headers, and selection panel headers now switch correctly on theme toggle
+- SVG edge label pill fill moved from attribute to `style` so CSS custom properties resolve in dark mode
+- Remaining hardcoded hex (edge lines, dividers, pagination, zoom buttons) replaced with tokens
 
 ---
 

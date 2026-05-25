@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 /**
  * Usage: node scripts/bump-version.js [patch|minor|major]
+ *
  * - Reads [Unreleased] section from CHANGELOG.md
  * - Creates a new versioned entry
  * - Clears [Unreleased] and resets it with blank sections
  * - Bumps version in package.json
- * - Syncs src/data/changelog.json for the dashboard
- * - Builds a versioned snapshot into public/versions/{version}/ for in-app preview
+ * - Syncs src/data/changelog.json for the dashboard badge
+ *
+ * NOTE: This script does NOT build a snapshot. Run `npm run snapshot` separately
+ * if you want a versioned build preview (optional, takes ~60s).
  */
 
-const fs            = require('fs');
-const path          = require('path');
-const { execSync }  = require('child_process');
+const fs   = require('fs');
+const path = require('path');
 
 const ROOT      = path.resolve(__dirname, '..');
 const CHANGELOG = path.join(ROOT, 'CHANGELOG.md');
@@ -58,32 +60,8 @@ for (const line of lines) {
 
 const hasContent = Object.values(sections).some(arr => arr.length > 0);
 if (!hasContent) {
-  console.error('No content in [Unreleased] — nothing to version.');
-  console.error('Add entries under ### Added / Changed / Fixed in CHANGELOG.md first.');
-  process.exit(1);
-}
-
-// ── Build snapshot BEFORE writing new version to package.json ────────
-// (so the snapshot still shows the previous version in its badge)
-const snapshotBase = `/versions/${newVersion}/`;
-const snapshotTmp  = path.join(ROOT, '.snap-tmp');
-const snapshotDest = path.join(ROOT, 'public', 'versions', newVersion);
-
-console.log(`\nBuilding snapshot for v${newVersion}...`);
-try {
-  // Build to a temp dir outside of publicDir to avoid Vite's circular-copy check
-  execSync(
-    `npx vite build --base="${snapshotBase}" --outDir="${snapshotTmp}" --emptyOutDir`,
-    { cwd: ROOT, stdio: 'inherit' }
-  );
-  fs.mkdirSync(path.dirname(snapshotDest), { recursive: true });
-  if (fs.existsSync(snapshotDest)) fs.rmSync(snapshotDest, { recursive: true });
-  fs.renameSync(snapshotTmp, snapshotDest);
-  console.log(`✓ Snapshot saved to public/versions/${newVersion}/`);
-} catch (err) {
-  if (fs.existsSync(snapshotTmp)) fs.rmSync(snapshotTmp, { recursive: true });
-  console.error('\n✗ Snapshot build failed — version files were NOT updated.');
-  console.error('  Fix the build error and try again.\n');
+  console.error('\n✗ No content in [Unreleased] — nothing to version.');
+  console.error('  Add entries under ### Added / Changed / Fixed in CHANGELOG.md first.\n');
   process.exit(1);
 }
 
@@ -107,7 +85,7 @@ const existingJson = JSON.parse(fs.readFileSync(JSON_LOG, 'utf8'));
 const newEntry = {
   version: newVersion,
   date:    today,
-  url:     snapshotBase,
+  // url is omitted until `npm run snapshot` is run for this version
   changes: {
     Added:   sections.Added,
     Changed: sections.Changed,
@@ -124,11 +102,12 @@ fs.writeFileSync(JSON_LOG, JSON.stringify(updatedJson, null, 2) + '\n');
 
 console.log(`\n✓ Bumped to v${newVersion} (${bumpType})`);
 console.log(`✓ Updated CHANGELOG.md, package.json, src/data/changelog.json`);
-console.log(`✓ Snapshot at public/versions/${newVersion}/`);
 console.log(`\nNext steps:`);
-console.log(`  git add CHANGELOG.md package.json src/data/changelog.json public/versions/${newVersion}`);
+console.log(`  git add CHANGELOG.md package.json src/data/changelog.json`);
 console.log(`  git commit -m "chore: bump to v${newVersion}"`);
-console.log(`  git push\n`);
+console.log(`  git push`);
+console.log(`\nOptional — build versioned snapshot for in-app preview:`);
+console.log(`  npm run snapshot\n`);
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function buildVersionBlock(version, date, sections) {

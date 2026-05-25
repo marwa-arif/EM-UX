@@ -1,46 +1,83 @@
 #!/usr/bin/env bash
-# pre-push — blocks push if [Unreleased] has content but version wasn't bumped.
+# pre-push — ensures the version is bumped before pushing.
+#
+# Blocks if EITHER:
+#   1. [Unreleased] in CHANGELOG.md has meaningful content, OR
+#   2. src/ commits exist since the last version-bump commit (catches
+#      devs who skip writing to [Unreleased] entirely)
+#
 # Run `npm run version:patch` (or minor/major) to bump, then push again.
+# To skip: git push --no-verify  (not recommended)
 
-CHANGELOG="CHANGELOG.md"
 ROOT="$(git rev-parse --show-toplevel)"
-CHANGELOG_PATH="$ROOT/$CHANGELOG"
+CHANGELOG="$ROOT/CHANGELOG.md"
 
-if [ ! -f "$CHANGELOG_PATH" ]; then
+# ── Guard: CHANGELOG must exist ───────────────────────────────────────
+if [ ! -f "$CHANGELOG" ]; then
   echo ""
   echo "⚠  CHANGELOG.md not found. Create it before pushing."
   echo ""
   exit 1
 fi
 
-# Extract lines between [Unreleased] header and the first --- separator
-unreleased_content=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^---/{exit} found{print}' "$CHANGELOG_PATH")
-
-# Strip blank lines, comment lines, and empty ### headers
+# ── Check 1: [Unreleased] has written content ─────────────────────────
+unreleased_content=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^---/{exit} found{print}' "$CHANGELOG")
 meaningful=$(echo "$unreleased_content" | grep -v '^\s*$' | grep -v '^>' | grep -v '^### ')
 
+# ── Check 2: src/ commits since last version-bump commit ─────────────
+# Find the most recent commit that touched package.json (proxy for a version bump)
+last_bump_commit=$(git log --oneline -- package.json | head -1 | awk '{print $1}')
+commits_since_bump=""
+if [ -n "$last_bump_commit" ]; then
+  commits_since_bump=$(git log --oneline "$last_bump_commit"..HEAD -- src/ public/ 2>/dev/null \
+    | grep -v 'chore:.*bump\|chore:.*stamp\|chore:.*changelog\|chore:.*version' \
+    | head -1)
+fi
+
+needs_bump=0
+reason=""
+
 if [ -n "$meaningful" ]; then
+  needs_bump=1
+  reason="[Unreleased] in CHANGELOG.md has content that hasn't been versioned"
+elif [ -n "$commits_since_bump" ]; then
+  needs_bump=1
+  reason="src/ changes exist since last version bump but version wasn't bumped"
+fi
+
+if [ "$needs_bump" -eq 1 ]; then
   echo ""
   echo "╔══════════════════════════════════════════════════════╗"
   echo "║  Push blocked — unreleased changes need a version   ║"
   echo "╚══════════════════════════════════════════════════════╝"
   echo ""
-  echo "  Your CHANGELOG.md has [Unreleased] content:"
-  echo "$meaningful" | head -8 | sed 's/^/    /'
+  echo "  Reason: $reason"
   echo ""
-  echo "  Run one of:"
-  echo "    npm run version:patch   (bug fixes / small tweaks)"
-  echo "    npm run version:minor   (new features)"
-  echo "    npm run version:major   (breaking changes)"
-  echo ""
-  echo "  Then: git add CHANGELOG.md package.json src/data/changelog.json"
-  echo "        git commit -m \"chore: bump version to vX.Y.Z\""
-  echo "        git push"
+  if [ -n "$meaningful" ]; then
+    echo "  [Unreleased] content:"
+    echo "$meaningful" | head -8 | sed 's/^/    /'
+    echo ""
+  fi
+  if [ -n "$commits_since_bump" ]; then
+    echo "  Commits since last version bump:"
+    git log --oneline "$last_bump_commit"..HEAD -- src/ public/ 2>/dev/null \
+      | grep -v 'chore:.*bump\|chore:.*stamp\|chore:.*changelog\|chore:.*version' \
+      | head -6 | sed 's/^/    /'
+    echo ""
+  fi
+  echo "  Steps:"
+  echo "    1. Add your changes to CHANGELOG.md under ### Added / Changed / Fixed"
+  echo "    2. npm run version:patch   (bug fixes / small tweaks)"
+  echo "       npm run version:minor   (new features)"
+  echo "       npm run version:major   (breaking changes)"
+  echo "    3. git add CHANGELOG.md package.json src/data/changelog.json"
+  echo "    4. git commit -m \"chore: bump to vX.Y.Z\""
+  echo "    5. git push"
   echo ""
   echo "  To skip (not recommended): git push --no-verify"
   echo ""
   exit 1
 fi
 
-echo "✓ CHANGELOG.md is versioned — proceeding with push."
+echo "✓ Version is current — proceeding with push."
 exit 0

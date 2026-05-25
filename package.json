@@ -1,6 +1,6 @@
 {
   "name": "em-ui",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "version:patch": "node scripts/bump-version.js patch",
     "version:minor": "node scripts/bump-version.js minor",
     "version:major": "node scripts/bump-version.js major",
+    "snapshot": "node scripts/build-snapshot.js",
     "hooks:install": "bash scripts/install-hooks.sh",
     "prepare": "bash scripts/install-hooks.sh"
   },

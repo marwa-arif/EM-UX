@@ -261,13 +261,9 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
           </g>
         );
       })()}
-      {/* Glyph centered (offset to compensate for 18px icon) */}
-      <foreignObject x={-11} y={-11} width={22} height={22} style={{ pointerEvents: 'none' }}>
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 22, height: 22 }}>
-          <EntityGlyph kind={def.glyph} size={22} />
-        </div>
-      </foreignObject>
-      {/* Label below */}
+      {GLYPH_TO_FILE[def.glyph] && (
+        <image x={-11} y={-11} width={22} height={22} href={`/assets/icons/${GLYPH_TO_FILE[def.glyph]}`} pointerEvents="none" />
+      )}
       <text
         x="0" y={r + 14}
         textAnchor="middle"
