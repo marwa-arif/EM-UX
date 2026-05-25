@@ -17,7 +17,18 @@ All notable UI changes are tracked here.
 
 ---
 
-## [0.3.2] — 2026-05-25
+## [0.4.0] — 2026-05-25
+### Added
+- ActiveFilterPanel: full entity tree view (Host, Storage, Network, Container, Network Services, Cluster, Identity) with Has Finding sub-nodes and Finding leaf nodes
+- Implicit Filters toggle (off by default): preset Activity Status / Contributed To / Status chips at Finding level; non-removable
+- SaveFilterModal wired to SubHeader bookmark button (same modal as Active Filter Panel)
+- `canCreate` in SaveFilterModal enabled for either new filter name or overwrite selection
+- `save.svg` and nav icon assets added
+- `afp-relation-chip` CSS style for blue-tinted Has Finding relation nodes
+### Changed
+- Reset Filters icon uses `reset.svg` paths with `currentColor` (inherits button red)
+- Save Filter icon uses save SVG with `currentColor` (inherits button indigo)
+- SubHeader panel position anchored to subheader container right edge to prevent overlap when filter panel is open
 ### Fixed
 - Renamed breadcrumb root label from "Dashboard" to "Home" across all pages (App.jsx, WorkspacePage.jsx)
 

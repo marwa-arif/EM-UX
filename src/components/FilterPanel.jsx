@@ -465,8 +465,23 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
     else setSelections({});
   };
   const handleApply = () => {
-    if (tab === 'saved') { setAppliedSavedId(selectedSavedId); const item = FP_SAVED_ITEMS.find(i => i.id === selectedSavedId); onApply && onApply(item ? item.count : 0); }
-    else onApply && onApply(Object.values(selections).filter(s => s && s.size > 0).length);
+    if (tab === 'saved') {
+      setAppliedSavedId(selectedSavedId);
+      const item = FP_SAVED_ITEMS.find(i => i.id === selectedSavedId);
+      if (item) {
+        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name }]);
+      }
+    } else {
+      const chips = [];
+      attrs.forEach(attr => {
+        const sel = selections[attr.id];
+        if (sel && sel.size > 0) {
+          const key = attr.label + (attr.sub ? ` · ${attr.sub}` : '');
+          sel.forEach(value => chips.push({ key, attrId: attr.id, value }));
+        }
+      });
+      onApply && onApply(Object.values(selections).filter(s => s && s.size > 0).length, chips);
+    }
   };
 
   const filteredAttrs = attrs.filter(a => !search || (a.label + (a.sub ? ` ${a.sub}` : '')).toLowerCase().includes(search.toLowerCase()));

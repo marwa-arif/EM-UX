@@ -710,7 +710,7 @@ function App() {
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
-  const [activeFilterCount, setActiveFilterCount] = useState(0);
+  const [filtersByPage, setFiltersByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
   const [complianceExpanded, setComplianceExpanded] = useState({});
@@ -804,6 +804,21 @@ function App() {
     history.pushState(null, '', url);
   };
 
+  // Per-page filter accessors
+  const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
+  const activeFilterCount = curPageFilters.count;
+  const activeFilters     = curPageFilters.chips;
+
+  const setPageFilters = (pageId, count, chips) =>
+    setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
+
+  // Explore in: navigate to destId carrying the current page's filters
+  const handleExplore = (destId) => {
+    const src = filtersByPage[current] || { count: 0, chips: [] };
+    setFiltersByPage(prev => ({ ...prev, [destId]: { count: src.count, chips: src.chips } }));
+    handleNav(destId);
+  };
+
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
       <>
@@ -893,7 +908,6 @@ function App() {
       breadcrumb: ['Home', 'Knowledge Graph'],
       breadcrumbHrefs: ['/knowledge-graph', null],
       onAdd: () => {},
-      onExplore: () => {},
     },
   };
 
@@ -910,7 +924,17 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); }}
       visitedTabs={visitedTabs}
-      filterProps={{ onApply: (c) => setActiveFilterCount(c), onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      filterProps={{ onApply: (c, chips, merge = false) => {
+        if (merge) {
+          setFiltersByPage(prev => {
+            const cur = prev[current] || { count: 0, chips: [] };
+            const merged = [...cur.chips, ...(chips || [])];
+            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+          });
+        } else {
+          setPageFilters(current, c, chips || []);
+        }
+      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
@@ -959,10 +983,19 @@ function App() {
                 breadcrumb={pageMeta.breadcrumb}
                 breadcrumbHrefs={pageMeta.breadcrumbHrefs}
                 activeFilterCount={activeFilterCount}
+                activeFilters={activeFilters}
+                onRemoveFilter={(idx) => {
+                  setFiltersByPage(prev => {
+                    const cur = prev[current] || { count: 0, chips: [] };
+                    const updated = cur.chips.filter((_, i) => i !== idx);
+                    return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                  });
+                }}
+                onClearFilters={() => setPageFilters(current, 0, [])}
                 filterActive={rightPanel === 'filter'}
                 onFilter={() => openRightTab('filter')}
                 onAdd={pageMeta.onAdd}
-                onExplore={pageMeta.onExplore}
+                onExplore={handleExplore}
                 onEdit={DISCOVER_PAGES.has(current) ? () => {
                   setCurrent('workspace/dashboard/discover');
                   history.pushState(null, '', '/workspace');
@@ -970,7 +1003,7 @@ function App() {
               />
               <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
-                {current === 'exposure/findings'   && <FindingsPage />}
+                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}
                 {current === 'discover/cloud'      && <DiscoverCloudPage />}
                 {current === 'discover/identity'   && <DiscoverIdentityPage />}
@@ -991,7 +1024,7 @@ function App() {
         <GraphFilterDrawer
           open={graphFilterOpen}
           onClose={() => setGraphFilterOpen(false)}
-          onApply={(count) => { setActiveFilterCount(count); setGraphFilterOpen(false); }}
+          onApply={(count) => { setPageFilters(current, count, activeFilters); setGraphFilterOpen(false); }}
           top={canvasTop}
         />
       )}
