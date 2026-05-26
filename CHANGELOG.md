@@ -21,6 +21,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.4.3] — 2026-05-26
+### Added
+- `Container` entry added to ExposureOverviewPage TABLE_DATA
+### Changed
+- Add `--table-th-padding` / `--table-td-padding` CSS tokens to global.css
+- Apply table padding tokens across compliance, device, exposure, findings, and kg stylesheets (replaces hardcoded `8px 12px` / `10px 12px` values)
+- Merge branch `develop` into `feature/ui-updates`
+
+---
+
 ## [0.4.2] — 2026-05-26
 ### Changed
 - Eliminated inline `style={{}}` props from `CompliancePage`, `ComplianceMatrixPage`, `ComplianceFindingsPage`, `AssessmentsPage`, and `PageKG` — replaced with CSS classes and CSS custom-property injection

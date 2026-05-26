@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.4.3",
+    "date": "2026-05-26",
+    "changes": {
+      "Added": [
+        "`Container` entry added to ExposureOverviewPage TABLE_DATA"
+      ],
+      "Changed": [
+        "Add `--table-th-padding` / `--table-td-padding` CSS tokens to global.css",
+        "Apply table padding tokens across compliance, device, exposure, findings, and kg stylesheets (replaces hardcoded `8px 12px` / `10px 12px` values)",
+        "Merge branch `develop` into `feature/ui-updates`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.4.2",
     "date": "2026-05-26",
     "changes": {
