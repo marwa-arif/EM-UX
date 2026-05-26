@@ -21,6 +21,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.4.4] — 2026-05-26
+### Changed
+- KG graph: removed mouse scroll wheel zoom; zoom is now button-only (`+` / `−` rail buttons)
+
+---
+
 ## [0.4.3] — 2026-05-26
 ### Added
 - `Container` entry added to ExposureOverviewPage TABLE_DATA

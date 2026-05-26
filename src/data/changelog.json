@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.4.4",
+    "date": "2026-05-26",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "KG graph: removed mouse scroll wheel zoom; zoom is now button-only (`+` / `−` rail buttons)"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.4.3",
     "date": "2026-05-26",
     "changes": {
