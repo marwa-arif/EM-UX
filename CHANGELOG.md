@@ -17,7 +17,10 @@ All notable UI changes are tracked here.
 
 ---
 
-## [0.4.1] — 2026-05-25
+## [0.4.1] — 2026-05-26
+### Changed
+- Eliminated inline `style={{}}` props from `CompliancePage`, `ComplianceMatrixPage`, `ComplianceFindingsPage`, `AssessmentsPage`, and `PageKG` — replaced with CSS classes and CSS custom-property injection
+- `compliance.css`, `assessments.css`, and `kg.css` extended with semantic `comp-*`, `asmts-*`, `cfp-*`, and `kg-*` utility classes
 ### Fixed
 - Renamed breadcrumb root label from "Dashboard" to "Home" across all pages
 
