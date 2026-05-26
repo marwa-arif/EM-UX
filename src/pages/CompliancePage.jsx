@@ -724,7 +724,7 @@ function FindingsKpi({ closed, open, pct }) {
   const openPct = 100 - pct
   const rows = [
     {
-      label: 'Closed findings',
+      label: 'Passed findings',
       count: closed,
       pct,
       icon: (
@@ -734,7 +734,7 @@ function FindingsKpi({ closed, open, pct }) {
       ),
     },
     {
-      label: 'Open findings',
+      label: 'Failed findings',
       count: open,
       pct: openPct,
       icon: (

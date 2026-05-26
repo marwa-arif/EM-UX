@@ -354,7 +354,14 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 .subheader__filter-pill--open { background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); }
 
 /* ── Active Filter Preview Panel ─────────────────────────────────── */
+.afp-backdrop {
+  position: fixed; inset: 0; z-index: 9998;
+}
 .afp-panel {
+  position: fixed;
+  top: var(--afp-top, 95px);
+  right: var(--afp-right, 16px);
+  z-index: 9999;
   width: 560px; max-width: calc(100vw - 48px);
   max-height: calc(100vh - 120px);
   background: var(--card-bg);

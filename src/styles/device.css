@@ -141,6 +141,28 @@
   gap: 12px;
 }
 
+
+.ddb-add-widget-btn {
+  height: 260px;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--pai-indigo);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--pai-indigo);
+  transition: background 150ms;
+}
+
+.ddb-add-widget-label {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
 .dev-card-title { white-space: nowrap; }
 
 .dev-card-hdr {
@@ -800,6 +822,7 @@
 .dev-tip-card--sm  { width: 200px; }
 .dev-tip-card--md  { min-width: 200px; }
 .dev-tip-card--lg  { min-width: 220px; }
+.dev-tip-card--fixed { position: fixed; z-index: 9999; pointer-events: none; }
 
 .dev-tip-title {
   font-size: 12px;
@@ -951,4 +974,47 @@
 
 .dev-crit-tooltip__label { color: var(--shell-text-muted); }
 .dev-crit-tooltip__value { font-weight: 600; color: var(--crit-color, var(--shell-text)); }
+
+/* ── Dashboard-mode widget control overlays ──────────────────────── */
+.ddb-widget-wrap {
+  position: relative;
+}
+
+.ddb-nested-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ddb-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 20;
+}
+
+.ddb-ctrl-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--shell-border);
+  background: var(--card-bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.ddb-ctrl-btn--grab { cursor: grab; }
+
+.ddb-ctrl-btn--delete {
+  border-color: var(--pai-crit-bg-hover);
+  background: var(--pai-crit-bg);
+}
 

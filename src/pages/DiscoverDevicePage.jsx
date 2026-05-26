@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import TablePagination from '../components/TablePagination.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
@@ -309,9 +310,28 @@ const IcSevMed = () => (
   </svg>
 );
 
+// ── Dashboard-mode widget controls overlay ────────────────────────
+function DdbControls({ canMove = true, onEdit }) {
+  return (
+    <div className="ddb-controls">
+      {canMove && (
+        <button className="ddb-ctrl-btn ddb-ctrl-btn--grab" title="Move">
+          <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+        </button>
+      )}
+      <button className="ddb-ctrl-btn" title="Settings" onClick={onEdit}>
+        <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+      </button>
+      <button className="ddb-ctrl-btn ddb-ctrl-btn--delete" title="Delete">
+        <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+      </button>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverDevicePage() {
+export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget, onAddWidget }) {
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
@@ -339,14 +359,23 @@ export default function DiscoverDevicePage() {
   const [typeTooltipData, setTypeTooltipData] = useState(null);
   const currentTrendData = TREND_DATA_BY_RANGE[timeRange] ?? TREND_DATA_BY_RANGE['1 Y'];
 
+  // Dashboard mode widget hover state
+  const [hoveredWidget,  setHoveredWidget]  = useState(null);
+  const [critSection,    setCritSection]    = useState(null);
+
+  // Mouse position refs for portal tooltips (bypass card overflow:hidden)
+  const sourceTipPosRef = useRef({ x: 0, y: 0 });
+  const donutPosRef     = useRef({ x: 0, y: 0 });
+
   const SourceTooltip = useCallback(({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     const entry = payload.find(e => e.dataKey === hoveredBarRef.current) || payload[0];
     const total = payload.reduce((sum, e) => sum + (e.value || 0), 0);
     const pct = total > 0 ? ((entry.value / total) * 100).toFixed(2) : '0.00';
     const color = entry.fill;
-    return (
-      <div className="dev-tip-card dev-tip-card--lg" style={{ '--tip-border': color }}>
+    const { x, y } = sourceTipPosRef.current;
+    return createPortal(
+      <div className="dev-tip-card dev-tip-card--lg dev-tip-card--fixed" style={{ '--tip-border': color, left: x + 14, top: y - 40 }}>
         <div className="dev-tip-title">{label}</div>
         <div className="dev-tip-col">
           <div className="dev-tip-row dev-tip-row--bold">
@@ -362,7 +391,27 @@ export default function DiscoverDevicePage() {
             <span className="dev-tip-accent">{pct}%</span>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
+    );
+  }, []);
+
+  const DonutTooltipFixed = useCallback(({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const p = payload[0].payload;
+    const { x, y } = donutPosRef.current;
+    return createPortal(
+      <div className="dev-tip-card dev-tip-card--sm dev-tip-card--fixed" style={{ '--tip-border': p.color, left: x + 14, top: y - 40 }}>
+        <div className="dev-tip-title">{p.label}</div>
+        <div className="dev-tip-row dev-tip-row--bold">
+          <span className="dev-tip-dot-row">
+            <span className="dev-tip-dot" />
+            {p.count}
+          </span>
+          <span className="dev-tip-accent">{p.pct}</span>
+        </div>
+      </div>,
+      document.body
     );
   }, []);
 
@@ -387,6 +436,12 @@ export default function DiscoverDevicePage() {
         <div className="dev-col-left">
 
           {/* Total stat + trend chart */}
+          <div
+            className="ddb-widget-wrap"
+            onMouseEnter={() => dashboardMode && setHoveredWidget('total')}
+            onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
+          >
+          {dashboardMode && hoveredWidget === 'total' && <DdbControls onEdit={() => onEditWidget?.('total')} />}
           <div className="card dev-card">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
@@ -456,14 +511,24 @@ export default function DiscoverDevicePage() {
               </ResponsiveContainer>
             </div>
           </div>
+          </div>{/* /ddb-widget-wrap total */}
 
           {/* Bottom row: Data Source + Type */}
           <div className="dev-bottom-row">
 
             {/* Data Source */}
+            <div
+              className="ddb-widget-wrap"
+              onMouseEnter={() => dashboardMode && setHoveredWidget('source')}
+              onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
+            >
+            {dashboardMode && hoveredWidget === 'source' && <DdbControls onEdit={() => onEditWidget?.('source')} />}
             <div className="card dev-card dev-source-card">
               <div className="dev-card-title">Data Source</div>
-              <div className="dev-chart-fill">
+              <div
+                className="dev-chart-fill"
+                onMouseMove={(e) => { sourceTipPosRef.current = { x: e.clientX, y: e.clientY }; }}
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={SOURCES_CHART_DATA}
@@ -481,12 +546,13 @@ export default function DiscoverDevicePage() {
                       tickLine={false}
                     />
                     <Tooltip content={SourceTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
-                    <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]} onMouseEnter={() => { hoveredBarRef.current = 'Corroborated'; }} onMouseLeave={() => { hoveredBarRef.current = null; }} />
+                    <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]} isAnimationActive={false} onMouseEnter={() => { hoveredBarRef.current = 'Corroborated'; }} onMouseLeave={() => { hoveredBarRef.current = null; }} />
                     <Bar
                       dataKey="Unique"
                       stackId="a"
                       fill="var(--pai-chart-purple)"
                       radius={[0, 2, 2, 0]}
+                      isAnimationActive={false}
                       onMouseEnter={() => { hoveredBarRef.current = 'Unique'; }}
                       onMouseLeave={() => { hoveredBarRef.current = null; }}
                       label={({ x, y, width, height, index }) => {
@@ -511,11 +577,21 @@ export default function DiscoverDevicePage() {
                 <span className="dev-legend-dot dev-legend-dot--purple" /><span>Unique</span>
               </div>
             </div>
+            </div>{/* /ddb-widget-wrap source */}
 
             {/* Type + Donut */}
+            <div
+              className="ddb-widget-wrap"
+              onMouseEnter={() => dashboardMode && setHoveredWidget('type')}
+              onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
+            >
+            {dashboardMode && hoveredWidget === 'type' && <DdbControls onEdit={() => onEditWidget?.('type')} />}
             <div className="card dev-card dev-type-card">
               <div className="dev-card-title">Type</div>
-              <div className="dev-donut-wrap">
+              <div
+                className="dev-donut-wrap"
+                onMouseMove={(e) => { donutPosRef.current = { x: e.clientX, y: e.clientY }; }}
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -536,7 +612,7 @@ export default function DiscoverDevicePage() {
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip content={DonutTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} />
+                    <Tooltip content={DonutTooltipFixed} isAnimationActive={false} wrapperStyle={TIP_WRAP} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="dev-donut-center">
@@ -559,6 +635,16 @@ export default function DiscoverDevicePage() {
                 ))}
               </div>
             </div>
+            </div>{/* /ddb-widget-wrap type */}
+
+            {dashboardMode && onAddWidget && (
+              <button onClick={onAddWidget} className="ddb-add-widget-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span className="ddb-add-widget-label">Add Widget</span>
+              </button>
+            )}
 
           </div>
         </div>
@@ -567,6 +653,12 @@ export default function DiscoverDevicePage() {
         <div className="dev-col-right">
 
           {/* Key Security Insights */}
+          <div
+            className="ddb-widget-wrap"
+            onMouseEnter={() => dashboardMode && setHoveredWidget('insights')}
+            onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
+          >
+          {dashboardMode && hoveredWidget === 'insights' && <DdbControls onEdit={() => onEditWidget?.('insights')} />}
           <div className="card dev-card dev-insights-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Key Security Insights — Top 5</span>
@@ -617,8 +709,15 @@ export default function DiscoverDevicePage() {
               onRowsPerPageChange={n => { setRowsPer(n); setInsightPage(1); }}
             />
           </div>
+          </div>{/* /ddb-widget-wrap insights */}
 
           {/* Criticality */}
+          <div
+            className="ddb-widget-wrap"
+            onMouseEnter={() => dashboardMode && setCritSection(s => s || 'outer')}
+            onMouseLeave={() => dashboardMode && setCritSection(null)}
+          >
+          {dashboardMode && critSection && <DdbControls onEdit={() => onEditWidget?.('crit')} />}
           <div className="card dev-card dev-crit-card">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Criticality Insights</span>
@@ -651,6 +750,13 @@ export default function DiscoverDevicePage() {
               </div>
             </div>
 
+            {/* Nested: Assets by Criticality Score */}
+            <div
+              className="ddb-nested-wrap"
+              onMouseEnter={() => dashboardMode && setCritSection('assets')}
+              onMouseLeave={() => dashboardMode && setCritSection('outer')}
+            >
+            {dashboardMode && critSection === 'assets' && <DdbControls canMove={false} onEdit={() => onEditWidget?.('assets')} />}
             <div className="dev-asset-hdr">
               <div className="dev-asset-hdr-left">
                 <span className="dev-card-title">Assets by Criticality Score</span>
@@ -695,7 +801,9 @@ export default function DiscoverDevicePage() {
               onPageChange={setAssetPage}
               onRowsPerPageChange={() => {}}
             />
+            </div>{/* /ddb-nested-wrap assets */}
           </div>
+          </div>{/* /ddb-widget-wrap crit */}
 
         </div>
       </div>

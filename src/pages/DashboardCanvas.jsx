@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender } from '../components/ChartRender.jsx'
+import DiscoverDevicePage from './DiscoverDevicePage.jsx'
+import '../styles/dashboard.css'
 
 // ── Constants ────────────────────────────────────────────────────────
 const WIDGET_SIZES = [
@@ -49,12 +51,13 @@ const LCNC_ICONS = {
 const ChartIcon = ({ id, selected }) => {
   const src = LCNC_ICONS[id]
   if (src) return (
-    <span style={{
-      display: 'inline-block', width: 24, height: 24, flexShrink: 0,
-      backgroundColor: selected ? PAI.indigo : 'var(--shell-text-muted)',
-      WebkitMaskImage: `url(${src})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
-      maskImage: `url(${src})`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center',
-    }} />
+    <span
+      className="dc-chart-icon-mask"
+      style={{
+        '--dc-icon-color': selected ? PAI.indigo : 'var(--shell-text-muted)',
+        '--dc-mask-url': `url(${src})`,
+      }}
+    />
   )
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' }
   const icons = {
@@ -72,8 +75,8 @@ const GL = '#F3F4F6'  // skeleton light gray
 function ChartSilhouette({ chartId }) {
   const silhouettes = {
     'pie': (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="dc-silhouette-pie-wrap">
+        <div className="dc-silhouette-pie-center">
           <svg width="130" height="130" viewBox="0 0 130 130">
             <circle cx="65" cy="65" r="48" fill="none" stroke={G} strokeWidth="12"/>
             <circle cx="65" cy="65" r="48" fill="none" stroke={GL} strokeWidth="12"
@@ -81,14 +84,14 @@ function ChartSilhouette({ chartId }) {
             <circle cx="65" cy="65" r="20" fill={GL}/>
           </svg>
         </div>
-        <div style={{ width: '100%', paddingBottom: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="dc-silhouette-legend">
           {[[48,28],[42,36]].map(([lw,vw], i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: G, flexShrink: 0 }}/>
-                <div style={{ width: lw, height: 10, borderRadius: 5, background: G }}/>
+            <div key={i} className="dc-silhouette-legend-row">
+              <div className="dc-silhouette-legend-left">
+                <div className="dc-silhouette-dot"/>
+                <div className="dc-silhouette-bar" style={{ '--dc-bar-w': `${lw}px` }}/>
               </div>
-              <div style={{ width: vw, height: 10, borderRadius: 5, background: G }}/>
+              <div className="dc-silhouette-bar" style={{ '--dc-bar-w': `${vw}px` }}/>
             </div>
           ))}
         </div>
@@ -210,8 +213,8 @@ function ChartSilhouette({ chartId }) {
   }
   if (chartId === 'none' || chartId === 'heading') return null
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 220 }}>
+    <div className="dc-silhouette-outer">
+      <div className="dc-silhouette-inner">
         {silhouettes[chartId] || silhouettes['vert-bar']}
       </div>
     </div>
@@ -220,12 +223,10 @@ function ChartSilhouette({ chartId }) {
 
 // ── KG picker button ─────────────────────────────────────────────────
 const KGBtn = () => (
-  <button style={{
-    width: 40, height: 40, flexShrink: 0, borderRadius: 8,
-    border: `1.5px solid ${PAI.indigo}`, background: PAI.indigoTint,
-    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: PAI.indigo,
-  }}>
+  <button
+    className="dc-kg-btn"
+    style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+  >
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
       <circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/>
       <line x1="8" y1="11" x2="16" y2="7"/><line x1="8" y1="13" x2="16" y2="17"/>
@@ -236,26 +237,33 @@ const KGBtn = () => (
 // ── Toggle ───────────────────────────────────────────────────────────
 function Toggle({ value, onChange }) {
   return (
-    <button onClick={() => onChange(!value)} style={{
-      width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
-      background: value ? PAI.indigo : 'var(--pai-border-strong)', position: 'relative', padding: 0,
-      transition: 'background 150ms',
-    }}>
-      <span style={{
-        position: 'absolute', top: 2, left: value ? 18 : 2,
-        width: 16, height: 16, borderRadius: '50%', background: 'var(--card-bg)',
-        transition: 'left 150ms', display: 'block',
-      }} />
+    <button
+      onClick={() => onChange(!value)}
+      className="dc-toggle-track"
+      style={{ '--dc-toggle-bg': value ? PAI.indigo : 'var(--pai-border-strong)' }}
+    >
+      <span
+        className="dc-toggle-thumb"
+        style={{ '--dc-toggle-left': value ? '18px' : '2px' }}
+      />
     </button>
   )
 }
 
 function ToggleRow({ label, description, value, onChange, disabled }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16, opacity: disabled ? 0.4 : 1, pointerEvents: disabled ? 'none' : 'auto' }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>{label}</div>
-        {description && <div style={{ fontSize: 11, color: PAI.fg3, marginTop: 2 }}>{description}</div>}
+    <div
+      className="dc-toggle-row"
+      style={{
+        '--dc-row-opacity': disabled ? 0.4 : 1,
+        '--dc-row-events': disabled ? 'none' : 'auto',
+        '--dc-fg1': PAI.fg1,
+        '--dc-fg3': PAI.fg3,
+      }}
+    >
+      <div className="dc-toggle-row-body">
+        <div className="dc-toggle-row-label">{label}</div>
+        {description && <div className="dc-toggle-row-desc">{description}</div>}
       </div>
       <Toggle value={value} onChange={onChange} />
     </div>
@@ -265,9 +273,9 @@ function ToggleRow({ label, description, value, onChange, disabled }) {
 // ── Field row ────────────────────────────────────────────────────────
 function FieldRow({ label, hint, children }) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      {label && <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1, marginBottom: hint ? 2 : 8 }}>{label}</div>}
-      {hint  && <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 8 }}>{hint}</div>}
+    <div className="dc-field-row" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
+      {label && <div className={`dc-field-label ${hint ? 'dc-field-label--with-hint' : 'dc-field-label--no-hint'}`}>{label}</div>}
+      {hint  && <div className="dc-field-hint">{hint}</div>}
       {children}
     </div>
   )
@@ -275,16 +283,12 @@ function FieldRow({ label, hint, children }) {
 
 function TextInput({ placeholder, value, onChange, withKG }) {
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+    <div className="dc-text-input-wrap">
       <input
         value={value || ''} onChange={onChange}
         placeholder={placeholder}
-        style={{
-          flex: 1, height: 40, boxSizing: 'border-box',
-          border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
-          padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-          color: value ? PAI.fg1 : PAI.fg3, outline: 'none', background: 'var(--card-bg)',
-        }}
+        className="dc-text-input"
+        style={{ '--dc-input-color': value ? PAI.fg1 : PAI.fg3 }}
       />
       {withKG && <KGBtn />}
     </div>
@@ -297,13 +301,8 @@ function TextArea({ placeholder, value, onChange }) {
       value={value || ''} onChange={onChange}
       placeholder={placeholder}
       rows={3}
-      style={{
-        width: '100%', boxSizing: 'border-box',
-        border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
-        padding: '8px 10px', fontSize: 13, fontFamily: 'inherit',
-        color: PAI.fg3, outline: 'none', background: 'var(--card-bg)',
-        resize: 'vertical', lineHeight: 1.5,
-      }}
+      className="dc-textarea"
+      style={{ '--dc-fg3': PAI.fg3 }}
     />
   )
 }
@@ -312,16 +311,8 @@ function SelectInput({ value, onChange, options }) {
   return (
     <select
       value={value || ''} onChange={onChange}
-      style={{
-        flex: 1, height: 40, boxSizing: 'border-box',
-        border: '1px solid rgba(0,9,50,0.12)', borderRadius: 8,
-        padding: '0 10px', fontSize: 13, fontFamily: 'inherit',
-        color: value ? PAI.fg1 : PAI.fg3, background: 'var(--card-bg)', outline: 'none', cursor: 'pointer',
-        appearance: 'none',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236E6E6E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
-        paddingRight: 30,
-      }}
+      className="dc-select-input"
+      style={{ '--dc-input-color': value ? PAI.fg1 : PAI.fg3 }}
     >
       {options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o}</option>)}
     </select>
@@ -330,20 +321,16 @@ function SelectInput({ value, onChange, options }) {
 
 function SizeButtons({ options, value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div className="dc-size-buttons">
       {options.map(o => (
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
+          className="dc-size-btn"
           style={{
-            flex: 1, height: 32,
-            background: value === o.id ? PAI.indigoTint : 'var(--card-bg)',
-            border: `1.5px solid ${value === o.id ? PAI.indigo : 'var(--shell-border)'}`,
-            borderRadius: 8, cursor: 'pointer',
-            fontSize: 11, fontWeight: 500, fontFamily: 'inherit',
-            whiteSpace: 'nowrap', overflow: 'hidden',
-            color: value === o.id ? PAI.indigo : PAI.fg3,
-            transition: 'border-color 120ms, color 120ms, background 120ms',
+            '--dc-sizebtn-bg':     value === o.id ? PAI.indigoTint : 'var(--card-bg)',
+            '--dc-sizebtn-border': value === o.id ? PAI.indigo     : 'var(--shell-border)',
+            '--dc-sizebtn-color':  value === o.id ? PAI.indigo     : PAI.fg3,
           }}
         >{o.label}</button>
       ))}
@@ -369,44 +356,50 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const [showPctChange, setShowPctChange]   = useState(widget.showPctChange ?? false)
   const [showLegend, setShowLegend]         = useState(widget.showLegend ?? true)
 
-  const tabStyle = (id) => ({
-    flex: 1, height: 40, border: 'none', background: 'transparent',
-    cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
-    fontWeight: tab === id ? 600 : 400,
-    color: tab === id ? PAI.fg1 : PAI.fg3,
-    borderBottom: `2px solid ${tab === id ? PAI.indigo : 'transparent'}`,
-    transition: 'color 120ms, border-color 120ms',
-  })
-
   const isPie = chartType === 'pie'
   const chartTypeLabel = CHART_TYPES.find(c => c.id === chartType)?.label || ''
 
   return (
-    <div style={{
-      width: 348, flexShrink: 0, background: 'var(--card-bg)',
-      border: '1px solid var(--shell-border)', borderRadius: 8,
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-    }}>
+    <div
+      className="dc-panel"
+      style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3, '--dc-indigo': PAI.indigo }}
+    >
       {/* Header */}
-      <div style={{ padding: '12px 12px 0', borderBottom: '1px solid var(--pai-border-strong)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10 }}>
+      <div className="dc-panel-header">
+        <div className="dc-panel-title-row">
           <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Widget Settings</span>
-          <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: PAI.fg3, display: 'flex' }}>
+          <span className="dc-panel-title">Widget Settings</span>
+          <button onClick={onClose} className="dc-panel-close-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
         {/* Tabs */}
-        <div style={{ display: 'flex', marginBottom: -1 }}>
-          <button style={tabStyle('general')} onClick={() => setTab('general')}>General</button>
-          <button style={tabStyle('data')}    onClick={() => setTab('data')}>Data</button>
+        <div className="dc-panel-tabs">
+          <button
+            className="dc-panel-tab"
+            style={{
+              '--dc-tab-weight': tab === 'general' ? 600 : 400,
+              '--dc-tab-color':  tab === 'general' ? PAI.fg1 : PAI.fg3,
+              '--dc-tab-border': tab === 'general' ? PAI.indigo : 'transparent',
+            }}
+            onClick={() => setTab('general')}
+          >General</button>
+          <button
+            className="dc-panel-tab"
+            style={{
+              '--dc-tab-weight': tab === 'data' ? 600 : 400,
+              '--dc-tab-color':  tab === 'data' ? PAI.fg1 : PAI.fg3,
+              '--dc-tab-border': tab === 'data' ? PAI.indigo : 'transparent',
+            }}
+            onClick={() => setTab('data')}
+          >Data</button>
         </div>
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px 0' }}>
+      <div className="dc-panel-body">
         {tab === 'general' && (
           <>
             <FieldRow label="Widget Title">
@@ -431,7 +424,13 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
           </>
         )}
 
-        {tab === 'data' && (
+        {tab === 'data' && widget.dataLocked && (
+          <div className="dc-data-locked">
+            <span>No data configuration available for this widget.</span>
+          </div>
+        )}
+
+        {tab === 'data' && !widget.dataLocked && (
           <>
             {isPie ? (
               <>
@@ -442,13 +441,13 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 </FieldRow>
 
                 <FieldRow label="Size" hint="Display total/distinct count in the center of pie chart">
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Operation</div>
+                  <div className="dc-axis-row">
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Operation</div>
                       <SelectInput value={operation} onChange={e => setOperation(e.target.value)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'},{ value:'avg',label:'Avg'}]} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Aggregate By</div>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Aggregate By</div>
                       <SelectInput value={aggregateBy} onChange={e => setAggregateBy(e.target.value)} options={[{ value:'host',label:'Host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
                   </div>
@@ -461,13 +460,13 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   <TextInput placeholder="Select field" withKG />
                 </FieldRow>
                 <FieldRow label="Y Axis">
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Operation</div>
+                  <div className="dc-axis-row--no-mb">
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Operation</div>
                       <SelectInput value={operation} onChange={e => setOperation(e.target.value)} options={[{ value:'count',label:'Count'},{ value:'sum',label:'Sum'},{ value:'avg',label:'Avg'}]} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: PAI.fg3, marginBottom: 6, paddingBottom: 4 }}>Aggregate By</div>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Aggregate By</div>
                       <TextInput placeholder="Field" withKG />
                     </div>
                   </div>
@@ -487,7 +486,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
 
             {isPie && (
               <>
-                <div style={{ borderTop: '1px solid var(--shell-border)', margin: '4px 0 16px' }} />
+                <div className="dc-divider" />
                 <ToggleRow
                   label="Show Legend"
                   description="Display or hide the legend for this chart"
@@ -515,7 +514,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
       </div>
 
       {/* Footer */}
-      <div style={{ borderTop: '1px solid var(--shell-border)', padding: '12px', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div className="dc-panel-footer">
         <button onClick={onClose} className="ds-btn sz-md t-outline">Cancel</button>
         <button
           onClick={() => onSaveChanges({ label: title, description, sizeId, heightId, chartId: chartType, showTotalCount, showPctChange, showLegend })}
@@ -592,7 +591,7 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
       {/* footer */}
       <div style={{ borderTop: '1px solid var(--shell-border)', padding: '12px', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
         <button onClick={onCancel} className="ds-btn sz-md t-outline">Cancel</button>
-        <button onClick={onSave}   className="ds-btn sz-md t-primary" disabled={!selected} style={{ opacity: selected ? 1 : 0.4 }}>Save</button>
+        <button onClick={onSave} className="ds-btn sz-md t-primary" disabled={!selected} style={{ opacity: selected ? 1 : 0.4 }}>Save</button>
       </div>
     </div>
   )
@@ -605,44 +604,49 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
 
   return (
     <div
-      style={{ gridColumn: `span ${widget.span}`, position: 'relative' }}
+      className="dc-widget-col"
+      style={{
+        '--dc-widget-span': widget.span,
+        '--dc-fg1': PAI.fg1,
+        '--dc-fg3': PAI.fg3,
+        '--dc-indigo': PAI.indigo,
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Hover actions */}
       {hovered && (
-        <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
-          <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="dc-widget-actions">
+          <button title="Move" className="dc-action-btn dc-action-btn--grab">
             <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
           </button>
-          <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Add nested widget" className="dc-action-btn">
             <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
           </button>
-          <button title="Edit" onClick={onEdit} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Edit" onClick={onEdit} className="dc-action-btn">
             <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
-          <button title="Delete" onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--pai-crit-bg-hover)', background: 'var(--pai-crit-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button title="Delete" onClick={onDelete} className="dc-action-btn dc-action-btn--delete">
             <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
       )}
 
       {/* Card */}
-      <div style={{
-        background: 'var(--card-bg)',
-        border: isEditing ? `1.5px dashed ${PAI.indigo}` : '1px solid var(--shell-border)',
-        borderRadius: 10, padding: 12,
-        display: 'flex', flexDirection: 'column', gap: 8,
-        height: h, boxSizing: 'border-box',
-        transition: 'border-color 150ms',
-      }}>
-        <div style={{ flexShrink: 0 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: PAI.fg1 }}>{widget.label}</span>
+      <div
+        className="dc-widget-card"
+        style={{
+          '--dc-card-border': isEditing ? `1.5px dashed ${PAI.indigo}` : '1px solid var(--shell-border)',
+          '--dc-card-height': `${h}px`,
+        }}
+      >
+        <div className="dc-widget-card-header">
+          <span className="dc-widget-card-title">{widget.label}</span>
           {widget.description && (
-            <div style={{ fontSize: 12, color: PAI.fg3, marginTop: 2 }}>{widget.description}</div>
+            <div className="dc-widget-card-desc">{widget.description}</div>
           )}
         </div>
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div className="dc-widget-card-body">
           <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} />
         </div>
       </div>
@@ -652,12 +656,40 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
 
 // ── Main ─────────────────────────────────────────────────────────────
 // ── Discover Dashboard template ──────────────────────────────────────
+const DISCOVER_TREND_DATA = [
+  { name: '1 Sep', value: 3800  },
+  { name: '1 Oct', value: 4600  },
+  { name: '1 Nov', value: 5400  },
+  { name: '1 Dec', value: 6100  },
+  { name: '1 Jan', value: 6900  },
+  { name: '1 Feb', value: 7600  },
+  { name: '1 Mar', value: 8400  },
+  { name: '1 Apr', value: 9200  },
+  { name: '1 May', value: 10000 },
+  { name: '1 Jun', value: 10800 },
+  { name: '1 Jul', value: 11600 },
+  { name: '8 Aug', value: 12382 },
+]
+
+const DISCOVER_INSIGHTS = [
+  { sev: 'high', text: 'Adaptive application controls for defining safe applications should be configured on your machines',           failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Adaptive network hardening recommendations should be applied on internet facing virtual machines',             failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'All network ports should be restricted on network security groups associated to your virtual machine',         failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Allowlist rules in your adaptive application control policy should be updated',                                failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Authentication to Linux machines should require SSH keys',                                                     failPct: 100, cat: 'Control Gap' },
+  { sev: 'high', text: 'Endpoint protection should be installed on your machines',                                                     failPct: 97,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Guest configuration extension should be installed on your machines',                                           failPct: 94,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Log Analytics agent should be installed on your virtual machine for Azure Security Center monitoring',         failPct: 91,  cat: 'Control Gap' },
+  { sev: 'high', text: 'MFA should be enabled on accounts with write permissions on your subscription',                                failPct: 88,  cat: 'Control Gap' },
+  { sev: 'high', text: 'Remote debugging should be turned off for Function Apps',                                                      failPct: 85,  cat: 'Control Gap' },
+]
+
 const DISCOVER_TEMPLATE = {
   name: 'Discover Dashboard',
   widgets: [
     {
-      id: 1001, label: 'Total Devices', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
-      data: { value: '12,382', label: 'Total Devices', trend: '3.89%', trendUp: true },
+      id: 1001, label: 'Total Devices', chartId: 'kpi', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active', dataLocked: true,
+      data: { value: '12,382', label: 'Total Devices', trend: '3.89%', trendUp: true, trendData: DISCOVER_TREND_DATA },
     },
     {
       id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
@@ -671,29 +703,36 @@ const DISCOVER_TEMPLATE = {
     {
       id: 1003, label: 'Data Source', chartId: 'hor-bar', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
       data: [
-        { label: 'AWS',                 value: 100, secondary: 5,  count: '97' },
-        { label: 'MS Azure',            value: 88,  secondary: 5,  count: '85' },
-        { label: 'Qualys',              value: 58,  secondary: 21, count: '56' },
-        { label: 'MS Active Directory', value: 48,  secondary: 31, count: '47' },
-        { label: 'WIZ',                 value: 39,  secondary: 5,  count: '38' },
-        { label: 'Infoblox',            value: 12,  secondary: 7,  count: '12' },
-        { label: 'MS Defender',         value: 8,   secondary: 5,  count: '8'  },
-        { label: 'Tenable',             value: 5,   secondary: 3,  count: '5'  },
+        { label: 'AWS',                 unique: 92, corroborated: 5  },
+        { label: 'MS Azure',            unique: 80, corroborated: 5  },
+        { label: 'Qualys',              unique: 36, corroborated: 20 },
+        { label: 'MS Active Directory', unique: 17, corroborated: 30 },
+        { label: 'WIZ',                 unique: 33, corroborated: 5  },
+        { label: 'Infoblox',            unique: 5,  corroborated: 7  },
+        { label: 'MS Defender',         unique: 3,  corroborated: 5  },
+        { label: 'Tenable',             unique: 2,  corroborated: 3  },
       ],
     },
     {
       id: 1004, label: 'Asset Types', chartId: 'pie', span: 1, sizeId: 'small', heightId: 'medium', phase: 'active',
       totalLabel: '10,679',
       data: [
-        { label: 'Server',           count: '4,086', value: 4086, pct: '33%', color: 'var(--pai-indigo)'       },
-        { label: 'Workstation',      count: '2,848', value: 2848, pct: '23%', color: '#5BADB8'                 },
-        { label: 'Network',          count: '2,600', value: 2600, pct: '21%', color: 'var(--pai-green)'        },
-        { label: 'Mobile',           count: '897',   value: 897,  pct: '8%',  color: 'var(--pai-high-fg)'      },
-        { label: 'Printers',         count: '124',   value: 124,  pct: '1%',  color: 'var(--pai-red-high)'     },
-        { label: 'IOT',              count: '122',   value: 122,  pct: '1%',  color: 'var(--pai-indigo-muted)' },
+        { label: 'Server',      count: '4,086', value: 4086, pct: '33%', color: 'var(--pai-indigo)'       },
+        { label: 'Workstation', count: '2,848', value: 2848, pct: '23%', color: '#5BADB8'                 },
+        { label: 'Network',     count: '2,600', value: 2600, pct: '21%', color: 'var(--pai-green)'        },
+        { label: 'Mobile',      count: '897',   value: 897,  pct: '8%',  color: 'var(--pai-high-fg)'      },
+        { label: 'Printers',    count: '124',   value: 124,  pct: '1%',  color: 'var(--pai-red-high)'     },
+        { label: 'IOT',         count: '122',   value: 122,  pct: '1%',  color: 'var(--pai-indigo-muted)' },
       ],
     },
-    { id: 1005, label: 'Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active' },
+    {
+      id: 1005, label: 'Key Security Insights', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      data: DISCOVER_INSIGHTS,
+    },
+    {
+      id: 1006, label: 'Assets by Criticality Score', chartId: 'table', span: 4, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      data: [],
+    },
   ],
 }
 
@@ -763,20 +802,29 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
   const openSettings = (id) => { setSettingsWidgetId(id); setPanelMode('settings') }
   const deleteWidget = (id) => { setWidgets(ws => ws.filter(w => w.id !== id)); if (settingsWidgetId === id) setPanelMode(null) }
 
+  const DISCOVER_CARD_IDS = { total: 1001, crit: 1002, source: 1003, type: 1004, insights: 1005, assets: 1006 }
+  const handleDiscoverEdit = (cardKey) => {
+    const id = DISCOVER_CARD_IDS[cardKey]
+    if (id) { setSettingsWidgetId(id); setPanelMode('settings') }
+  }
+
   const settingsWidget = widgets.find(w => w.id === settingsWidgetId)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: PAI.bgApp }}>
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 12, padding: 16 }}>
+    <div
+      className="dc-root"
+      style={{ '--dc-bg-app': PAI.bgApp, '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint, '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}
+    >
+      <div className="dc-layout">
 
         {/* ── Canvas ── */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="dc-canvas-wrap">
 
           {/* Toolbar */}
-          <div style={{ height: 52, flexShrink: 0, boxSizing: 'border-box', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
+          <div className="dc-toolbar">
             <button
               onClick={() => onNav('workspace/library')}
-              style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--pai-indigo-light)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: PAI.indigo }}
+              className="dc-toolbar-back-btn"
             >
               <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
             </button>
@@ -784,28 +832,31 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
             <input
               value={name} onChange={e => setName(e.target.value)}
               placeholder="Enter dashboard name here..."
-              style={{ height: 32, minWidth: 220, border: '1px solid var(--shell-border)', borderRadius: 8, padding: '0 14px', fontSize: 12, fontFamily: 'inherit', color: PAI.fg1, background: 'var(--card-bg)', outline: 'none', boxSizing: 'border-box' }}
+              className="dc-toolbar-name-input"
             />
 
             {perf && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 9px', flexShrink: 0, borderRadius: 100, fontSize: 11, fontWeight: 500, background: perf.bg, color: perf.color }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: perf.dot, flexShrink: 0 }} />
+              <span
+                className="dc-perf-badge"
+                style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
+              >
+                <span className="dc-perf-dot" />
                 {perf.label}
               </span>
             )}
 
-            <div style={{ flex: 1 }} />
+            <div className="dc-toolbar-spacer" />
 
             <button className="ds-btn sz-md t-outline">Convert to Report</button>
 
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, lineHeight: 1, padding: '0 4px 0 12px', flexShrink: 0, borderRadius: 100, background: PAI.indigoTint, color: PAI.indigo, fontSize: 14, fontWeight: 500, boxSizing: 'border-box' }}>
+            <span className="dc-scope-badge">
               Dashboard Scope
-              <span style={{ width: 24, height: 24, borderRadius: '50%', background: PAI.indigo, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" style={{ filter: 'brightness(0) invert(1)' }} />
+              <span className="dc-scope-icon">
+                <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
               </span>
             </span>
 
-            <div style={{ width: 1, height: 18, background: 'var(--shell-border)', flexShrink: 0 }} />
+            <div className="dc-toolbar-divider" />
 
             <button className="ds-icon-btn" title="Reset" onClick={() => { setWidgets([]); setName(''); setPanelMode(null) }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -817,85 +868,76 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
           </div>
 
           {/* Canvas body */}
-          <div style={{ flex: 1, overflow: 'auto', backgroundImage: 'radial-gradient(circle, var(--pai-border-strong) 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, padding: 20, alignItems: 'start' }}>
+          <div className={`dc-canvas-body${templateId === 'discover' ? ' dc-canvas-body--plain' : ''}`}>
+            {templateId === 'discover' ? (
+              <DiscoverDevicePage dashboardMode onEditWidget={handleDiscoverEdit} onAddWidget={openAdd} />
+            ) : (
+              <div className="dc-grid">
 
-              {widgets.map(w => (
-                <WidgetCard
-                  key={w.id}
-                  widget={w}
-                  isEditing={w.id === settingsWidgetId}
-                  onEdit={() => openSettings(w.id)}
-                  onDelete={() => deleteWidget(w.id)}
-                />
-              ))}
+                {widgets.map(w => (
+                  <WidgetCard
+                    key={w.id}
+                    widget={w}
+                    isEditing={w.id === settingsWidgetId}
+                    onEdit={() => openSettings(w.id)}
+                    onDelete={() => deleteWidget(w.id)}
+                  />
+                ))}
 
-              {/* Add Widget placeholder / Live preview */}
-              {panelMode === 'add' ? (
-                <div style={{
-                  gridColumn: `span ${WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1}`,
-                  position: 'relative',
-                }}>
-                  <div style={{ position: 'absolute', top: -16, right: 0, display: 'flex', gap: 4, zIndex: 10 }}>
-                    <button title="Move" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
-                    </button>
-                    <button title="Add nested widget" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
-                    </button>
-                    <button title="Edit" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--shell-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
-                    </button>
-                    <button title="Delete" style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--pai-crit-bg-hover)', background: 'var(--pai-crit-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
-                    </button>
-                  </div>
-                  <div style={{
-                    background: 'var(--card-bg)',
-                    border: `1.5px dashed ${PAI.indigo}`,
-                    borderRadius: 10, padding: 12,
-                    height: WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260,
-                    boxSizing: 'border-box',
-                    display: 'flex', flexDirection: 'column', gap: 8,
-                  }}>
-                    <div style={{ flexShrink: 0 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: PAI.fg1 }}>
-                        {widgetTitle || (selectedChart ? CHART_TYPES.find(c => c.id === selectedChart)?.label : '')}
-                      </span>
-                      {widgetDescription && (
-                        <div style={{ fontSize: 12, color: PAI.fg3, marginTop: 2 }}>{widgetDescription}</div>
-                      )}
+                {/* Add Widget placeholder / Live preview */}
+                {panelMode === 'add' ? (
+                  <div
+                    className="dc-preview-col"
+                    style={{ '--dc-preview-span': WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1 }}
+                  >
+                    <div className="dc-widget-actions">
+                      <button title="Move" className="dc-action-btn dc-action-btn--grab">
+                        <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+                      </button>
+                      <button title="Add nested widget" className="dc-action-btn">
+                        <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                      </button>
+                      <button title="Edit" className="dc-action-btn">
+                        <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+                      </button>
+                      <button title="Delete" className="dc-action-btn dc-action-btn--delete">
+                        <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+                      </button>
                     </div>
-                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                      {selectedChart && <ChartSilhouette chartId={selectedChart} />}
+                    <div
+                      className="dc-preview-card"
+                      style={{ '--dc-preview-height': `${WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260}px` }}
+                    >
+                      <div className="dc-preview-header">
+                        <span className="dc-preview-title">
+                          {widgetTitle || (selectedChart ? CHART_TYPES.find(c => c.id === selectedChart)?.label : '')}
+                        </span>
+                        {widgetDescription && (
+                          <div className="dc-preview-desc">{widgetDescription}</div>
+                        )}
+                      </div>
+                      <div className="dc-preview-body">
+                        {selectedChart && <ChartSilhouette chartId={selectedChart} />}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <button
-                  onClick={openAdd}
-                  style={{
-                    gridColumn: 'span 1',
-                    height: WIDGET_HEIGHTS[0].px, width: '100%',
-                    background: 'var(--card-bg)',
-                    border: `1.5px dashed ${PAI.indigo}`,
-                    borderRadius: 10, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: 6,
-                    color: PAI.indigo, transition: 'background 150ms',
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'inherit' }}>Add Widget</span>
-                </button>
-              )}
-            </div>
+                ) : (
+                  <button
+                    onClick={openAdd}
+                    className="dc-add-widget-btn"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span className="dc-add-widget-btn-label">Add Widget</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Right Panel ── */}
+        {/* ── Right Panel (custom dashboards only) ── */}
         {panelMode === 'add' && (
           <AddWidgetPanel
             selected={selectedChart} setSelected={setSelectedChart}

@@ -1,0 +1,891 @@
+/* ── Dashboard Canvas ─────────────────────────────────────────────────── */
+/* dc- prefix for all Dashboard Canvas classes                            */
+
+/* ── ChartIcon ─────────────────────────────────────────────────────────── */
+.dc-chart-icon-mask {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background-color: var(--dc-icon-color);
+  -webkit-mask-image: var(--dc-mask-url);
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: var(--dc-mask-url);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+/* ── ChartSilhouette ───────────────────────────────────────────────────── */
+.dc-silhouette-pie-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dc-silhouette-pie-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dc-silhouette-legend {
+  width: 100%;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dc-silhouette-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dc-silhouette-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dc-silhouette-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #E5E7EB;
+  flex-shrink: 0;
+}
+
+.dc-silhouette-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: #E5E7EB;
+  width: var(--dc-bar-w);
+}
+
+.dc-silhouette-outer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dc-silhouette-inner {
+  width: 100%;
+  max-width: 220px;
+}
+
+/* ── KGBtn ─────────────────────────────────────────────────────────────── */
+.dc-kg-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1.5px solid var(--dc-indigo);
+  background: var(--dc-indigo-tint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dc-indigo);
+}
+
+/* ── Toggle ────────────────────────────────────────────────────────────── */
+.dc-toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: var(--dc-toggle-bg);
+  position: relative;
+  padding: 0;
+  transition: background 150ms;
+}
+
+.dc-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: var(--dc-toggle-left);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  transition: left 150ms;
+  display: block;
+}
+
+/* ── ToggleRow ─────────────────────────────────────────────────────────── */
+.dc-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  opacity: var(--dc-row-opacity);
+  pointer-events: var(--dc-row-events);
+}
+
+.dc-toggle-row-body {
+  flex: 1;
+}
+
+.dc-toggle-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+}
+
+.dc-toggle-row-desc {
+  font-size: 11px;
+  color: var(--dc-fg3);
+  margin-top: 2px;
+}
+
+/* ── FieldRow ──────────────────────────────────────────────────────────── */
+.dc-field-row {
+  margin-bottom: 16px;
+}
+
+.dc-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+}
+
+.dc-field-label--with-hint {
+  margin-bottom: 2px;
+}
+
+.dc-field-label--no-hint {
+  margin-bottom: 8px;
+}
+
+.dc-field-hint {
+  font-size: 11px;
+  color: var(--dc-fg3);
+  margin-bottom: 8px;
+}
+
+/* ── TextInput ─────────────────────────────────────────────────────────── */
+.dc-text-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dc-text-input {
+  flex: 1;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 9, 50, 0.12);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--dc-input-color);
+  outline: none;
+  background: var(--card-bg);
+}
+
+/* ── TextArea ──────────────────────────────────────────────────────────── */
+.dc-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 9, 50, 0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--dc-fg3);
+  outline: none;
+  background: var(--card-bg);
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ── SelectInput ───────────────────────────────────────────────────────── */
+.dc-select-input {
+  flex: 1;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 9, 50, 0.12);
+  border-radius: 8px;
+  padding: 0 30px 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--dc-input-color);
+  background: var(--card-bg);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236E6E6E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* ── SizeButtons ───────────────────────────────────────────────────────── */
+.dc-size-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.dc-size-btn {
+  flex: 1;
+  height: 32px;
+  background: var(--dc-sizebtn-bg);
+  border: 1.5px solid var(--dc-sizebtn-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--dc-sizebtn-color);
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+
+/* ── WidgetSettingsPanel ───────────────────────────────────────────────── */
+.dc-panel {
+  width: 348px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dc-panel-header {
+  padding: 12px 12px 0;
+  border-bottom: 1px solid var(--pai-border-strong);
+  flex-shrink: 0;
+}
+
+.dc-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.dc-panel-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+}
+
+.dc-panel-close-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--dc-fg3);
+  display: flex;
+}
+
+.dc-panel-tabs {
+  display: flex;
+  margin-bottom: -1px;
+}
+
+.dc-panel-tab {
+  flex: 1;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: var(--dc-tab-weight);
+  color: var(--dc-tab-color);
+  border-bottom: 2px solid var(--dc-tab-border);
+  transition: color 120ms, border-color 120ms;
+}
+
+.dc-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 12px 0;
+}
+
+.dc-panel-footer {
+  border-top: 1px solid var(--shell-border);
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* ── Axis row (pie / non-pie data fields) ─────────────────────────────── */
+.dc-axis-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dc-axis-row--no-mb {
+  display: flex;
+  gap: 8px;
+}
+
+.dc-axis-col {
+  flex: 1;
+}
+
+.dc-axis-label {
+  font-size: 11px;
+  color: var(--dc-fg3);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+}
+
+/* ── Panel divider ─────────────────────────────────────────────────────── */
+.dc-divider {
+  border-top: 1px solid var(--shell-border);
+  margin: 4px 0 16px;
+}
+
+/* ── Chart type grid (for Widget Settings panel) ──────────────────────── */
+.dc-chart-type-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dc-fg1);
+  margin-bottom: 8px;
+}
+
+.dc-chart-type-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+
+.dc-chart-type-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dc-chart-type-btn {
+  flex: 1;
+  height: 76px;
+  padding: 10px;
+  background: var(--dc-chartbtn-bg);
+  border: 1.5px solid var(--dc-chartbtn-border);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--dc-chartbtn-color);
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+
+.dc-chart-type-btn-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.dc-save-btn-wrap {
+  opacity: var(--dc-save-opacity);
+}
+
+/* ── WidgetCard ────────────────────────────────────────────────────────── */
+.dc-widget-col {
+  position: relative;
+  grid-column: span var(--dc-widget-span);
+}
+
+.dc-widget-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.dc-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--shell-border);
+  background: var(--card-bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dc-action-btn--grab {
+  cursor: grab;
+}
+
+.dc-action-btn--delete {
+  border: 1px solid var(--pai-crit-bg-hover);
+  background: var(--pai-crit-bg);
+}
+
+.dc-widget-card {
+  background: var(--card-bg);
+  border: var(--dc-card-border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: var(--dc-card-height);
+  box-sizing: border-box;
+  transition: border-color 150ms;
+}
+
+.dc-widget-card-header {
+  flex-shrink: 0;
+}
+
+.dc-widget-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+}
+
+.dc-widget-card-desc {
+  font-size: 12px;
+  color: var(--dc-fg3);
+  margin-top: 2px;
+}
+
+.dc-widget-card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── DashboardCanvas root ──────────────────────────────────────────────── */
+.dc-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--dc-bg-app);
+}
+
+.dc-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* ── Canvas area ───────────────────────────────────────────────────────── */
+.dc-canvas-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────────── */
+.dc-toolbar {
+  height: 52px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.dc-toolbar-back-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--pai-indigo-light);
+  background: var(--card-bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dc-indigo);
+}
+
+.dc-toolbar-name-input {
+  height: 32px;
+  min-width: 220px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--dc-fg1);
+  background: var(--card-bg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dc-perf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  flex-shrink: 0;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--dc-perf-bg);
+  color: var(--dc-perf-color);
+}
+
+.dc-perf-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dc-perf-dot);
+  flex-shrink: 0;
+}
+
+.dc-toolbar-spacer {
+  flex: 1;
+}
+
+.dc-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  line-height: 1;
+  padding: 0 4px 0 12px;
+  flex-shrink: 0;
+  border-radius: 100px;
+  background: var(--dc-indigo-tint);
+  color: var(--dc-indigo);
+  font-size: 12px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.dc-scope-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--dc-indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dc-scope-icon-img {
+  filter: brightness(0) invert(1);
+}
+
+.dc-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--shell-border);
+  flex-shrink: 0;
+}
+
+/* ── Canvas body / grid ────────────────────────────────────────────────── */
+.dc-canvas-body {
+  flex: 1;
+  overflow: auto;
+  background-image: radial-gradient(circle, var(--pai-border-strong) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dc-canvas-body--plain {}
+
+.dc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 20px;
+  align-items: start;
+}
+
+/* ── Live preview placeholder ──────────────────────────────────────────── */
+.dc-preview-col {
+  position: relative;
+  grid-column: span var(--dc-preview-span);
+}
+
+.dc-preview-card {
+  background: var(--card-bg);
+  border: 1.5px dashed var(--dc-indigo);
+  border-radius: 10px;
+  padding: 12px;
+  height: var(--dc-preview-height);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dc-preview-header {
+  flex-shrink: 0;
+}
+
+.dc-preview-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+}
+
+.dc-preview-desc {
+  font-size: 12px;
+  color: var(--dc-fg3);
+  margin-top: 2px;
+}
+
+.dc-preview-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Add Widget button ─────────────────────────────────────────────────── */
+.dc-add-widget-btn {
+  grid-column: span 1;
+  height: 260px;
+  width: 100%;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--dc-indigo);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--dc-indigo);
+  transition: background 150ms;
+}
+
+.dc-add-widget-btn-label {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+
+/* ── ChartRender: KPI with trend chart (cr- prefix) ───────────────────────── */
+.cr-kpi-root {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: 'Inter', system-ui;
+}
+
+.cr-kpi-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 4px;
+  flex-shrink: 0;
+}
+
+.cr-kpi-label {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+.cr-kpi-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--pai-indigo);
+  line-height: 1;
+}
+
+.cr-kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  align-self: flex-start;
+  background: var(--cr-trend-bg);
+  color: var(--cr-trend-color);
+}
+
+.cr-kpi-chart {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── ChartRender: Data Source bar chart ──────────────────────────────────── */
+.cr-source-root {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cr-source-chart {
+  flex: 1;
+  min-height: 0;
+}
+
+.cr-source-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 2px;
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  font-family: 'Inter', system-ui;
+  flex-shrink: 0;
+}
+
+.cr-leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cr-leg-dot--teal   { background: var(--pai-chart-teal); }
+.cr-leg-dot--purple { background: var(--pai-chart-purple); margin-left: 12px; }
+
+/* ── ChartRender: Insights table ─────────────────────────────────────────── */
+.cr-insights-root {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cr-insights-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cr-insights-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Inter', system-ui;
+  font-size: 12px;
+}
+
+.cr-th {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shell-text-muted);
+  border-bottom: 1px solid var(--shell-border);
+  white-space: nowrap;
+}
+
+.cr-th--num {
+  white-space: nowrap;
+}
+
+.cr-tr:nth-child(even) {
+  background: var(--shell-bg);
+}
+
+.cr-tr:hover {
+  background: var(--pai-indigo-tint);
+}
+
+.cr-td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--shell-border);
+  color: var(--pai-fg1);
+}
+
+.cr-td-icon {
+  width: 20px;
+  padding-right: 4px;
+}
+
+.cr-td-text {
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cr-td-cat {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  white-space: nowrap;
+}
+
+.cr-findings-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cr-findings-bar__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--shell-border);
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.cr-findings-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--pai-crit-fg);
+  width: var(--cr-pct);
+}
+
+.cr-findings-pct {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pai-crit-fg);
+  white-space: nowrap;
+}
+
+.dc-data-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--shell-text-muted);
+  font-size: 12px;
+}
