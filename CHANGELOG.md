@@ -21,6 +21,18 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.4.6] — 2026-05-26
+### Added
+- `dashboard.css` with `dc-` prefix classes for DashboardCanvas components
+- `active-filter-panel.css` extracted from inline styles
+### Changed
+- DashboardCanvas: extracted inline styles to `dashboard.css`; Add Widget button fixed to small width (span 1) × small height (260px) across all dashboard types
+- Discover page: Add Widget button moved into `dev-bottom-row` below Data Source, aligned to same column width
+- Filter panel canvas dotted background updated to `var(--pai-border-strong)` to match Dashboard canvas
+- Compliance drawers: renamed "Open findings" → "Failed findings" and "Closed findings" → "Passed findings"
+
+---
+
 ## [0.4.5] — 2026-05-26
 ### Fixed
 - KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
