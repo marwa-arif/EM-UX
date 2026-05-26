@@ -2566,4 +2566,151 @@
 .cr-rpt-horbar-xtick { position: absolute; transform: translateX(-50%); font-size: 10px; color: var(--shell-text-muted); font-family: Inter, system-ui; top: 2px; }
 .cr-rpt-horbar-xlabel { flex: 1; text-align: center; font-size: 11px; color: var(--shell-text-muted); font-family: Inter, system-ui; margin-top: 2px; }
 .cr-rpt-horbar-note { font-size: 12px; color: var(--shell-text); line-height: 1.55; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--shell-border); }
+
+/* ── Month-over-Month Timeline Modal ────────────────────────────────── */
+.mom-modal {
+  position: fixed; z-index: 201;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 563px; max-height: calc(100vh - 64px);
+  background: var(--card-bg);
+  border-radius: 20px;
+  box-shadow: 0 16px 64px rgba(0,6,46,0.12), 0 12px 60px rgba(0,0,0,0.1);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--shell-border);
+}
+.mom-modal-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 18px 24px;
+  background: var(--shell-raised);
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
+  color: var(--pai-fg1);
+}
+.mom-modal-title {
+  font-size: 15px; font-weight: 600; color: var(--pai-fg1);
+}
+.mom-modal-body {
+  padding: 20px 20px 4px;
+  display: flex; flex-direction: column; gap: 20px;
+  overflow-y: auto; flex: 1; min-height: 0;
+}
+.mom-modal-footer {
+  display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid var(--shell-border);
+  flex-shrink: 0;
+}
+.mom-section { display: flex; flex-direction: column; gap: 12px; }
+.mom-divider-row { display: flex; align-items: center; gap: 8px; }
+.mom-divider-label {
+  font-size: 11px; font-weight: 700; color: var(--pai-fg1);
+  white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.mom-divider-line { flex: 1; height: 1px; background: var(--shell-border); }
+.mom-field { display: flex; flex-direction: column; gap: 6px; }
+.mom-field-label { font-size: 13px; font-weight: 500; color: var(--pai-fg1); }
+.mom-required { color: var(--pai-red-high); }
+.mom-field-input {
+  width: 100%; height: 42px; padding: 0 12px; box-sizing: border-box;
+  border: 1px solid var(--pai-border-strong); border-radius: 4px;
+  font-size: 14px; color: var(--pai-fg1); font-family: inherit;
+  background: var(--card-bg); outline: none;
+}
+.mom-field-input:focus { border-color: var(--pai-indigo); }
+
+/* Segmented tabs (shared with KG) — duplicated here so DashboardCanvas
+   doesn't need to import kg.css */
+.kg-seg-tabs {
+  position: relative; display: inline-flex; align-items: center;
+  box-sizing: border-box; padding: 0;
+  background: var(--bg-raised, var(--shell-raised, #f5f5f5));
+  border-radius: 999px; gap: 0;
+  height: var(--kg-seg-height, 32px);
+}
+.kg-seg-tabs--full { display: flex; }
+.kg-seg-thumb {
+  position: absolute; top: 0; bottom: 0;
+  background: var(--bg-surface, var(--card-bg, #fff));
+  border: 1px solid var(--border, var(--shell-border, #e6e6e6));
+  border-radius: 999px;
+  transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 1px 2px rgba(16,16,16,0.04);
+  box-sizing: border-box;
+}
+.kg-seg-btn {
+  position: relative; z-index: 1;
+  padding: 0 16px; height: var(--kg-seg-height, 32px);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; color: var(--pai-fg3);
+  transition: color 150ms; white-space: nowrap; line-height: 1;
+}
+.kg-seg-btn--active { color: var(--pai-fg1); font-weight: 500; }
+.kg-seg-btn--full   { flex: 1; }
+
+/* Month / Year dropdowns */
+.mom-month-row { display: flex; gap: 12px; }
+.mom-month-field { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.mom-month-selects { display: flex; gap: 8px; }
+.mom-select-wrap {
+  flex: 1; position: relative; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--pai-border-strong); border-radius: 4px;
+  background: var(--card-bg); height: 42px; padding: 0 10px;
+  user-select: none;
+}
+.mom-select-wrap:hover { border-color: var(--pai-indigo); }
+.mom-select-val {
+  flex: 1; font-size: 14px; color: var(--pai-fg1); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.mom-select-chevron {
+  flex-shrink: 0; color: var(--pai-fg3); transition: transform 150ms;
+}
+.mom-select-wrap .comp-sort-menu {
+  top: calc(100% + 4px); left: 0;
+}
+
+.mom-summary {
+  margin: 0; font-size: 13px; color: var(--pai-fg3); line-height: 1.55;
+}
+.mom-summary strong { color: var(--pai-fg1); font-weight: 600; }
+
+/* ── MoM skeleton loading state ─────────────────────────────────────── */
+@keyframes mom-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.mom-skeleton {
+  display: flex; flex-direction: column; width: 100%; height: 100%;
+  background: var(--dc-bg-app, var(--page-bg));
+  user-select: none; overflow: hidden;
+}
+.mom-sk-bar,
+.mom-sk-kpi,
+.mom-sk-chart {
+  background: linear-gradient(90deg, var(--shell-border) 25%, var(--shell-raised) 50%, var(--shell-border) 75%);
+  background-size: 800px 100%;
+  animation: mom-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+.mom-sk-toolbar {
+  height: 48px; padding: 0 20px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--shell-border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+}
+.mom-sk-bar { height: 12px; border-radius: 6px; }
+.mom-sk-bar--w200 { width: 200px; }
+.mom-sk-bar--w80  { width: 80px; }
+.mom-sk-bar--w100 { width: 100px; }
+.mom-sk-spacer { flex: 1; }
+.mom-sk-body {
+  flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;
+}
+.mom-sk-kpi-row { display: flex; gap: 12px; }
+.mom-sk-kpi { flex: 1; height: 100px; }
+.mom-sk-kpi--wide { flex: 1.5; }
+.mom-sk-chart { height: 280px; }
 .cr-rpt-horbar-note strong { font-weight: 700; color: var(--pai-fg1); }

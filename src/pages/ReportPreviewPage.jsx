@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender } from '../components/ChartRender.jsx'
-import { EXEC_SUMMARY_TEMPLATE, WidgetCard } from './DashboardCanvas.jsx'
+import { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE, WidgetCard } from './DashboardCanvas.jsx'
 import { USER_FULL_NAME } from '../currentUser.js'
 import { useWorkspace } from '../context/WorkspaceCtx.jsx'
 import '../styles/dashboard.css'
@@ -49,9 +49,9 @@ const IcFileExcel = () => (
 )
 
 const EXCEL_WARN_KEY = 'pai-excel-warn-dismissed'
-const REPORT_TABLES  = EXEC_SUMMARY_TEMPLATE.widgets.filter(w => w.chartId === 'table')
 
-function DownloadDropdown() {
+function DownloadDropdown({ template }) {
+  const REPORT_TABLES = template.widgets.filter(w => w.chartId === 'table')
   const [open, setOpen]               = useState(false)
   const [excelWarn, setExcelWarn]     = useState(false)
   const [dontShow, setDontShow]       = useState(false)
@@ -209,14 +209,18 @@ function groupFilters(chips) {
 
 // ── Page components ───────────────────────────────────────────────────
 
-function CoverPage({ reportTitle, reportFilters }) {
+const DEFAULT_COVER_DESC = 'This report summarises the software vulnerability landscape for devices within the scope of the defined report criteria. It outlines vulnerability distribution by severity and asset criticality, highlights the most common and highest-risk vulnerabilities, and identifies the most affected operating systems and services. The findings provide a clear view of where vulnerabilities exist and how they are concentrated across the infrastructure.'
+
+function CoverPage({ reportTitle, reportFilters, template }) {
   const today = formatDate(new Date())
   const criteriaGroups = groupFilters(reportFilters)
+  const coverImage = template.coverImage || '/assets/reports/executive-summary-cover.svg'
+  const coverDesc  = template.coverDescription || DEFAULT_COVER_DESC
 
   return (
     <div
       className="rv-page rv-page--cover"
-      style={{ backgroundImage: "url('/assets/reports/executive-summary-cover.svg')" }}
+      style={{ backgroundImage: `url('${coverImage}')` }}
     >
       {/* Info content overlaid on the SVG's white area */}
       <div className="rv-info-body rv-info-body--on-cover">
@@ -224,13 +228,7 @@ function CoverPage({ reportTitle, reportFilters }) {
           <img src="/assets/reports/template-icon.svg" width={34} height={34} alt="" />
         </div>
         <h2 className="rv-info-title">{reportTitle}</h2>
-        <p className="rv-info-desc">
-          This report summarises the software vulnerability landscape for devices within the scope
-          of the defined report criteria. It outlines vulnerability distribution by severity and
-          asset criticality, highlights the most common and highest-risk vulnerabilities, and
-          identifies the most affected operating systems and services. The findings provide a clear
-          view of where vulnerabilities exist and how they are concentrated across the infrastructure.
-        </p>
+        <p className="rv-info-desc">{coverDesc}</p>
 
         <hr className="rv-info-divider rv-info-divider--body" />
 
@@ -544,9 +542,9 @@ function WidgetRow({ row }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────
-export default function ReportPreviewPage({ reportTitle, reportFilters = [], onBack }) {
+export default function ReportPreviewPage({ reportTitle, reportFilters = [], onBack, template = EXEC_SUMMARY_TEMPLATE }) {
   const { onNav, addSavedReport } = useWorkspace()
-  const widgets = EXEC_SUMMARY_TEMPLATE.widgets
+  const widgets = template.widgets
   const widgetPages = paginateRows(buildWidgetRows(widgets))
   const [isSaved, setIsSaved]             = useState(false)
   const [savedName, setSavedName]         = useState(reportTitle)
@@ -560,7 +558,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
   const navigateToSaved = (name, status) => {
     addSavedReport({
       id: `r-${Date.now()}`, name, isNew: true,
-      type: 'REPORT', template: 'Executive Summary',
+      type: 'REPORT', template: template.name,
       visibility: 'Private', status,
       lastUpdated: today,
       ...(status === 'Scheduled' ? { hasCalendar: true, recipients: 0 } : {}),
@@ -603,7 +601,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
             <div className="dc-toolbar-spacer" />
             <button className="ds-btn sz-md t-tertiary" onClick={() => openAfterSave('schedule')}>Schedule <CalendarIcon /></button>
             <button className="ds-btn sz-md t-tertiary" onClick={() => openAfterSave('share')}>Share <ShareIcon /></button>
-            <DownloadDropdown />
+            <DownloadDropdown template={template} />
             <div className="dc-toolbar-divider" />
             <button className="ds-btn sz-md t-secondary" onClick={onBack}>Edit <EditIcon /></button>
             <button className="ds-btn sz-md t-primary" onClick={() => openAfterSave('save')}>Save <SaveIcon /></button>
@@ -611,7 +609,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
 
           {/* Pages viewer */}
           <div className="rv-viewer">
-            <CoverPage reportTitle={reportTitle} reportFilters={reportFilters} />
+            <CoverPage reportTitle={reportTitle} reportFilters={reportFilters} template={template} />
             {widgetPages.map((rows, i) => (
               <div key={i} className="rv-page rv-page--charts">
                 {rows.map((row, j) => <WidgetRow key={j} row={row} />)}

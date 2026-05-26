@@ -643,7 +643,8 @@ const _UNUSED = {
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
+    if (path === '/workspace') return 'workspace';
+    if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
     if (path === '/') return 'exposure/overview';
     return path.slice(1) || 'exposure/overview';
@@ -695,7 +696,8 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
-      if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
+      if (path === '/workspace') setCurrent('workspace');
+      else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
       else if (path === '/') setCurrent('exposure/overview');
       else setCurrent(path.slice(1) || 'exposure/overview');
@@ -748,7 +750,8 @@ function App() {
     }
     setCurrent(id);
     let url;
-    if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
+    if (id === 'workspace') url = '/workspace';
+    else if (id.startsWith('workspace/')) url = `/${id}`;
     else if (id === 'kg') url = '/knowledge-graph';
     else url = `/${id}`;
     history.pushState(null, '', url);

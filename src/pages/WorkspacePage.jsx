@@ -8,7 +8,7 @@ import { FilterPanel } from '../components/FilterPanel.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
 import LibraryPage from './LibraryPage.jsx'
 import SavedPage from './SavedPage.jsx'
-import DashboardCanvas from './DashboardCanvas.jsx'
+import DashboardCanvas, { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE } from './DashboardCanvas.jsx'
 import DataConfigPage from './DataConfigPage.jsx'
 import ReportPreviewPage from './ReportPreviewPage.jsx'
 
@@ -17,6 +17,8 @@ const DASHBOARD_TITLES = {
 }
 const REPORT_TITLES = {
   'workspace/report/executive-summary': 'Executive Summary',
+  'workspace/report/vulnerabilities':   'Detailed Report on Vulnerabilities',
+  'workspace/report/month-over-month':  'Month over Month Report',
 }
 
 export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme }) {
@@ -37,6 +39,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
       localStorage.removeItem('pai-excel-warn-dismissed')
     }
     setCurrent(id)
+    onNav(id)
   }
 
   const isDashboard     = current.startsWith('workspace/dashboard')
@@ -51,7 +54,18 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     : isReportPreview
       ? (REPORT_TITLES[current.replace('report-preview', 'report')] ?? 'Report Template')
       : 'Report Template'
-  const templateId  = current === 'workspace/dashboard/discover' ? 'discover' : null
+
+  const reportRouteKey = isReport ? current : current.replace('report-preview', 'report')
+  const reportTemplateId =
+    reportRouteKey === 'workspace/report/vulnerabilities'  ? 'vulnerabilities' :
+    reportRouteKey === 'workspace/report/month-over-month' ? 'month-over-month' :
+    reportRouteKey === 'workspace/report/executive-summary' ? 'executive-summary' : null
+  const reportTemplate =
+    reportTemplateId === 'vulnerabilities'  ? VULN_DETAIL_TEMPLATE :
+    reportTemplateId === 'month-over-month' ? MOM_TEMPLATE :
+    EXEC_SUMMARY_TEMPLATE
+
+  const templateId  = current === 'workspace/dashboard/discover' ? 'discover' : reportTemplateId
   const previewBack = current.replace('report-preview', 'report')
 
   const handleRemoveFilter = (idx) => {
@@ -121,11 +135,12 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                     : isDashboard
                       ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
                       : isReport
-                        ? <DashboardCanvas key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId="executive-summary" />
+                        ? <DashboardCanvas key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} />
                         : isReportPreview
                           ? <ReportPreviewPage
                               reportTitle={reportTitle}
                               reportFilters={reportFilters}
+                              template={reportTemplate}
                               onBack={() => handleNav(previewBack)}
                             />
                           : <LibraryPage />

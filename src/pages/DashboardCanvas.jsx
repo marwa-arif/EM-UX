@@ -2113,6 +2113,158 @@ export const EXEC_SUMMARY_TEMPLATE = {
   ],
 }
 
+// ── Detailed Report on Vulnerabilities template ──────────────────────
+export const VULN_DETAIL_TEMPLATE = {
+  name: 'Detailed Report on Vulnerabilities',
+  coverImage: '/assets/reports/executive-summary-cover.svg',
+  coverDescription: 'This report provides a comprehensive inventory of all vulnerability findings across the infrastructure. It includes detailed breakdowns by severity, affected hosts, vulnerability categories, and remediation status, enabling targeted and prioritised remediation efforts.',
+  widgets: [
+    { id: 4001, label: 'Total Vulnerability Findings', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '2,150', label: 'Total Vulnerability Findings', trend: '4%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 2070 }, { name: 'Feb', value: 2090 }, { name: 'Mar', value: 2100 },
+        { name: 'Apr', value: 2115 }, { name: 'May', value: 2135 }, { name: 'Jun', value: 2150 },
+      ]},
+    },
+    { id: 4002, label: 'Critical Findings', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '312', label: 'Critical Findings', trend: '6%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 340 }, { name: 'Feb', value: 335 }, { name: 'Mar', value: 330 },
+        { name: 'Apr', value: 325 }, { name: 'May', value: 318 }, { name: 'Jun', value: 312 },
+      ]},
+    },
+    { id: 4003, label: 'High Findings', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '648', label: 'High Findings', trend: '2%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 675 }, { name: 'Feb', value: 670 }, { name: 'Mar', value: 665 },
+        { name: 'Apr', value: 660 }, { name: 'May', value: 654 }, { name: 'Jun', value: 648 },
+      ]},
+    },
+    { id: 4004, label: 'Affected Hosts', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true, rowBreak: true,
+      data: { value: '1,322', label: 'Affected Hosts', trend: '2%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 1350 }, { name: 'Feb', value: 1345 }, { name: 'Mar', value: 1340 },
+        { name: 'Apr', value: 1335 }, { name: 'May', value: 1328 }, { name: 'Jun', value: 1322 },
+      ]},
+    },
+    { id: 4005, label: 'Remediation Rate', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '68%', label: 'Remediation Rate', trend: '5%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 60 }, { name: 'Feb', value: 62 }, { name: 'Mar', value: 63 },
+        { name: 'Apr', value: 65 }, { name: 'May', value: 66 }, { name: 'Jun', value: 68 },
+      ]},
+    },
+    { id: 4006, label: 'Vulnerability Findings by Severity', chartId: 'vert-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      data: [
+        { name: 'Critical', value: 312,  color: 'var(--pai-crit-fg)'  },
+        { name: 'High',     value: 648,  color: 'var(--pai-red-high)' },
+        { name: 'Medium',   value: 890,  color: 'var(--pai-high-fg)'  },
+        { name: 'Low',      value: 300,  color: 'var(--pai-green)'    },
+      ],
+    },
+    { id: 4007, label: 'Top 10 Most Vulnerable Hosts', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      data: [
+        { name: 'srv-prod-01',   value: 48, color: 'var(--pai-crit-fg)'  },
+        { name: 'srv-db-02',     value: 41, color: 'var(--pai-crit-fg)'  },
+        { name: 'ws-finance-03', value: 35, color: 'var(--pai-red-high)' },
+        { name: 'srv-web-04',    value: 31, color: 'var(--pai-red-high)' },
+        { name: 'ws-hr-05',      value: 28, color: 'var(--pai-high-fg)'  },
+        { name: 'srv-app-06',    value: 24, color: 'var(--pai-high-fg)'  },
+        { name: 'net-fw-07',     value: 19, color: 'var(--pai-high-fg)'  },
+        { name: 'ws-dev-08',     value: 15, color: 'var(--pai-green)'    },
+        { name: 'srv-mail-09',   value: 13, color: 'var(--pai-green)'    },
+        { name: 'ws-ops-10',     value: 10, color: 'var(--pai-green)'    },
+      ],
+    },
+    { id: 4008, label: 'Vulnerabilities by Category', chartId: 'pie', span: 6, sizeId: 'xlarge', heightId: 'rpt-pie', phase: 'active', dataLocked: true,
+      data: [
+        { label: 'Remote Code Execution', count: '380', value: 380, pct: '18%', color: 'var(--pai-crit-fg)'  },
+        { label: 'Privilege Escalation',  count: '294', value: 294, pct: '14%', color: 'var(--pai-red-high)' },
+        { label: 'Information Disclosure',count: '441', value: 441, pct: '21%', color: 'var(--pai-high-fg)'  },
+        { label: 'Denial of Service',     count: '210', value: 210, pct: '10%', color: '#5BADB8'             },
+        { label: 'Other',                 count: '825', value: 825, pct: '38%', color: 'var(--pai-green)'    },
+      ],
+    },
+    { id: 4009, label: 'Detailed Vulnerability Findings', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'xlarge', phase: 'active', dataLocked: true, enableDownload: true,
+      data: [],
+    },
+    { id: 4010, label: 'Vulnerability Findings by Host and Severity', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true, enableDownload: true,
+      data: [],
+    },
+    { id: 4011, label: 'Remediation Status by Severity', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true, enableDownload: true,
+      data: [],
+    },
+  ],
+}
+
+// ── Month over Month Report template ────────────────────────────────
+export const MOM_TEMPLATE = {
+  name: 'Month over Month Report',
+  coverImage: '/assets/reports/executive-summary-cover.svg',
+  coverDescription: 'This report presents a month-over-month analysis of vulnerability trends across the environment. It tracks changes in severity distribution, newly discovered and remediated findings, and overall risk posture over time to support continuous improvement in security operations.',
+  widgets: [
+    { id: 5001, label: 'New Vulnerabilities (MoM)', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '+184', label: 'New Vulnerabilities (MoM)', trend: '12%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 120 }, { name: 'Feb', value: 145 }, { name: 'Mar', value: 158 },
+        { name: 'Apr', value: 162 }, { name: 'May', value: 176 }, { name: 'Jun', value: 184 },
+      ]},
+    },
+    { id: 5002, label: 'Closed Vulnerabilities (MoM)', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '+231', label: 'Closed Vulnerabilities (MoM)', trend: '8%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 180 }, { name: 'Feb', value: 195 }, { name: 'Mar', value: 210 },
+        { name: 'Apr', value: 215 }, { name: 'May', value: 222 }, { name: 'Jun', value: 231 },
+      ]},
+    },
+    { id: 5003, label: 'Net Change', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '-47', label: 'Net Change', trend: '3%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: -60 }, { name: 'Feb', value: -55 }, { name: 'Mar', value: -52 },
+        { name: 'Apr', value: -50 }, { name: 'May', value: -48 }, { name: 'Jun', value: -47 },
+      ]},
+    },
+    { id: 5004, label: 'Remediation Rate (MoM)', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true, rowBreak: true,
+      data: { value: '68%', label: 'Remediation Rate (MoM)', trend: '5%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 58 }, { name: 'Feb', value: 60 }, { name: 'Mar', value: 62 },
+        { name: 'Apr', value: 64 }, { name: 'May', value: 66 }, { name: 'Jun', value: 68 },
+      ]},
+    },
+    { id: 5005, label: 'Mean Time to Remediate (Days)', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '14.2', label: 'Mean Time to Remediate (Days)', trend: '11%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 18 }, { name: 'Feb', value: 17 }, { name: 'Mar', value: 16.5 },
+        { name: 'Apr', value: 16 }, { name: 'May', value: 15 }, { name: 'Jun', value: 14.2 },
+      ]},
+    },
+    { id: 5006, label: 'Monthly Vulnerability Trend by Severity', chartId: 'vert-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      data: [
+        { name: 'Jan', value: 620,  color: 'var(--pai-crit-fg)'  },
+        { name: 'Feb', value: 598,  color: 'var(--pai-crit-fg)'  },
+        { name: 'Mar', value: 571,  color: 'var(--pai-red-high)' },
+        { name: 'Apr', value: 543,  color: 'var(--pai-red-high)' },
+        { name: 'May', value: 519,  color: 'var(--pai-high-fg)'  },
+        { name: 'Jun', value: 492,  color: 'var(--pai-high-fg)'  },
+      ],
+    },
+    { id: 5007, label: 'New vs Closed Vulnerabilities by Month', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      data: [
+        { name: 'Jan', value: 120, color: 'var(--pai-crit-fg)'  },
+        { name: 'Feb', value: 145, color: 'var(--pai-red-high)' },
+        { name: 'Mar', value: 158, color: 'var(--pai-high-fg)'  },
+        { name: 'Apr', value: 162, color: 'var(--pai-high-fg)'  },
+        { name: 'May', value: 176, color: 'var(--pai-green)'    },
+        { name: 'Jun', value: 184, color: 'var(--pai-green)'    },
+      ],
+    },
+    { id: 5008, label: 'Severity Distribution Change (MoM)', chartId: 'pie', span: 6, sizeId: 'xlarge', heightId: 'rpt-pie', phase: 'active', dataLocked: true,
+      data: [
+        { label: 'Critical', count: '312', value: 312, pct: '15%', color: 'var(--pai-crit-fg)'  },
+        { label: 'High',     count: '648', value: 648, pct: '30%', color: 'var(--pai-red-high)' },
+        { label: 'Medium',   count: '890', value: 890, pct: '41%', color: 'var(--pai-high-fg)'  },
+        { label: 'Low',      count: '300', value: 300, pct: '14%', color: 'var(--pai-green)'    },
+      ],
+    },
+    { id: 5009, label: 'Monthly Vulnerability Summary', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true, enableDownload: true,
+      data: [],
+    },
+    { id: 5010, label: 'Top Recurring Vulnerabilities (Past 3 Months)', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true, enableDownload: true,
+      data: [],
+    },
+  ],
+}
+
 // ── Main ─────────────────────────────────────────────────────────────
 // ── Discover Dashboard template ──────────────────────────────────────
 const DISCOVER_TREND_DATA = [
@@ -2195,13 +2347,255 @@ const DISCOVER_TEMPLATE = {
   ],
 }
 
+// ── Segmented tabs (same pattern as KG) ─────────────────────────────
+function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
+  const btnRefs = useRef([])
+  const [thumb, setThumb] = useState({ left: 3, width: 0 })
+
+  useEffect(() => {
+    const idx = options.indexOf(value)
+    const btn = btnRefs.current[idx]
+    if (btn) setThumb({ left: btn.offsetLeft, width: btn.offsetWidth })
+  }, [value, options.join('|')])
+
+  return (
+    <div className={fullWidth ? 'kg-seg-tabs kg-seg-tabs--full' : 'kg-seg-tabs'} style={{ '--kg-seg-height': `${height}px` }}>
+      <div className="kg-seg-thumb" style={{ left: thumb.left, width: thumb.width, opacity: thumb.width ? 1 : 0 }} />
+      {options.map((o, i) => (
+        <button
+          key={o}
+          ref={el => { btnRefs.current[i] = el }}
+          onClick={() => onChange && onChange(o)}
+          className={['kg-seg-btn', o === value ? 'kg-seg-btn--active' : '', fullWidth ? 'kg-seg-btn--full' : ''].filter(Boolean).join(' ')}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Month-over-Month timeline modal ─────────────────────────────────
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const YEARS_LIST  = [2023, 2024, 2025, 2026, 2027]
+
+function MomDropdown({ value, onChange, options, zIndex = 220 }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  return (
+    <div ref={ref} className="mom-select-wrap" onClick={() => setOpen(o => !o)}>
+      <span className="mom-select-val">{value}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className="mom-select-chevron" style={{ transform: open ? 'rotate(180deg)' : 'none' }}>
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+      {open && (
+        <div className="comp-sort-menu comp-sort-menu--full" style={{ zIndex, maxHeight: 220, overflowY: 'auto' }}
+          onClick={e => e.stopPropagation()}>
+          {options.map(opt => (
+            <button
+              key={opt}
+              className={`comp-sort-item${opt === value ? ' comp-sort-item--selected' : ''}`}
+              onClick={() => { onChange(opt); setOpen(false) }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MomEditIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  )
+}
+
+const RANGE_OPTS        = ['1 M', '3 M', '6 M', '1 Y', 'Custom']
+const RANGE_MONTH_COUNT = { '1 M': 0, '3 M': 2, '6 M': 5, '1 Y': 11 }
+
+function addMonths(month, year, n) {
+  let m = month + n
+  let y = year + Math.floor(m / 12)
+  m = m % 12
+  return { month: m, year: y }
+}
+
+function lastDayOf(month, year) {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+function MomTimelineModal({ defaultName, onConfirm, onCancel }) {
+  const [name, setName]             = useState(defaultName)
+  const [range, setRange]           = useState('3 M')
+  const [startMonth, setStartMonth] = useState(5)   // June
+  const [startYear, setStartYear]   = useState(2025)
+  const [endMonth, setEndMonth]     = useState(7)   // August
+  const [endYear, setEndYear]       = useState(2025)
+
+  const applyRange = (r, sm, sy) => {
+    const n = RANGE_MONTH_COUNT[r]
+    if (n == null) return
+    const end = addMonths(sm, sy, n)
+    setEndMonth(end.month)
+    setEndYear(end.year)
+  }
+
+  const handleRange = (r) => {
+    setRange(r)
+    applyRange(r, startMonth, startYear)
+  }
+
+  const handleStartMonth = (v) => {
+    setStartMonth(v)
+    if (range !== 'Custom') applyRange(range, v, startYear)
+  }
+  const handleStartYear = (v) => {
+    setStartYear(v)
+    if (range !== 'Custom') applyRange(range, startMonth, v)
+  }
+
+  const startLabel = `1 ${MONTHS_LONG[startMonth]} ${startYear}`
+  const endLabel   = `${lastDayOf(endMonth, endYear)} ${MONTHS_LONG[endMonth]} ${endYear}`
+
+  return (
+    <>
+      <div className="sfm-overlay" style={{ zIndex: 200 }} />
+      <div className="mom-modal">
+        <div className="mom-modal-header">
+          <MomEditIcon />
+          <span className="mom-modal-title">Edit Report Template</span>
+        </div>
+
+        <div className="mom-modal-body">
+          {/* Report Setup */}
+          <div className="mom-section">
+            <div className="mom-divider-row">
+              <span className="mom-divider-label">Report Setup</span>
+              <div className="mom-divider-line" />
+            </div>
+            <div className="mom-field">
+              <label className="mom-field-label">Report Name <span className="mom-required">*</span></label>
+              <input className="mom-field-input" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Set Report Timeline */}
+          <div className="mom-section">
+            <div className="mom-divider-row">
+              <span className="mom-divider-label">Set Report Timeline</span>
+              <div className="mom-divider-line" />
+            </div>
+
+            <SegmentedTabs
+              value={range}
+              options={RANGE_OPTS}
+              onChange={handleRange}
+              fullWidth
+              height={36}
+            />
+
+            <div className="mom-month-row">
+              <div className="mom-month-field">
+                <label className="mom-field-label">Start Month</label>
+                <div className="mom-month-selects">
+                  <MomDropdown
+                    value={MONTHS_LONG[startMonth]}
+                    options={MONTHS_LONG}
+                    onChange={v => handleStartMonth(MONTHS_LONG.indexOf(v))}
+                  />
+                  <MomDropdown
+                    value={String(startYear)}
+                    options={YEARS_LIST.map(String)}
+                    onChange={v => handleStartYear(+v)}
+                  />
+                </div>
+              </div>
+
+              <div className="mom-month-field">
+                <label className="mom-field-label">End Month</label>
+                <div className="mom-month-selects">
+                  <MomDropdown
+                    value={MONTHS_LONG[endMonth]}
+                    options={MONTHS_LONG}
+                    onChange={v => setEndMonth(MONTHS_LONG.indexOf(v))}
+                  />
+                  <MomDropdown
+                    value={String(endYear)}
+                    options={YEARS_LIST.map(String)}
+                    onChange={v => setEndYear(+v)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p className="mom-summary">
+              This report will be generated from <strong>{startLabel}</strong> to <strong>{endLabel}</strong>. All comparisons will be calculated based on month-end data.
+            </p>
+          </div>
+        </div>
+
+        <div className="mom-modal-footer">
+          <button className="ds-btn sz-md t-secondary" onClick={onCancel}>Cancel</button>
+          <button className="ds-btn sz-md t-primary" disabled={!name.trim()} onClick={() => onConfirm({ name, range, startMonth, startYear, endMonth, endYear })}>
+            Create Report
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function MomSkeleton() {
+  return (
+    <div className="mom-skeleton">
+      <div className="mom-sk-toolbar">
+        <div className="mom-sk-bar mom-sk-bar--w200" />
+        <div className="mom-sk-spacer" />
+        <div className="mom-sk-bar mom-sk-bar--w80" />
+        <div className="mom-sk-bar mom-sk-bar--w80" />
+        <div className="mom-sk-bar mom-sk-bar--w100" />
+      </div>
+      <div className="mom-sk-body">
+        <div className="mom-sk-kpi-row">
+          {[1,2,3].map(i => <div key={i} className="mom-sk-kpi" />)}
+        </div>
+        <div className="mom-sk-kpi-row">
+          {[1,2].map(i => <div key={i} className="mom-sk-kpi mom-sk-kpi--wide" />)}
+        </div>
+        <div className="mom-sk-chart" />
+        <div className="mom-sk-chart" />
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '' }) {
-  const template = templateId === 'discover' ? DISCOVER_TEMPLATE : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE : null
+  const template = templateId === 'discover' ? DISCOVER_TEMPLATE
+    : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
+    : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
+    : templateId === 'month-over-month'  ? MOM_TEMPLATE
+    : null
   const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? ''))
   const [widgets, setWidgets] = useState(() => {
     if (!template) return []
     return template.widgets
   })
+
+  const [timelineConfirmed, setTimelineConfirmed] = useState(templateId !== 'month-over-month' || !reportMode)
 
   // Panel state: null | 'add' | 'settings'
   const [panelMode, setPanelMode]         = useState(null)
@@ -2217,6 +2611,19 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
 
   const perf = widgets.filter(w => w.phase === 'active').length > 0
     ? perfLevel(widgets.filter(w => w.phase === 'active').length) : null
+
+  if (!timelineConfirmed) {
+    return (
+      <div className="dc-root" style={{ '--dc-bg-app': PAI.bgApp, '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint, '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
+        <MomSkeleton />
+        <MomTimelineModal
+          defaultName={name}
+          onConfirm={({ name: n }) => { setName(n); setTimelineConfirmed(true) }}
+          onCancel={() => onNav('workspace/library')}
+        />
+      </div>
+    )
+  }
 
   const openAdd = () => {
     setSelectedChart(null); setWidgetTitle(''); setWidgetDescription(''); setWidgetSize('small'); setWidgetHeight('small')
@@ -2344,7 +2751,13 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
 
             <button
               className="ds-btn sz-md t-primary"
-              onClick={() => reportMode && onNav('workspace/report-preview/executive-summary')}
+              onClick={() => {
+                if (!reportMode) return
+                const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
+                  : templateId === 'month-over-month' ? 'month-over-month'
+                  : 'executive-summary'
+                onNav(`workspace/report-preview/${previewSlug}`)
+              }}
             >{reportMode ? 'Preview' : 'Save'}</button>
           </div>
 
