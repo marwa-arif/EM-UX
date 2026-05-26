@@ -60,12 +60,7 @@ const ENTITY_ICON_SRCS = {
 function EntityBadge({ type }) {
   const src = ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.multi
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 28, height: 28, borderRadius: '50%',
-      background: '#F7F9FC',
-      flexShrink: 0,
-    }}>
+    <span className="comp-entity-badge">
       <img src={src} width={16} height={16} alt="" />
     </span>
   )
@@ -117,16 +112,13 @@ const FW_ICONS = {
 
 function FwLogo({ icon, meta }) {
   return (
-    <div style={{
-      width: 32, height: 32, borderRadius: '50%',
-      background: icon ? 'transparent' : meta.ring,
-      border: icon ? 'none' : '1px solid var(--shell-border)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, overflow: 'hidden',
-    }}>
+    <div
+      className={icon ? 'comp-fw-logo-wrap comp-fw-logo-wrap--icon' : 'comp-fw-logo-wrap'}
+      style={icon ? undefined : { '--comp-fw-ring': meta.ring }}
+    >
       {icon
-        ? <img src={icon} width={24} height={24} alt="" style={{ objectFit: 'contain' }} />
-        : <span style={{ fontSize: 8, fontWeight: 700, color: meta.fg, letterSpacing: '0.02em' }}>{meta.abbr}</span>
+        ? <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
+        : <span className="comp-fw-logo-abbr" style={{ color: meta.fg }}>{meta.abbr}</span>
       }
     </div>
   )
@@ -569,34 +561,21 @@ function Sparkline({ pct, seed }) {
 
   return (
     <div
-      style={{ position: 'relative', flex: 1, minWidth: 0 }}
+      className="comp-spark-wrap"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); setHoverIdx(null) }}
     >
-      {/* Fixed-position tooltip escapes overflow:hidden ancestors */}
       {hoverIdx !== null && (
-        <div style={{
-          position: 'fixed',
-          left: mousePos.x,
-          top: mousePos.y - 58,
-          transform: 'translateX(-50%)',
-          background: 'var(--card-bg)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 6,
-          padding: '5px 8px',
-          fontSize: 11,
-          whiteSpace: 'nowrap',
-          zIndex: 9999,
-          pointerEvents: 'none',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
-          color: 'var(--shell-text)',
-        }}>
-          <div style={{ color: 'var(--shell-text-muted)', fontSize: 10, marginBottom: 2 }}>
+        <div
+          className="comp-spark-tooltip"
+          style={{ left: mousePos.x, top: mousePos.y - 58 }}
+        >
+          <div className="comp-spark-tooltip-date">
             {SPARK_LABELS[hoverIdx]} 2025
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ color: 'var(--shell-text-muted)' }}>Score</span>
-            <span style={{ color, fontWeight: 600 }}>{Math.round(pts[hoverIdx])}%</span>
+          <div className="comp-spark-tooltip-row">
+            <span className="comp-spark-tooltip-label">Score</span>
+            <span className="comp-spark-tooltip-value" style={{ color }}>{Math.round(pts[hoverIdx])}%</span>
           </div>
         </div>
       )}
@@ -608,26 +587,21 @@ function Sparkline({ pct, seed }) {
         preserveAspectRatio="none"
         fill="none"
         onMouseMove={handleMouseMove}
-        style={{ display: 'block', cursor: 'crosshair' }}
+        className="comp-spark-svg"
       >
         <path ref={fillPathRef} d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.10"/>
         <path ref={linePathRef} d={line} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
 
-      {/* Dot rendered as DOM element to stay circular despite non-uniform SVG scaling */}
       {hoverIdx !== null && (
-        <div style={{
-          position: 'absolute',
-          left: `${(hx / w) * 100}%`,
-          top: `${(hy / h) * 100}%`,
-          transform: 'translate(-50%, -50%)',
-          width: 7, height: 7,
-          borderRadius: '50%',
-          background: color,
-          border: '1.5px solid var(--card-bg)',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }} />
+        <div
+          className="comp-spark-dot"
+          style={{
+            left: `${(hx / w) * 100}%`,
+            top: `${(hy / h) * 100}%`,
+            background: color,
+          }}
+        />
       )}
 
     </div>
@@ -637,19 +611,11 @@ function Sparkline({ pct, seed }) {
 // ── Toggle ────────────────────────────────────────────────────────
 function Toggle({ checked, onChange }) {
   return (
-    <label style={{ position: 'relative', display: 'inline-block', width: 32, height: 18, cursor: 'pointer', flexShrink: 0 }}>
+    <label className="comp-toggle">
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
-        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
-      <span style={{
-        position: 'absolute', inset: 0, borderRadius: 18,
-        background: checked ? 'var(--shell-accent)' : 'var(--ctrl-bg, #D8D8D8)',
-        transition: 'background 150ms', display: 'block',
-      }}>
-        <span style={{
-          position: 'absolute', top: 2, left: checked ? 16 : 2,
-          width: 14, height: 14, borderRadius: '50%', background: '#fff',
-          transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-        }} />
+        className="comp-toggle-input" />
+      <span className={`comp-toggle-track${checked ? ' comp-toggle-track--on' : ''}`}>
+        <span className={`comp-toggle-thumb${checked ? ' comp-toggle-thumb--on' : ''}`} />
       </span>
     </label>
   )
@@ -695,7 +661,7 @@ function SemiDonutChart({ pct, rating, width = 482 }) {
   const cy = height - 4
 
   return (
-    <div style={{ position: 'relative', width, height, flexShrink: 0 }}>
+    <div className="comp-semi-donut-wrap" style={{ width, height }}>
       <PieChart width={width} height={height}>
         <Pie
           data={[{ value: 100 }]}
@@ -727,15 +693,7 @@ function SemiDonutChart({ pct, rating, width = 482 }) {
           </Pie>
         )}
       </PieChart>
-      <div style={{
-        position: 'absolute',
-        top: '75%',
-        left: '52%',
-        transform: 'translate(-50%, -50%)',
-        fontSize: 28, fontWeight: 700, color,
-        lineHeight: 1, whiteSpace: 'nowrap',
-        fontFamily: 'Inter,system-ui,sans-serif',
-      }}>
+      <div className="comp-semi-donut-label" style={{ color }}>
         {pct}%
       </div>
     </div>
@@ -799,25 +757,17 @@ function FindingsKpi({ closed, open, pct }) {
     },
   ]
   return (
-    <div style={{ width: '100%' }}>
+    <div className="comp-findings-kpi">
       {rows.map((row, i) => (
-        <div key={row.label} style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '8px 0',
-          borderBottom: i < rows.length - 1 ? '1px solid var(--shell-border)' : 'none',
-        }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 999, flexShrink: 0,
-            background: 'var(--pai-indigo-tint)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+        <div key={row.label} className={`comp-findings-kpi-row${i < rows.length - 1 ? ' comp-findings-kpi-row--bordered' : ''}`}>
+          <div className="comp-findings-kpi-icon">
             {row.icon}
           </div>
-          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>{row.label}</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--shell-text)', minWidth: 56, textAlign: 'right', flexShrink: 0 }}>
+          <span className="comp-findings-kpi-label">{row.label}</span>
+          <span className="comp-findings-kpi-count">
             {row.count.toLocaleString()}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text-muted)', minWidth: 32, textAlign: 'right', flexShrink: 0 }}>
+          <span className="comp-findings-kpi-pct">
             {row.pct}%
           </span>
         </div>
@@ -926,7 +876,7 @@ function AssessmentDrawer({ node, onClose }) {
               <span className="comp-drawer-title">{node.name}</span>
               <span className="comp-drawer-badge">Assessment</span>
             </div>
-            <p className="comp-drawer-desc" style={{ margin: 0 }}>
+            <p className="comp-drawer-desc comp-drawer-desc--no-margin">
               This assessment verifies compliance controls and findings associated with the selected function.
               Review the details below to understand the current posture and take corrective action where needed.
             </p>
@@ -943,10 +893,7 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">ID</span>
                 <span className="comp-drawer-ov-value">
-                  <span style={{
-                    background: 'var(--shell-raised)', border: '1px solid var(--shell-border)',
-                    borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif'
-                  }}>{node.id.toUpperCase().replace('_', '-')}</span>
+                  <span className="comp-ov-id-badge">{node.id.toUpperCase().replace('_', '-')}</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -958,29 +905,21 @@ function AssessmentDrawer({ node, onClose }) {
               </div>
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Related Frameworks</span>
-                <span className="comp-drawer-ov-value" style={{ position: 'relative' }}>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--relative">
                   {[
                     { key: 'scf' }, { key: 'nist_csf' }, { key: 'pci_dss' },
                   ].map((fw, fi) => {
                     const meta = FW_DISPLAY[fw.key] || {}
                     return (
-                      <div key={fi} style={{
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: 'var(--card-bg)',
-                        border: '1px solid var(--shell-border)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        marginLeft: fi > 0 ? -6 : 0, overflow: 'hidden', flexShrink: 0,
-                        fontSize: 7, fontWeight: 700, color: 'var(--shell-text-muted)',
-                      }}>
+                      <div key={fi} className={`comp-ov-fw-avatar${fi > 0 ? ' comp-ov-fw-avatar--overlap' : ''}`}>
                         {meta.icon
-                          ? <img src={meta.icon} width={14} height={14} alt="" style={{ objectFit: 'contain' }} />
+                          ? <img src={meta.icon} width={14} height={14} alt="" className="comp-fw-logo-img" />
                           : meta.abbr}
                       </div>
                     )
                   })}
                   <button
-                    className="comp-fw-overflow-btn"
-                    style={{ marginLeft: -6 }}
+                    className="comp-fw-overflow-btn comp-fw-overflow-btn--overlap"
                     onClick={e => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       setFwPopover(fwPopover ? null : { rect })
@@ -991,16 +930,12 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
-                    borderRadius: 44, background: 'var(--pai-high-bg)', color: 'var(--pai-high-fg)',
-                    border: '1px solid rgba(217,139,29,0.3)', fontSize: 10, fontWeight: 600
-                  }}>Medium</span>
+                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
-                <span className="comp-drawer-ov-value" style={{ fontSize: 12 }}>08 August 2024</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
             </div>
           </div>
@@ -1011,33 +946,27 @@ function AssessmentDrawer({ node, onClose }) {
             <div className="comp-drawer-finding-layout">
               {/* Semi-donut + legend */}
               <div className="comp-drawer-donut-col">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start', position: 'relative' }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Compliance Score</span>
+                <div className="comp-drawer-score-header">
+                  <span className="comp-drawer-score-label">Compliance Score</span>
                   <span
-                    className={`comp-rating-badge ${ratingClass(node.rating)}`}
-                    style={{ cursor: 'default', fontSize: 11 }}
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
                     onMouseEnter={() => setRatingTooltip(true)}
                     onMouseLeave={() => setRatingTooltip(false)}
                   >
                     {node.rating}
                   </span>
                   {ratingTooltip && (
-                    <div style={{
-                      position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-                      background: 'var(--card-bg)', border: '1px solid var(--shell-border)',
-                      borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                      padding: '8px 12px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none',
-                    }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text-muted)' }}>
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
                         Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
                       </span>
                     </div>
                   )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
-                <div style={{ width: '100%', height: 1, background: 'var(--shell-border)' }} />
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Findings Breakdown</span>
+                <div className="comp-drawer-divider" />
+                <div className="comp-drawer-breakdown">
+                  <span className="comp-drawer-breakdown-title">Findings Breakdown</span>
                   <FindingsKpi closed={node.closed} open={node.open} pct={node.pct} />
                 </div>
               </div>
@@ -1045,8 +974,8 @@ function AssessmentDrawer({ node, onClose }) {
               {/* Trend chart */}
               <div className="comp-drawer-trend-col">
                 <div className="comp-drawer-trend-header">
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)', flexShrink: 0 }}>Trend</span>
-                  <div ref={trendMenuRef} style={{ position: 'relative' }}>
+                  <span className="comp-drawer-trend-label">Trend</span>
+                  <div ref={trendMenuRef} className="comp-sort-wrap">
                     <button
                       className={`comp-sort-btn${trendMenuOpen ? ' comp-sort-btn--active' : ''}`}
                       onClick={() => setTrendMenuOpen(o => !o)}
@@ -1068,7 +997,7 @@ function AssessmentDrawer({ node, onClose }) {
                       </div>
                     )}
                   </div>
-                  <div className="comp-drawer-trend-legends" style={{ visibility: trendMetric === 'Compliance Score' ? 'visible' : 'hidden' }}>
+                  <div className={`comp-drawer-trend-legends${trendMetric === 'Compliance Score' ? '' : ' comp-drawer-trend-legends--hidden'}`}>
                     <span className="comp-drawer-trend-legend-item comp-drawer-trend-legend--critical">
                       <span className="comp-drawer-trend-legend-dash" />
                       Critical Gap (50)
@@ -1078,7 +1007,7 @@ function AssessmentDrawer({ node, onClose }) {
                       Warning (75)
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                  <div className="comp-time-pills-wrap">
                     {['1W','1M','3M','6M','1Y'].map(t => (
                       <button key={t}
                         className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`}
@@ -1087,7 +1016,7 @@ function AssessmentDrawer({ node, onClose }) {
                     ))}
                   </div>
                 </div>
-                <div style={{ flex: 1, minHeight: 180 }}>
+                <div className="comp-drawer-chart-wrap">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={trendMetric === 'Compliance Score' ? SCORE_TREND[tRange] : FINDING_TREND[tRange]}
@@ -1140,9 +1069,9 @@ function AssessmentDrawer({ node, onClose }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--pai-teal)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui,sans-serif' }}>
+                <div className="comp-chart-legend-row">
+                  <span className="comp-chart-legend-dot" />
+                  <span className="comp-chart-legend-text">
                     {trendMetric === 'Compliance Score' ? 'Score' : 'Count'}
                   </span>
                 </div>
@@ -1158,7 +1087,7 @@ function AssessmentDrawer({ node, onClose }) {
                   Findings Details ({(inclClosed ? total : node.open).toLocaleString()})
                 </span>
                 <button className="comp-drawer-kg-btn">
-                  <span style={{ color: 'var(--pai-indigo)', display: 'inline-flex', alignItems: 'center' }}><IcExploreAction /></span>
+                  <span className="comp-kg-btn-icon"><IcExploreAction /></span>
                   Explore Asset in Knowledge Graph
                 </button>
               </div>
@@ -1167,7 +1096,7 @@ function AssessmentDrawer({ node, onClose }) {
                   Include Closed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
-                <div ref={downloadMenuRef} style={{ position: 'relative' }}>
+                <div ref={downloadMenuRef} className="comp-sort-wrap">
                   <button
                     className="comp-drawer-download-btn"
                     onClick={() => setDownloadMenuOpen(o => !o)}
@@ -1213,16 +1142,16 @@ function AssessmentDrawer({ node, onClose }) {
                   {FINDINGS_ROWS.slice((findingsPage - 1) * findingsPerPage, findingsPage * findingsPerPage).map((row, i) => (
                     <tr key={i}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div className="comp-table-entity-cell">
                           <EntityBadge type="device" />
-                          <span style={{ fontSize: 12 }}>{row.entity}</span>
+                          <span className="comp-table-entity-name">{row.entity}</span>
                         </div>
                       </td>
-                      <td style={{ color: 'var(--shell-text-muted)' }}>{row.evidence}</td>
+                      <td className="comp-table-muted">{row.evidence}</td>
                       <td><span className="comp-drawer-status-open">{row.status}</span></td>
                       <td>
                         <div className="comp-drawer-action-btns">
-                          <button className="comp-drawer-action-icon" title="Explore" style={{ color: 'var(--pai-indigo)' }}>
+                          <button className="comp-drawer-action-icon comp-drawer-action-icon--indigo" title="Explore">
                             <IcExploreAction />
                           </button>
                           <button
@@ -1257,18 +1186,18 @@ function AssessmentDrawer({ node, onClose }) {
       {/* Remediation popup */}
       {remediationRow !== null && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 210 }} onClick={() => setRemediationRow(null)} />
+          <div className="comp-overlay comp-overlay--z210" onClick={() => setRemediationRow(null)} />
 
           <div className="comp-remediation-popup" style={{
             top: Math.min(remediationRow.rect.top, window.innerHeight - 560),
             left: remediationRow.rect.left - 608,
           }}>
             <div className="comp-remediation-header">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div className="comp-remediation-header-left">
                 <span className="comp-remediation-title">Remediation Actions</span>
                 <span className="comp-remediation-note">Note: AI-generated remediations offer valuable guidance, but we recommend verifying and validating before implementation.</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div className="comp-remediation-header-actions">
                 <button className="comp-drawer-kg-btn" onClick={() => openCreateTicket(FINDINGS_ROWS[remediationRow.i]?.entity ?? '', FINDINGS_ROWS[remediationRow.i]?.title ?? '')}>Create Ticket
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
@@ -1281,10 +1210,10 @@ function AssessmentDrawer({ node, onClose }) {
             </div>
             <div className="comp-remediation-body">
               <div className="comp-remediation-rec">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="comp-remediation-rec-icon">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>
+                <span className="comp-remediation-rec-text">
                   Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management
                 </span>
               </div>
@@ -1313,7 +1242,7 @@ function AssessmentDrawer({ node, onClose }) {
       {/* Framework popover */}
       {fwPopover !== null && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9099 }} onClick={() => setFwPopover(null)} />
+          <div className="comp-overlay comp-overlay--z9099" onClick={() => setFwPopover(null)} />
           <div className="comp-fw-popover" style={{
             top: Math.min(fwPopover.rect.bottom + 6, window.innerHeight - 300),
             left: fwPopover.rect.left,
@@ -1322,9 +1251,9 @@ function AssessmentDrawer({ node, onClose }) {
               const meta = FW_DISPLAY[fw.key] || {}
               return (
                 <div key={fi} className="comp-fw-popover-item">
-                  <div className="comp-fw-popover-badge" style={{ background: 'var(--card-bg)', color: 'var(--shell-text-muted)' }}>
+                  <div className="comp-fw-popover-badge">
                     {meta.icon
-                      ? <img src={meta.icon} width={13} height={13} alt="" style={{ objectFit: 'contain' }} />
+                      ? <img src={meta.icon} width={13} height={13} alt="" className="comp-fw-logo-img" />
                       : meta.abbr}
                   </div>
                   <div className="comp-fw-popover-body">
@@ -1358,7 +1287,7 @@ function AssessmentDrawer({ node, onClose }) {
               </div>
               <div className="ct-field">
                 <label className="ct-label">Associated Entities</label>
-                <input className="ct-input" type="text" value={createTicketEntity} readOnly style={{ background: 'var(--shell-bg)', cursor: 'default' }} />
+                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
               </div>
               <div className="ct-field">
                 <label className="ct-label">Description of Failed Finding</label>
@@ -1367,8 +1296,8 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="ct-field">
                 <label className="ct-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
-                  <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--shell-text)' }}>Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
-                  <ol style={{ paddingLeft: 16, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
+                  <ol className="comp-ai-rec-list">
                     <li>Identify all devices missing from AD by cross-referencing network discovery results with current AD computer objects</li>
                     <li>Verify ownership and business justification for each unregistered device through asset owners or department managers</li>
                     <li>Join approved devices to the Active Directory domain following your organization's standard computer naming convention</li>
@@ -1494,7 +1423,7 @@ function FunctionDrawer({ node, level, onClose }) {
               <span className="comp-drawer-title">{node.name}</span>
               <span className="comp-drawer-badge">{levelLabel}</span>
             </div>
-            <p className="comp-drawer-desc" style={{ margin: 0 }}>
+            <p className="comp-drawer-desc comp-drawer-desc--no-margin">
               This {levelLabel.toLowerCase()} groups related compliance controls and assessments.
               Review the details below to understand the current posture and take corrective action where needed.
             </p>
@@ -1511,7 +1440,7 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">ID</span>
                 <span className="comp-drawer-ov-value">
-                  <span style={{ background: 'var(--shell-raised)', border: '1px solid var(--shell-border)', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  <span className="comp-ov-id-badge">
                     {node.id.toUpperCase().replace('_', '-')}
                   </span>
                 </span>
@@ -1527,13 +1456,12 @@ function FunctionDrawer({ node, level, onClose }) {
                 <span className="comp-drawer-ov-label">Related Frameworks</span>
                 <span className="comp-drawer-ov-value">
                   {[FW_ICONS.nist_csf, FW_ICONS.pci_dss, FW_ICONS.cmmc_1].map((icon, i) => (
-                    <div key={i} style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '1px solid var(--shell-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: i > 0 ? -6 : 0, overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={icon} width={16} height={16} alt="" style={{ objectFit: 'contain' }} />
+                    <div key={i} className={`comp-ov-fw-avatar comp-ov-fw-avatar--white${i > 0 ? ' comp-ov-fw-avatar--overlap' : ''}`}>
+                      <img src={icon} width={16} height={16} alt="" className="comp-fw-logo-img" />
                     </div>
                   ))}
                   <button
-                    className="comp-fw-overflow-btn"
-                    style={{ marginLeft: -6 }}
+                    className="comp-fw-overflow-btn comp-fw-overflow-btn--overlap"
                     onClick={e => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       setFwPopover(fwPopover ? null : { rect })
@@ -1544,12 +1472,12 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 44, background: 'var(--pai-high-bg)', color: 'var(--pai-high-fg)', border: '1px solid rgba(217,139,29,0.3)', fontSize: 10, fontWeight: 600 }}>Medium</span>
+                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
-                <span className="comp-drawer-ov-value" style={{ fontSize: 12 }}>08 August 2024</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
             </div>
           </div>
@@ -1559,28 +1487,27 @@ function FunctionDrawer({ node, level, onClose }) {
             <span className="comp-drawer-section-title">Finding Details</span>
             <div className="comp-drawer-finding-layout">
               <div className="comp-drawer-donut-col">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start', position: 'relative' }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Compliance Score</span>
+                <div className="comp-drawer-score-header">
+                  <span className="comp-drawer-score-label">Compliance Score</span>
                   <span
-                    className={`comp-rating-badge ${ratingClass(node.rating)}`}
-                    style={{ cursor: 'default', fontSize: 11 }}
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
                     onMouseEnter={() => setRatingTooltip(true)}
                     onMouseLeave={() => setRatingTooltip(false)}
                   >
                     {node.rating}
                   </span>
                   {ratingTooltip && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '8px 12px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text-muted)' }}>
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
                         Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
                       </span>
                     </div>
                   )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
-                <div style={{ width: '100%', height: 1, background: 'var(--shell-border)' }} />
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)' }}>Findings Breakdown</span>
+                <div className="comp-drawer-divider" />
+                <div className="comp-drawer-breakdown">
+                  <span className="comp-drawer-breakdown-title">Findings Breakdown</span>
                   <FindingsKpi closed={node.closed} open={node.open} pct={node.pct} />
                 </div>
               </div>
@@ -1588,8 +1515,8 @@ function FunctionDrawer({ node, level, onClose }) {
               {/* Trend chart */}
               <div className="comp-drawer-trend-col">
                 <div className="comp-drawer-trend-header">
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--shell-text)', flexShrink: 0 }}>Trend</span>
-                  <div ref={trendMenuRef} style={{ position: 'relative' }}>
+                  <span className="comp-drawer-trend-label">Trend</span>
+                  <div ref={trendMenuRef} className="comp-sort-wrap">
                     <button className={`comp-sort-btn${trendMenuOpen ? ' comp-sort-btn--active' : ''}`} onClick={() => setTrendMenuOpen(o => !o)}>
                       {trendMetric}
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -1602,7 +1529,7 @@ function FunctionDrawer({ node, level, onClose }) {
                       </div>
                     )}
                   </div>
-                  <div className="comp-drawer-trend-legends" style={{ visibility: trendMetric === 'Compliance Score' ? 'visible' : 'hidden' }}>
+                  <div className={`comp-drawer-trend-legends${trendMetric === 'Compliance Score' ? '' : ' comp-drawer-trend-legends--hidden'}`}>
                     <span className="comp-drawer-trend-legend-item comp-drawer-trend-legend--critical">
                       <span className="comp-drawer-trend-legend-dash" />
                       Critical Gap (50)
@@ -1612,13 +1539,13 @@ function FunctionDrawer({ node, level, onClose }) {
                       Warning (75)
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                  <div className="comp-time-pills-wrap">
                     {['1W','1M','3M','6M','1Y'].map(t => (
                       <button key={t} className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`} onClick={() => setTRange(t)}>{t}</button>
                     ))}
                   </div>
                 </div>
-                <div style={{ flex: 1, minHeight: 180 }}>
+                <div className="comp-drawer-chart-wrap">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={trendMetric === 'Compliance Score' ? SCORE_TREND[tRange] : FINDING_TREND[tRange]}
@@ -1648,9 +1575,9 @@ function FunctionDrawer({ node, level, onClose }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--pai-teal)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui,sans-serif' }}>
+                <div className="comp-chart-legend-row">
+                  <span className="comp-chart-legend-dot" />
+                  <span className="comp-chart-legend-text">
                     {trendMetric === 'Compliance Score' ? 'Score' : 'Count'}
                   </span>
                 </div>
@@ -1666,7 +1593,7 @@ function FunctionDrawer({ node, level, onClose }) {
                   Findings Details ({(inclClosed ? total : node.open).toLocaleString()})
                 </span>
                 <button className="comp-drawer-kg-btn">
-                  <span style={{ color: 'var(--pai-indigo)', display: 'inline-flex', alignItems: 'center' }}><IcExploreAction /></span>
+                  <span className="comp-kg-btn-icon"><IcExploreAction /></span>
                   Explore Asset in Knowledge Graph
                 </button>
               </div>
@@ -1675,7 +1602,7 @@ function FunctionDrawer({ node, level, onClose }) {
                   Include Closed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
-                <div ref={downloadMenuRef} style={{ position: 'relative' }}>
+                <div ref={downloadMenuRef} className="comp-sort-wrap">
                   <button className="comp-drawer-download-btn" onClick={() => setDownloadMenuOpen(o => !o)}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -1718,16 +1645,16 @@ function FunctionDrawer({ node, level, onClose }) {
                   {FINDINGS_ROWS.slice((findingsPage - 1) * findingsPerPage, findingsPage * findingsPerPage).map((row, i) => (
                     <tr key={i}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div className="comp-table-entity-cell">
                           <EntityBadge type="device" />
-                          <span style={{ fontSize: 12 }}>{row.entity}</span>
+                          <span className="comp-table-entity-name">{row.entity}</span>
                         </div>
                       </td>
-                      <td style={{ color: 'var(--shell-text-muted)' }}>{row.evidence}</td>
+                      <td className="comp-table-muted">{row.evidence}</td>
                       <td><span className="comp-drawer-status-open">{row.status}</span></td>
                       <td>
                         <div className="comp-drawer-action-btns">
-                          <button className="comp-drawer-action-icon" title="Explore" style={{ color: 'var(--pai-indigo)' }}>
+                          <button className="comp-drawer-action-icon comp-drawer-action-icon--indigo" title="Explore">
                             <IcExploreAction />
                           </button>
                           <button
@@ -1762,14 +1689,14 @@ function FunctionDrawer({ node, level, onClose }) {
       {/* Remediation popup */}
       {remediationRow !== null && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 210 }} onClick={() => setRemediationRow(null)} />
+          <div className="comp-overlay comp-overlay--z210" onClick={() => setRemediationRow(null)} />
           <div className="comp-remediation-popup" style={{ top: Math.min(remediationRow.rect.top, window.innerHeight - 560), left: remediationRow.rect.left - 608 }}>
             <div className="comp-remediation-header">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div className="comp-remediation-header-left">
                 <span className="comp-remediation-title">Remediation Actions</span>
                 <span className="comp-remediation-note">Note: AI-generated remediations offer valuable guidance, but we recommend verifying and validating before implementation.</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div className="comp-remediation-header-actions">
                 <button className="comp-drawer-kg-btn" onClick={() => openCreateTicket(FINDINGS_ROWS[remediationRow.i]?.entity ?? '', FINDINGS_ROWS[remediationRow.i]?.title ?? '')}>Create Ticket
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
@@ -1782,10 +1709,10 @@ function FunctionDrawer({ node, level, onClose }) {
             </div>
             <div className="comp-remediation-body">
               <div className="comp-remediation-rec">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="comp-remediation-rec-icon">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>
+                <span className="comp-remediation-rec-text">
                   Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management
                 </span>
               </div>
@@ -1814,14 +1741,14 @@ function FunctionDrawer({ node, level, onClose }) {
       {/* Framework popover */}
       {fwPopover !== null && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9099 }} onClick={() => setFwPopover(null)} />
+          <div className="comp-overlay comp-overlay--z9099" onClick={() => setFwPopover(null)} />
           <div className="comp-fw-popover" style={{ top: Math.min(fwPopover.rect.bottom + 6, window.innerHeight - 300), left: fwPopover.rect.left }}>
             {OVERVIEW_FRAMEWORKS.map((fw, fi) => {
               const meta = FW_DISPLAY[fw.key] || {}
               return (
                 <div key={fi} className="comp-fw-popover-item">
-                  <div className="comp-fw-popover-badge" style={{ background: 'var(--card-bg)', color: 'var(--shell-text-muted)' }}>
-                    {meta.icon ? <img src={meta.icon} width={13} height={13} alt="" style={{ objectFit: 'contain' }} /> : meta.abbr}
+                  <div className="comp-fw-popover-badge">
+                    {meta.icon ? <img src={meta.icon} width={13} height={13} alt="" className="comp-fw-logo-img" /> : meta.abbr}
                   </div>
                   <div className="comp-fw-popover-body">
                     <span className="comp-fw-popover-name">{meta.name}</span>
@@ -1849,7 +1776,7 @@ function FunctionDrawer({ node, level, onClose }) {
               </div>
               <div className="ct-field">
                 <label className="ct-label">Associated Entities</label>
-                <input className="ct-input" type="text" value={createTicketEntity} readOnly style={{ background: 'var(--shell-bg)', cursor: 'default' }} />
+                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
               </div>
               <div className="ct-field">
                 <label className="ct-label">Description of Failed Finding</label>
@@ -1858,8 +1785,8 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="ct-field">
                 <label className="ct-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
-                  <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--shell-text)' }}>Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
-                  <ol style={{ paddingLeft: 16, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
+                  <ol className="comp-ai-rec-list">
                     <li>Identify all devices missing from AD by cross-referencing network discovery results with current AD computer objects</li>
                     <li>Verify ownership and business justification for each unregistered device through asset owners or department managers</li>
                     <li>Join approved devices to the Active Directory domain following your organization's standard computer naming convention</li>
@@ -1926,7 +1853,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
         return (
           <tr key={node.id} className={`comp-tree-row${isSectionEnd ? ' comp-tree-row--section-end' : ''}`}>
             <td>
-              <div style={{ position: 'relative', height: 52, display: 'flex', alignItems: 'center' }}>
+              <div className="comp-tree-cell-inner">
               {parentIsLast.slice(0, -1).map((pIsLast, l) =>
                 !pIsLast ? (
                   <span key={l} className="comp-tree-vline" style={{ left: l * 20 + 16 }} />
@@ -1940,7 +1867,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
               )}
               <div
                 className={`comp-domain-name-cell comp-domain-name-cell--clickable${node.isLeaf ? ' comp-domain-name-cell--leaf' : ''}`}
-                style={{ paddingLeft: indent }}
+                style={{ '--comp-tree-indent': `${indent}px` }}
                 onClick={() => node.isLeaf ? onLeafClick(node) : onToggle(node.id)}
               >
                 {node.isLeaf ? (
@@ -1957,13 +1884,13 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
             <td className="right">
               <div className="comp-count-cell">
                 <span className="comp-count-val">{node.closed.toLocaleString()}</span>
-                <div className="comp-count-dot" style={{ background: 'var(--pai-green)' }} />
+                <div className="comp-count-dot comp-count-dot--green" />
               </div>
             </td>
             <td className="right">
               <div className="comp-count-cell">
                 <span className="comp-count-val">{node.open.toLocaleString()}</span>
-                {node.open > 0 && <div className="comp-count-dot" style={{ background: 'var(--pai-red-high)' }} />}
+                {node.open > 0 && <div className="comp-count-dot comp-count-dot--red" />}
               </div>
             </td>
             <td>
@@ -1976,7 +1903,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
               ) : (
                 <div className="comp-posture-cell">
                   <div className="comp-posture-track">
-                    <div className="comp-posture-fill" style={{ width: `${node.pct}%`, background: postureColor(node.pct) }} />
+                    <div className="comp-posture-fill" style={{ '--comp-posture-w': `${node.pct}%`, '--comp-posture-bg': postureColor(node.pct) }} />
                   </div>
                   <button className="comp-posture-expand" onClick={e => { e.stopPropagation(); onExpand(node, level) }}><IcExpand /></button>
                   <span className="comp-posture-pct" style={{ color: ratingColor(node.rating) }}>{node.pct}%</span>
@@ -2016,7 +1943,7 @@ function SortDropdown({ value, onChange }) {
   const current = SORT_OPTIONS.find(o => o.id === value)
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="comp-sort-wrap">
       <button
         className={`comp-sort-btn${open ? ' comp-sort-btn--active' : ''}`}
         onClick={() => setOpen(o => !o)}
@@ -2055,10 +1982,9 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
   const displayLabel = label ? (typeof label === 'string' ? label : label.label) : placeholder
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}>
+    <div ref={ref} className={`comp-sort-wrap${fullWidth ? ' comp-sort-wrap--full' : ''}`}>
       <button
-        className={`comp-sort-btn comp-select-btn${open ? ' comp-sort-btn--active' : ''}`}
-        style={fullWidth ? { width: '100%', justifyContent: 'space-between' } : {}}
+        className={`comp-sort-btn comp-select-btn${open ? ' comp-sort-btn--active' : ''}${fullWidth ? ' comp-select-btn--full' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
         <span>{displayLabel}</span>
@@ -2067,7 +1993,7 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
         </svg>
       </button>
       {open && (
-        <div className="comp-sort-menu" style={fullWidth ? { width: '100%', left: 0 } : {}}>
+        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ''}`}>
           {options.map(opt => {
             const v = typeof opt === 'string' ? opt : opt.value
             const l = typeof opt === 'string' ? opt : opt.label
@@ -2195,9 +2121,9 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
 
       {/* ── Left: Framework list ──────────────────────────────────── */}
       <div className={`card comp-left${collapsed ? ' comp-left--collapsed' : ''}`}>
-        <div className="comp-left-header" style={{ padding: '10px 12px 0' }}>
+        <div className="comp-left-header comp-left-header--padded">
           {!collapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="comp-left-header-group">
               <span className="comp-left-title">Frameworks ({iconFrameworks.length})</span>
               <SortDropdown value={fwSortBy} onChange={setFwSortBy} />
             </div>
@@ -2219,7 +2145,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
         </div>
 
         {showSearch && !collapsed && (
-          <div style={{ padding: '0 12px' }}>
+          <div className="comp-fw-search-wrap">
             <DSPillSearch
               value={fwSearch}
               onChange={setFwSearch}
@@ -2229,8 +2155,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
           </div>
         )}
 
-        <div className={`comp-fw-list${collapsed ? ' comp-fw-list--collapsed' : ''}`}
-          style={{ padding: collapsed ? '8px 8px 12px' : '10px 12px 12px' }}>
+        <div className={`comp-fw-list${collapsed ? ' comp-fw-list--collapsed comp-fw-list--collapsed-pad' : ' comp-fw-list--pad'}`}>
           {visibleFrameworks.map(fw => {
             const isSelected = fw.id === selectedFw
             if (collapsed) {
@@ -2272,7 +2197,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                   <div className="comp-fw-bar-row">
                     <span className="comp-fw-pct">{fw.pct}<span className="comp-fw-pct-unit">%</span></span>
                     <div className="comp-fw-track">
-                      <div className="comp-fw-fill" style={{ width: `${fw.pct}%`, background: barColor(fw.pct) }} />
+                      <div className="comp-fw-fill" style={{ '--comp-fw-w': `${fw.pct}%`, '--comp-fw-bar-color': barColor(fw.pct) }} />
                     </div>
                   </div>
                 </div>
@@ -2306,21 +2231,17 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
             {/* Body: stats left, chart right */}
             <div className="comp-score-body">
               <div className="comp-score-stats">
-                <div className="comp-score-value" style={{ color: 'var(--pai-green)' }}>89%</div>
+                <div className="comp-score-value comp-score-value--green">89%</div>
                 <div className="comp-score-trend">
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 3,
-                    background: 'rgba(22,163,74,0.10)', borderRadius: 100,
-                    padding: '3px 8px', color: 'var(--pai-green)', fontWeight: 600, fontSize: 11,
-                  }}>
+                  <span className="comp-score-trend-pill">
                     <IcTrendUp />
                     2%
                   </span>
-                  <span style={{ color: 'var(--shell-text-muted)', fontSize: 11 }}>from last week</span>
+                  <span className="comp-score-trend-label">from last week</span>
                 </div>
                 <div className="comp-score-count">
-                  <span style={{ color: 'var(--pai-green)', fontWeight: 700 }}>7,754,803</span>
-                  <span style={{ color: 'var(--shell-text)', fontWeight: 700 }}>{' / 8,699,489'}</span>
+                  <span className="comp-score-count-closed">7,754,803</span>
+                  <span className="comp-score-count-total">{' / 8,699,489'}</span>
                 </div>
               </div>
 
@@ -2370,7 +2291,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
           <div className="card comp-rating-card">
             <div className="comp-rating-header">
               <div className="comp-rating-title">Worst Performing Assessments (Top 10)</div>
-              <div style={{ display: 'flex', gap: 24, fontSize: 11, color: 'var(--shell-text-muted)', paddingRight: 4 }}>
+              <div className="comp-rating-col-labels">
                 <span>Score</span>
                 <span>Findings</span>
               </div>
@@ -2431,15 +2352,15 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
             <table className="comp-domain-table">
               <colgroup>
                 <col />
-                <col style={{ width: 80 }} />
-                <col style={{ width: 80 }} />
-                <col style={{ width: '24%' }} />
-                <col style={{ width: 100 }} />
+                <col className="comp-col-w80" />
+                <col className="comp-col-w80" />
+                <col className="comp-col-w24pct" />
+                <col className="comp-col-w100" />
               </colgroup>
               <thead>
                 <tr>
                   <th>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div className="comp-th-name-cell">
                       Name
                       <SortDropdown value={sortBy} onChange={setSortBy} />
                     </div>

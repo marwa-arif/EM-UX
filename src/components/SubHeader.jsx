@@ -20,7 +20,7 @@ const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit, pageId }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -162,6 +162,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               onClear={onClearFilters}
               onClose={() => setFilterPillOpen(false)}
               position={pillPos}
+              pageId={pageId}
             />
           )}
 

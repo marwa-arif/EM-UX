@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { SegmentedTabs } from '../pages/PageKG.jsx'
 import '../styles/filter-panel.css'
@@ -12,6 +12,108 @@ const FP_DEFAULT_ATTRS = [
   { id: 'asset-criticality', label: 'Asset Criticality',   sub: null,         icon: 'asset-criticality',   options: [] },
   { id: 'type-assessment',   label: 'Type',                sub: 'Assessment', icon: 'type',                options: [] },
 ];
+
+const SEVERITY_OPTS   = ['Critical', 'High', 'Low', 'Medium'];
+const BOOLEAN_OPTS    = ['(empty)', 'True', 'False'];
+
+const PAGE_FILTER_ATTRS = {
+  'kg': [
+    { id: 'type',                              label: 'Type',                              icon: 'type',                options: [] },
+    { id: 'origin',                            label: 'Origin',                            icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: [] },
+    { id: 'business-unit',                     label: 'Business Unit',                     icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'exposure-severity',                 label: 'Exposure Severity',                 icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'multiple-location-access-flag',     label: 'Multiple Location Access Flag',     icon: 'type',                options: [] },
+    { id: 'av-scan-sla-breach-status',         label: 'AV Scan SLA Breach Status',         icon: 'type',                options: [] },
+    { id: 'days-since-last-login',             label: 'Days Since Last Login',             icon: 'score',               options: [] },
+    { id: 'av-block-malicious-code-status',    label: 'AV Block Malicious Code Status',    icon: 'type',                options: [] },
+    { id: 'active-registered-host-count',      label: 'Active Registered Host Count',      icon: 'score',               options: [] },
+    { id: 'registered-host-count',             label: 'Registered Host Count',             icon: 'score',               options: [] },
+    { id: 'vm-scan-sla-breach-status',         label: 'VM Scan SLA Breach Status',         icon: 'type',                options: [] },
+    { id: 'naming-convention-compliance-status', label: 'Naming Convention Compliance Status', icon: 'type',            options: [] },
+    { id: 'is-mfa-enabled',                   label: 'Is MFA Enabled',                    icon: 'type',                options: [] },
+    { id: 'container-runs-as-root',            label: 'Container Runs as Root',            icon: 'type',                options: [] },
+    { id: 'active-cluster-finding-count',      label: 'Active Cluster Finding Count',      icon: 'score',               options: [] },
+    { id: 'password-vulnerability-count',      label: 'Password Vulnerability Count',      icon: 'score',               options: [] },
+    { id: 'finding-sla-resolved-status',       label: 'Finding SLA Resolved Status',       icon: 'type',                options: [] },
+    { id: 'cloud-zone-availability',           label: 'Cloud Zone Availability',           icon: 'infrastructure-type', options: [] },
+    { id: 'azure-acr-quarantine-policy',       label: 'Azure ACR Quarantine Policy',       icon: 'type',                options: [] },
+  ],
+  'discover/cloud':                'discover/device',
+  'discover/identity':             'discover/device',
+  'report/assessments':            'report/compliance',
+  'report/compliance-matrix':      'report/compliance',
+  'report/compliance-findings':    'report/compliance',
+  'report/compliance': [
+    { id: 'assessment-severity',       label: 'Assessment Severity',       icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'assessment-weightage',      label: 'Assessment Weightage',      icon: 'score',               type: 'range', min: 1, max: 10, options: [] },
+    { id: 'finding-origin',            label: 'Finding Origin',            icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'Knowledge Graph', 'MS Azure', 'MS Defender', 'Qualys', 'Tenable.sc', 'Wiz'] },
+    { id: 'finding-source',            label: 'Finding Source',            icon: 'data-source',         options: ['Cloud Defined', 'Product Defined'] },
+    { id: 'type',                      label: 'Type',                      icon: 'type',                options: ['Bucket', 'Compute Instance Group', 'Container Groups', 'Container Registry', 'File System Service', 'Human', 'Kubernetes Cluster', 'Kubernetes Container', 'Mobile'] },
+    { id: 'finding-type',              label: 'Finding Type',              icon: 'type',                options: ['Asset Management', 'Cloud Security', 'Continuous Monitoring', 'Cryptographic Protections', 'Data Classification & Handling', 'Endpoint Security', 'Human Resources Security', 'Identification & Authentication', 'Mobile Device Management'] },
+    { id: 'business-unit',             label: 'Business Unit',             icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'os-family',                 label: 'OS Family',                 icon: 'type',                options: ['(empty)', 'Android', 'iOS', 'Linux', 'macOS', 'Network OS', 'Windows'] },
+    { id: 'finding-exposure-severity', label: 'Finding Exposure Severity', icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'exposure-category',         label: 'Exposure Category',         icon: 'type',                options: ['Control Gap', 'Software Vulnerability'] },
+    { id: 'scope-entity',              label: 'Scope Entity',              icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['Cluster', 'Container', 'Host', 'Identity', 'Network', 'Network Services', 'Person', 'Storage', 'Vulnerability'] },
+  ],
+  'discover/device': [
+    { id: 'type',           label: 'Type',            icon: 'type',                options: ['Server', 'Workstation', 'Mobile', 'Network', 'Printers', 'IOT', 'Scanners', 'Hypervisor', 'Cloud Storage'] },
+    { id: 'origin',         label: 'Origin',          icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: [] },
+    { id: 'business-unit',  label: 'Business Unit',   icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'accessibility',  label: 'Accessibility',   icon: 'type',                options: [] },
+    { id: 'deployment-type',label: 'Deployment Type', icon: 'infrastructure-type', options: ['Cloud', 'On-Premise'] },
+    { id: 'cloud-provider', label: 'Cloud Provider',  icon: 'infrastructure-type', options: ['(empty)', 'AWS', 'Azure'] },
+    { id: 'environment',    label: 'Environment',     icon: 'infrastructure-type', options: ['(empty)', 'dev', 'developer', 'eng', 'engineering', 'integration', 'perf', 'perfext', 'prod'] },
+    { id: 'asset-criticality', label: 'Asset Criticality', icon: 'asset-criticality', options: SEVERITY_OPTS },
+    { id: 'asset-role',     label: 'Asset Role',      icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['AIX Server', 'Database', 'DNS Server', 'Domain Controller', 'ERP System', 'File Transfer Protocol', 'General Purpose', 'General Server', 'Hypervisor'] },
+    { id: 'os-family',      label: 'OS Family',       icon: 'type',                options: ['(empty)', 'Android', 'iOS', 'Linux', 'macOS', 'Network OS', 'Windows'] },
+    { id: 'edr-product',    label: 'EDR Product',     icon: 'type',                options: [] },
+  ],
+  'exposure/findings': [
+    { id: 'exposure-category',         label: 'Exposure Category',         icon: 'type',                options: ['Control Gap', 'Software Vulnerability'] },
+    { id: 'asset-origin',              label: 'Asset Origin',              icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'AWS Cloudtrail', 'AWS IAM Center', 'CrowdStrike', 'MS Active Directory', 'MS Active Directory Extract', 'MS Azure', 'MS Azure AD', 'MS Defender'] },
+    { id: 'finding-origin',            label: 'Finding Origin',            icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'Knowledge Graph', 'MS Azure', 'MS Defender', 'Qualys', 'Tenable.sc', 'Wiz'] },
+    { id: 'finding-source',            label: 'Finding Source',            icon: 'data-source',         options: ['Cloud Defined', 'Product Defined'] },
+    { id: 'cloud-provider',            label: 'Cloud Provider',            icon: 'infrastructure-type', options: ['(empty)', 'AWS', 'Azure'] },
+    { id: 'scope-entity',              label: 'Scope Entity',              icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['Cluster', 'Container', 'Host', 'Identity', 'Network', 'Network Services', 'Person', 'Storage', 'Vulnerability'] },
+    { id: 'os-family',                 label: 'OS Family',                 icon: 'type',                options: ['(empty)', 'Android', 'iOS', 'Linux', 'macOS', 'Network OS', 'Windows'] },
+    { id: 'impact',                    label: 'Impact',                    icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'likelihood',                label: 'Likelihood',                icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'type',                      label: 'Type',                      icon: 'type',                options: ['Bucket', 'Compute Instance Group', 'Container Groups', 'Container Registry', 'File System Service', 'Human', 'Kubernetes Cluster', 'Kubernetes Container', 'Mobile'] },
+    { id: 'asset-role',                label: 'Asset Role',                icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['AIX Server', 'Database', 'DNS Server', 'Domain Controller', 'ERP System', 'File Transfer Protocol', 'General Purpose', 'General Server', 'Hypervisor'] },
+    { id: 'finding-exposure-severity', label: 'Finding Exposure Severity', icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'business-unit',             label: 'Business Unit',             icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'deployment-type',           label: 'Deployment Type',           icon: 'infrastructure-type', options: ['Cloud', 'On-Premise'] },
+    { id: 'vm-onboarding-status',      label: 'VM Onboarding Status',      icon: 'type',                options: BOOLEAN_OPTS },
+  ],
+  'exposure/overview': [
+    { id: 'exposure-category',          label: 'Exposure Category',          icon: 'type',                options: ['Control Gap', 'Software Vulnerability'] },
+    { id: 'asset-origin',               label: 'Asset Origin',               icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'AWS Cloudtrail', 'AWS IAM Center', 'CrowdStrike', 'MS Active Directory', 'MS Active Directory Extract', 'MS Azure', 'MS Azure AD', 'MS Defender'] },
+    { id: 'finding-origin',             label: 'Finding Origin',             icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'Knowledge Graph', 'MS Azure', 'MS Defender', 'Qualys', 'Tenable.sc', 'Wiz'] },
+    { id: 'finding-source',             label: 'Finding Source',             icon: 'data-source',         options: ['Cloud Defined', 'Product Defined'] },
+    { id: 'cloud-provider',             label: 'Cloud Provider',             icon: 'infrastructure-type', options: ['(empty)', 'AWS', 'Azure'] },
+    { id: 'os-family',                  label: 'OS Family',                  icon: 'type',                options: ['(empty)', 'Android', 'iOS', 'Linux', 'macOS', 'Network OS', 'Windows'] },
+    { id: 'scope-entity',               label: 'Scope Entity',               icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['Cluster', 'Container', 'Host', 'Identity', 'Network', 'Network Services', 'Person', 'Storage', 'Vulnerability'] },
+    { id: 'type',                       label: 'Type',                       icon: 'type',                options: ['Bucket', 'Compute Instance Group', 'Container Groups', 'Container Registry', 'File System Service', 'Human', 'Kubernetes Cluster', 'Kubernetes Container', 'Mobile'] },
+    { id: 'asset-role',                 label: 'Asset Role',                 icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['AIX Server', 'Database', 'DNS Server', 'Domain Controller', 'ERP System', 'File Transfer Protocol', 'General Purpose', 'General Server', 'Hypervisor'] },
+    { id: 'assessment-severity',        label: 'Assessment Severity',        icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'finding-exposure-severity',  label: 'Finding Exposure Severity',  icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'business-unit',              label: 'Business Unit',              icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'deployment-type',            label: 'Deployment Type',            icon: 'infrastructure-type', options: ['Cloud', 'On-Premise'] },
+    { id: 'asset-criticality',          label: 'Asset Criticality',          icon: 'asset-criticality',   options: SEVERITY_OPTS },
+    { id: 'vm-onboarding-status',       label: 'VM Onboarding Status',       icon: 'type',                options: BOOLEAN_OPTS },
+    { id: 'antivirus',                  label: 'Antivirus',                  icon: 'type',                options: BOOLEAN_OPTS },
+    { id: 'av-block',                   label: 'AV Block',                   icon: 'type',                options: BOOLEAN_OPTS },
+    { id: 'firewall-enabled',           label: 'Firewall Enabled',           icon: 'type',                options: BOOLEAN_OPTS },
+  ],
+};
+
+function getPageAttrs(pageId) {
+  const entry = PAGE_FILTER_ATTRS[pageId];
+  if (!entry) return FP_DEFAULT_ATTRS;
+  if (typeof entry === 'string') return PAGE_FILTER_ATTRS[entry] || FP_DEFAULT_ATTRS;
+  return entry;
+}
 
 const FP_SAVED_ITEMS = [
   { id: 'cs',  name: 'Critical Servers',           desc: 'Monitor activity on key servers.',                 author: 'You',      visibility: 'Private', count: 5,  pinned: true  },
@@ -78,6 +180,48 @@ function FPSubTooltip({ sub, children }) {
         </span>
       )}
     </span>
+  );
+}
+
+function FPModeBar({ modes, value, onChange }) {
+  return (
+    <div className="fp-mode-bar">
+      <SegmentedTabs value={value} options={modes} onChange={onChange} fullWidth height={28} />
+    </div>
+  );
+}
+
+function FPRangeSlider({ min, max, from, to, onChange }) {
+  const fromPct = ((from - min) / (max - min)) * 100;
+  const toPct   = ((to   - min) / (max - min)) * 100;
+  const trackVars = { '--fp-range-from': `${fromPct}%`, '--fp-range-to': `${toPct}%` };
+  return (
+    <div className="fp-range-wrap">
+      <div className="fp-range-track-wrap" style={trackVars}>
+        <div className="fp-range-track-bg" />
+        <div className="fp-range-track-fill" />
+        <input type="range" min={min} max={max} value={from} className="fp-range-input"
+          onChange={e => onChange(Math.min(Number(e.target.value), to - 1), to)} />
+        <input type="range" min={min} max={max} value={to} className="fp-range-input"
+          onChange={e => onChange(from, Math.max(Number(e.target.value), from + 1))} />
+      </div>
+      <div className="fp-range-minmax">
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+      <div className="fp-range-fields">
+        <div className="fp-range-field">
+          <span className="fp-range-field-label">From</span>
+          <input type="number" min={min} max={to - 1} value={from} className="fp-range-number-input"
+            onChange={e => { const v = Math.max(min, Math.min(Number(e.target.value), to - 1)); onChange(v, to); }} />
+        </div>
+        <div className="fp-range-field">
+          <span className="fp-range-field-label">To</span>
+          <input type="number" min={from + 1} max={max} value={to} className="fp-range-number-input"
+            onChange={e => { const v = Math.min(max, Math.max(Number(e.target.value), from + 1)); onChange(from, v); }} />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -398,16 +542,18 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 
 // ── main filter panel ─────────────────────────────────────────────────────────
 
-function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, embedded = false }) {
+function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, embedded = false, pageId }) {
   const [tab,             setTab]            = useState('quick');
   const [settingsView,    setSettingsView]   = useState(false);
   const [search,          setSearch]         = useState('');
   const [savedSearch,     setSavedSearch]    = useState('');
-  const [expanded,        setExpanded]       = useState(new Set(['type-host']));
+  const [expanded,        setExpanded]       = useState(() => new Set([getPageAttrs(pageId)[0]?.id].filter(Boolean)));
   const [selections,      setSelections]     = useState({});
   const [groupSearch,     setGroupSearch]    = useState({});
   const [showAll,         setShowAll]        = useState({});
-  const [attrs,           setAttrs]          = useState(FP_DEFAULT_ATTRS);
+  const [attrModes,        setAttrModes]       = useState({});
+  const [rangeSelections,  setRangeSelections] = useState({});
+  const [attrs,            setAttrs]           = useState(() => getPageAttrs(pageId));
   const [pendingAttrs,    setPendingAttrs]   = useState(null);
   const [editingId,       setEditingId]      = useState(null);
   const [editingLabel,    setEditingLabel]   = useState('');
@@ -421,11 +567,21 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
   const [sdragIdx,        setSdragIdx]       = useState(null);
   const [sdragOver,       setSdragOver]      = useState(null);
 
+  useEffect(() => {
+    const newAttrs = getPageAttrs(pageId);
+    setAttrs(newAttrs);
+    setSelections({});
+    setAttrModes({});
+    setRangeSelections({});
+    setExpanded(new Set([newAttrs[0]?.id].filter(Boolean)));
+    setPendingAttrs(null);
+  }, [pageId]);
+
   const liveAttrs      = pendingAttrs || attrs;
   const liveSaved      = pendingSaved || { order: savedOrder, count: savedShowCount };
   const liveSavedItems = liveSaved.order.map(id => FP_SAVED_ITEMS.find(i => i.id === id)).filter(Boolean);
 
-  const toggleExpanded  = (id) => setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleExpanded  = (id) => setExpanded(prev => new Set(prev.has(id) ? [] : [id]));
   const toggleOption    = (attrId, opt) => setSelections(prev => { const c = new Set(prev[attrId] || []); c.has(opt) ? c.delete(opt) : c.add(opt); return { ...prev, [attrId]: c }; });
   const toggleSelectAll = (attr) => setSelections(prev => {
     const cur = prev[attr.id] || new Set();
@@ -462,7 +618,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
 
   const handleReset = () => {
     if (tab === 'saved') { setSelectedSavedId(null); setAppliedSavedId(null); onApply && onApply(0); }
-    else setSelections({});
+    else { setSelections({}); setRangeSelections({}); }
   };
   const handleApply = () => {
     if (tab === 'saved') {
@@ -474,13 +630,23 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
     } else {
       const chips = [];
       attrs.forEach(attr => {
-        const sel = selections[attr.id];
-        if (sel && sel.size > 0) {
-          const key = attr.label + (attr.sub ? ` · ${attr.sub}` : '');
-          sel.forEach(value => chips.push({ key, attrId: attr.id, value }));
+        if (attr.type === 'range') {
+          const r = rangeSelections[attr.id];
+          if (r && (r.from !== attr.min || r.to !== attr.max)) {
+            chips.push({ key: attr.label, attrId: attr.id, value: `${r.from} – ${r.to}` });
+          }
+        } else {
+          const sel = selections[attr.id];
+          if (sel && sel.size > 0) {
+            const key = attr.label + (attr.sub ? ` · ${attr.sub}` : '');
+            const mode = attr.modes ? (attrModes[attr.id] || 'OR') : null;
+            sel.forEach(value => chips.push({ key, attrId: attr.id, value, ...(mode ? { mode } : {}) }));
+          }
         }
       });
-      onApply && onApply(Object.values(selections).filter(s => s && s.size > 0).length, chips);
+      const count = Object.values(selections).filter(s => s && s.size > 0).length
+        + attrs.filter(a => a.type === 'range' && rangeSelections[a.id] && (rangeSelections[a.id].from !== a.min || rangeSelections[a.id].to !== a.max)).length;
+      onApply && onApply(count, chips);
     }
   };
 
@@ -694,13 +860,18 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               <DSPillSearch value={search} onChange={setSearch} placeholder="Search Quick Filters" width="100%" />
             </div>
             {filteredAttrs.map((attr) => {
-              const isOpen = expanded.has(attr.id);
-              const sel    = selections[attr.id] || new Set();
-              const gSrch  = groupSearch[attr.id] || '';
-              const allOpts = attr.options.filter(o => !gSrch || o.toLowerCase().includes(gSrch.toLowerCase()));
+              const isOpen  = expanded.has(attr.id);
+              const sel     = selections[attr.id] || new Set();
+              const gSrch   = groupSearch[attr.id] || '';
+              const allOpts = attr.options?.filter(o => !gSrch || o.toLowerCase().includes(gSrch.toLowerCase())) ?? [];
               const visible = showAll[attr.id] ? allOpts : allOpts.slice(0, SHOW_LIMIT);
-              const allChk  = attr.options.length > 0 && attr.options.every(o => sel.has(o));
-              const someChk = attr.options.some(o => sel.has(o)) && !allChk;
+              const allChk  = allOpts.length > 0 && allOpts.every(o => sel.has(o));
+              const someChk = allOpts.some(o => sel.has(o)) && !allChk;
+              const rangeVal  = rangeSelections[attr.id];
+              const rangeFrom = rangeVal?.from ?? attr.min;
+              const rangeTo   = rangeVal?.to   ?? attr.max;
+              const rangeActive = attr.type === 'range' && (rangeFrom !== attr.min || rangeTo !== attr.max);
+              const hasContent = attr.type === 'range' || (attr.options?.length ?? 0) > 0;
               return (
                 <div key={attr.id} className="fp-attr-group">
                   <button onClick={() => toggleExpanded(attr.id)} className="fp-attr-group__btn">
@@ -712,42 +883,59 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                           <span className="fp-attr-group__sub-text"> · {attr.sub}</span>
                         </FPSubTooltip>
                       )}
-                      {sel.size > 0 && (
-                        <span className="fp-attr-group__badge">{sel.size}</span>
+                      {(sel.size > 0 || rangeActive) && (
+                        <span className="fp-attr-group__badge">{rangeActive ? 1 : sel.size}</span>
                       )}
                     </span>
                     <span className={`fp-chevron${isOpen ? ' fp-chevron--open' : ''}`}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                     </span>
                   </button>
-                  {isOpen && attr.options.length > 0 && (
+                  {isOpen && hasContent && (
                     <div className="fp-options">
-                      <div className="fp-options__search-row">
-                        <div className="fp-options__search-wrap">
-                          <DSPillSearch value={gSrch} onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))} placeholder={`Search ${attr.label}`} width="100%" />
-                        </div>
-                        <div className="fp-options__sort">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--pai-fg3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
-                          <span className="fp-options__sort-label">A-Z</span>
-                        </div>
-                      </div>
-                      <label className="fp-option-label fp-option-label--bold">
-                        <FPCheckbox checked={allChk} indeterminate={someChk} onChange={() => toggleSelectAll(attr)} />
-                        Select All
-                      </label>
-                      {visible.map(opt => (
-                        <label key={opt} className="fp-option-label fp-option-label--normal">
-                          <FPCheckbox checked={sel.has(opt)} onChange={() => toggleOption(attr.id, opt)} />
-                          {opt}
-                        </label>
-                      ))}
-                      {allOpts.length > SHOW_LIMIT && (
-                        <button
-                          onClick={() => setShowAll(p => ({ ...p, [attr.id]: !p[attr.id] }))}
-                          className="fp-show-more-btn"
-                        >
-                          {showAll[attr.id] ? 'Show Less' : 'Show All'}
-                        </button>
+                      {attr.type === 'range' ? (
+                        <FPRangeSlider
+                          min={attr.min} max={attr.max}
+                          from={rangeFrom} to={rangeTo}
+                          onChange={(f, t) => setRangeSelections(p => ({ ...p, [attr.id]: { from: f, to: t } }))}
+                        />
+                      ) : (
+                        <>
+                          {attr.modes && (
+                            <FPModeBar
+                              modes={attr.modes}
+                              value={attrModes[attr.id] || 'OR'}
+                              onChange={m => setAttrModes(p => ({ ...p, [attr.id]: m }))}
+                            />
+                          )}
+                          <div className="fp-options__search-row">
+                            <div className="fp-options__search-wrap">
+                              <DSPillSearch value={gSrch} onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))} placeholder={`Search ${attr.label}`} width="100%" />
+                            </div>
+                            <div className="fp-options__sort">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--pai-fg3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+                              <span className="fp-options__sort-label">A-Z</span>
+                            </div>
+                          </div>
+                          <label className="fp-option-label fp-option-label--bold">
+                            <FPCheckbox checked={allChk} indeterminate={someChk} onChange={() => toggleSelectAll(attr)} />
+                            Select All
+                          </label>
+                          {visible.map(opt => (
+                            <label key={opt} className="fp-option-label fp-option-label--normal">
+                              <FPCheckbox checked={sel.has(opt)} onChange={() => toggleOption(attr.id, opt)} />
+                              {opt}
+                            </label>
+                          ))}
+                          {allOpts.length > SHOW_LIMIT && (
+                            <button
+                              onClick={() => setShowAll(p => ({ ...p, [attr.id]: !p[attr.id] }))}
+                              className="fp-show-more-btn"
+                            >
+                              {showAll[attr.id] ? 'Show Less' : 'Show All'}
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

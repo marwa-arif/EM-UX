@@ -16,11 +16,7 @@ const ENTITY_ICONS = {
 
 function EntityBadge({ type }) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 26, height: 26, borderRadius: '50%',
-      background: '#F7F9FC', flexShrink: 0,
-    }}>
+    <span className="asmts-entity-badge">
       <img src={ENTITY_ICONS[type] || ENTITY_ICONS.multi} width={15} height={15} alt="" />
     </span>
   )
@@ -95,21 +91,19 @@ function FwStack({ keys, onOverflow }) {
   const shown = keys.slice(0, 3)
   const extra = keys.length - 3
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div className="asmts-fw-stack">
       {shown.map((key, i) => {
         const m = FW_DISPLAY[key] || {}
         return (
-          <div key={i} style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: m.icon ? 'transparent' : (m.ring || 'var(--shell-raised)'),
-            border: m.icon ? 'none' : '1px solid var(--shell-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginLeft: i > 0 ? -6 : 0, overflow: 'hidden',
-            fontSize: 7, fontWeight: 700, color: m.fg || 'var(--shell-text)',
-            flexShrink: 0, zIndex: 3 - i,
+          <div key={i} className="asmts-fw-item" style={{
+            '--asmts-fw-item-bg': m.icon ? 'transparent' : (m.ring || 'var(--shell-raised)'),
+            '--asmts-fw-item-border': m.icon ? 'none' : '1px solid var(--shell-border)',
+            '--asmts-fw-item-color': m.fg || 'var(--shell-text)',
+            '--asmts-fw-item-ml': i > 0 ? '-6px' : '0',
+            '--asmts-fw-item-z': 3 - i,
           }}>
             {m.icon
-              ? <img src={m.icon} width={14} height={14} alt="" style={{ objectFit: 'contain' }} />
+              ? <img src={m.icon} width={14} height={14} alt="" className="asmts-img-contain" />
               : m.abbr}
           </div>
         )
@@ -117,7 +111,6 @@ function FwStack({ keys, onOverflow }) {
       {extra > 0 && (
         <button
           className="comp-fw-overflow-btn"
-          style={{ marginLeft: -6 }}
           onClick={e => {
             e.stopPropagation()
             onOverflow?.(e.currentTarget.getBoundingClientRect(), keys)
@@ -192,7 +185,7 @@ export default function AssessmentsPage() {
 
   const sortProps = (col) => ({
     onClick: () => handleSort(col),
-    style: { cursor: 'pointer', userSelect: 'none' },
+    className: 'asmts-th-sortable',
   })
 
   return (
@@ -209,12 +202,12 @@ export default function AssessmentsPage() {
         <table className="ds-table asmts-table">
           <thead>
             <tr>
-              <th style={{ width: 36 }} />
+              <th className="asmts-th-icon" />
               <th {...sortProps('name')}>
                 <span className="asmts-th-inner">Name <IcSort dir={sortCol === 'name' ? sortDir : null} /></span>
               </th>
               <th>Findings</th>
-              <th {...sortProps('rating')} style={{ minWidth: 120 }}>
+              <th onClick={() => handleSort('rating')} className="asmts-th-sortable asmts-th-rating">
                 <span className="asmts-th-inner">Rating <IcSort dir={sortCol === 'rating' ? sortDir : null} /></span>
               </th>
               <th {...sortProps('score')}>
@@ -224,7 +217,7 @@ export default function AssessmentsPage() {
               <th {...sortProps('entity')}>
                 <span className="asmts-th-inner">Entity <IcSort dir={sortCol === 'entity' ? sortDir : null} /></span>
               </th>
-              <th style={{ width: 40, textAlign: 'center' }}><IcGear /></th>
+              <th className="asmts-th-actions"><IcGear /></th>
             </tr>
           </thead>
           <tbody>
@@ -247,7 +240,7 @@ export default function AssessmentsPage() {
                     </div>
                   </td>
                   <td>
-                    <span className="asmts-rating-pill" style={{ background: rs.bg, color: rs.fg, border: `1px solid ${rs.border}` }}>
+                    <span className="asmts-rating-pill" style={{ '--asmts-pill-bg': rs.bg, '--asmts-pill-color': rs.fg, '--asmts-pill-border': rs.border }}>
                       {a.rating}
                     </span>
                   </td>
@@ -288,7 +281,7 @@ export default function AssessmentsPage() {
 
       {fwPopover && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9099 }} onClick={() => setFwPopover(null)} />
+          <div className="asmts-fw-popover-overlay" onClick={() => setFwPopover(null)} />
           <div className="comp-fw-popover" style={{
             top: Math.min(fwPopover.rect.bottom + 6, window.innerHeight - 300),
             left: fwPopover.rect.left,
@@ -298,10 +291,10 @@ export default function AssessmentsPage() {
               const ctrl = FW_CONTROLS[key] || {}
               return (
                 <div key={fi} className="comp-fw-popover-item">
-                  <div className="comp-fw-popover-badge" style={{ background: meta.icon ? 'transparent' : (meta.ring || 'var(--card-bg)'), border: meta.icon ? 'none' : '1px solid var(--shell-border)' }}>
+                  <div className="comp-fw-popover-badge" style={{ '--comp-fw-badge-bg': meta.icon ? 'transparent' : (meta.ring || 'var(--card-bg)'), '--comp-fw-badge-border': meta.icon ? 'none' : '1px solid var(--shell-border)' }}>
                     {meta.icon
-                      ? <img src={meta.icon} width={18} height={18} alt="" style={{ objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 7, fontWeight: 700, color: meta.fg }}>{meta.abbr}</span>}
+                      ? <img src={meta.icon} width={18} height={18} alt="" className="asmts-img-contain" />
+                      : <span className="asmts-fw-abbr" style={{ '--asmts-fw-abbr-color': meta.fg }}>{meta.abbr}</span>}
                   </div>
                   <div className="comp-fw-popover-body">
                     <span className="comp-fw-popover-name">{meta.name || key}</span>

@@ -153,6 +153,9 @@
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+  background: var(--asmts-pill-bg, var(--shell-raised));
+  color: var(--asmts-pill-color, var(--shell-text));
+  border: 1px solid var(--asmts-pill-border, var(--shell-border));
 }
 
 /* Score */
@@ -193,4 +196,59 @@
 .asmts-action-btn:hover {
   background: var(--shell-hover);
   color: var(--shell-text);
+}
+
+/* === Migrated from inline styles === */
+
+.asmts-entity-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--shell-raised);
+  flex-shrink: 0;
+}
+
+.asmts-fw-stack {
+  display: flex;
+  align-items: center;
+}
+
+.asmts-fw-item {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 7px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--asmts-fw-item-bg, var(--shell-raised));
+  border: var(--asmts-fw-item-border, 1px solid var(--shell-border));
+  color: var(--asmts-fw-item-color, var(--shell-text));
+  margin-left: var(--asmts-fw-item-ml, 0);
+  z-index: var(--asmts-fw-item-z, 1);
+}
+
+.asmts-img-contain { object-fit: contain; }
+
+.asmts-th-sortable { cursor: pointer; user-select: none; }
+.asmts-th-icon     { width: 36px; }
+.asmts-th-rating   { min-width: 120px; }
+.asmts-th-actions  { width: 40px; text-align: center; }
+
+.asmts-fw-popover-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9099;
+}
+
+.asmts-fw-abbr {
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--asmts-fw-abbr-color, var(--shell-text));
 }

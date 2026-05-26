@@ -58,19 +58,19 @@ function MatrixDropdown({ label, subLabel, value, options, onChange, width = 150
         {label}
         {subLabel && <span className="comp-matrix-tb-label-sub"> {subLabel}</span>}
       </span>
-      <div ref={ref} style={{ position: 'relative' }}>
+      <div ref={ref} className="comp-matrix-dropdown-wrap">
         <button
           className={`comp-matrix-tb-btn${open ? ' comp-matrix-tb-btn--open' : ''}`}
-          style={{ width }}
+          style={{ '--comp-matrix-btn-w': `${width}px` }}
           onClick={() => setOpen(o => !o)}
         >
           <span className="comp-matrix-tb-btn-text">{selected?.name ?? value}</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m6 9 6 6 6-6"/>
           </svg>
         </button>
         {open && (
-          <div className="comp-sort-menu" style={{ minWidth: '100%', width: 'max-content' }}>
+          <div className="comp-sort-menu comp-matrix-dropdown-menu">
             {options.map(opt => (
               <button
                 key={opt.id}
@@ -78,7 +78,7 @@ function MatrixDropdown({ label, subLabel, value, options, onChange, width = 150
                 onClick={() => { onChange(opt.id); setOpen(false) }}
               >
                 {opt.date
-                  ? <><span>{opt.date}</span><span style={{ opacity: 0.55, marginLeft: 4 }}>({opt.sublabel})</span></>
+                  ? <><span>{opt.date}</span><span className="comp-matrix-opt-sublabel">({opt.sublabel})</span></>
                   : opt.name}
               </button>
             ))}
@@ -263,7 +263,7 @@ function CellTooltip({ row, col, score, prevScore, delta, canCompare, x, y }) {
       <div className="comp-matrix-tt-title">{row}</div>
       <div className="comp-matrix-tt-header">
         <span className="comp-matrix-tt-col">{col}</span>
-        <span className="comp-matrix-tt-score" style={{ color: scoreColor }}>
+        <span className="comp-matrix-tt-score" style={{ '--comp-tt-score-color': scoreColor }}>
           {score === null ? '—' : `${parseFloat(Number(score).toFixed(2))}%`}
         </span>
       </div>
@@ -280,7 +280,7 @@ function CellTooltip({ row, col, score, prevScore, delta, canCompare, x, y }) {
           <div className="comp-matrix-tt-divider" />
           <div className="comp-matrix-tt-row">
             <span>Change %</span>
-            <span style={{ color: deltaColor, display: 'flex', alignItems: 'center', gap: 3, fontWeight: 500 }}>
+            <span className="comp-matrix-delta-val" style={{ '--comp-delta-color': deltaColor }}>
               {delta !== null && delta !== 0 && (
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   {delta > 0
@@ -294,7 +294,7 @@ function CellTooltip({ row, col, score, prevScore, delta, canCompare, x, y }) {
           </div>
           <div className="comp-matrix-tt-row">
             <span>Absolute score</span>
-            <span style={{ color: scoreColor, fontWeight: 600 }}>
+            <span className="comp-matrix-abs-score" style={{ '--comp-abs-score-color': scoreColor }}>
               {prevScore === null ? '—' : `${parseFloat(Number(prevScore).toFixed(2))}%`}
             </span>
           </div>
@@ -373,7 +373,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
             onChange={v => setCompareWith(v)}
             width={220}
           />
-          <div className="comp-matrix-tb-item" style={{ opacity: compareWith === 'None' ? 0.45 : 1, pointerEvents: compareWith === 'None' ? 'none' : 'auto' }}>
+          <div className={`comp-matrix-tb-item${compareWith === 'None' ? ' comp-matrix-tb-item--disabled' : ''}`}>
             <span className="comp-matrix-tb-label">Display</span>
             <SegmentedTabs
               value={displayMode}
@@ -421,7 +421,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                         let badgeInner
                         if (displayMode === 'Change %') {
                           badgeInner = delta === null ? '—' : (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <span className="comp-matrix-delta-inner">
                               {delta !== 0 && (
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   {delta > 0
@@ -441,7 +441,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                             <span>{score}%</span>
                             <span
                               className={`comp-matrix-badge comp-matrix-badge--${displayMode === 'Change %' ? badgeDir : 'neutral'}`}
-                              style={displayMode !== 'Change %' ? { color: scoreTextColor(score) } : undefined}
+                              style={displayMode !== 'Change %' ? { '--comp-badge-color': scoreTextColor(score) } : undefined}
                             >
                               {badgeInner}
                             </span>
@@ -455,7 +455,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                         <td
                           key={col.id}
                           className="comp-matrix-cell"
-                          style={{ ...style, cursor: score !== null ? 'pointer' : 'default', animationDelay: `${(ri + ci) * 28}ms` }}
+                          style={{ '--comp-cell-bg': style.background, '--comp-cell-color': style.color, '--hover-border': style['--hover-border'], '--comp-cell-cursor': score !== null ? 'pointer' : 'default', animationDelay: `${(ri + ci) * 28}ms` }}
                           onMouseEnter={e => handleCellEnter(e, row.label, col.full ?? col.label, score, prevScore)}
                           onMouseMove={handleCellMove}
                           onMouseLeave={handleCellLeave}
@@ -508,8 +508,8 @@ export default function ComplianceMatrixPage({ onCellClick }) {
           { label: 'Not in Scope',    bg: 'var(--shell-raised)',   textColor: 'var(--shell-text-muted)' },
         ].map(item => (
           <span key={item.label} className="comp-matrix-legend-item">
-            <span className="comp-matrix-legend-swatch" style={{ background: item.bg }} />
-            <span style={{ color: item.textColor }}>{item.label}</span>
+            <span className="comp-matrix-legend-swatch" style={{ '--comp-legend-swatch-bg': item.bg, background: 'var(--comp-legend-swatch-bg)' }} />
+            <span className="comp-matrix-legend-text" style={{ '--comp-legend-text-color': item.textColor }}>{item.label}</span>
           </span>
         ))}
       </div>

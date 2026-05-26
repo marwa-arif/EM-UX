@@ -924,7 +924,7 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); }}
       visitedTabs={visitedTabs}
-      filterProps={{ onApply: (c, chips, merge = false) => {
+      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
         if (merge) {
           setFiltersByPage(prev => {
             const cur = prev[current] || { count: 0, chips: [] };
@@ -982,6 +982,7 @@ function App() {
                 title={pageMeta.title}
                 breadcrumb={pageMeta.breadcrumb}
                 breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+                pageId={current}
                 activeFilterCount={activeFilterCount}
                 activeFilters={activeFilters}
                 onRemoveFilter={(idx) => {

@@ -1073,6 +1073,102 @@
   text-decoration: underline;
 }
 
+/* ── Mode bar (AND / OR / EXACT) ─────────────────────────────────── */
+.fp-mode-bar { margin-bottom: 10px; }
+
+/* ── Range slider ────────────────────────────────────────────────── */
+.fp-range-wrap { padding-bottom: 4px; }
+.fp-range-track-wrap {
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+.fp-range-track-bg {
+  position: absolute;
+  left: 0; right: 0;
+  height: 4px;
+  background: var(--shell-border);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.fp-range-track-fill {
+  position: absolute;
+  left: var(--fp-range-from, 0%);
+  width: calc(var(--fp-range-to, 100%) - var(--fp-range-from, 0%));
+  height: 4px;
+  background: var(--pai-indigo);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.fp-range-input {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+  outline: none;
+  margin: 0;
+}
+.fp-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--pai-indigo);
+  border: 2px solid var(--pai-surface);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  pointer-events: all;
+  cursor: pointer;
+}
+.fp-range-input::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--pai-indigo);
+  border: 2px solid var(--pai-surface);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  pointer-events: all;
+  cursor: pointer;
+}
+.fp-range-minmax {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--pai-fg3);
+  margin-top: 4px;
+}
+.fp-range-fields {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.fp-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.fp-range-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pai-fg2);
+}
+.fp-range-number-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--pai-fg1);
+  font-family: inherit;
+  background: var(--pai-surface);
+  box-sizing: border-box;
+  outline: none;
+}
+.fp-range-number-input:focus { border-color: var(--pai-indigo); }
+
 /* ── Footer ──────────────────────────────────────────────────────── */
 .fp-footer {
   flex-shrink: 0;

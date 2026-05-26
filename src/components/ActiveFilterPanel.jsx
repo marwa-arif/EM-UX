@@ -55,6 +55,66 @@ const IMPLICIT_FINDING_FILTERS = [
   { key: 'Status',          mode: 'INCLUDE', values: ['Open'] },
 ]
 
+const PAGE_AFP_CONFIG = {
+  'kg': {
+    entityTree: [
+      { entity: 'Host',              relation: null },
+      { entity: 'Storage',           relation: null },
+      { entity: 'Cluster',           relation: null },
+      { entity: 'Identity',          relation: null },
+      { entity: 'Network',           relation: null },
+      { entity: 'Finding',           relation: null },
+      { entity: 'Account',           relation: null },
+      { entity: 'Group',             relation: null },
+      { entity: 'Person',            relation: null },
+      { entity: 'Application',       relation: null },
+      { entity: 'Vulnerability',     relation: null },
+      { entity: 'Assessment',        relation: null },
+      { entity: 'Container',         relation: null },
+      { entity: 'Cloud Account',     relation: null },
+      { entity: 'Ticket',            relation: null },
+      { entity: 'Network Services',  relation: null },
+      { entity: 'Network Interface', relation: null },
+    ],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+  'discover/device': {
+    entityTree: [{ entity: 'Host', relation: null }],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+  'discover/cloud': {
+    entityTree: [
+      { entity: 'Host',             relation: null },
+      { entity: 'Storage',          relation: null },
+      { entity: 'Network',          relation: null },
+      { entity: 'Container',        relation: null },
+      { entity: 'Network Services', relation: null },
+      { entity: 'Cluster',          relation: null },
+    ],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+  'discover/identity': {
+    entityTree: [
+      { entity: 'Identity', relation: null },
+      { entity: 'Person',   relation: null },
+      { entity: 'Account',  relation: null },
+    ],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+}
+
+function getAfpConfig(pageId) {
+  return PAGE_AFP_CONFIG[pageId] || {
+    entityTree: ENTITY_TREE,
+    implicitEntityFilters: IMPLICIT_ENTITY_FILTERS,
+    implicitFindingFilters: IMPLICIT_FINDING_FILTERS,
+  }
+}
+
 // ── Inline custom dropdown (no native <select>) ───────────────────────────────
 // Each option row is 38px tall (9px padding top+bottom + ~20px line-height)
 const OPTION_ROW_H = 38
@@ -327,10 +387,12 @@ export function SaveFilterModal({ onClose, onSave }) {
   )
 }
 
-export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position }) {
+export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId }) {
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
+
+  const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
 
   // Group chips by entity → then by attrId, combining values
   const entityGroups = useMemo(() => {
@@ -380,7 +442,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
 
         {/* ── Body ── */}
         <div className="afp-body">
-          {ENTITY_TREE.map(({ entity, relation }) => {
+          {entityTree.map(({ entity, relation }) => {
             const explicitAttrs = entityGroups.find(g => g.entity === entity)?.attrs || []
             const showEntityWhere  = explicitAttrs.length > 0 || implicitFilters
             const showFindingWhere = implicitFilters
@@ -405,7 +467,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                             <button className="afp-fc-remove" title="Remove filter" onClick={() => attr.indices.slice().reverse().forEach(idx => onRemove?.(idx))}>×</button>
                           </span>
                         ))}
-                        {implicitFilters && IMPLICIT_ENTITY_FILTERS.map(f => (
+                        {implicitFilters && implicitEntityFilters.map(f => (
                           <span key={f.key} className="afp-filter-chip">
                             <span className="afp-fc-label">{f.key}</span>
                             <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
@@ -417,30 +479,33 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                     </>
                   )}
 
-                  {/* Has Finding relation */}
-                  <span className="afp-entity-chip afp-relation-chip">{relation}</span>
-                  <div className="afp-entity-content">
-                    <p className="afp-no-filters">No filters applied</p>
-                    <span className="afp-entity-chip">Finding</span>
+                  {/* Has Finding relation — only when the page config includes one */}
+                  {relation && (
+                    <>
+                      <span className="afp-entity-chip afp-relation-chip">{relation}</span>
+                      <div className="afp-entity-content">
+                        <p className="afp-no-filters">No filters applied</p>
+                        <span className="afp-entity-chip">Finding</span>
 
-                    {/* Finding-level implicit filters */}
-                    {showFindingWhere && (
-                      <>
-                        <span className="afp-where">where</span>
-                        <div className="afp-filter-chips">
-                          {IMPLICIT_FINDING_FILTERS.map(f => (
-                            <span key={f.key} className="afp-filter-chip">
-                              <span className="afp-fc-label">{f.key}</span>
-                              <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
-                              <span className="afp-fc-badge">[{f.mode}]</span>
-                              {f.op && <span className="afp-fc-badge afp-fc-badge--op">[{f.op}]</span>}
-                              <span className="afp-fc-values">&nbsp;{f.values.join(', ')}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                        {showFindingWhere && (
+                          <>
+                            <span className="afp-where">where</span>
+                            <div className="afp-filter-chips">
+                              {implicitFindingFilters.map(f => (
+                                <span key={f.key} className="afp-filter-chip">
+                                  <span className="afp-fc-label">{f.key}</span>
+                                  <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                                  <span className="afp-fc-badge">[{f.mode}]</span>
+                                  {f.op && <span className="afp-fc-badge afp-fc-badge--op">[{f.op}]</span>}
+                                  <span className="afp-fc-values">&nbsp;{f.values.join(', ')}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )

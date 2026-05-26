@@ -639,3 +639,1004 @@
   font-size: 10px; font-weight: 700; color: var(--pai-fg3);
   background: var(--shell-raised);
 }
+
+/* === Migrated from inline styles === */
+
+/* ── EntityGlyph ──────────────────────────────────────────────────────── */
+.kg-entity-glyph {
+  display: block;
+  pointer-events: none;
+}
+
+/* ── EntityNode SVG ───────────────────────────────────────────────────── */
+.kg-node-group {
+  cursor: grab;
+}
+.kg-node-group--dragging {
+  cursor: grabbing;
+}
+.kg-node-circle {
+  transition: all 150ms cubic-bezier(.2,.8,.2,1);
+}
+.kg-node-badge-rect {
+  fill: var(--kg-badge-fill, var(--bg-surface, #fff));
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.kg-node-badge-text {
+  font-size: 10px;
+  fill: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.kg-node-label {
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Edge ─────────────────────────────────────────────────────────────── */
+.kg-edge-group {
+  transition: opacity 150ms cubic-bezier(.2,.8,.2,1);
+}
+.kg-edge-hit {
+  cursor: pointer;
+}
+.kg-edge-hit--default {
+  cursor: default;
+}
+.kg-edge-line {
+  transition: stroke 150ms, stroke-width 150ms;
+  pointer-events: none;
+}
+.kg-edge-label-bg {
+  fill: var(--card-bg);
+  stroke: none;
+}
+.kg-edge-label-text {
+  font-size: 9.5px;
+}
+.kg-edge-label-group {
+  pointer-events: none;
+}
+
+/* ── Self-loop petal ──────────────────────────────────────────────────── */
+.kg-petal-group {
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+.kg-petal-line {
+  pointer-events: none;
+  transition: stroke 150ms, stroke-width 150ms;
+}
+.kg-petal-dot {
+  pointer-events: none;
+  transition: fill 150ms;
+}
+.kg-petal-label-group {
+  cursor: pointer;
+}
+.kg-petal-label-bg {
+  fill: var(--card-bg);
+  stroke: none;
+}
+.kg-petal-label-text {
+  font-size: 9.5px;
+  pointer-events: none;
+}
+
+/* ── GraphCanvas container ────────────────────────────────────────────── */
+.kg-canvas {
+  position: relative;
+  background: var(--bg-surface, #fff);
+  border: none;
+  border-radius: 4px;
+  height: 440px;
+  margin: 0 12px;
+  background-image: radial-gradient(var(--border, #E5E7EB) 1px, transparent 1px);
+  background-size: 14px 14px;
+  background-position: 0 0;
+  user-select: none;
+  cursor: grab;
+  overflow: hidden;
+}
+.kg-canvas--panning {
+  cursor: grabbing;
+}
+
+/* ── Zoom rail (inside RelationshipsTab) ──────────────────────────────── */
+.kg-zoom-rail-abs {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+}
+
+/* ── Source badge (SourceBadge component) ─────────────────────────────── */
+.kg-src-overflow-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px;
+  background: var(--bg-sunken, #E6E6E6); color: var(--fg-2, #282828);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.kg-src-logo-wrap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  flex-shrink: 0; overflow: hidden;
+}
+.kg-src-logo-img {
+  display: block;
+  object-fit: contain;
+}
+.kg-src-fallback-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px;
+  background: var(--bg-sunken, #E6E6E6); color: var(--fg-2, #282828);
+  font-size: 9px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── OS pill ──────────────────────────────────────────────────────────── */
+.kg-os-null-dash {
+  color: var(--fg-3, #6E6E6E);
+}
+.kg-os-inline {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+/* ── DSPillSearch ─────────────────────────────────────────────────────── */
+.kg-pill-search {
+  display: inline-flex; align-items: center;
+  height: 32px; padding-left: 14px; padding-right: 4px;
+  box-sizing: border-box;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 44px;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.kg-pill-search--focused {
+  border-color: #6360D8;
+  box-shadow: 0 0 0 3px rgba(99,96,216,0.18);
+}
+.kg-pill-search__input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 13px; font-family: inherit; color: var(--fg-1, #101010);
+  min-width: 0;
+}
+.kg-pill-search__clear {
+  width: 16px; height: 16px; padding: 0; border: none; background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--fg-3, #888); border-radius: 999px;
+  flex-shrink: 0; margin-left: 4px;
+}
+.kg-pill-search__icon-wrap {
+  width: 24px; height: 24px; margin-left: 4px;
+  border-radius: 50%;
+  background: var(--pai-indigo-tint);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--pai-indigo);
+  flex-shrink: 0;
+}
+
+/* ── Table header cell (Th) ───────────────────────────────────────────── */
+.kg-th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg-raised, #F5F5F5);
+  border-bottom: 1px solid var(--border, #E6E6E6);
+  font-size: 10px; font-weight: 600; color: var(--fg-3, #6E6E6E);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.kg-th__inner {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+/* ── DetailsTable ─────────────────────────────────────────────────────── */
+.kg-details-card {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 6px;
+  margin: 0 12px 16px;
+  overflow: hidden;
+}
+.kg-details-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #E6E6E6);
+}
+.kg-details-title {
+  font-size: 13px; font-weight: 600; color: var(--fg-1, #101010);
+}
+.kg-details-title-count {
+  color: var(--fg-3, #6E6E6E); font-weight: 500;
+}
+.kg-details-spacer {
+  flex: 1;
+}
+.kg-details-add-col-btn {
+  height: 32px; padding: 0 12px;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 44px; color: var(--fg-1, #101010);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit;
+}
+.kg-details-download-btn {
+  height: 32px; padding: 0 14px;
+  background: var(--pai-indigo); color: #fff;
+  border: none; border-radius: 44px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit;
+}
+.kg-details-body {
+  overflow: auto; max-height: 320px;
+}
+.kg-details-table {
+  width: 100%; border-collapse: collapse; font-size: 12px; font-family: inherit;
+}
+.kg-details-empty-cell {
+  padding: 32px; text-align: center; color: var(--fg-3, #6E6E6E);
+}
+.kg-tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 120ms cubic-bezier(.2,.8,.2,1);
+}
+.kg-td {
+  padding: 10px 12px;
+  color: var(--fg-1, #101010);
+  white-space: nowrap;
+}
+.kg-td--label {
+  padding: 10px 12px;
+  color: var(--fg-1, #101010);
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kg-td--type {
+  padding: 10px 12px;
+  color: var(--fg-1, #101010);
+  white-space: nowrap;
+}
+.kg-td--type-inner {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.kg-td--type-icon {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.kg-td--sources {
+  padding: 10px 12px; white-space: nowrap;
+}
+.kg-td--sources-inner {
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.kg-td--numeric {
+  padding: 10px 12px;
+  color: var(--fg-1, #101010);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.kg-details-footer {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border, #E6E6E6);
+  font-size: 12px; color: var(--fg-3, #6E6E6E);
+  font-family: inherit;
+}
+.kg-details-pagesize {
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.kg-details-pagesize-btn {
+  background: transparent; border: none; padding: 0;
+  font-size: 12px; font-family: inherit; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.kg-details-pagesize-btn--active {
+  color: var(--fg-1, #101010); font-weight: 700;
+}
+.kg-details-pagesize-btn--inactive {
+  color: var(--fg-3, #6E6E6E); font-weight: 400;
+}
+.kg-details-rowinfo {
+  color: var(--fg-3, #6E6E6E);
+}
+.kg-details-rowinfo-val {
+  color: var(--fg-1, #101010); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.kg-details-page-btns {
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.kg-details-page-num-btn {
+  background: transparent; border: none; padding: 0;
+  font-size: 12px; font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.kg-details-page-num-btn--active {
+  color: var(--fg-1, #101010); font-weight: 700; cursor: pointer;
+}
+.kg-details-page-num-btn--inactive {
+  color: var(--fg-3, #6E6E6E); font-weight: 400; cursor: pointer;
+}
+.kg-details-page-num-btn--disabled {
+  color: var(--pai-disabled); cursor: default;
+}
+.kg-details-nav-btn {
+  background: transparent; border: none; padding: 0;
+  font-size: 14px; font-family: inherit;
+  display: inline-flex; align-items: center;
+}
+.kg-details-nav-btn--active {
+  color: var(--fg-3, #6E6E6E); cursor: pointer;
+}
+.kg-details-nav-btn--disabled {
+  color: var(--pai-disabled); cursor: default;
+}
+
+/* ── SankeyFilterPopup ────────────────────────────────────────────────── */
+.kg-filter-popup {
+  position: absolute; top: 30px;
+  width: 280px; z-index: 40;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16,16,16,0.12);
+  font-family: Inter, system-ui, sans-serif;
+  overflow: hidden;
+}
+.kg-filter-popup__header {
+  display: flex; align-items: center;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.kg-filter-popup__title {
+  font-size: 13px; font-weight: 600; color: var(--fg-1); flex: 1;
+}
+.kg-filter-popup__close-btn {
+  width: 24px; height: 24px; padding: 0; border: none; background: transparent;
+  cursor: pointer; color: var(--fg-3);
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 4px;
+}
+.kg-filter-popup__search {
+  padding: 8px 12px 4px;
+}
+.kg-filter-popup__op {
+  padding: 6px 12px;
+}
+.kg-filter-popup__list {
+  max-height: 220px; overflow-y: auto; padding: 4px 0;
+}
+.kg-filter-popup__label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px; cursor: pointer;
+}
+.kg-filter-popup__checkbox {
+  width: 14px; height: 14px;
+  accent-color: var(--pai-indigo);
+  cursor: pointer;
+}
+.kg-filter-popup__select-all-text {
+  font-size: 13px; font-weight: 600; color: var(--fg-1);
+}
+.kg-filter-popup__item-text {
+  font-size: 13px; color: var(--fg-1);
+}
+.kg-filter-popup__footer {
+  display: flex; align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+.kg-filter-popup__inverse-btn {
+  background: transparent; border: none; padding: 0;
+  color: var(--pai-indigo); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+}
+.kg-filter-popup__spacer {
+  flex: 1;
+}
+.kg-filter-popup__cancel-btn {
+  height: 30px; padding: 0 14px; margin-right: 8px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 44px; color: var(--fg-1);
+  font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+}
+.kg-filter-popup__apply-btn {
+  height: 30px; padding: 0 16px;
+  background: var(--pai-indigo); border: none;
+  border-radius: 44px; color: #fff;
+  font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+}
+
+/* ── SankeyView ───────────────────────────────────────────────────────── */
+.kg-sankey-desc-row {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 16px 8px; gap: 16px;
+}
+.kg-sankey-desc {
+  font-size: 12px; margin: 0; line-height: 1.55;
+}
+.kg-sankey-chart-wrap {
+  padding: 0 16px;
+}
+.kg-sankey-inner {
+  position: relative;
+}
+.kg-sankey-svg {
+  display: block; overflow: visible;
+}
+.kg-sankey-col-header {
+  user-select: none;
+}
+.kg-sankey-filter-icon {
+  cursor: pointer;
+}
+.kg-sankey-ribbon {
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.kg-sankey-node-group {
+  cursor: pointer;
+}
+.kg-sankey-node-label {
+  user-select: none;
+}
+.kg-sankey-tooltip {
+  position: absolute;
+  background: var(--bg-surface, #fff);
+  border-radius: 6px; padding: 8px 12px; font-size: 12px; line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(16,16,16,0.10);
+  white-space: nowrap; pointer-events: none; z-index: 20;
+  font-family: Inter, system-ui, sans-serif;
+}
+.kg-sankey-tooltip-label {
+  font-variant-numeric: tabular-nums; font-weight: 600;
+  color: #D98B1D;
+}
+.kg-sankey-backdrop {
+  position: fixed; inset: 0; z-index: 39;
+}
+
+/* ── EntityKpiGrid ────────────────────────────────────────────────────── */
+.kg-kpi-grid {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.kg-kpi-card {
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 4px; padding: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.kg-kpi-header {
+  display: flex; align-items: center; gap: 12px;
+}
+.kg-kpi-icon {
+  width: 24px; height: 24px; border-radius: 44px;
+  background: var(--bg-raised, #F5F5F5);
+  border: 1px solid var(--border, #E6E6E6);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.kg-kpi-label {
+  font-size: 14px; font-weight: 500; color: var(--fg-1, #101010); white-space: nowrap;
+}
+.kg-kpi-stats {
+  display: flex; align-items: flex-start; gap: 24px;
+}
+.kg-kpi-stat--resolved {
+  border-left: 2px solid var(--pai-indigo, #6360D8);
+  padding-left: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.kg-kpi-stat--fragments {
+  border-left: 2px solid var(--pai-green, #31A56D);
+  padding-left: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.kg-kpi-stat-label {
+  font-size: 12px; font-weight: 500; color: var(--fg-3, #6E6E6E); line-height: 1.17;
+}
+.kg-kpi-stat-value {
+  font-size: 14px; font-weight: 600; color: var(--fg-1, #101010);
+  white-space: nowrap; line-height: 1.17; font-variant-numeric: tabular-nums;
+}
+.kg-kpi-stat-pct {
+  font-weight: 400;
+}
+
+/* ── PageKG root ──────────────────────────────────────────────────────── */
+.kg-page-root {
+  padding: 12px 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.kg-summary-card {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 6px;
+  margin: 0 12px;
+  overflow: hidden;
+}
+.kg-summary-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px 0;
+}
+.kg-summary-title {
+  font-size: 13px; font-weight: 600; color: var(--fg-1, #101010);
+}
+.kg-summary-spacer {
+  flex: 1;
+}
+.kg-summary-collapse-btn {
+  height: 28px; padding: 0 12px;
+  background: transparent; border: none;
+  color: var(--fg-2, #282828); font-size: 12px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit;
+}
+.kg-relationships-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+}
+.kg-relationships-label {
+  font-size: 12px; color: var(--fg-3, #6E6E6E); font-weight: 500;
+}
+.kg-toolbar-spacer {
+  flex: 1;
+}
+.kg-relationships-canvas-wrap {
+  position: relative;
+}
+
+/* ── SegmentedTabs ────────────────────────────────────────────────────── */
+.kg-seg-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--bg-raised, #F5F5F5);
+  border-radius: 999px;
+  gap: 0;
+}
+.kg-seg-tabs--full {
+  display: flex;
+}
+.kg-seg-thumb {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 999px;
+  transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 1px 2px rgba(16,16,16,0.04);
+  box-sizing: border-box;
+}
+.kg-seg-btn {
+  position: relative; z-index: 1;
+  padding: 0 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px;
+  transition: color 150ms;
+  white-space: nowrap;
+  line-height: 1;
+}
+.kg-seg-btn--no-change {
+  cursor: default;
+}
+.kg-seg-btn--full {
+  flex: 1;
+}
+.kg-seg-divider {
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 1px; background: var(--shell-border-2);
+  pointer-events: none;
+}
+
+/* ── EmptyOverlay ─────────────────────────────────────────────────────── */
+.kg-empty-overlay-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.kg-empty-overlay-box {
+  background: var(--bg-surface, rgba(255,255,255,0.92));
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 10px;
+  padding: 20px 28px;
+  box-shadow: 0 4px 12px rgba(16,16,16,0.06);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px;
+  max-width: 340px; text-align: center;
+  color: var(--fg-2, #282828);
+}
+.kg-empty-overlay-icon {
+  color: var(--fg-3, #6E6E6E);
+}
+.kg-empty-overlay-title {
+  font-size: 14px; font-weight: 600; color: var(--fg-1, #101010);
+}
+.kg-empty-overlay-subtitle {
+  font-size: 12px; color: var(--fg-3, #6E6E6E);
+}
+
+/* ── RailBtn ──────────────────────────────────────────────────────────── */
+.kg-rail-btn-abs {
+  width: 32px; height: 32px; padding: 0;
+  border: none; border-radius: 6px;
+  cursor: pointer; color: var(--fg-2, #282828);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--shell-raised);
+}
+.kg-rail-btn-abs:hover {
+  background: var(--shell-hover);
+}
+
+/* ── ZoomIndicator ────────────────────────────────────────────────────── */
+.kg-zoom-indicator-abs {
+  position: absolute; left: 16px; bottom: 12px;
+  height: 26px; padding: 0 10px;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(16,16,16,0.04);
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--fg-2, #282828);
+  font-family: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── ChipBar shared ───────────────────────────────────────────────────── */
+.kg-chipbar {
+  height: 46px; min-height: 46px; max-height: 46px;
+  padding: 0 16px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.kg-chipbar__hint {
+  font-size: 11px; color: var(--fg-3, #6E6E6E);
+}
+.kg-chipbar__label {
+  font-size: 11px; color: var(--fg-3, #6E6E6E); flex-shrink: 0;
+}
+.kg-chipbar__scroll {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden;
+}
+.kg-chipbar__no-rel {
+  font-size: 11px; color: var(--fg-3, #6E6E6E); flex: 1;
+}
+.kg-chipbar__no-rel-name {
+  font-weight: 600; color: var(--fg-2, #282828);
+}
+
+/* ── Entity chip (multi-select + node-only) ───────────────────────────── */
+.kg-entity-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 6px 0 12px;
+  background: var(--pai-indigo-tint);
+  border: 1px solid var(--pai-indigo-light);
+  border-radius: 44px;
+  color: var(--pai-indigo-hover);
+  font-size: 11px; font-weight: 600; font-family: inherit;
+  flex-shrink: 0; white-space: nowrap;
+}
+.kg-entity-chip--disabled {
+  background: var(--bg-raised, #F2F2F2);
+  border-color: var(--border, #DEDEDE);
+  color: var(--fg-3, #6E6E6E);
+  opacity: 0.7;
+}
+.kg-entity-chip--no-close {
+  padding: 0 12px;
+}
+.kg-entity-chip__remove-btn {
+  width: 16px; height: 16px; padding: 0;
+  background: transparent; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 999px;
+  color: var(--pai-indigo-muted);
+}
+.kg-entity-chip__remove-btn--disabled {
+  color: var(--fg-3, #6E6E6E);
+}
+
+/* ── Rel chip (FilterChipBar) ─────────────────────────────────────────── */
+.kg-rel-chip-new {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 6px 0 10px;
+  background: var(--pai-indigo-tint);
+  border: 1px solid var(--pai-indigo-light);
+  border-radius: 44px;
+  color: var(--pai-indigo-hover);
+  font-size: 11px; font-weight: 500; font-family: inherit;
+  flex-shrink: 0;
+}
+.kg-rel-chip__inner {
+  display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap;
+}
+.kg-rel-chip__src-text {
+  font-weight: 600;
+}
+.kg-rel-chip__rel-text {
+  font-weight: 400; color: var(--pai-indigo-muted);
+}
+.kg-rel-chip__tgt-text {
+  font-weight: 600;
+}
+.kg-rel-chip__reverse-btn {
+  width: 16px; height: 16px; padding: 0;
+  background: transparent; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 999px;
+}
+.kg-rel-chip__reverse-btn--active {
+  color: var(--pai-indigo);
+}
+.kg-rel-chip__reverse-btn--inactive {
+  color: var(--pai-indigo-muted);
+}
+.kg-rel-chip__close-btn {
+  width: 16px; height: 16px; padding: 0;
+  background: transparent; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--pai-indigo-muted); border-radius: 999px;
+}
+
+/* ── HoverTooltip ─────────────────────────────────────────────────────── */
+.kg-hover-tooltip {
+  position: absolute; z-index: 30;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16,16,16,0.08), 0 2px 6px rgba(16,16,16,0.04);
+  pointer-events: none;
+  font-family: Inter, system-ui, sans-serif;
+}
+.kg-hover-tooltip__node-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.kg-hover-tooltip__node-icon {
+  display: flex;
+}
+.kg-hover-tooltip__node-label {
+  font-size: 12px; font-weight: 600;
+}
+.kg-hover-tooltip__body {
+  padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 200px;
+}
+.kg-hover-tooltip__edge-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; color: var(--fg-1, #101010);
+}
+.kg-hover-tooltip__edge-rel {
+  color: var(--fg-3, #6E6E6E); font-weight: 500;
+}
+.kg-hover-tooltip__edge-body {
+  padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 220px;
+}
+
+/* ── Row (tooltip key/val row) ────────────────────────────────────────── */
+.kg-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.kg-row__key {
+  font-size: 11px; color: var(--fg-3, #6E6E6E);
+}
+.kg-row__val {
+  font-size: 12px; color: var(--fg-1, #101010); font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SelectionPanel ───────────────────────────────────────────────────── */
+.kg-sel-panel {
+  position: absolute; right: 16px; top: 16px; z-index: 6;
+  width: 264px;
+  max-height: calc(100% - 32px);
+  display: flex; flex-direction: column;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(16,16,16,0.06), 0 1px 2px rgba(16,16,16,0.04);
+  overflow: hidden;
+}
+.kg-sel-panel__header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--fg-3, #6E6E6E);
+  flex-shrink: 0;
+}
+.kg-sel-panel__body {
+  display: flex; flex-direction: column;
+  overflow-y: auto; min-height: 0;
+}
+.kg-sel-panel__item {
+  flex-shrink: 0;
+}
+.kg-sel-panel__item-header {
+  padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.kg-sel-panel__item-icon {
+  display: flex;
+}
+.kg-sel-panel__item-label {
+  font-size: 12px; font-weight: 600;
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kg-sel-panel__deselect-btn {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--fg-3, #6E6E6E); padding: 0; flex-shrink: 0;
+}
+.kg-sel-panel__item-stats {
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+/* ── Multi-select toggle button ───────────────────────────────────────── */
+.kg-multiselect-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: 44px;
+  font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.kg-multiselect-btn--off {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #E6E6E6);
+  color: var(--shell-text-muted);
+}
+.kg-multiselect-btn--on {
+  background: var(--pai-indigo-tint);
+  border: 1px solid var(--pai-indigo-light);
+  color: var(--pai-indigo-hover);
+}
+
+/* ── Reset button ─────────────────────────────────────────────────────── */
+.kg-reset-btn {
+  height: 32px; padding: 0 14px;
+  background: var(--bg-surface, #fff);
+  border-radius: 44px;
+  font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 150ms cubic-bezier(.2,.8,.2,1);
+}
+.kg-reset-btn--idle {
+  border: 1px solid var(--border, #E6E6E6);
+  color: var(--shell-text-muted);
+}
+.kg-reset-btn--active {
+  border: 1px solid var(--pai-red-high);
+  color: var(--pai-red-high);
+}
+
+/* === CSS custom property consumers (migrated from inline styles) === */
+
+/* ── EntityNode: opacity + transition injected as CSS vars ─────────────── */
+.kg-node-group,
+.kg-node-group--dragging {
+  opacity: var(--kg-node-opacity, 1);
+  transition: var(--kg-node-transition, opacity 150ms cubic-bezier(.2,.8,.2,1));
+}
+
+/* ── EntityNode label: fill toggled via class + CSS var ────────────────── */
+.kg-node-label {
+  fill: var(--fg-2, #282828);
+}
+.kg-node-label--selected {
+  fill: var(--kg-node-label-fill, var(--pai-indigo));
+}
+
+/* ── Edge: opacity injected as CSS var ─────────────────────────────────── */
+.kg-edge-group {
+  opacity: var(--kg-edge-opacity, 1);
+}
+
+/* ── Edge label: fill toggled via class ────────────────────────────────── */
+.kg-edge-label-text {
+  fill: var(--shell-text-muted, #8A8A8A);
+}
+.kg-edge-label-text--selected {
+  fill: var(--pai-indigo);
+}
+
+/* ── Petal: opacity injected as CSS var ────────────────────────────────── */
+.kg-petal-group {
+  opacity: var(--kg-petal-opacity, 1);
+}
+
+/* ── Petal label: fill toggled via class ───────────────────────────────── */
+.kg-petal-label-text {
+  fill: var(--shell-text-muted, #8A8A8A);
+}
+.kg-petal-label-text--selected {
+  fill: var(--pai-indigo);
+}
+
+/* ── DSPillSearch: width injected as CSS var ───────────────────────────── */
+.kg-pill-search {
+  width: var(--kg-pill-search-width, 220px);
+}
+
+/* ── SankeyFilterPopup: left position injected as CSS var ──────────────── */
+.kg-filter-popup {
+  left: var(--kg-filter-popup-left, 0px);
+}
+
+/* ── SankeyView description: color injected as CSS var ─────────────────── */
+.kg-sankey-desc {
+  color: var(--kg-sankey-desc-color, var(--fg-3, #6E6E6E));
+}
+
+/* ── SankeyView tooltip: theme-aware colors via CSS vars ───────────────── */
+.kg-sankey-tooltip {
+  background: var(--kg-sankey-tooltip-bg, var(--bg-surface, #fff));
+  border: 1px solid var(--kg-sankey-tooltip-border, var(--border, #E6E6E6));
+}
+.kg-sankey-tooltip-text {
+  color: var(--kg-sankey-tooltip-color, var(--fg-1, #101010));
+}
+
+/* ── SegmentedTabs: height injected as CSS var ─────────────────────────── */
+.kg-seg-tabs {
+  height: var(--kg-seg-height, 32px);
+}
+.kg-seg-btn {
+  height: var(--kg-seg-height, 32px);
+}
+
+/* ── HoverTooltip node header: bg + label color via CSS vars ───────────── */
+.kg-hover-tooltip__node-header {
+  background: var(--kg-tooltip-node-header-bg, transparent);
+}
+.kg-hover-tooltip__node-label {
+  color: var(--kg-tooltip-node-label-color, var(--fg-1, #101010));
+}
+
+/* ── SelectionPanel item: bg + label color via CSS vars ────────────────── */
+.kg-sel-panel__item-header {
+  background: var(--kg-sel-item-bg, transparent);
+}
+.kg-sel-panel__item-label {
+  color: var(--kg-sel-item-color, var(--fg-1, #101010));
+}
+.kg-sel-panel__item--bordered {
+  border-top: 1px solid var(--border);
+}
+
+/* ── DetailsTable row hover (CSS-only, no JS) ──────────────────────────── */
+.kg-tr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* ── ChipBar clear button ──────────────────────────────────────────────── */
+.kg-chipbar__clear-btn {
+  background: transparent; border: none; padding: 0;
+  color: var(--fg-2, #282828); font-size: 11px; font-weight: 500; cursor: pointer;
+  font-family: inherit; text-decoration: underline; text-underline-offset: 2px;
+  flex-shrink: 0;
+}

@@ -202,7 +202,7 @@ function EntityGlyph({ kind, size = 18 }) {
     <img
       src={`assets/icons/${file}`}
       width={size} height={size}
-      style={{ display: 'block', pointerEvents: 'none' }}
+      className="kg-entity-glyph"
       alt=""
     />
   );
@@ -228,7 +228,8 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
   return (
     <g
       transform={`translate(${pos.x + fx}, ${pos.y + fy})`}
-      style={{ cursor: dragging ? 'grabbing' : 'grab', opacity, transition: dragging ? 'none' : 'opacity 150ms cubic-bezier(.2,.8,.2,1)' }}
+      className={dragging ? 'kg-node-group--dragging' : 'kg-node-group'}
+      style={{ '--kg-node-opacity': opacity, '--kg-node-transition': dragging ? 'none' : 'opacity 150ms cubic-bezier(.2,.8,.2,1)' }}
       onMouseDown={(e) => { e.stopPropagation(); onDragStart(id, e); }}
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
@@ -242,7 +243,7 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         fill={nodeTint}
         stroke={bubbleStroke}
         strokeWidth={bubbleStrokeW}
-        style={{ transition: 'all 150ms cubic-bezier(.2,.8,.2,1)' }}
+        className="kg-node-circle"
       />
       {/* Count badge top-right (auto-sized) */}
       {(() => {
@@ -252,10 +253,11 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         return (
           <g transform={`translate(${r-2},${-r+2})`}>
             <rect x={-w/2} y="-8" rx="8" ry="8" width={w} height="16"
-                  style={{ fill: badgeBg, stroke: 'var(--border)', strokeWidth: 1 }} />
+                  className="kg-node-badge-rect"
+                  style={{ '--kg-badge-fill': badgeBg }} />
             <text textAnchor="middle" dominantBaseline="central" y="0.5"
                   fontFamily="Inter, system-ui, sans-serif" fontWeight="600"
-                  style={{ fontSize: 10, fill: 'var(--fg-2)', fontVariantNumeric: 'tabular-nums' }}>
+                  className="kg-node-badge-text">
               {txt}
             </text>
           </g>
@@ -269,11 +271,8 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         textAnchor="middle"
         fontFamily="Inter, system-ui, sans-serif"
         fontWeight={selected ? 600 : 500}
-        style={{
-          fontSize: 11,
-          fill: selected ? accent : 'var(--fg-2, #282828)',
-          letterSpacing: '0.01em',
-        }}
+        className={selected ? 'kg-node-label kg-node-label--selected' : 'kg-node-label'}
+        style={selected ? { '--kg-node-label-fill': accent } : undefined}
       >
         {def.label}
       </text>
@@ -316,7 +315,8 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
   const mx = (x1+x2)/2, my = (y1+y2)/2;
 
   return (
-    <g style={{ opacity, transition: 'opacity 150ms cubic-bezier(.2,.8,.2,1)' }}
+    <g className="kg-edge-group"
+       style={{ '--kg-edge-opacity': opacity }}
        onMouseEnter={() => onEdgeHover && onEdgeHover(edgeKey)}
        onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
        onClick={(e) => { if (!onEdgeClick) return; e.stopPropagation(); onEdgeClick(a, b, edgeKey); }}
@@ -324,24 +324,24 @@ function Edge({ a, b, label, selected, dimmed, positions, onEdgeHover, onEdgeCli
       {/* invisible thick hit area for easier hovering */}
       <line x1={x1} y1={y1} x2={x2} y2={y2}
             stroke="transparent" strokeWidth="10"
-            style={{ cursor: onEdgeClick ? 'pointer' : 'default' }}
+            className={onEdgeClick ? 'kg-edge-hit' : 'kg-edge-hit--default'}
       />
       <line x1={x1} y1={y1} x2={x2} y2={y2}
             stroke={selected ? 'var(--pai-indigo)' : (isHovered ? 'var(--pai-indigo-muted)' : (isNodeHovered ? 'var(--pai-indigo-muted)' : stroke))}
             strokeWidth={selected ? 1.6 : (isHovered ? 1.6 : (isNodeHovered ? 1.8 : strokeW))}
             strokeDasharray={selected ? 'none' : '0'}
-            style={{ transition: 'stroke 150ms, stroke-width 150ms', pointerEvents: 'none' }}
+            className="kg-edge-line"
       />
       {label && (() => {
         const lbl = label.length > 22 ? label.slice(0, 20) + '\u2026' : label;
         return (
-          <g transform={`translate(${mx},${my})`} style={{ pointerEvents: 'none' }}>
+          <g transform={`translate(${mx},${my})`} className="kg-edge-label-group">
             <title>{label}</title>
             <rect x={-(lbl.length * 2.9 + 6)} y="-7" width={lbl.length * 5.8 + 12} height="14" rx="3"
-                  style={{ fill: 'var(--card-bg)', stroke: 'none' }} />
+                  className="kg-edge-label-bg" />
             <text textAnchor="middle" dominantBaseline="central"
                   fontFamily="Inter, system-ui, sans-serif" fontWeight={selected ? 600 : 400}
-                  style={{ fontSize: 9.5, fill: selected ? 'var(--pai-indigo)' : 'var(--shell-text-muted, #8A8A8A)' }}>
+                  className={selected ? 'kg-edge-label-text kg-edge-label-text--selected' : 'kg-edge-label-text'}>
               {lbl}
             </text>
           </g>
@@ -632,20 +632,7 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
         const r = containerRef.current.getBoundingClientRect();
         setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top });
       }}
-      style={{
-        position: 'relative',
-        background: 'var(--bg-surface, #fff)',
-        border: 'none',
-        borderRadius: 4,
-        height: 440,
-        margin: '0 12px',
-        backgroundImage: 'radial-gradient(var(--border, #E5E7EB) 1px, transparent 1px)',
-        backgroundSize: '14px 14px',
-        backgroundPosition: '0 0',
-        userSelect: 'none',
-        cursor: panning ? 'grabbing' : 'grab',
-        overflow: 'hidden',
-      }}
+      className={panning ? 'kg-canvas kg-canvas--panning' : 'kg-canvas'}
       onMouseDown={(e) => {
         // Begin pan when clicking empty canvas (svg background)
         if (e.target.tagName === 'svg' || e.target === containerRef.current) {
@@ -717,7 +704,8 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
                    onMouseEnter={() => setHoveredEdge(key)}
                    onMouseLeave={() => setHoveredEdge(null)}
                    onClick={(e) => { e.stopPropagation(); onEdgeSelect && onEdgeSelect(id, id, key); }}
-                   style={{ opacity: op, cursor: 'pointer', transition: 'opacity 150ms' }}
+                   className="kg-petal-group"
+                   style={{ '--kg-petal-opacity': op }}
                 >
                   {/* invisible thick hit area along the stub */}
                   <line x1={sx} y1={sy} x2={ex} y2={ey}
@@ -725,22 +713,22 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
                   />
                   <line x1={sx} y1={sy} x2={ex} y2={ey}
                         stroke={accent} strokeWidth={accentW}
-                        style={{ pointerEvents: 'none', transition: 'stroke 150ms, stroke-width 150ms' }}
+                        className="kg-petal-line"
                   />
                   <circle cx={ex} cy={ey} r={dotR}
                           fill={accent}
-                          style={{ pointerEvents: 'none', transition: 'fill 150ms' }}
+                          className="kg-petal-dot"
                   />
                   <g transform={`translate(${lx},${ly})`}
                      onMouseEnter={() => setHoveredEdge(key)}
                      onMouseLeave={() => setHoveredEdge(null)}
-                     style={{ cursor: 'pointer' }}>
+                     className="kg-petal-label-group">
                     <rect x={rectX} y="-7" width={w} height="14" rx="3"
-                          style={{ fill: 'var(--card-bg)', stroke: 'none' }} />
+                          className="kg-petal-label-bg" />
                     <text textAnchor={textAnchor} dominantBaseline="central"
                           x={textAnchor === 'start' ? 6 : (textAnchor === 'end' ? -6 : 0)}
                           fontFamily="Inter, system-ui, sans-serif" fontWeight={isSel ? 600 : 400}
-                          style={{ fontSize: 9.5, fill: isSel ? 'var(--pai-indigo)' : 'var(--shell-text-muted, #8A8A8A)', pointerEvents: 'none' }}>
+                          className={isSel ? 'kg-petal-label-text kg-petal-label-text--selected' : 'kg-petal-label-text'}>
                       {lbl}
                     </text>
                   </g>
@@ -926,44 +914,28 @@ function SourceBadge({ src }) {
 
   if (overflowMap[src]) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 20, height: 20, borderRadius: 4,
-        background: 'var(--bg-sunken, #E6E6E6)', color: 'var(--fg-2, #282828)',
-        fontSize: 9, fontWeight: 700, letterSpacing: '0.03em',
-        flexShrink: 0,
-      }}>{overflowMap[src]}</span>
+      <span className="kg-src-overflow-badge">{overflowMap[src]}</span>
     );
   }
 
   const logo = logoMap[src];
   if (logo) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 20, height: 20,
-        flexShrink: 0, overflow: 'hidden',
-      }}>
-        <img src={logo} width={16} height={16} alt={src} style={{ display: 'block', objectFit: 'contain' }} />
+      <span className="kg-src-logo-wrap">
+        <img src={logo} width={16} height={16} alt={src} className="kg-src-logo-img" />
       </span>
     );
   }
 
   // fallback text
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 20, height: 20, borderRadius: 4,
-      background: 'var(--bg-sunken, #E6E6E6)', color: 'var(--fg-2, #282828)',
-      fontSize: 9, fontWeight: 700,
-      flexShrink: 0,
-    }}>{src}</span>
+    <span className="kg-src-fallback-badge">{src}</span>
   );
 }
 
 // ── OS Family icon ───────────────────────────────────────────────────
 function OSPill({ os }) {
-  if (os === '—') return <span style={{ color: PAI.fg3 }}>—</span>;
+  if (os === '—') return <span className="kg-os-null-dash">—</span>;
   const map = {
     Windows: { color: '#0078D4' },
     Linux:   { color: 'var(--shell-text)' },
@@ -971,7 +943,7 @@ function OSPill({ os }) {
   };
   const m = map[os] || { color: 'var(--shell-text-muted)' };
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span className="kg-os-inline">
       <svg width="14" height="14" viewBox="0 0 24 24" fill={m.color}>
         <path d="M3 4h8v8H3zM13 4h8v8h-8zM3 14h8v8H3zM13 14h8v8h-8z"/>
       </svg>
@@ -985,48 +957,27 @@ function OSPill({ os }) {
 function DSPillSearch({ value, onChange, placeholder, width = 220 }) {
   const [focused, setFocused] = useState(false);
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center',
-      height: 32, paddingLeft: 14, paddingRight: 4,
-      boxSizing: 'border-box',
-      background: 'var(--bg-surface, #fff)',
-      border: `1px solid ${focused ? '#6360D8' : 'var(--border, #E6E6E6)'}`,
-      boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',
-      borderRadius: 44, width,
-      transition: 'border-color 120ms, box-shadow 120ms',
-    }}>
+    <div
+      className={focused ? 'kg-pill-search kg-pill-search--focused' : 'kg-pill-search'}
+      style={{ '--kg-pill-search-width': typeof width === 'number' ? `${width}px` : width }}
+    >
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        style={{
-          flex: 1, border: 'none', outline: 'none', background: 'transparent',
-          fontSize: 13, fontFamily: 'inherit', color: 'var(--fg-1, #101010)',
-          minWidth: 0,
-        }}
+        className="kg-pill-search__input"
       />
       {value && (
         <button
           onMouseDown={e => { e.preventDefault(); onChange(''); }}
-          style={{
-            width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'var(--fg-3, #888)', borderRadius: 999, flexShrink: 0, marginLeft: 4,
-          }}
+          className="kg-pill-search__clear"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       )}
-      <span style={{
-        width: 24, height: 24, marginLeft: 4,
-        borderRadius: '50%',
-        background: 'var(--pai-indigo-tint)',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--pai-indigo)',
-        flexShrink: 0,
-      }}>
+      <span className="kg-pill-search__icon-wrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2"
              strokeLinecap="round" strokeLinejoin="round">
@@ -1041,17 +992,8 @@ function DSPillSearch({ value, onChange, placeholder, width = 220 }) {
 //    .06em letter-spacing, no inter-column dividers, single bottom border
 function Th({ children }) {
   return (
-    <th style={{
-      textAlign: 'left',
-      padding: '8px 12px',
-      background: 'var(--bg-raised, #F5F5F5)',
-      borderBottom: '1px solid var(--border, #E6E6E6)',
-      fontSize: 10, fontWeight: 600, color: 'var(--fg-3, #6E6E6E)',
-      textTransform: 'uppercase',
-      letterSpacing: '0.06em',
-      whiteSpace: 'nowrap',
-    }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <th className="kg-th">
+      <span className="kg-th__inner">
         {children}
         <Ic size={10} path={<><path d="m7 9 5-5 5 5M7 15l5 5 5-5"/></>} />
       </span>
@@ -1070,44 +1012,26 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
   const showFrom = totalCount === 0 ? 0 : 1;
   const showTo = Math.min(PAGE_SIZE, totalCount);
   return (
-    <div style={{
-      background: 'var(--bg-surface, #fff)',
-      border: '1px solid var(--border, #E6E6E6)',
-      borderRadius: 6,
-      margin: '0 12px 16px',
-      overflow: 'hidden',
-    }}>
+    <div className="kg-details-card">
       {/* header bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border, #E6E6E6)',
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>
-          Details <span style={{ color: PAI.fg3, fontWeight: 500 }}>({fmtN(totalCount)})</span>
+      <div className="kg-details-header">
+        <div className="kg-details-title">
+          Details <span className="kg-details-title-count">({fmtN(totalCount)})</span>
         </div>
-        <div style={{ flex: 1 }} />
+        <div className="kg-details-spacer" />
         <DSPillSearch value={search} onChange={onSearch} placeholder="Search Any" width={220} />
-        <button className="ds-btn sz-md t-outline" style={{
-          height: 32, padding: '0 12px', background: 'var(--bg-surface, #fff)', border: '1px solid var(--border, #E6E6E6)',
-          borderRadius: 44, color: PAI.fg1, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-        }}>
+        <button className="ds-btn sz-md t-outline kg-details-add-col-btn">
           Add Column <Ic size={12} path={<><path d="M12 5v14M5 12h14"/></>}/>
         </button>
-        <button className="ds-btn sz-md t-primary" style={{
-          height: 32, padding: '0 14px', background: 'var(--pai-indigo)', color: '#fff',
-          border: 'none', borderRadius: 44, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-        }}>
+        <button className="ds-btn sz-md t-primary kg-details-download-btn">
           {Icons.download} Download
           <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
         </button>
       </div>
 
       {/* table */}
-      <div style={{ overflow: 'auto', maxHeight: 320 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
+      <div className="kg-details-body">
+        <table className="kg-details-table">
           <thead>
             <tr>
               <Th>Display Label</Th>
@@ -1122,7 +1046,7 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ padding: 32, textAlign: 'center', color: PAI.fg3 }}>
+                <td colSpan="7" className="kg-details-empty-cell">
                   No records match this filter.
                 </td>
               </tr>
@@ -1130,34 +1054,25 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
               const meta = TYPE_TO_TABLE_LABEL[r.type];
               const ent = ENTITY_TYPES[r.type];
               return (
-                <tr key={i} style={{
-                  borderBottom: '1px solid var(--border)',
-                  transition: 'background 120ms cubic-bezier(.2,.8,.2,1)',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
-                onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, fontWeight: 500, whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</td>
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{
-                        width: 22, height: 22,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
+                <tr key={i} className="kg-tr">
+                  <td className="kg-td--label">{r.label}</td>
+                  <td className="kg-td--type">
+                    <span className="kg-td--type-inner">
+                      <span className="kg-td--type-icon">
                         <EntityGlyph kind={meta.glyph} size={20} />
                       </span>
                       {meta.type}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                    <span style={{ display:'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <td className="kg-td--sources">
+                    <span className="kg-td--sources-inner">
                       {meta.sources.map((s, j) => <SourceBadge key={j} src={s} />)}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap' }}><OSPill os={meta.os} /></td>
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.ip}</td>
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.last}</td>
-                  <td style={{ padding: '10px 12px', color: PAI.fg1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{r.active}</td>
+                  <td className="kg-td"><OSPill os={meta.os} /></td>
+                  <td className="kg-td--numeric">{r.ip}</td>
+                  <td className="kg-td--numeric">{r.last}</td>
+                  <td className="kg-td--numeric">{r.active}</td>
                 </tr>
               );
             })}
@@ -1165,62 +1080,31 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
         </table>
       </div>
       {totalCount > 0 && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          padding: '10px 16px',
-          borderTop: '1px solid var(--border, #E6E6E6)',
-          fontSize: 12, color: PAI.fg3,
-          fontFamily: 'inherit',
-        }}>
+        <div className="kg-details-footer">
           {/* page-size selector */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+          <div className="kg-details-pagesize">
             {[10, 50, 100, 150].map((n, i) => (
               <button
                 key={n}
-                style={{
-                  background: 'transparent', border: 'none', padding: 0,
-                  fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
-                  color: i === 0 ? PAI.fg1 : PAI.fg3,
-                  fontWeight: i === 0 ? 700 : 400,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
+                className={i === 0 ? 'kg-details-pagesize-btn kg-details-pagesize-btn--active' : 'kg-details-pagesize-btn kg-details-pagesize-btn--inactive'}
               >{n}</button>
             ))}
           </div>
-          <div style={{ color: PAI.fg3 }}>
-            Showing rows <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{showFrom}</span> to <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{showTo}</span> of <span style={{ color: PAI.fg1, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtN(totalCount)}</span>
+          <div className="kg-details-rowinfo">
+            Showing rows <span className="kg-details-rowinfo-val">{showFrom}</span> to <span className="kg-details-rowinfo-val">{showTo}</span> of <span className="kg-details-rowinfo-val">{fmtN(totalCount)}</span>
           </div>
-          <div style={{ flex: 1 }} />
+          <div className="kg-details-spacer" />
           {/* page numbers */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+          <div className="kg-details-page-btns">
             {[1, 2, 3].slice(0, Math.min(3, totalPages)).map((p, i) => (
               <button
                 key={p}
                 disabled={p > totalPages}
-                style={{
-                  background: 'transparent', border: 'none', padding: 0,
-                  fontSize: 12, fontFamily: 'inherit',
-                  cursor: p > totalPages ? 'default' : 'pointer',
-                  color: i === 0 ? PAI.fg1 : (p > totalPages ? 'var(--pai-disabled)' : PAI.fg3),
-                  fontWeight: i === 0 ? 700 : 400,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
+                className={i === 0 ? 'kg-details-page-num-btn kg-details-page-num-btn--active' : (p > totalPages ? 'kg-details-page-num-btn kg-details-page-num-btn--disabled' : 'kg-details-page-num-btn kg-details-page-num-btn--inactive')}
               >{p}</button>
             ))}
-            <button disabled={totalPages <= 1} style={{
-              background: 'transparent', border: 'none', padding: 0,
-              fontSize: 14, fontFamily: 'inherit',
-              cursor: totalPages <= 1 ? 'default' : 'pointer',
-              color: totalPages <= 1 ? 'var(--pai-disabled)' : PAI.fg3,
-              display: 'inline-flex', alignItems: 'center',
-            }}>›</button>
-            <button disabled={totalPages <= 1} style={{
-              background: 'transparent', border: 'none', padding: 0,
-              fontSize: 14, fontFamily: 'inherit',
-              cursor: totalPages <= 1 ? 'default' : 'pointer',
-              color: totalPages <= 1 ? 'var(--pai-disabled)' : PAI.fg3,
-              display: 'inline-flex', alignItems: 'center',
-            }}>»</button>
+            <button disabled={totalPages <= 1} className={totalPages <= 1 ? 'kg-details-nav-btn kg-details-nav-btn--disabled' : 'kg-details-nav-btn kg-details-nav-btn--active'}>›</button>
+            <button disabled={totalPages <= 1} className={totalPages <= 1 ? 'kg-details-nav-btn kg-details-nav-btn--disabled' : 'kg-details-nav-btn kg-details-nav-btn--active'}>»</button>
           </div>
         </div>
       )}
@@ -1451,90 +1335,55 @@ function SankeyFilterPopup({ type, items, selected, operator, onApply, onClose, 
   const left = Math.max(0, Math.min(anchorX - 20, svgW - popupW));
 
   return (
-    <div style={{
-      position: 'absolute', top: 30, left,
-      width: popupW, zIndex: 40,
-      background: 'var(--bg-surface, #fff)',
-      border: '1px solid var(--border, #E6E6E6)',
-      borderRadius: 8,
-      boxShadow: '0 8px 24px rgba(16,16,16,0.12)',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '12px 16px 8px',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', flex: 1 }}>{title}</span>
-        <button onClick={onClose} style={{
-          width: 24, height: 24, padding: 0, border: 'none', background: 'transparent',
-          cursor: 'pointer', color: 'var(--fg-3)', display: 'inline-flex',
-          alignItems: 'center', justifyContent: 'center', borderRadius: 4,
-        }}>
+    <div className="kg-filter-popup" style={{ '--kg-filter-popup-left': `${left}px` }}>
+      <div className="kg-filter-popup__header">
+        <span className="kg-filter-popup__title">{title}</span>
+        <button onClick={onClose} className="kg-filter-popup__close-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      <div style={{ padding: '8px 12px 4px' }}>
+      <div className="kg-filter-popup__search">
         <DSPillSearch value={search} onChange={setSearch} placeholder="Search" width="100%" />
       </div>
 
       {type === 'origin' && (
-        <div style={{ padding: '6px 12px' }}>
+        <div className="kg-filter-popup__op">
           <SegmentedTabs value={draftOp} options={['AND', 'OR', 'EXACT']} onChange={setDraftOp} fullWidth />
         </div>
       )}
 
-      <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer' }}>
+      <div className="kg-filter-popup__list">
+        <label className="kg-filter-popup__label">
           <input
             type="checkbox"
             checked={allChecked}
             ref={el => { if (el) el.indeterminate = someChecked; }}
             onChange={toggleAll}
-            style={{ width: 14, height: 14, accentColor: 'var(--pai-indigo)', cursor: 'pointer' }}
+            className="kg-filter-popup__checkbox"
           />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)' }}>Select All</span>
+          <span className="kg-filter-popup__select-all-text">Select All</span>
         </label>
         {filtered.map(item => (
-          <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', cursor: 'pointer' }}>
+          <label key={item.id} className="kg-filter-popup__label">
             <input
               type="checkbox"
               checked={draft.has(item.id)}
               onChange={() => toggle(item.id)}
-              style={{ width: 14, height: 14, accentColor: 'var(--pai-indigo)', cursor: 'pointer' }}
+              className="kg-filter-popup__checkbox"
             />
-            <span style={{ fontSize: 13, color: 'var(--fg-1)' }}>{item.label}</span>
+            <span className="kg-filter-popup__item-text">{item.label}</span>
           </label>
         ))}
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '8px 12px',
-        borderTop: '1px solid var(--border)',
-      }}>
-        <button onClick={selectInverse} style={{
-          background: 'transparent', border: 'none', padding: 0,
-          color: 'var(--pai-indigo)', fontSize: 12, fontWeight: 500,
-          cursor: 'pointer', fontFamily: 'inherit',
-        }}>Select Inverse</button>
-        <div style={{ flex: 1 }} />
-        <button onClick={onClose} style={{
-          height: 30, padding: '0 14px', marginRight: 8,
-          background: 'var(--bg-surface)', border: '1px solid var(--border)',
-          borderRadius: 44, color: 'var(--fg-1)',
-          fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-        }}>Cancel</button>
-        <button onClick={() => { onApply(draft, draftOp); onClose(); }} style={{
-          height: 30, padding: '0 16px',
-          background: 'var(--pai-indigo)', border: 'none',
-          borderRadius: 44, color: '#fff',
-          fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-        }}>Apply</button>
+      <div className="kg-filter-popup__footer">
+        <button onClick={selectInverse} className="kg-filter-popup__inverse-btn">Select Inverse</button>
+        <div className="kg-filter-popup__spacer" />
+        <button onClick={onClose} className="kg-filter-popup__cancel-btn">Cancel</button>
+        <button onClick={() => { onApply(draft, draftOp); onClose(); }} className="kg-filter-popup__apply-btn">Apply</button>
       </div>
     </div>
   );
@@ -1657,8 +1506,8 @@ function SankeyView() {
   return (
     <div>
       {/* Description + controls */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '12px 16px 8px', gap: 16 }}>
-        <p style={{ fontSize: 12, color: FG3, margin: 0, lineHeight: 1.55 }}>
+      <div className="kg-sankey-desc-row">
+        <p className="kg-sankey-desc" style={{ '--kg-sankey-desc-color': FG3 }}>
           Entity origins showing contribution to the entity from each origin supported by whether it is uniquely found in an origin or corroborated from multiple origins.{' '}
           <em>Showing only active assets by default.</em>
         </p>
@@ -1671,11 +1520,11 @@ function SankeyView() {
       </div>
 
       {/* Chart */}
-      <div style={{ padding: '0 16px' }}>
-        <div ref={containerRef} style={{ position: 'relative' }}>
+      <div className="kg-sankey-chart-wrap">
+        <div ref={containerRef} className="kg-sankey-inner">
           <svg
             width={svgW} height={H}
-            style={{ display: 'block', overflow: 'visible' }}
+            className="kg-sankey-svg"
             onMouseMove={e => {
               const rc = e.currentTarget.getBoundingClientRect();
               setMousePos({ x: e.clientX - rc.left, y: e.clientY - rc.top });
@@ -1694,13 +1543,13 @@ function SankeyView() {
                                filterEntities.size < SK_ENTITIES.length;
               return (
                 <g key={id}>
-                  <text x={x} y={HDR_Y} fontFamily="Inter, system-ui, sans-serif" fontSize={12} fontWeight={500} fill={FG1} style={{ userSelect: 'none' }}>
+                  <text x={x} y={HDR_Y} fontFamily="Inter, system-ui, sans-serif" fontSize={12} fontWeight={500} fill={FG1} className="kg-sankey-col-header">
                     {label}
                   </text>
                   <g
                     transform={`translate(${x + label.length * 6.8 + 2}, ${HDR_Y - 10})`}
                     onClick={(e) => { e.stopPropagation(); setOpenFilter(id); }}
-                    style={{ cursor: 'pointer' }}
+                    className="kg-sankey-filter-icon"
                   >
                     <rect x={-3} y={-3} width={16} height={16} fill="transparent" />
                     <path d="M1 0L9 0L6 4.5L6 9L4 7.5L4 4.5Z"
@@ -1714,7 +1563,7 @@ function SankeyView() {
             {/* Left ribbons: source → contribution */}
             {scRibbons.map(r => (
               <path key={r.key} d={r.path} fill={r.color} opacity={scOp(r)}
-                style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                className="kg-sankey-ribbon"
                 onMouseEnter={() => { setHovered({ type: 'sc', key: r.key }); setTooltip({ text: r.label, value: r.val }); }}
                 onMouseLeave={() => { setHovered(null); setTooltip(null); }}
               />
@@ -1723,7 +1572,7 @@ function SankeyView() {
             {/* Right ribbons: contribution → entity */}
             {ceRibbons.map(r => (
               <path key={r.key} d={r.path} fill={r.color} opacity={ceOp(r)}
-                style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                className="kg-sankey-ribbon"
                 onMouseEnter={() => { setHovered({ type: 'ce', key: r.key }); setTooltip({ text: r.label, value: r.val }); }}
                 onMouseLeave={() => { setHovered(null); setTooltip(null); }}
               />
@@ -1739,7 +1588,7 @@ function SankeyView() {
                   onMouseEnter={() => { setHovered({ type: 'srcNode', id: src.id }); setTooltip({ text: src.label, value: srcTotals[src.id] || 0 }); }}
                   onMouseLeave={() => { setHovered(null); setTooltip(null); }}
                   onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'srcNode' && p.id === src.id ? null : { type: 'srcNode', id: src.id }); }}
-                  style={{ cursor: 'pointer' }}
+                  className="kg-sankey-node-group"
                 >
                   {/* Transparent hit-rect covers full label + bar area */}
                   <rect x={n.x - LL + 4} y={n.y - 2} width={LL - 4 + NW} height={Math.max(n.h + 4, 18)} fill="transparent" pointerEvents="all" />
@@ -1750,7 +1599,7 @@ function SankeyView() {
                     fontFamily="Inter, system-ui, sans-serif" fontSize={11}
                     fontWeight={hovered?.type === 'srcNode' && hovered.id === src.id ? 600 : 400}
                     fill={FG1} opacity={active ? 1 : 0.4}
-                    style={{ userSelect: 'none' }}
+                    className="kg-sankey-node-label"
                   >{src.label}</text>
                 </g>
               );
@@ -1764,7 +1613,7 @@ function SankeyView() {
                   onMouseEnter={() => { setHovered({ type: 'contribNode', id: cid }); setTooltip({ text: cn.label, value: contribIn[cid] || 0 }); }}
                   onMouseLeave={() => { setHovered(null); setTooltip(null); }}
                   onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'contribNode' && p.id === cid ? null : { type: 'contribNode', id: cid }); }}
-                  style={{ cursor: 'pointer' }}
+                  className="kg-sankey-node-group"
                 >
                   {/* Transparent hit-rect covers bar + label above */}
                   <rect x={cn.x - 40} y={cn.y - 18} width={NW + 80} height={Math.max(cn.h + 18, 36)} fill="transparent" pointerEvents="all" />
@@ -1773,7 +1622,7 @@ function SankeyView() {
                     x={cn.x + NW / 2} y={cn.y - 5} textAnchor="middle"
                     fontFamily="Inter, system-ui, sans-serif" fontSize={11} fontWeight={500}
                     fill={FG1} opacity={active ? 1 : 0.4}
-                    style={{ userSelect: 'none' }}
+                    className="kg-sankey-node-label"
                   >{cn.label}</text>
                 </g>
               );
@@ -1789,7 +1638,7 @@ function SankeyView() {
                   onMouseEnter={() => { setHovered({ type: 'entNode', id: ent.id }); setTooltip({ text: ent.label, value: entTotals[ent.id] || 0 }); }}
                   onMouseLeave={() => { setHovered(null); setTooltip(null); }}
                   onClick={e => { e.stopPropagation(); setSelected(p => p?.type === 'entNode' && p.id === ent.id ? null : { type: 'entNode', id: ent.id }); }}
-                  style={{ cursor: 'pointer' }}
+                  className="kg-sankey-node-group"
                 >
                   {/* Transparent hit-rect covers bar + full label area to the right */}
                   <rect x={n.x} y={n.y - 2} width={NW + LR - 4} height={Math.max(n.h + 4, 18)} fill="transparent" pointerEvents="all" />
@@ -1800,28 +1649,27 @@ function SankeyView() {
                     fontFamily="Inter, system-ui, sans-serif" fontSize={11}
                     fontWeight={hovered?.type === 'entNode' && hovered.id === ent.id ? 600 : 400}
                     fill={FG1} opacity={active ? 1 : 0.4}
-                    style={{ userSelect: 'none' }}
+                    className="kg-sankey-node-label"
                   >{ent.label}</text>
                 </g>
               );
             })}
           </svg>
 
-          {/* Tooltip */}
+          {/* Tooltip — position is DOM-rect/mouse-derived, keep inline */}
           {tooltip && (
-            <div style={{
-              position: 'absolute',
-              left: Math.min(mousePos.x + 14, svgW - 230),
-              top: Math.max(mousePos.y - 52, 4),
-              background: isDark ? 'var(--card-bg, #1C1C1C)' : '#fff',
-              border: `1px solid ${isDark ? '#333' : '#E6E6E6'}`,
-              borderRadius: 6, padding: '8px 12px', fontSize: 12, lineHeight: 1.4,
-              boxShadow: '0 4px 12px rgba(16,16,16,0.10)',
-              whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 20,
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              <span style={{ color: isDark ? '#D1D1D1' : '#282828' }}>{tooltip.text} : </span>
-              <span style={{ color: '#D98B1D', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            <div
+              className="kg-sankey-tooltip"
+              style={{
+                left: Math.min(mousePos.x + 14, svgW - 230),
+                top: Math.max(mousePos.y - 52, 4),
+                '--kg-sankey-tooltip-bg': isDark ? 'var(--card-bg, #1C1C1C)' : '#fff',
+                '--kg-sankey-tooltip-border': isDark ? '#333' : '#E6E6E6',
+                '--kg-sankey-tooltip-color': isDark ? '#D1D1D1' : '#282828',
+              }}
+            >
+              <span className="kg-sankey-tooltip-text">{tooltip.text} : </span>
+              <span className="kg-sankey-tooltip-label">
                 {tooltip.value.toLocaleString('en-US')}
               </span>
             </div>
@@ -1831,7 +1679,7 @@ function SankeyView() {
           {openFilter && (
             <>
               <div
-                style={{ position: 'fixed', inset: 0, zIndex: 39 }}
+                className="kg-sankey-backdrop"
                 onClick={() => setOpenFilter(null)}
               />
               <SankeyFilterPopup
@@ -1872,40 +1720,31 @@ function SankeyView() {
 function EntityKpiGrid() {
   const entities = Object.entries(ENTITY_TYPES).sort((a, b) => a[1].label.localeCompare(b[1].label));
   return (
-    <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+    <div className="kg-kpi-grid">
       {entities.map(([id, def]) => {
             const frags = def.fragments || def.count;
             const pct = frags ? (def.count / frags) * 100 : 100;
             const pctStr = Number.isInteger(pct) ? `${pct}%` : `${pct.toFixed(2)}%`;
             return (
-              <div key={id} style={{
-                border: '1px solid var(--border, #E6E6E6)',
-                borderRadius: 4, padding: 16,
-                display: 'flex', flexDirection: 'column', gap: 16,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 24, height: 24, borderRadius: 44,
-                    background: 'var(--bg-raised, #F5F5F5)',
-                    border: '1px solid var(--border, #E6E6E6)',
-                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+              <div key={id} className="kg-kpi-card">
+                <div className="kg-kpi-header">
+                  <div className="kg-kpi-icon">
                     <EntityGlyph kind={def.glyph} size={16} />
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap' }}>
+                  <span className="kg-kpi-label">
                     {def.label}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
-                  <div style={{ borderLeft: '2px solid #6360D8', paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-3, #6E6E6E)', lineHeight: 1.17 }}>Resolved</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap', lineHeight: 1.17, fontVariantNumeric: 'tabular-nums' }}>
-                      {fmtN(def.count)}{' '}<span style={{ fontWeight: 400 }}>({pctStr})</span>
+                <div className="kg-kpi-stats">
+                  <div className="kg-kpi-stat--resolved">
+                    <span className="kg-kpi-stat-label">Resolved</span>
+                    <span className="kg-kpi-stat-value">
+                      {fmtN(def.count)}{' '}<span className="kg-kpi-stat-pct">({pctStr})</span>
                     </span>
                   </div>
-                  <div style={{ borderLeft: '2px solid #31A56D', paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-3, #6E6E6E)', lineHeight: 1.17 }}>Fragments</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1, #101010)', whiteSpace: 'nowrap', lineHeight: 1.17, fontVariantNumeric: 'tabular-nums' }}>
+                  <div className="kg-kpi-stat--fragments">
+                    <span className="kg-kpi-stat-label">Fragments</span>
+                    <span className="kg-kpi-stat-value">
                       {fmtN(frags)}
                     </span>
                   </div>
@@ -2178,33 +2017,19 @@ function PageKG() {
   }, [selected, activeNeighborSet, multiMode, multiSelected, highlightOnly, selectedEdgeKey, viewMode, visibleSetByView]);
 
   return (
-    <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="kg-page-root">
       {/* Summary card */}
-      <div style={{
-        background: 'var(--bg-surface, #fff)',
-        border: '1px solid var(--border, #E6E6E6)',
-        borderRadius: 6,
-        margin: '0 12px',
-        overflow: 'hidden',
-      }}>
+      <div className="kg-summary-card">
         {/* Card header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 16px 0',
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Summary</div>
-          <div style={{ flex: 1 }} />
+        <div className="kg-summary-header">
+          <div className="kg-summary-title">Summary</div>
+          <div className="kg-summary-spacer" />
           <SegmentedTabs
             value={summaryTab}
             onChange={setSummaryTab}
             options={['Relationships','Entities','Data Sources']}
           />
-          <button style={{
-            height: 28, padding: '0 12px', background: 'transparent',
-            border: 'none', color: PAI.fg2, fontSize: 12, fontWeight: 500,
-            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontFamily: 'inherit',
-          }}>
+          <button className="kg-summary-collapse-btn">
             <Ic size={12} path={<><path d="m18 15-6-6-6 6"/></>}/>
             Collapse
           </button>
@@ -2214,15 +2039,10 @@ function PageKG() {
         {summaryTab === 'Data Sources' && <SankeyView />}
 
         {/* Toolbar — Relationships tab only */}
-        {summaryTab === 'Relationships' && <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 16px',
-        }}>
-          <span style={{
-            fontSize: 12, color: 'var(--fg-3, #6E6E6E)', fontWeight: 500,
-          }}>Attack Surface:</span>
+        {summaryTab === 'Relationships' && <div className="kg-relationships-toolbar">
+          <span className="kg-relationships-label">Attack Surface:</span>
           <ViewTabs value={viewMode} onChange={setViewMode} options={['None','Device','Cloud','Identity']}/>
-          <div style={{ flex: 1 }} />
+          <div className="kg-toolbar-spacer" />
           <DSPillSearch value={search} onChange={setSearch} placeholder="Search Nodes" width={220} />
           <button
             onClick={() => {
@@ -2252,16 +2072,7 @@ function PageKG() {
                 return next;
               });
             }}
-            className="ds-btn sz-md t-outline"
-            style={{
-              height: 32, padding: '0 14px',
-              background: multiMode ? 'var(--pai-indigo-tint)' : 'var(--bg-surface, #fff)',
-              border: `1px solid ${multiMode ? 'var(--pai-indigo-light)' : 'var(--border, #E6E6E6)'}`,
-              borderRadius: 44,
-              color: multiMode ? 'var(--pai-indigo-hover)' : 'var(--shell-text-muted)',
-              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-            }}
+            className={multiMode ? 'kg-multiselect-btn kg-multiselect-btn--on' : 'kg-multiselect-btn kg-multiselect-btn--off'}
           >
             Multi-select{multiMode && multiSelected.size > 0 ? ` (${multiSelected.size})` : ''}
           </button>
@@ -2277,16 +2088,7 @@ function PageKG() {
             return (
               <button
                 onClick={() => { setSelected(null); setHighlightOnly(false); setSearch(''); setPositions({ ...NODE_POS }); resetView(); setMultiMode(false); setMultiSelected(new Set()); }}
-                style={{
-                  height: 32, padding: '0 14px',
-                  background: 'var(--bg-surface, #fff)',
-                  border: `1px solid ${active ? 'var(--pai-red-high)' : 'var(--border, #E6E6E6)'}`,
-                  borderRadius: 44,
-                  color: active ? 'var(--pai-red-high)' : 'var(--shell-text-muted)',
-                  fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
-                }}
+                className={active ? 'kg-reset-btn kg-reset-btn--active' : 'kg-reset-btn kg-reset-btn--idle'}
               >
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M8.00178 10.5582C8.99928 10.5582 9.79262 9.76371 9.79262 8.7674C9.79262 7.7711 8.99928 6.97656 8.00178 6.97656C7.00428 6.97656 6.21094 7.7711 6.21094 8.7674C6.21094 9.76371 7.00428 10.5582 8.00178 10.5582Z" fill="currentColor"/>
@@ -2300,7 +2102,7 @@ function PageKG() {
         </div>}
 
         {/* Graph + zoom rail — Relationships tab only */}
-        {summaryTab === 'Relationships' && <div style={{ position: 'relative' }}>
+        {summaryTab === 'Relationships' && <div className="kg-relationships-canvas-wrap">
           <GraphCanvas
             selected={selected}
             selectedEdgeKey={selectedEdgeKey}
@@ -2379,11 +2181,7 @@ function PageKG() {
             search={search}
           />
           {/* Bottom-left rail: zoom in / zoom out */}
-          <div style={{
-            position: 'absolute', left: 24, bottom: 24,
-            display: 'flex', flexDirection: 'column', gap: 8,
-            zIndex: 5,
-          }}>
+          <div className="kg-zoom-rail-abs">
             <RailBtn onClick={() => zoomBy(0.8)} icon={<Ic size={14} path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></>}/>}/>
             <RailBtn onClick={() => zoomBy(1.25)} icon={<Ic size={14} path={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></>}/>}/>
           </div>
@@ -2491,31 +2289,20 @@ function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
   }, [value, options.join('|')]);
 
   return (
-    <div ref={containerRef} style={{
-      position: 'relative',
-      display: fullWidth ? 'flex' : 'inline-flex',
-      alignItems: 'center',
-      height,
-      boxSizing: 'border-box',
-      padding: 0,
-      background: PAI.bgRaised,
-      borderRadius: 999,
-      gap: 0,
-    }}>
+    <div
+      ref={containerRef}
+      className={fullWidth ? 'kg-seg-tabs kg-seg-tabs--full' : 'kg-seg-tabs'}
+      style={{ '--kg-seg-height': `${height}px` }}
+    >
       {/* sliding white thumb — sized to match active segment */}
-      <div style={{
-        position: 'absolute',
-        top: 0, bottom: 0,
-        left: thumb.left,
-        width: thumb.width,
-        background: 'var(--bg-surface, #fff)',
-        border: '1px solid var(--border, #E6E6E6)',
-        borderRadius: 999,
-        transition: 'left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1)',
-        boxShadow: '0 1px 2px rgba(16,16,16,0.04)',
-        boxSizing: 'border-box',
-        opacity: thumb.width ? 1 : 0,
-      }} />
+      <div
+        className="kg-seg-thumb"
+        style={{
+          left: thumb.left,
+          width: thumb.width,
+          opacity: thumb.width ? 1 : 0,
+        }}
+      />
       {options.map((o, i) => {
         const active = o === value;
         // Dividers between segments are hidden — the sliding thumb already
@@ -2526,29 +2313,14 @@ function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
             key={o}
             ref={el => btnRefs.current[i] = el}
             onClick={() => onChange && onChange(o)}
-            style={{
-              position: 'relative', zIndex: 1,
-              padding: '0 16px',
-              height,
-              flex: fullWidth ? 1 : undefined,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: 'none', cursor: onChange ? 'pointer' : 'default',
-              fontFamily: 'inherit', fontSize: 13,
-              color: active ? PAI.fg1 : PAI.fg3,
-              fontWeight: active ? 600 : 500,
-              transition: 'color 150ms',
-              whiteSpace: 'nowrap',
-              lineHeight: 1,
-            }}
+            className={[
+              'kg-seg-btn',
+              active ? 'kg-seg-btn--active' : '',
+              !onChange ? 'kg-seg-btn--no-change' : '',
+              fullWidth ? 'kg-seg-btn--full' : '',
+            ].filter(Boolean).join(' ')}
           >
-            {showDivider && (
-              <span style={{
-                position: 'absolute',
-                left: 0, top: 4, bottom: 4,
-                width: 1, background: 'var(--shell-border-2)',
-                pointerEvents: 'none',
-              }} />
-            )}
+            {showDivider && <span className="kg-seg-divider" />}
             <span ref={el => labelRefs.current[i] = el}>{o}</span>
           </button>
         );
@@ -2565,43 +2337,21 @@ function ViewTabs({ value, onChange, options }) {
 // ── Empty state overlay (centered on canvas) ────────────────────────
 function EmptyOverlay({ icon, title, subtitle }) {
   return (
-    <div style={{
-      position: 'absolute', inset: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      pointerEvents: 'none',
-    }}>
-      <div style={{
-        background: 'var(--bg-surface, rgba(255,255,255,0.92))',
-        border: '1px solid var(--border, #E6E6E6)',
-        borderRadius: 10,
-        padding: '20px 28px',
-        boxShadow: '0 4px 12px rgba(16,16,16,0.06)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 8,
-        maxWidth: 340, textAlign: 'center',
-        color: PAI.fg2,
-      }}>
-        <div style={{ color: PAI.fg3 }}>{icon}</div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: PAI.fg1 }}>{title}</div>
-        <div style={{ fontSize: 12, color: PAI.fg3 }}>{subtitle}</div>
+    <div className="kg-empty-overlay-wrap">
+      <div className="kg-empty-overlay-box">
+        <div className="kg-empty-overlay-icon">{icon}</div>
+        <div className="kg-empty-overlay-title">{title}</div>
+        <div className="kg-empty-overlay-subtitle">{subtitle}</div>
       </div>
     </div>
   );
 }
 
 function RailBtn({ icon, onClick }) {
-  const [hover, setHover] = useState(false);
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{
-        width: 32, height: 32, padding: 0,
-        background: hover ? 'var(--shell-hover)' : 'var(--shell-raised)',
-        border: 'none', borderRadius: 6,
-        cursor: 'pointer', color: PAI.fg2,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      }}
+      className="kg-rail-btn-abs"
     >{icon}</button>
   );
 }
@@ -2611,19 +2361,7 @@ function RailBtn({ icon, onClick }) {
 function ZoomIndicator({ view }) {
   const pct = Math.round((940 / view.w) * 100);
   return (
-    <div style={{
-      position: 'absolute', left: 16, bottom: 12,
-      height: 26, padding: '0 10px',
-      background: 'var(--bg-surface, #fff)',
-      border: '1px solid var(--border, #E6E6E6)',
-      borderRadius: 6,
-      boxShadow: '0 1px 2px rgba(16,16,16,0.04)',
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      fontSize: 12, fontWeight: 500, color: PAI.fg2,
-      fontFamily: 'inherit',
-      pointerEvents: 'none',
-      userSelect: 'none',
-    }}>
+    <div className="kg-zoom-indicator-abs">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="7"/>
@@ -2635,22 +2373,11 @@ function ZoomIndicator({ view }) {
 }
 
 // ── Filter chip bar — relationships of the selected node ────────────
-const CHIPBAR_HEIGHT = 46;
-const CHIPBAR_BASE_STYLE = {
-  height: CHIPBAR_HEIGHT,
-  minHeight: CHIPBAR_HEIGHT,
-  maxHeight: CHIPBAR_HEIGHT,
-  padding: '0 16px',
-  borderTop: '1px solid var(--border)',
-  display: 'flex', alignItems: 'center', gap: 10,
-  boxSizing: 'border-box',
-  overflow: 'hidden',
-};
 // ── Empty chip bar — default state messaging ─────────────────────────
 function EmptyChipBar({ message }) {
   return (
-    <div style={CHIPBAR_BASE_STYLE}>
-      <span style={{ fontSize: 11, color: PAI.fg3 }}>{message}</span>
+    <div className="kg-chipbar">
+      <span className="kg-chipbar__hint">{message}</span>
     </div>
   );
 }
@@ -2658,9 +2385,9 @@ function EmptyChipBar({ message }) {
 // ── Multi-select chip bar — chips for each multi-selected entity ────
 function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
   return (
-    <div style={CHIPBAR_BASE_STYLE}>
-      <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+    <div className="kg-chipbar">
+      <span className="kg-chipbar__label">Details table filtered by:</span>
+      <div className="kg-chipbar__scroll">
         {ids.map(id => {
           const def = ENTITY_TYPES[id];
           if (!def) return null;
@@ -2668,28 +2395,13 @@ function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
           return (
             <span
               key={id}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 24, padding: '0 6px 0 12px',
-                background: disabled ? 'var(--bg-raised, #F2F2F2)' : 'var(--pai-indigo-tint)',
-                border: `1px solid ${disabled ? 'var(--border, #DEDEDE)' : 'var(--pai-indigo-light)'}`,
-                borderRadius: 44,
-                color: disabled ? PAI.fg3 : 'var(--pai-indigo-hover)',
-                fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
-                flexShrink: 0, whiteSpace: 'nowrap',
-                opacity: disabled ? 0.7 : 1,
-              }}
+              className={disabled ? 'kg-entity-chip kg-entity-chip--disabled' : 'kg-entity-chip'}
             >
               <span>{def.label} <span>({fmtN(def.count)})</span></span>
               <button
                 onClick={() => onRemove(id)}
                 aria-label={`Remove ${def.label}`}
-                style={{
-                  width: 16, height: 16, padding: 0,
-                  background: 'transparent', border: 'none',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: disabled ? PAI.fg3 : 'var(--pai-indigo-muted)', borderRadius: 999,
-                }}
+                className={disabled ? 'kg-entity-chip__remove-btn kg-entity-chip__remove-btn--disabled' : 'kg-entity-chip__remove-btn'}
               >
                 <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
               </button>
@@ -2697,15 +2409,7 @@ function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
           );
         })}
       </div>
-      <button
-        onClick={onClear}
-        style={{
-          background: 'transparent', border: 'none', padding: 0,
-          color: PAI.fg2, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-          fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2,
-          flexShrink: 0,
-        }}
-      >Clear</button>
+      <button onClick={onClear} className="kg-chipbar__clear-btn">Clear</button>
     </div>
   );
 }
@@ -2713,29 +2417,19 @@ function MultiSelectChipBar({ ids, visibleSet, onRemove, onClear }) {
 function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel, selectedCount, onToggle, onReverse, nodeOnly, nodeDisabled, onClearNode }) {
   if (nodeOnly) {
     return (
-      <div style={CHIPBAR_BASE_STYLE}>
-        <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          height: 24, padding: onClearNode ? '0 6px 0 12px' : '0 12px',
-          background: nodeDisabled ? 'var(--bg-raised, #F2F2F2)' : 'var(--pai-indigo-tint)',
-          border: `1px solid ${nodeDisabled ? 'var(--border, #DEDEDE)' : 'var(--pai-indigo-light)'}`,
-          borderRadius: 44,
-          color: nodeDisabled ? PAI.fg3 : 'var(--pai-indigo-hover)',
-          fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
-          opacity: nodeDisabled ? 0.7 : 1,
-        }}>
+      <div className="kg-chipbar">
+        <span className="kg-chipbar__label">Details table filtered by:</span>
+        <div className={[
+          'kg-entity-chip',
+          nodeDisabled ? 'kg-entity-chip--disabled' : '',
+          !onClearNode ? 'kg-entity-chip--no-close' : '',
+        ].filter(Boolean).join(' ')}>
           <span>{selectedLabel} <span>({fmtN(selectedCount)})</span></span>
           {onClearNode && (
             <button
               onClick={onClearNode}
               aria-label={`Remove ${selectedLabel}`}
-              style={{
-                width: 16, height: 16, padding: 0,
-                background: 'transparent', border: 'none',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: nodeDisabled ? PAI.fg3 : 'var(--pai-indigo-muted)', borderRadius: 999,
-              }}
+              className={nodeDisabled ? 'kg-entity-chip__remove-btn kg-entity-chip__remove-btn--disabled' : 'kg-entity-chip__remove-btn'}
             >
               <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
             </button>
@@ -2746,17 +2440,17 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
   }
   if (chips.length === 0) {
     return (
-      <div style={CHIPBAR_BASE_STYLE}>
-        <span style={{ fontSize: 11, color: PAI.fg3, flex: 1 }}>
-          <strong style={{ fontWeight: 600, color: PAI.fg2 }}>{selectedLabel}</strong> has no relationships in this view.
+      <div className="kg-chipbar">
+        <span className="kg-chipbar__no-rel">
+          <strong className="kg-chipbar__no-rel-name">{selectedLabel}</strong> has no relationships in this view.
         </span>
       </div>
     );
   }
   return (
-    <div style={CHIPBAR_BASE_STYLE}>
-      <span style={{ fontSize: 11, color: PAI.fg3, flexShrink: 0 }}>Details table filtered by:</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+    <div className="kg-chipbar">
+      <span className="kg-chipbar__label">Details table filtered by:</span>
+      <div className="kg-chipbar__scroll">
         {chips.map(c => {
           if (deselected.has(c.key)) return null;
           const isRev = reversed.has(c.key);
@@ -2764,35 +2458,18 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
           const dispRel    = isRev ? c.invRelation  : c.relation;
           const dispTgt    = isRev ? c.invTarget    : c.target;
           return (
-            <span
-              key={c.key}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                height: 24, padding: '0 6px 0 10px',
-                background: 'var(--pai-indigo-tint)',
-                border: '1px solid var(--pai-indigo-light)',
-                borderRadius: 44,
-                color: 'var(--pai-indigo-hover)',
-                fontSize: 11, fontWeight: 500, fontFamily: 'inherit',
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
-                <span style={{ fontWeight: 600 }}>{dispSrc}</span>
-                <span style={{ fontWeight: 400, color: 'var(--pai-indigo-muted)' }}>{dispRel}</span>
-                <span style={{ fontWeight: 600 }}>{dispTgt}</span>
+            <span key={c.key} className="kg-rel-chip-new">
+              <span className="kg-rel-chip__inner">
+                <span className="kg-rel-chip__src-text">{dispSrc}</span>
+                <span className="kg-rel-chip__rel-text">{dispRel}</span>
+                <span className="kg-rel-chip__tgt-text">{dispTgt}</span>
               </span>
               {onReverse && c.canReverse && (
                 <button
                   onClick={() => onReverse(c.key)}
                   aria-label="Reverse relationship"
                   title={isRev ? 'Show original relationship' : 'Show inverse relationship'}
-                  style={{
-                    width: 16, height: 16, padding: 0,
-                    background: 'transparent', border: 'none',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: isRev ? 'var(--pai-indigo)' : 'var(--pai-indigo-muted)', borderRadius: 999,
-                  }}
+                  className={isRev ? 'kg-rel-chip__reverse-btn kg-rel-chip__reverse-btn--active' : 'kg-rel-chip__reverse-btn kg-rel-chip__reverse-btn--inactive'}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 1l4 4-4 4"/>
@@ -2805,12 +2482,7 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
               <button
                 onClick={() => onToggle(c.key)}
                 aria-label="Remove filter"
-                style={{
-                  width: 16, height: 16, padding: 0,
-                  background: 'transparent', border: 'none',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--pai-indigo-muted)', borderRadius: 999,
-                }}
+                className="kg-rel-chip__close-btn"
               >
                 <Ic size={10} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
               </button>
@@ -2835,18 +2507,19 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
     const headerBg = isDark ? (def.tintDark || def.tint) : def.tint + '40';
     content = (
       <div>
-        <div style={{
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: headerBg,
-        }}>
-          <div style={{ display: 'flex' }}>
+        <div
+          className="kg-hover-tooltip__node-header"
+          style={{ '--kg-tooltip-node-header-bg': headerBg }}
+        >
+          <div className="kg-hover-tooltip__node-icon">
             <EntityGlyph kind={def.glyph} size={18} />
           </div>
-          <div style={{ color: def.icon || def.stroke, fontSize: 12, fontWeight: 600 }}>{def.label}</div>
+          <div
+            className="kg-hover-tooltip__node-label"
+            style={{ '--kg-tooltip-node-label-color': def.icon || def.stroke }}
+          >{def.label}</div>
         </div>
-        <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+        <div className="kg-hover-tooltip__body">
           <Row k="Entity Count" v={fmtN(def.count)} />
           <Row k="Fragments" v={fmtN(def.fragments || def.count)} />
           <Row k="Resolved (%)" v={(() => {
@@ -2889,14 +2562,10 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
     kind = 'edge';
     content = (
       <div>
-        <div style={{
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--border)',
-          fontSize: 12, fontWeight: 600, color: PAI.fg1,
-        }}>
-          {srcLabel} <span style={{ color: PAI.fg3, fontWeight: 500 }}>{rel || 'connected to'}</span> {tgtLabel}
+        <div className="kg-hover-tooltip__edge-header">
+          {srcLabel} <span className="kg-hover-tooltip__edge-rel">{rel || 'connected to'}</span> {tgtLabel}
         </div>
-        <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+        <div className="kg-hover-tooltip__edge-body">
           <Row k="Source Entity" v={srcLabel} />
           <Row k="Target Entity" v={tgtLabel} />
           <Row k="Relationship Count" v={'2'} />
@@ -2911,15 +2580,7 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
   const top = Math.min(mousePos.y + 16, 320);
 
   return (
-    <div style={{
-      position: 'absolute', left, top, zIndex: 30,
-      background: 'var(--bg-surface, #fff)',
-      border: '1px solid var(--border, #E6E6E6)',
-      borderRadius: 8,
-      boxShadow: '0 8px 24px rgba(16,16,16,0.08), 0 2px 6px rgba(16,16,16,0.04)',
-      pointerEvents: 'none',
-      fontFamily: 'Inter, system-ui, sans-serif',
-    }}>
+    <div className="kg-hover-tooltip" style={{ left, top }}>
       {content}
     </div>
   );
@@ -2927,9 +2588,9 @@ function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {
 
 function Row({ k, v }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-      <span style={{ fontSize: 11, color: PAI.fg3 }}>{k}</span>
-      <span style={{ fontSize: 12, color: PAI.fg1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+    <div className="kg-row">
+      <span className="kg-row__key">{k}</span>
+      <span className="kg-row__val">{v}</span>
     </div>
   );
 }
@@ -2939,65 +2600,38 @@ function SelectionPanel({ ids, onRemove }) {
   const isDark = useDark();
   if (!ids || ids.length === 0) return null;
   return (
-    <div style={{
-      position: 'absolute', right: 16, top: 16, zIndex: 6,
-      width: 264,
-      maxHeight: 'calc(100% - 32px)',
-      display: 'flex', flexDirection: 'column',
-      background: 'var(--bg-surface, #fff)',
-      border: '1px solid var(--border, #E6E6E6)',
-      borderRadius: 10,
-      boxShadow: '0 6px 20px rgba(16,16,16,0.06), 0 1px 2px rgba(16,16,16,0.04)',
-      overflow: 'hidden',
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '10px 12px',
-        borderBottom: '1px solid var(--border)',
-        fontSize: 11, color: PAI.fg3,
-        flexShrink: 0,
-      }}>
+    <div className="kg-sel-panel">
+      <div className="kg-sel-panel__header">
         Details table filtered by:
       </div>
-      <div style={{
-        display: 'flex', flexDirection: 'column',
-        overflowY: 'auto', minHeight: 0,
-      }}>
+      <div className="kg-sel-panel__body">
         {ids.map((id, idx) => {
           const def = ENTITY_TYPES[id];
           if (!def) return null;
           const accent = def.icon || def.stroke;
+          const headerBg = isDark ? (def.tintDark || def.tint) : def.tint + '40';
           return (
-            <div key={id} style={{
-              borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
-              flexShrink: 0,
-            }}>
-              <div style={{
-                padding: '8px 10px 8px 12px',
-                borderBottom: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: isDark ? (def.tintDark || def.tint) : def.tint + '40',
-              }}>
-                <div style={{ display: 'flex' }}>
+            <div key={id} className={idx === 0 ? 'kg-sel-panel__item' : 'kg-sel-panel__item kg-sel-panel__item--bordered'}>
+              <div
+                className="kg-sel-panel__item-header"
+                style={{ '--kg-sel-item-bg': headerBg }}
+              >
+                <div className="kg-sel-panel__item-icon">
                   <EntityGlyph kind={def.glyph} size={18} />
                 </div>
-                <div style={{ color: accent, fontSize: 12, fontWeight: 600, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{def.label}</div>
+                <div
+                  className="kg-sel-panel__item-label"
+                  style={{ '--kg-sel-item-color': accent }}
+                >{def.label}</div>
                 <button
                   onClick={() => onRemove(id)}
                   aria-label="Deselect"
-                  style={{
-                    width: 20, height: 20, borderRadius: 4,
-                    border: 'none', background: 'transparent', cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    color: PAI.fg3, padding: 0, flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F2F2F2'; e.currentTarget.style.color = PAI.fg1; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = PAI.fg3; }}
+                  className="kg-sel-panel__deselect-btn"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
               </div>
-              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="kg-sel-panel__item-stats">
                 <Row k="Entity Count" v={fmtN(def.count)} />
                 <Row k="Fragments" v={fmtN(def.fragments || def.count)} />
               </div>

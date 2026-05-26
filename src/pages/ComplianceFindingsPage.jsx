@@ -43,10 +43,7 @@ const ENTITY_ICON_SRCS = {
 function EntityBadge({ type }) {
   const src = ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.multi
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 24, height: 24, borderRadius: '50%', background: '#F7F9FC', flexShrink: 0,
-    }}>
+    <span className="cfp-entity-badge">
       <img src={src} width={14} height={14} alt="" />
     </span>
   )
@@ -55,19 +52,11 @@ function EntityBadge({ type }) {
 // ── Toggle ─────────────────────────────────────────────────────────
 function Toggle({ checked, onChange }) {
   return (
-    <label style={{ position: 'relative', display: 'inline-block', width: 32, height: 18, cursor: 'pointer', flexShrink: 0 }}>
+    <label className="cfp-toggle-label">
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
-        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
-      <span style={{
-        position: 'absolute', inset: 0, borderRadius: 44,
-        background: checked ? 'var(--pai-indigo)' : 'var(--shell-border)',
-        transition: 'background 200ms',
-      }}>
-        <span style={{
-          position: 'absolute', top: 2, left: checked ? 16 : 2,
-          width: 14, height: 14, borderRadius: '50%', background: '#fff',
-          transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
-        }} />
+        className="cfp-toggle-input" />
+      <span className="cfp-toggle-track" style={{ '--cfp-toggle-bg': checked ? 'var(--pai-indigo)' : 'var(--shell-border)' }}>
+        <span className="cfp-toggle-thumb" style={{ '--cfp-toggle-thumb-left': checked ? '16px' : '2px' }} />
       </span>
     </label>
   )
@@ -89,10 +78,9 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
   const displayLabel = label ? (typeof label === 'string' ? label : label.label) : placeholder
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}>
+    <div ref={ref} className={`cfp-select-wrap${fullWidth ? ' cfp-select-wrap--full' : ''}`}>
       <button
-        className={`comp-sort-btn comp-select-btn${open ? ' comp-sort-btn--active' : ''}`}
-        style={fullWidth ? { width: '100%', justifyContent: 'space-between' } : {}}
+        className={`comp-sort-btn comp-select-btn${open ? ' comp-sort-btn--active' : ''}${fullWidth ? ' cfp-select-btn--full' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
         <span>{displayLabel}</span>
@@ -101,7 +89,7 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
         </svg>
       </button>
       {open && (
-        <div className="comp-sort-menu" style={fullWidth ? { width: '100%', left: 0 } : {}}>
+        <div className={`comp-sort-menu${fullWidth ? ' cfp-sort-menu--full' : ''}`}>
           {options.map(opt => {
             const v = typeof opt === 'string' ? opt : opt.value
             const l = typeof opt === 'string' ? opt : opt.label
@@ -223,24 +211,17 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
 
   return (
     <>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, padding: 16, overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
+      <div className="cfp-page">
 
         {/* Card container */}
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
-          background: 'var(--card-bg)', border: '1px solid var(--card-border)',
-          borderRadius: 4, overflow: 'hidden',
-        }}>
+        <div className="cfp-card">
 
           {/* Widget header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 16px', borderBottom: '1px solid var(--shell-border)', flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--shell-text)' }}>
+          <div className="cfp-header">
+            <span className="cfp-header-title">
               Findings Details ({total.toLocaleString()})
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="cfp-header-actions">
               {!filter && (
                 <label className="comp-drawer-incl-label">
                   Include Closed Findings
@@ -248,7 +229,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                 </label>
               )}
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
-              <div ref={downloadRef} style={{ position: 'relative' }}>
+              <div ref={downloadRef} className="cfp-download-wrap">
                 <button
                   className={`comp-drawer-download-btn${downloadOpen ? ' comp-sort-btn--active' : ''}`}
                   onClick={() => setDownloadOpen(o => !o)}
@@ -260,7 +241,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                   </svg>
                 </button>
                 {downloadOpen && (
-                  <div className="comp-sort-menu" style={{ right: 0, left: 'auto', minWidth: 160 }}>
+                  <div className="comp-sort-menu comp-sort-menu--right">
                     {['Export as CSV', 'Export as PDF', 'Export as Excel'].map(opt => (
                       <button key={opt} className="comp-sort-item" onClick={() => setDownloadOpen(false)}>{opt}</button>
                     ))}
@@ -272,49 +253,14 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
 
           {/* Active filter bar */}
           {filter && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-              padding: '8px 16px', borderBottom: '1px solid var(--shell-border)',
-              background: 'rgba(99,96,216,0.04)', flexShrink: 0,
-            }}>
-              <span style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontWeight: 500 }}>Filtered by:</span>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 22, padding: '0 8px', borderRadius: 44,
-                background: 'rgba(99,96,216,0.10)', border: '1px solid rgba(99,96,216,0.25)',
-                fontSize: 11, fontWeight: 500, color: 'var(--pai-indigo)',
-              }}>
-                {filter.frameworkName}
-              </span>
+            <div className="cfp-filter-bar">
+              <span className="cfp-filter-label">Filtered by:</span>
+              <span className="cfp-filter-chip">{filter.frameworkName}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--shell-text-muted)" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 22, padding: '0 8px', borderRadius: 44,
-                background: 'rgba(99,96,216,0.10)', border: '1px solid rgba(99,96,216,0.25)',
-                fontSize: 11, fontWeight: 500, color: 'var(--pai-indigo)',
-              }}>
-                {filter.col}
-              </span>
+              <span className="cfp-filter-chip">{filter.col}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--shell-text-muted)" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                height: 22, padding: '0 8px', borderRadius: 44,
-                background: 'rgba(99,96,216,0.10)', border: '1px solid rgba(99,96,216,0.25)',
-                fontSize: 11, fontWeight: 500, color: 'var(--pai-indigo)',
-              }}>
-                {filter.groupBy}: {filter.row}
-              </span>
-              <button
-                onClick={onClearFilter}
-                style={{
-                  marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4,
-                  height: 22, padding: '0 8px', borderRadius: 44, border: 'none',
-                  background: 'transparent', color: 'var(--shell-text-muted)',
-                  fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--shell-text)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--shell-text-muted)'}
-              >
+              <span className="cfp-filter-chip">{filter.groupBy}: {filter.row}</span>
+              <button className="cfp-filter-clear" onClick={onClearFilter}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
                 </svg>
@@ -324,7 +270,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
           )}
 
           {/* Table */}
-          <div className="ds-table-wrap" style={{ flex: 1, overflowY: 'auto' }}>
+          <div className="ds-table-wrap cfp-table-wrap">
             <table className="ds-table">
               <thead>
                 <tr>
@@ -332,29 +278,25 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                   <th className="ds-th">Associated Entities</th>
                   <th className="ds-th">Evidence</th>
                   <th className="ds-th">Status</th>
-                  <th className="ds-th" style={{ width: 72 }}>Action</th>
+                  <th className="ds-th cfp-th-actions">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleRows.map((row, i) => (
                   <tr key={i}>
-                    <td className="ds-td" style={{ fontWeight: 500, color: 'var(--shell-text)', whiteSpace: 'nowrap' }}>
-                      {row.title}
-                    </td>
+                    <td className="ds-td cfp-td-title">{row.title}</td>
                     <td className="ds-td">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                      <div className="cfp-entity-cell">
                         <EntityBadge type={row.type} />
                         <span>{row.entity}</span>
                       </div>
                     </td>
-                    <td className="ds-td" style={{ color: 'var(--shell-text-muted)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {row.evidence}
-                    </td>
+                    <td className="ds-td cfp-td-evidence">{row.evidence}</td>
                     <td className="ds-td">
                       <span className="comp-drawer-status-open">Open</span>
                     </td>
                     <td className="ds-td">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div className="cfp-td-actions">
                         <button
                           className="comp-drawer-action-icon"
                           title="Remediation"
@@ -368,7 +310,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                         >
                           <IcRemediation />
                         </button>
-                        <button className="comp-drawer-action-icon" title="Explore" style={{ color: 'var(--pai-indigo)' }}>
+                        <button className="comp-drawer-action-icon cfp-action-explore" title="Explore">
                           <IcExploreAction />
                         </button>
                       </div>
@@ -392,17 +334,17 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
       {/* Remediation popup */}
       {remediationRow !== null && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 210 }} onClick={() => setRemediationRow(null)} />
+          <div className="cfp-remediation-overlay" onClick={() => setRemediationRow(null)} />
           <div className="comp-remediation-popup" style={{
             top: Math.min(remediationRow.rect.top, window.innerHeight - 560),
             left: remediationRow.rect.left - 608,
           }}>
             <div className="comp-remediation-header">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div className="cfp-rem-title-wrap">
                 <span className="comp-remediation-title">Remediation Actions</span>
                 <span className="comp-remediation-note">Note: AI-generated remediations offer valuable guidance, but we recommend verifying and validating before implementation.</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div className="cfp-rem-actions">
                 <button className="comp-drawer-kg-btn" onClick={() => openCreateTicket(ROWS[remediationRow.i]?.entity ?? '', ROWS[remediationRow.i]?.title ?? '')}>
                   Create Ticket
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -416,10 +358,10 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
             </div>
             <div className="comp-remediation-body">
               <div className="comp-remediation-rec">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--pai-high-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cfp-rem-warning-icon">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>
+                <span className="cfp-rem-rec-text">
                   Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management
                 </span>
               </div>
@@ -464,7 +406,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
               </div>
               <div className="ct-field">
                 <label className="ct-label">Associated Entities</label>
-                <input className="ct-input" type="text" value={createTicketEntity} readOnly style={{ background: 'var(--shell-bg)', cursor: 'default' }} />
+                <input className="ct-input cfp-input-readonly" type="text" value={createTicketEntity} readOnly />
               </div>
               <div className="ct-field">
                 <label className="ct-label">Description of Failed Finding</label>
@@ -473,8 +415,8 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
               <div className="ct-field">
                 <label className="ct-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
-                  <p style={{ fontWeight: 600, marginBottom: 8, color: 'var(--shell-text)' }}>Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
-                  <ol style={{ paddingLeft: 16, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <p className="cfp-rec-title">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
+                  <ol className="cfp-rec-steps">
                     <li>Identify all devices missing from AD by cross-referencing network discovery results with current AD computer objects</li>
                     <li>Verify ownership and business justification for each unregistered device through asset owners or department managers</li>
                     <li>Join approved devices to the Active Directory domain following your organization's standard computer naming convention</li>
