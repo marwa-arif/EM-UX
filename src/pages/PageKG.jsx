@@ -4,6 +4,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PAI, Icons, Ic } from '../ui.jsx';
+import TablePagination from '../components/TablePagination.jsx';
 
 function useDark() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
@@ -601,30 +602,6 @@ function GraphCanvas({ selected, selectedEdgeKey, onSelect, onEdgeSelect, neighb
     return () => ro.disconnect();
   }, [setPositions]);
 
-  // Wheel = zoom around cursor
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onWheel = (e) => {
-      e.preventDefault();
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
-      const factor = e.deltaY < 0 ? 0.88 : 1.14;
-      setView(v => {
-        const newW = Math.max(280, Math.min(2200, v.w * factor));
-        const newH = newW * (440/940);
-        const cx = v.x + v.w * px;
-        const cy = v.y + v.h * py;
-        const rawX = cx - newW * px;
-        const rawY = cy - newH * py;
-        return { x: rawX, y: rawY, w: newW, h: newH };
-      });
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [setView]);
-
   return (
     <div
       ref={containerRef}
@@ -1003,14 +980,10 @@ function Th({ children }) {
 
 // ── Details Table ────────────────────────────────────────────────────
 function DetailsTable({ rows, totalCount, search, onSearch }) {
-  const PAGE_SIZE = 10;
-  // We never render more than PAGE_SIZE rows on screen, even if the source
-  // dataset has more — pagination is *visual* (the underlying ROWS are a
-  // sample). The displayed page-1 size is min(totalCount, PAGE_SIZE).
-  const displayRows = rows.slice(0, Math.min(rows.length, PAGE_SIZE));
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const showFrom = totalCount === 0 ? 0 : 1;
-  const showTo = Math.min(PAGE_SIZE, totalCount);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const displayRows = rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
   return (
     <div className="kg-details-card">
       {/* header bar */}
@@ -1080,33 +1053,13 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
         </table>
       </div>
       {totalCount > 0 && (
-        <div className="kg-details-footer">
-          {/* page-size selector */}
-          <div className="kg-details-pagesize">
-            {[10, 50, 100, 150].map((n, i) => (
-              <button
-                key={n}
-                className={i === 0 ? 'kg-details-pagesize-btn kg-details-pagesize-btn--active' : 'kg-details-pagesize-btn kg-details-pagesize-btn--inactive'}
-              >{n}</button>
-            ))}
-          </div>
-          <div className="kg-details-rowinfo">
-            Showing rows <span className="kg-details-rowinfo-val">{showFrom}</span> to <span className="kg-details-rowinfo-val">{showTo}</span> of <span className="kg-details-rowinfo-val">{fmtN(totalCount)}</span>
-          </div>
-          <div className="kg-details-spacer" />
-          {/* page numbers */}
-          <div className="kg-details-page-btns">
-            {[1, 2, 3].slice(0, Math.min(3, totalPages)).map((p, i) => (
-              <button
-                key={p}
-                disabled={p > totalPages}
-                className={i === 0 ? 'kg-details-page-num-btn kg-details-page-num-btn--active' : (p > totalPages ? 'kg-details-page-num-btn kg-details-page-num-btn--disabled' : 'kg-details-page-num-btn kg-details-page-num-btn--inactive')}
-              >{p}</button>
-            ))}
-            <button disabled={totalPages <= 1} className={totalPages <= 1 ? 'kg-details-nav-btn kg-details-nav-btn--disabled' : 'kg-details-nav-btn kg-details-nav-btn--active'}>›</button>
-            <button disabled={totalPages <= 1} className={totalPages <= 1 ? 'kg-details-nav-btn kg-details-nav-btn--disabled' : 'kg-details-nav-btn kg-details-nav-btn--active'}>»</button>
-          </div>
-        </div>
+        <TablePagination
+          total={totalCount}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+        />
       )}
     </div>
   );

@@ -875,7 +875,7 @@
   font-family: inherit;
 }
 .kg-details-body {
-  overflow: auto; max-height: 320px;
+  overflow: visible;
 }
 .kg-details-table {
   width: 100%; border-collapse: collapse; font-size: 12px; font-family: inherit;
@@ -925,62 +925,6 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.kg-details-footer {
-  display: flex; align-items: center; gap: 16px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border, #E6E6E6);
-  font-size: 12px; color: var(--fg-3, #6E6E6E);
-  font-family: inherit;
-}
-.kg-details-pagesize {
-  display: inline-flex; align-items: center; gap: 12px;
-}
-.kg-details-pagesize-btn {
-  background: transparent; border: none; padding: 0;
-  font-size: 12px; font-family: inherit; cursor: pointer;
-  font-variant-numeric: tabular-nums;
-}
-.kg-details-pagesize-btn--active {
-  color: var(--fg-1, #101010); font-weight: 700;
-}
-.kg-details-pagesize-btn--inactive {
-  color: var(--fg-3, #6E6E6E); font-weight: 400;
-}
-.kg-details-rowinfo {
-  color: var(--fg-3, #6E6E6E);
-}
-.kg-details-rowinfo-val {
-  color: var(--fg-1, #101010); font-weight: 700; font-variant-numeric: tabular-nums;
-}
-.kg-details-page-btns {
-  display: inline-flex; align-items: center; gap: 12px;
-}
-.kg-details-page-num-btn {
-  background: transparent; border: none; padding: 0;
-  font-size: 12px; font-family: inherit;
-  font-variant-numeric: tabular-nums;
-}
-.kg-details-page-num-btn--active {
-  color: var(--fg-1, #101010); font-weight: 700; cursor: pointer;
-}
-.kg-details-page-num-btn--inactive {
-  color: var(--fg-3, #6E6E6E); font-weight: 400; cursor: pointer;
-}
-.kg-details-page-num-btn--disabled {
-  color: var(--pai-disabled); cursor: default;
-}
-.kg-details-nav-btn {
-  background: transparent; border: none; padding: 0;
-  font-size: 14px; font-family: inherit;
-  display: inline-flex; align-items: center;
-}
-.kg-details-nav-btn--active {
-  color: var(--fg-3, #6E6E6E); cursor: pointer;
-}
-.kg-details-nav-btn--disabled {
-  color: var(--pai-disabled); cursor: default;
-}
-
 /* ── SankeyFilterPopup ────────────────────────────────────────────────── */
 .kg-filter-popup {
   position: absolute; top: 30px;
