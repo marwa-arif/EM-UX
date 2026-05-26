@@ -979,7 +979,7 @@ function Th({ children }) {
 }
 
 // ── Details Table ────────────────────────────────────────────────────
-function DetailsTable({ rows, totalCount, search, onSearch }) {
+function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -1027,7 +1027,7 @@ function DetailsTable({ rows, totalCount, search, onSearch }) {
               const meta = TYPE_TO_TABLE_LABEL[r.type];
               const ent = ENTITY_TYPES[r.type];
               return (
-                <tr key={i} className="kg-tr">
+                <tr key={i} className={onRowClick ? 'kg-tr kg-tr--clickable' : 'kg-tr'} onClick={() => onRowClick && onRowClick(r)}>
                   <td className="kg-td--label">{r.label}</td>
                   <td className="kg-td--type">
                     <span className="kg-td--type-inner">
@@ -1715,6 +1715,9 @@ function EntityKpiGrid() {
 function PageKG() {
   const [summaryTab, setSummaryTab] = useState('Relationships');
   const [selected, setSelected] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelRow, setPanelRow] = useState(null);
+  const [panelTab, setPanelTab] = useState('summary');
   // When `highlightOnly` is true, the selected node gets a visual ring
   // but does NOT dim other nodes/edges or filter the details table.
   // Set when selection comes from a tab switch (Host/Identity).
@@ -2061,7 +2064,7 @@ function PageKG() {
             selectedEdgeKey={selectedEdgeKey}
             highlightOnly={highlightOnly}
             multiSelectedSet={multiMode ? multiSelected : null}
-            panelOpen={false}
+            panelOpen={panelOpen}
             onSelect={(id) => {
               if (multiMode) {
                 if (id === null) return;
@@ -2216,7 +2219,168 @@ function PageKG() {
 
 
       <DetailsTable rows={filteredRows} totalCount={totalCount}
-                    search={tableSearch} onSearch={setTableSearch}/>
+                    search={tableSearch} onSearch={setTableSearch}
+                    onRowClick={(row) => { setPanelRow(row); setPanelOpen(true); setPanelTab('summary'); }}/>
+
+      {/* ── Panel backdrop ── */}
+      <div
+        className={panelOpen ? 'kg-panel-backdrop kg-panel-backdrop--open' : 'kg-panel-backdrop'}
+        onClick={() => setPanelOpen(false)}
+      />
+
+      {/* ── Detail slide-over panel ── */}
+      <div className={panelOpen ? 'kg-detail-panel kg-detail-panel--open' : 'kg-detail-panel'}>
+        {panelRow && (() => {
+          const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
+          const ent  = ENTITY_TYPES[panelRow.type]        || {};
+          return (
+            <>
+              {/* Panel header */}
+              <div className="kg-dp-header">
+                <div className="kg-dp-title-row">
+                  <div className="kg-dp-icon-circle" style={{ '--dp-tint': ent.tint || 'var(--pai-bg-raised)', '--dp-stroke': ent.stroke || 'var(--shell-border)' }}>
+                    <EntityGlyph kind={meta.glyph} size={22} />
+                  </div>
+                  <div className="kg-dp-title-body">
+                    <div className="kg-dp-name-row">
+                      <span className="kg-dp-name">{panelRow.label}</span>
+                      <span className="kg-dp-type-chip" style={{ '--dp-chip-border': ent.stroke || 'var(--shell-border)', '--dp-chip-color': ent.icon || 'var(--pai-indigo)' }}>
+                        {meta.type || panelRow.type}
+                      </span>
+                    </div>
+                    <div className="kg-dp-meta-row">
+                      <span className="kg-dp-meta-item">IP: <strong>{panelRow.ip}</strong></span>
+                      <span className="kg-dp-meta-item">OS: <strong>{meta.os}</strong></span>
+                      <span className="kg-dp-meta-item">Last Active: <strong>{panelRow.active}</strong></span>
+                    </div>
+                  </div>
+                  <button className="kg-dp-close-btn" onClick={() => setPanelOpen(false)}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Entity relationship mini-graph */}
+                <div className="kg-dp-rel-card">
+                  <div className="kg-dp-rel-header">Entity Relationship Summary</div>
+                  <div className="kg-dp-rel-body">
+                    <svg width="280" height="90" className="kg-dp-rel-svg">
+                      <line x1="90" y1="44" x2="190" y2="44" stroke="var(--shell-border)" strokeWidth="1.5"/>
+                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill="var(--shell-text-muted)" fontFamily="inherit">Has</text>
+                      <circle cx="60" cy="44" r="28" fill={ent.tint || 'var(--pai-bg-raised)'} stroke={ent.stroke || 'var(--shell-border)'} strokeWidth="1.5"/>
+                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
+                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
+                          <EntityGlyph kind={meta.glyph} size={20} />
+                        </div>
+                      </foreignObject>
+                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill="var(--shell-text-sub)" fontWeight="600" fontFamily="inherit">
+                        {(meta.type || panelRow.type).slice(0, 12)}
+                      </text>
+                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
+                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
+                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
+                          <EntityGlyph kind="finding" size={20} />
+                        </div>
+                      </foreignObject>
+                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
+                      <circle cx="244" cy="20" r="9" fill="var(--pai-indigo)"/>
+                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
+                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0, 4) : fmtN(ent.count || 0)}
+                      </text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="kg-dp-tabs">
+                {['summary', 'evolution', 'derivation'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setPanelTab(t)}
+                    className={panelTab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              {/* Panel body */}
+              <div className="kg-dp-body">
+                {panelTab === 'summary' && (
+                  <>
+                    <div className="kg-dp-section">
+                      <div className="kg-dp-section-header">General Information</div>
+                      <div className="kg-dp-grid">
+                        {[
+                          ['Display Label', panelRow.label],
+                          ['Type',          meta.type || panelRow.type],
+                          ['OS Family',     meta.os],
+                          ['IP Address',    panelRow.ip],
+                          ['Last Found',    panelRow.last],
+                          ['Last Active',   panelRow.active],
+                        ].map(([k, v]) => (
+                          <div key={k} className="kg-dp-grid-cell">
+                            <div className="kg-dp-grid-key">{k}</div>
+                            <div className="kg-dp-grid-val">{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="kg-dp-section">
+                      <div className="kg-dp-section-header">Data Sources</div>
+                      <div className="kg-dp-sources-row">
+                        {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
+                      </div>
+                    </div>
+
+                    <div className="kg-dp-section">
+                      <div className="kg-dp-section-header kg-dp-section-header--flex">
+                        <span>Findings</span>
+                        <span className="kg-dp-findings-count">({fmtN(ent.count || 0)})</span>
+                      </div>
+                      <div className="kg-dp-sev-list">
+                        {[
+                          { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
+                          { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
+                          { label: 'Medium',   pct: 68, color: 'var(--pai-high-fg)' },
+                          { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
+                        ].map(s => (
+                          <div key={s.label} className="kg-dp-sev-row">
+                            <span className="kg-dp-sev-label">{s.label}</span>
+                            <div className="kg-dp-sev-track">
+                              <div className="kg-dp-sev-fill" style={{ '--sev-pct': `${s.pct}%`, '--sev-color': s.color }} />
+                            </div>
+                            <span className="kg-dp-sev-count">
+                              {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {panelTab === 'evolution' && (
+                  <div className="kg-dp-empty-tab">
+                    Evolution history for <strong>{panelRow.label}</strong>.<br/>
+                    Track how attributes changed over time across data sources.
+                  </div>
+                )}
+
+                {panelTab === 'derivation' && (
+                  <div className="kg-dp-empty-tab">
+                    Derivation graph for <strong>{panelRow.label}</strong>.<br/>
+                    Shows how this entity was resolved from source fragments.
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+      </div>
     </div>
   );
 }
