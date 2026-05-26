@@ -135,14 +135,14 @@
 .kg-page-btn--active { background: var(--pai-indigo); border-color: var(--pai-indigo); color: var(--pai-indigo-tint); font-weight: 600; }
 .kg-details table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: inherit; }
 .kg-details th {
-  text-align: left; padding: 8px 12px;
+  text-align: left; padding: var(--table-th-padding);
   background: var(--shell-raised); border-bottom: 1px solid var(--pai-border);
   font-size: 10px; font-weight: 600; color: var(--shell-text-muted);
   letter-spacing: 0.01em; white-space: nowrap;
 }
 .kg-th-inner { gap: 6px; }
 .kg-details td {
-  padding: 10px 12px;
+  padding: var(--table-td-padding);
   border-bottom: 1px solid var(--shell-border);
   color: var(--pai-fg1);
   white-space: nowrap;

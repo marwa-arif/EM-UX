@@ -13,6 +13,7 @@ const TABLE_DATA = [
   { name: 'IOT',         score: 443, changePct: 5,  changeDir: 'down', exposurePct: 5,  findingsPct: 5,  assetsPct: 5  },
   { name: 'Laptop',      score: 441, changePct: 10, changeDir: 'up',   exposurePct: 4,  findingsPct: 4,  assetsPct: 4  },
   { name: 'VM',          score: 321, changePct: 5,  changeDir: 'down', exposurePct: 2,  findingsPct: 2,  assetsPct: 2  },
+  { name: 'Container',   score: 298, changePct: 3,  changeDir: 'up',   exposurePct: 1,  findingsPct: 1,  assetsPct: 1  },
 ];
 
 const MAX_BAR_PCT = 12;

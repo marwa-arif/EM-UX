@@ -37,6 +37,8 @@ body { background: #F7F9FC; color: #101010; }
   /* Table tokens */
   --table-th-bg:        #F5F5F5;
   --table-border:       #E6E6E6;
+  --table-th-padding:   8px 16px;
+  --table-td-padding:   10px 16px;
 
   /* PAI color tokens */
   --pai-indigo:        #6360D8;

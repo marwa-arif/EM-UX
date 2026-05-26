@@ -64,10 +64,10 @@
 .exp-gauge-score-row { display: flex; align-items: baseline; gap: 2px; }
 
 /* ── Contribution table card ────────────────────────────────────── */
-.exp-contrib-card { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.exp-contrib-card { padding: 16px 0; display: flex; flex-direction: column; gap: 0; }
 
 /* Card header */
-.exp-contrib-hdr { padding-left: 8px; }
+.exp-contrib-hdr { padding-left: 16px; margin-bottom: 16px; }
 .exp-contrib-hdr-left { display: flex; align-items: center; gap: 12px; }
 .exp-contrib-title { font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
 .exp-groupby-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 54px; padding: 6px 12px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--shell-text, #101010); font-family: inherit; }
@@ -85,13 +85,13 @@
 .exp-table { min-width: 900px; }
 
 /* Table header cell */
-.exp-th { padding: 12px 12px 12px 4px; font-size: 12px; user-select: none; }
+.exp-th { padding: var(--table-th-padding); font-size: 12px; user-select: none; }
 .exp-th-inner { gap: 6px; }
 .exp-th-sort-icon { color: var(--shell-text-faint); }
 
 /* Table body rows & cells */
-.exp-td { padding: 0 12px 0 4px; height: 48px; }
-.exp-td-name { font-size: 14px; color: var(--shell-text, #101010); text-align: left; white-space: nowrap; vertical-align: middle; }
+.exp-td { padding: var(--table-td-padding); }
+.exp-td-name { font-size: 12px; color: var(--shell-text, #101010); text-align: left; white-space: nowrap; vertical-align: middle; }
 .exp-td-score { font-size: 12px; font-weight: 600; vertical-align: middle; }
 .exp-td-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
 

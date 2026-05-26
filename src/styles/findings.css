@@ -51,11 +51,11 @@
 .fin-btn-outline:hover { border-color: var(--shell-accent); color: var(--shell-accent); }
 .fin-btn-primary { border: none; background: var(--shell-accent); color: #fff; }
 .fin-btn-primary:hover { background: var(--pai-indigo-hover); }
-.fin-th { padding: 9px 16px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+.fin-th { padding: var(--table-th-padding); text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
 html.theme-dark .fin-th { background: var(--ctrl-bg); }
 .fin-th-inner { gap: 5px; }
 .fin-tr:hover .fin-td { background: var(--shell-hover); }
-.fin-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border, #E6E6E6); white-space: nowrap; }
+.fin-td { padding: var(--table-td-padding); border-bottom: 1px solid var(--table-border, #E6E6E6); white-space: nowrap; }
 html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-td-flex { display: flex; align-items: center; gap: 6px; }
 .fin-td-icon { display: flex; align-items: center; justify-content: center; color: var(--shell-text-muted); flex-shrink: 0; }

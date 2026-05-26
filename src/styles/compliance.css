@@ -661,7 +661,7 @@
 .comp-domain-table th {
   background: var(--table-th-bg);
   border-bottom: 1px solid var(--table-border);
-  padding: 8px 12px;
+  padding: var(--table-th-padding);
   text-align: left;
   font-size: 11px;
   font-weight: 500;
@@ -678,8 +678,7 @@
 }
 
 .comp-domain-table td {
-  padding: 0 12px;
-  height: 52px;
+  padding: var(--table-td-padding);
   font-size: 12px;
   color: var(--shell-text);
   vertical-align: middle;
@@ -692,8 +691,8 @@
 .comp-domain-table th:last-child,
 .comp-domain-table td:last-child {
   width: 100px;
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .comp-domain-table td:last-child {
@@ -1406,7 +1405,7 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-drawer-table th {
-  padding: 8px 12px;
+  padding: 8px 16px;
   text-align: left;
   font-size: 11px;
   font-weight: 500;
@@ -1417,7 +1416,7 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-drawer-table td {
-  padding: 8px 12px;
+  padding: 10px 16px;
   color: var(--shell-text);
   border-bottom: 1px solid var(--table-border);
   vertical-align: middle;

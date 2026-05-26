@@ -291,7 +291,7 @@
 }
 
 .dev-th {
-  padding: 8px 12px;
+  padding: var(--table-th-padding);
   text-align: left;
   font-size: 11px;
   text-transform: uppercase;
@@ -302,17 +302,17 @@
 
 .dev-th-sort { opacity: 0.5; }
 .dev-th-icon { width: 40px; padding: 8px; }
-.dev-th-check { width: 36px; padding: 8px 12px; }
+.dev-th-check { width: 36px; padding: 8px 16px; }
 
 .dev-tr:last-child { border-bottom: none; }
 .dev-tr:hover { background: var(--shell-hover, rgba(0,0,0,0.02)); }
 
 .dev-td {
-  padding: 10px 12px;
+  padding: var(--table-td-padding);
 }
 
 .dev-td-icon  { width: 40px; padding: 8px 8px 8px 16px; }
-.dev-td-check { width: 36px; padding: 8px 12px; }
+.dev-td-check { width: 36px; padding: 8px 16px; }
 
 .dev-td-name {
   max-width: 300px;
