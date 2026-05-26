@@ -22,6 +22,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.4.5] — 2026-05-26
+### Fixed
+- KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
+
+---
+
 ## [0.4.4] — 2026-05-26
 ### Changed
 - KG graph: removed mouse scroll wheel zoom; zoom is now button-only (`+` / `−` rail buttons)
@@ -50,6 +56,7 @@ All notable UI changes are tracked here.
 - Eliminated inline `style={{}}` props from `CompliancePage`, `ComplianceMatrixPage`, `ComplianceFindingsPage`, `AssessmentsPage`, and `PageKG` — replaced with CSS classes and CSS custom-property injection
 - `compliance.css`, `assessments.css`, and `kg.css` extended with semantic `comp-*`, `asmts-*`, `cfp-*`, and `kg-*` utility classes
 ### Fixed
+- KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
 - Renamed breadcrumb root label from "Dashboard" to "Home" across all pages
 
 ---
@@ -67,6 +74,7 @@ All notable UI changes are tracked here.
 - Save Filter icon uses save SVG with `currentColor` (inherits button indigo)
 - SubHeader panel position anchored to subheader container right edge to prevent overlap when filter panel is open
 ### Fixed
+- KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
 - Renamed breadcrumb root label from "Dashboard" to "Home" across all pages (App.jsx, WorkspacePage.jsx)
 
 ---
@@ -106,6 +114,7 @@ All notable UI changes are tracked here.
 - Compliance chart legend: circles, per-severity text colors, semi-bold
 - Change % formula corrected to `(current − prev) / prev × 100` with 2dp precision
 ### Fixed
+- KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
 - KG dark mode: all hardcoded hex values in `PageKG.jsx` and `kg.css` replaced with design system tokens
 - KG entity node circles, tooltip headers, and selection panel headers now switch correctly on theme toggle
 - SVG edge label pill fill moved from attribute to `style` so CSS custom properties resolve in dark mode
@@ -144,5 +153,6 @@ All notable UI changes are tracked here.
 - Left nav and shell CSS token-compliance pass across `exposure.css`, `findings.css`, `kg.css`, `shell.css`, `workspace.css`, `global.css`
 
 ### Fixed
+- KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)
 - Asset paths and URL routing restored after merge conflict
 - `recharts` dependency installed after remote merge

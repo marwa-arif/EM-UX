@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.4.5",
+    "date": "2026-05-26",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "KG table row click: restored slide-over detail panel (dropped during inline-CSS refactor)"
+      ]
+    }
+  },
+  {
     "version": "0.4.4",
     "date": "2026-05-26",
     "changes": {
