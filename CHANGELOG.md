@@ -21,6 +21,19 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.5.0] — 2026-05-27
+### Added
+- Stacked vertical bar (`stack-vert`) Recharts implementation with 12 origin stacks, legend, and per-segment hover tooltip
+- `stack-vert` data tab in widget settings: Magnitude (x-axis) + Classification (y-axis) attribute fields with graph filter modals, Size row with graph filter action, Widget Filter with chips, Show Legend and Explode Array Field Values toggles
+- `InfoTooltip` component — reusable ⓘ icon with CSS tooltip; `FieldRow` and `ToggleRow` accept a `tooltip` prop
+- `graph-filter.svg` icon asset added to `public/assets/icons/`
+- `GraphFilterModal` `mode="filter"` returns `{ attr, values }` object for Widget Filter chip state
+### Changed
+- Widget Filter field uses read-only input + chips-below pattern (matching Columns field in table widget)
+- Info tooltip uses hardcoded contrast-safe colors (`#e2e4f0` on `#1a1c2e`) with `white-space: normal` and `max-width: 260px` for long text
+
+---
+
 ## [0.4.6] — 2026-05-26
 ### Added
 - `dashboard.css` with `dc-` prefix classes for DashboardCanvas components
