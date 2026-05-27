@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useState } from 'react'
+import TablePagination from './TablePagination'
 import {
   AreaChart, Area,
-  BarChart, Bar,
+  BarChart, Bar, Cell,
+  PieChart, Pie,
   XAxis, YAxis,
   Tooltip, ResponsiveContainer,
+  LabelList,
 } from 'recharts'
 import { PAI } from '../ui.jsx'
 
@@ -13,6 +16,92 @@ const SEV   = ['var(--pai-crit-fg)','var(--pai-high-fg)','var(--pai-caution-fg)'
 const CAT   = ['var(--pai-indigo)','var(--pai-nav-teal)','#2ea8a8','#5c6bc0','var(--pai-indigo-muted)','#3a7fcb']
 const TG    = 'var(--shell-text-muted)'
 const DCOLS = ['var(--pai-crit-fg)','var(--pai-high-fg)','var(--pai-indigo)','var(--pai-green)','#64748B','#94A3B8']
+
+// ── Default data (used when widget has no configured data yet) ────
+export const DEFAULT_VERT_BAR = [
+  { label: 'Workstation',    value: 36323 },
+  { label: 'Server',         value: 11476 },
+  { label: 'Network Device', value: 4478  },
+  { label: 'Mobile',         value: 2407  },
+  { label: 'Virtual',        value: 1     },
+]
+
+// Origins palette — matches screenshot legend colors
+const STACK_ORIGINS = [
+  { key: 'MS Azure AD',                   color: '#4285F4' },
+  { key: 'ServiceNow',                    color: '#E040FB' },
+  { key: 'MS Active Directory Extract',   color: '#FFB300' },
+  { key: 'Qualys',                        color: '#26C6DA' },
+  { key: 'MS Intune',                     color: '#43A047' },
+  { key: 'MS Defender',                   color: '#FB8C00' },
+  { key: 'Windows Security Logs',         color: '#7E57C2' },
+  { key: 'Wiz',                           color: '#EC407A' },
+  { key: 'CrowdStrike',                   color: '#00ACC1' },
+  { key: 'Tenable.sc',                    color: '#FF7043' },
+  { key: 'AWS',                           color: '#EF5350' },
+  { key: 'MS Azure',                      color: '#26A69A' },
+]
+
+export const DEFAULT_STACK_VERT = [
+  {
+    type: 'Workstation',
+    'MS Azure AD': 28500, 'ServiceNow': 26000, 'MS Active Directory Extract': 24500,
+    'Qualys': 19000, 'MS Intune': 18500, 'MS Defender': 13500,
+    'Windows Security Logs': 13000, 'Wiz': 3000, 'CrowdStrike': 2200,
+    'Tenable.sc': 530, 'AWS': 480, 'MS Azure': 1,
+  },
+  {
+    type: 'Server',
+    'MS Azure AD': 9000, 'ServiceNow': 8500, 'MS Active Directory Extract': 8000,
+    'Qualys': 7000, 'MS Intune': 6800, 'MS Defender': 5000,
+    'Windows Security Logs': 4900, 'Wiz': 1000, 'CrowdStrike': 700,
+    'Tenable.sc': 220, 'AWS': 200, 'MS Azure': 0,
+  },
+  {
+    type: 'Network Device',
+    'MS Azure AD': 1800, 'ServiceNow': 1600, 'MS Active Directory Extract': 1400,
+    'Qualys': 900, 'MS Intune': 850, 'MS Defender': 600,
+    'Windows Security Logs': 580, 'Wiz': 150, 'CrowdStrike': 100,
+    'Tenable.sc': 30, 'AWS': 22, 'MS Azure': 0,
+  },
+  {
+    type: 'Mobile',
+    'MS Azure AD': 1200, 'ServiceNow': 1100, 'MS Active Directory Extract': 900,
+    'Qualys': 500, 'MS Intune': 480, 'MS Defender': 350,
+    'Windows Security Logs': 340, 'Wiz': 90, 'CrowdStrike': 60,
+    'Tenable.sc': 15, 'AWS': 12, 'MS Azure': 0,
+  },
+  {
+    type: 'Hypervisor',
+    'MS Azure AD': 900, 'ServiceNow': 800, 'MS Active Directory Extract': 700,
+    'Qualys': 400, 'MS Intune': 380, 'MS Defender': 270,
+    'Windows Security Logs': 260, 'Wiz': 70, 'CrowdStrike': 45,
+    'Tenable.sc': 10, 'AWS': 8, 'MS Azure': 0,
+  },
+  {
+    type: 'Other',
+    'MS Azure AD': 484, 'ServiceNow': 449, 'MS Active Directory Extract': 398,
+    'Qualys': 235, 'MS Intune': 225, 'MS Defender': 154,
+    'Windows Security Logs': 148, 'Wiz': 40, 'CrowdStrike': 26,
+    'Tenable.sc': 5, 'AWS': 0, 'MS Azure': 0,
+  },
+]
+
+const DEFAULT_HOR_BAR = [
+  { label: 'Workstation',    value: 66, count: '36,323' },
+  { label: 'Server',         value: 21, count: '11,476' },
+  { label: 'Network Device', value: 8,  count: '4,478'  },
+  { label: 'Mobile',         value: 4,  count: '2,407'  },
+  { label: 'Virtual',        value: 0,  count: '1'      },
+]
+
+const DEFAULT_KG_TABLE = [
+  { type: 'Workstation',    displayLabel: 'WORK-VYO830.AC...'   },
+  { type: 'Network Device', displayLabel: '10.218.172.231'       },
+  { type: 'Workstation',    displayLabel: 'WORK-KFG815.AC...'   },
+  { type: 'Server',         displayLabel: 'SERVER-YHB308.A...'  },
+  { type: 'Workstation',    displayLabel: 'WORK-IDI341182.A...' },
+]
 
 // ── Severity icon (triangle warning) ─────────────────────────────
 function SevIcon() {
@@ -34,6 +123,116 @@ function SourceTick({ x, y, payload }) {
   )
 }
 
+// ── Shared Recharts tooltip style (matches existing dashboard pattern) ────
+const RECHARTS_TIP = {
+  contentStyle: {
+    background: 'var(--card-bg)',
+    border: '1px solid var(--card-border)',
+    borderRadius: 6,
+    fontSize: 11,
+    padding: '5px 8px',
+    fontFamily: 'Inter,system-ui',
+    color: 'var(--shell-text)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+  },
+  labelStyle: { color: 'var(--shell-text-muted)', fontSize: 10, marginBottom: 2 },
+  itemStyle:  { color: 'var(--shell-text)', padding: 0 },
+  cursor: { fill: 'rgba(255,255,255,0.04)' },
+}
+
+// ── Bar tooltip (matches PieTooltip design) ──────────────────────
+function BarTooltip({ active, payload, total }) {
+  if (!active || !payload?.length) return null
+  const d   = payload[0].payload
+  const val = d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : String(d.value ?? '')
+  const pct = total > 0 ? `${Math.round((d.value / total) * 100)}%` : ''
+  return (
+    <div style={{
+      background: 'var(--card-bg)',
+      border: `1px solid ${d.fill}`,
+      borderRadius: 8,
+      padding: '10px 12px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
+      fontFamily: 'Inter,system-ui',
+      pointerEvents: 'none',
+      minWidth: 140,
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 6 }}>{d.name}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.fill, flexShrink: 0, display: 'inline-block' }} />
+          {val}
+        </span>
+        <span style={{ color: d.fill }}>{pct}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Stack tooltip ─────────────────────────────────────────────────
+function StackTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const total = payload.reduce((s, p) => s + (p.value || 0), 0)
+  return (
+    <div style={{
+      background: 'var(--card-bg)',
+      border: '1px solid var(--card-border)',
+      borderRadius: 8,
+      padding: '10px 12px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+      fontFamily: 'Inter,system-ui',
+      pointerEvents: 'none',
+      minWidth: 180,
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{label}</div>
+      {[...payload].reverse().map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.fill, flexShrink: 0 }} />
+          <span style={{ flex: 1, fontSize: 11, color: 'var(--shell-text-muted)' }}>{p.name}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--shell-text)' }}>
+            {p.value >= 1000 ? `${(p.value / 1000).toFixed(1)}k` : p.value}
+          </span>
+          <span style={{ fontSize: 10, color: p.fill, minWidth: 32, textAlign: 'right' }}>
+            {total > 0 ? `${Math.round((p.value / total) * 100)}%` : ''}
+          </span>
+        </div>
+      ))}
+      <div style={{ borderTop: '1px solid var(--shell-border)', marginTop: 6, paddingTop: 5, display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+        <span style={{ color: 'var(--shell-text-muted)' }}>Total</span>
+        <span style={{ fontWeight: 700, color: 'var(--shell-text)' }}>{total >= 1000 ? `${(total / 1000).toFixed(1)}k` : total}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Pie tooltip ───────────────────────────────────────────────────
+function PieTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const p = payload[0].payload
+  return (
+    <div style={{
+      background: 'var(--card-bg)',
+      border: `1px solid ${p.color}`,
+      borderRadius: 6,
+      padding: '6px 10px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+      fontFamily: 'Inter,system-ui',
+      pointerEvents: 'none',
+      minWidth: 130,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 4 }}>{p.label}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, marginBottom: 2 }}>
+        <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
+        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.count}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11 }}>
+        <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
+        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.pct}</span>
+      </div>
+    </div>
+  )
+}
+
 // ── ChartRender ───────────────────────────────────────────────────
 // Props:
 //   chartId        – 'pie' | 'line' | 'hor-bar' | 'vert-bar' | 'stack-vert' | 'stack-hor' | 'table' | 'kpi'
@@ -50,6 +249,13 @@ function SourceTick({ x, y, payload }) {
 //   xLabels        – string[] x-axis labels for data-driven line chart
 //   totalLabel     – override center text in pie (e.g. '12,382')
 
+function kgCellValue(row, colName) {
+  const k = colName.toLowerCase().replace(/\s+/g, '')
+  if (k === 'type')         return row.type
+  if (k === 'displaylabel') return row.displayLabel
+  return row[k] ?? '—'
+}
+
 export function ChartRender({
   chartId,
   showPctChange = false,
@@ -59,7 +265,18 @@ export function ChartRender({
   series,
   xLabels,
   totalLabel,
+  columns,
+  chartColors,
 }) {
+  // ── SVG tooltip state ──────────────────────────────────────────
+  const [svgTip, setSvgTip] = useState(null)
+  const onSvgMove = (e) => {
+    setSvgTip(t => t ? { ...t, x: e.clientX, y: e.clientY } : t)
+  }
+  const onSvgEnter = (e, label, value) => {
+    setSvgTip({ x: e.clientX, y: e.clientY, label, value })
+  }
+
   // ── KPI ─────────────────────────────────────────────────────────
   if (chartId === 'kpi' && data) {
     const trendColor = data.trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
@@ -95,7 +312,7 @@ export function ChartRender({
                   axisLine={false} tickLine={false} dy={4}
                 />
                 <YAxis hide />
-                <Tooltip content={() => null} cursor={false} />
+                <Tooltip {...RECHARTS_TIP} cursor={{ stroke: 'var(--shell-border)', strokeWidth: 1 }} />
                 <Area
                   type="monotone" dataKey="value"
                   stroke="var(--pai-indigo)" strokeWidth={2}
@@ -127,10 +344,20 @@ export function ChartRender({
   // ── Stacked horizontal bar ──────────────────────────────────────
   if (chartId === 'stack-hor' && data) {
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, padding: '4px 0', fontFamily: 'Inter,system-ui' }}>
+      <div
+        data-cr-svgwrap=""
+        style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, padding: '4px 0', fontFamily: 'Inter,system-ui', position: 'relative' }}
+        onMouseMove={onSvgMove}
+        onMouseLeave={() => setSvgTip(null)}
+      >
         <div style={{ display: 'flex', height: 12, borderRadius: 4, overflow: 'hidden', gap: 2 }}>
           {data.map((d, i) => (
-            <div key={i} style={{ flex: d.pct, background: d.color, borderRadius: 3 }} />
+            <div
+              key={i}
+              style={{ flex: d.pct, background: d.color, borderRadius: 3, cursor: 'default' }}
+              onMouseEnter={(e) => onSvgEnter(e, d.label, `${d.count} · ${d.pct.toFixed(2)}%`)}
+              onMouseLeave={() => setSvgTip(null)}
+            />
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -144,6 +371,12 @@ export function ChartRender({
             </div>
           ))}
         </div>
+        {svgTip && (
+          <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
+            <div className="cr-tooltip__label">{svgTip.label}</div>
+            <span className="cr-tooltip__val">{svgTip.value}</span>
+          </div>
+        )}
       </div>
     )
   }
@@ -159,30 +392,9 @@ export function ChartRender({
       { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
     ]
     const raw   = data || DEFAULT_RAW
-    const sz    = 120, cx = 60, cy = 60
-    const outerR = sz / 2 - 2
-    const strokeW = outerR * 0.12
-    const r     = outerR - strokeW / 2
+    const sz    = 120
     const total = raw.reduce((s, d) => s + d.value, 0)
-
-    const ptCart = (cx, cy, r, deg) => {
-      const rad = (deg - 90) * Math.PI / 180
-      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-    }
-    const arc = (sa, ea) => {
-      const s = ptCart(cx, cy, r, ea), e = ptCart(cx, cy, r, sa)
-      const la = (ea - sa) <= 180 ? '0' : '1'
-      return `M ${s.x} ${s.y} A ${r} ${r} 0 ${la} 0 ${e.x} ${e.y}`
-    }
-
-    let sa = 0
-    const segs = raw.map((d, i) => {
-      const sweep = (d.value / total) * 360
-      const ea    = sa + sweep - (sweep > 10 ? 6 : 1)
-      const seg   = { ...d, color: d.color || DCOLS[i % DCOLS.length], d: arc(sa, Math.max(ea, sa + 1)) }
-      sa += sweep
-      return seg
-    })
+    const segs  = raw.map((d, i) => ({ ...d, color: d.color || DCOLS[i % DCOLS.length] }))
 
     const centerTop = totalLabel
       ? totalLabel
@@ -192,12 +404,28 @@ export function ChartRender({
       <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 10px', flexShrink: 0 }}>
           <div style={{ position: 'relative', width: sz, height: sz }}>
-            <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-              {segs.map((d, i) => (
-                <path key={i} d={d.d} fill="none" stroke={d.color} strokeWidth={strokeW} strokeLinecap="round" />
-              ))}
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={segs}
+                  cx="50%" cy="50%"
+                  innerRadius="72%" outerRadius="90%"
+                  dataKey="value" nameKey="label"
+                  paddingAngle={3}
+                  strokeWidth={0}
+                  startAngle={90} endAngle={-270}
+                  cornerRadius={3}
+                  isAnimationActive={false}
+                >
+                  {segs.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <Tooltip
+                  content={<PieTooltip />}
+                  wrapperStyle={{ animation: 'none', overflow: 'visible', zIndex: 9999 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, pointerEvents: 'none' }}>
               {showTotalCount ? (
                 <>
                   <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui' }}>Total</span>
@@ -233,7 +461,7 @@ export function ChartRender({
 
   // ── Horizontal bar chart ────────────────────────────────────────
   if (chartId === 'hor-bar') {
-    // Recharts mode: data has unique/corroborated
+    // Stacked mode: data has unique/corroborated fields
     if (data && data[0]?.unique !== undefined) {
       const chartData = data.map(d => ({
         name: d.label,
@@ -260,7 +488,7 @@ export function ChartRender({
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={() => null} cursor={false} />
+                <Tooltip {...RECHARTS_TIP} />
                 <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]} isAnimationActive={false} />
                 <Bar
                   dataKey="Unique"
@@ -293,24 +521,36 @@ export function ChartRender({
       )
     }
 
-    // SVG mode: data has value/secondary
-    if (data) {
+    // SVG percentage mode: explicit legacy data with percentage values + count labels
+    if (data && data[0]?.count !== undefined) {
+      const svgData = data
       const LABEL_W = 86
       const BAR_MAX = 110
       const ROW_H   = 24
-      const VH      = 8 + data.length * ROW_H + 4
+      const VH      = 8 + svgData.length * ROW_H + 4
       const VW      = LABEL_W + BAR_MAX + 30
 
       return (
-        <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div
+          data-cr-svgwrap=""
+          style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', position: 'relative' }}
+          onMouseMove={onSvgMove}
+          onMouseLeave={() => setSvgTip(null)}
+        >
           <svg viewBox={`0 0 ${VW} ${VH}`} width="100%" preserveAspectRatio="xMidYMid meet">
-            {data.map((d, i) => {
+            {svgData.map((d, i) => {
               const y      = 8 + i * ROW_H
               const barW   = (d.value / 100) * BAR_MAX
               const secW   = d.secondary ? (d.secondary / 100) * BAR_MAX : 0
               const uniqW  = Math.max(barW - secW, 0)
+              const tipVal = d.count != null ? d.count : d.value + '%'
               return (
-                <g key={i}>
+                <g
+                  key={i}
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={(e) => onSvgEnter(e, d.label, tipVal)}
+                  onMouseLeave={() => setSvgTip(null)}
+                >
                   <text x={LABEL_W - 4} y={y + 14} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{d.label}</text>
                   {uniqW > 0 && (
                     <rect x={LABEL_W} y={y + 6} width={secW + uniqW} height="11" rx="5" fill="var(--pai-indigo-light)"/>
@@ -318,33 +558,203 @@ export function ChartRender({
                   {secW > 0 && (
                     <rect x={LABEL_W} y={y + 6} width={secW} height="11" rx="5" fill="var(--pai-indigo)"/>
                   )}
-                  <text x={LABEL_W + barW + 4} y={y + 14} fontSize="7.5" fill={TG} fontFamily="Inter,system-ui">{d.count != null ? d.count : d.value + '%'}</text>
+                  <text x={LABEL_W + barW + 4} y={y + 14} fontSize="7.5" fill={TG} fontFamily="Inter,system-ui">{tipVal}</text>
                 </g>
               )
             })}
           </svg>
+          {svgTip && (
+            <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
+              <div className="cr-tooltip__label">{svgTip.label}</div>
+              <span className="cr-tooltip__val">{svgTip.value}</span>
+            </div>
+          )}
         </div>
       )
     }
 
-    // Default hardcoded
+    // Default: Recharts colored horizontal bar — used by settings-panel-configured widgets
+    const horRows = data || DEFAULT_VERT_BAR
+    const horChartData = horRows.map((d, i) => ({
+      name: d.label,
+      value: d.value,
+      fill: (chartColors && chartColors[d.label]) || d.color || DCOLS[i % DCOLS.length],
+    }))
+    const horTotal = horChartData.reduce((s, d) => s + (d.value || 0), 0)
+
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-          {[38,79,120,161,202].map(x => (
-            <line key={x} x1={x} y1="10" x2={x} y2="133" stroke={GRID} strokeWidth="0.8"/>
-          ))}
-          {['Critical','High','Medium','Low','Compliant'].map((lbl,i) => (
-            <text key={i} x="36" y={22+i*24} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-          ))}
-          {[[115,SEV[0]],[85,SEV[1]],[50,SEV[2]],[30,SEV[3]],[8,SEV[4]]].map(([w,clr],i) => (
-            <rect key={i} x={38} y={17+i*24} width={w} height="12" rx="3" fill={clr}/>
-          ))}
-          <line x1="38" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-          {[0,100,200,300,400].map((v,i) => (
-            <text key={i} x={38+i*41} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-          ))}
-        </svg>
+      <div className="cr-vert-root">
+        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={horChartData}
+              layout="vertical"
+              margin={{ top: 4, right: 40, bottom: 4, left: 0 }}
+              barSize={14}
+            >
+              <XAxis
+                type="number"
+                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                axisLine={false} tickLine={false}
+                tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={<SourceTick />}
+                width={88}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<BarTooltip total={horTotal} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+              <Bar dataKey="value" radius={[0, 3, 3, 0]} isAnimationActive={false}>
+                {horChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {showLegend && (
+          <div className="cr-bar-legend">
+            {horChartData.map((d, i) => {
+              const pct = horTotal > 0 ? ((d.value / horTotal) * 100).toFixed(2) : '0'
+              return (
+                <div key={i} className="cr-bar-legend-row">
+                  <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': d.fill }} />
+                  <span className="cr-bar-legend-name">{d.name}</span>
+                  <span className="cr-bar-legend-count">{d.value.toLocaleString()}</span>
+                  <span className="cr-bar-legend-pct">{pct}%</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Stacked vertical bar chart ────────────────────────────────
+  if (chartId === 'stack-vert') {
+    const rows = data || DEFAULT_STACK_VERT
+    const chartData = rows.map(r => ({ ...r, name: r.type }))
+
+    // compute per-origin totals for the legend
+    const originTotals = STACK_ORIGINS.map(o => ({
+      ...o,
+      total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
+    }))
+    const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
+
+    return (
+      <div className="cr-vert-root">
+        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 8, right: 8, bottom: 52, left: -10 }}
+              barSize={22}
+            >
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                axisLine={false} tickLine={false}
+                interval={0} angle={-35} textAnchor="end" dy={4}
+              />
+              <YAxis
+                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                axisLine={false} tickLine={false}
+                tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+              />
+              <Tooltip
+                content={<StackTooltip />}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                wrapperStyle={{ zIndex: 9999 }}
+              />
+              {STACK_ORIGINS.map((o, i) => (
+                <Bar
+                  key={o.key}
+                  dataKey={o.key}
+                  stackId="stack"
+                  fill={o.color}
+                  radius={i === STACK_ORIGINS.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                  isAnimationActive={false}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {showLegend && (
+          <div className="cr-bar-legend">
+            {originTotals.map((o, i) => (
+              <div key={i} className="cr-bar-legend-row">
+                <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': o.color }} />
+                <span className="cr-bar-legend-name">{o.key}</span>
+                <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
+                <span className="cr-bar-legend-pct">
+                  {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Vertical bar chart ─────────────────────────────────────────
+  if (chartId === 'vert-bar') {
+    const rows = data || DEFAULT_VERT_BAR
+    const chartData = rows.map((d, i) => ({
+      name: d.label,
+      value: d.value,
+      fill: (chartColors && chartColors[d.label]) || d.color || DCOLS[i % DCOLS.length],
+    }))
+    const total = chartData.reduce((s, d) => s + (d.value || 0), 0)
+
+    return (
+      <div className="cr-vert-root">
+        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 8, right: 8, bottom: 52, left: -10 }}
+              barSize={22}
+            >
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                axisLine={false} tickLine={false}
+                interval={0}
+                angle={-35}
+                textAnchor="end"
+                dy={4}
+              />
+              <YAxis
+                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                axisLine={false} tickLine={false}
+                tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+              />
+              <Tooltip content={<BarTooltip total={total} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+              <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                {chartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {showLegend && (
+          <div className="cr-bar-legend">
+            {chartData.map((d, i) => {
+              const pct = total > 0 ? ((d.value / total) * 100).toFixed(2) : '0'
+              return (
+                <div key={i} className="cr-bar-legend-row">
+                  <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': d.fill }} />
+                  <span className="cr-bar-legend-name">{d.name}</span>
+                  <span className="cr-bar-legend-count">{d.value.toLocaleString()}</span>
+                  <span className="cr-bar-legend-pct">{pct}%</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }
@@ -387,20 +797,52 @@ export function ChartRender({
       )
     }
 
-    // Default skeleton
+    // KG-style table: type/displayLabel data or default
+    const allRows = (data && Array.isArray(data) && data.length > 0 && data[0]?.type)
+      ? data
+      : DEFAULT_KG_TABLE
+    const tableCols = (columns && columns.length > 0) ? columns : ['Type', 'Display Label']
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [kgPage, setKgPage] = useState(1)
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [kgRows, setKgRows] = useState(10)
+    const kgStart   = (kgPage - 1) * kgRows
+    const pagedRows = allRows.slice(kgStart, kgStart + kgRows)
+
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-          <rect x="8" y="8" width="204" height="22" rx="4" fill={CAT[0]}/>
-          {[0,1,2,3,4].map(i => (
-            <g key={i}>
-              <rect x="8"   y={40+i*23} width="204" height="21" rx="2" fill={i%2===0?'var(--pai-indigo-tint)':'var(--card-bg)'}/>
-              <rect x="14"  y={46+i*23} width="32"  height="9"  rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'var(--shell-border)'}/>
-              <rect x="54"  y={46+i*23} width="80"  height="9"  rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'var(--shell-border)'}/>
-              <rect x="148" y={46+i*23} width="52"  height="9"  rx="3" fill={i%2===0?'rgba(103,96,216,0.3)':'var(--shell-border)'}/>
-            </g>
-          ))}
-        </svg>
+      <div className="cr-kg-root">
+        <div className="cr-kg-scroll">
+          <table className="ds-table cr-kg-table">
+            <thead>
+              <tr>
+                <th className="ds-th cr-kg-th--icon" />
+                {tableCols.map(col => <th key={col} className="ds-th">{col}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {pagedRows.map((r, i) => (
+                <tr key={i}>
+                  <td className="ds-td cr-kg-td--icon">
+                    <img src="/assets/icons/explore.svg" width={12} height={12} alt="" />
+                  </td>
+                  {tableCols.map(col => (
+                    <td key={col} className={`ds-td${col === 'Display Label' ? ' cr-kg-td--label' : ''}`}>
+                      {kgCellValue(r, col)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <TablePagination
+          total={allRows.length}
+          page={kgPage}
+          rowsPerPage={kgRows}
+          onPageChange={setKgPage}
+          onRowsPerPageChange={n => { setKgRows(n); setKgPage(1) }}
+        />
       </div>
     )
   }
@@ -409,8 +851,14 @@ export function ChartRender({
   if (chartId === 'line') {
     if (series) return null
 
+    const yToVal = (y) => Math.round((1000 - (y - 14) * 800 / 108) / 10) * 10
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        data-cr-svgwrap=""
+        style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+        onMouseMove={onSvgMove}
+        onMouseLeave={() => setSvgTip(null)}
+      >
         <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="dsGrad" x1="0" y1="0" x2="0" y2="1">
@@ -429,24 +877,40 @@ export function ChartRender({
           <polyline points="38,90 76,110 114,60 152,85 190,70"  fill="none" stroke={CAT[1]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <polyline points="38,125 76,95 114,130 152,100 190,115" fill="none" stroke={SEV[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           {[[38,115],[76,75],[114,95],[152,55],[190,45]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="3.5" fill="var(--card-bg)" stroke={CAT[0]} strokeWidth="1.5"/>
+            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={CAT[0]} strokeWidth="1.5" style={{ cursor: 'default' }}
+              onMouseEnter={(e) => onSvgEnter(e, `S1 · P${i+1}`, yToVal(y).toLocaleString())}
+              onMouseLeave={() => setSvgTip(null)}
+            />
           ))}
           {[[38,90],[76,110],[114,60],[152,85],[190,70]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="3.5" fill="var(--card-bg)" stroke={CAT[1]} strokeWidth="1.5"/>
+            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={CAT[1]} strokeWidth="1.5" style={{ cursor: 'default' }}
+              onMouseEnter={(e) => onSvgEnter(e, `S2 · P${i+1}`, yToVal(y).toLocaleString())}
+              onMouseLeave={() => setSvgTip(null)}
+            />
           ))}
           {[[38,125],[76,95],[114,130],[152,100],[190,115]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="3.5" fill="var(--card-bg)" stroke={SEV[0]} strokeWidth="1.5"/>
+            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={SEV[0]} strokeWidth="1.5" style={{ cursor: 'default' }}
+              onMouseEnter={(e) => onSvgEnter(e, `S3 · P${i+1}`, yToVal(y).toLocaleString())}
+              onMouseLeave={() => setSvgTip(null)}
+            />
           ))}
           <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
           {['name','name','name','name','name'].map((lbl,i) => (
             <text key={i} x={38+i*38} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
           ))}
         </svg>
+        {svgTip && (
+          <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
+            <div className="cr-tooltip__label">{svgTip.label}</div>
+            <span className="cr-tooltip__val">{svgTip.value}</span>
+          </div>
+        )}
       </div>
     )
   }
 
   // ── Remaining chart types ────────────────────────────────────────
+  const svToVal = (y) => Math.round((1000 - (y - 14) * 800 / 108) / 10) * 10
   const charts = {
     'vert-bar': (
       <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
@@ -457,7 +921,10 @@ export function ChartRender({
           <text key={i} x="28" y={18+i*27} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{v}</text>
         ))}
         {[[110,SEV[0]],[78,SEV[1]],[52,SEV[2]],[20,SEV[3]],[7,SEV[4]]].map(([h,clr],i) => (
-          <rect key={i} x={36+i*36} y={133-h} width="18" height={h} rx="3" fill={clr}/>
+          <rect key={i} x={36+i*36} y={133-h} width="18" height={h} rx="3" fill={clr} style={{ cursor: 'default' }}
+            onMouseEnter={(e) => onSvgEnter(e, ['Crit','High','Med','Low','Comp'][i], svToVal(133-h).toLocaleString())}
+            onMouseLeave={() => setSvgTip(null)}
+          />
         ))}
         <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
         {['Crit','High','Med','Low','Comp'].map((lbl,i) => (
@@ -475,11 +942,21 @@ export function ChartRender({
         ))}
         {[[50,40,30],[30,50,40],[60,35,25],[20,45,55],[40,30,50]].map(([h1,h2,h3],i) => {
           const x = 36+i*36; const t = h1+h2+h3
+          const sevLabels = ['Critical','High','Medium']
           return (
             <g key={i}>
-              <rect x={x} y={133-t}      width="18" height={h1} rx="2" fill={SEV[0]}/>
-              <rect x={x} y={133-h2-h3}  width="18" height={h2}        fill={SEV[1]}/>
-              <rect x={x} y={133-h3}     width="18" height={h3}        fill={SEV[2]}/>
+              <rect x={x} y={133-t}      width="18" height={h1} rx="2" fill={SEV[0]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[0], svToVal(133-t).toLocaleString())}
+                onMouseLeave={() => setSvgTip(null)}
+              />
+              <rect x={x} y={133-h2-h3}  width="18" height={h2}        fill={SEV[1]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[1], svToVal(133-h2-h3).toLocaleString())}
+                onMouseLeave={() => setSvgTip(null)}
+              />
+              <rect x={x} y={133-h3}     width="18" height={h3}        fill={SEV[2]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[2], svToVal(133-h3).toLocaleString())}
+                onMouseLeave={() => setSvgTip(null)}
+              />
             </g>
           )
         })}
@@ -499,11 +976,21 @@ export function ChartRender({
         ))}
         {[[80,50,30],[60,55,25],[70,45,35],[35,60,45],[15,30,20]].map(([w1,w2,w3],i) => {
           const y = 17+i*24
+          const sevLabels = ['Critical','High','Medium']
           return (
             <g key={i}>
-              <rect x={38}       y={y} width={w1} height="12" rx="2" fill={SEV[0]}/>
-              <rect x={38+w1}    y={y} width={w2} height="12"        fill={SEV[1]}/>
-              <rect x={38+w1+w2} y={y} width={w3} height="12"        fill={SEV[2]}/>
+              <rect x={38}       y={y} width={w1} height="12" rx="2" fill={SEV[0]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[0], w1)}
+                onMouseLeave={() => setSvgTip(null)}
+              />
+              <rect x={38+w1}    y={y} width={w2} height="12"        fill={SEV[1]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[1], w2)}
+                onMouseLeave={() => setSvgTip(null)}
+              />
+              <rect x={38+w1+w2} y={y} width={w3} height="12"        fill={SEV[2]} style={{ cursor: 'default' }}
+                onMouseEnter={(e) => onSvgEnter(e, sevLabels[2], w3)}
+                onMouseLeave={() => setSvgTip(null)}
+              />
             </g>
           )
         })}
@@ -526,8 +1013,19 @@ export function ChartRender({
   }
 
   return (
-    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div
+      data-cr-svgwrap=""
+      style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+      onMouseMove={onSvgMove}
+      onMouseLeave={() => setSvgTip(null)}
+    >
       {charts[chartId] || charts['vert-bar']}
+      {svgTip && (
+        <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
+          <div className="cr-tooltip__label">{svgTip.label}</div>
+          <span className="cr-tooltip__val">{svgTip.value}</span>
+        </div>
+      )}
     </div>
   )
 }
