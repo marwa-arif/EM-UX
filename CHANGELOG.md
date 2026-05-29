@@ -22,6 +22,21 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.5.1] — 2026-05-29
+### Added
+- `error-page.css` — extracted ErrorPage styles from inline JSX to proper CSS classes
+- `wp-root`, `wp-body`, `wp-main` layout classes added to `shell.css` for WorkspacePage shell
+### Changed
+- ExposureOverviewPage: `exp-trend-pill`, `exp-collapse-btn`, `exp-groupby-btn`, `exp-explore-btn` now layer `ds-btn` base classes
+- WorkspacePage: layout inline styles replaced with CSS class references
+### Fixed
+- FindingsPage: replaced `fin-btn` custom classes with `ds-btn sz-md t-outline / t-primary`
+- ComplianceFindingsPage: replaced `comp-drawer-download-btn` with `ds-btn sz-sm t-outline`
+- DashboardCanvas: widget delete now shows confirmation modal naming the widget before deletion
+- ErrorPage: all inline `style={{}}` blocks extracted to `error-page.css`
+
+---
+
 ## [0.5.0] — 2026-05-27
 ### Added
 - Stacked vertical bar (`stack-vert`) Recharts implementation with 12 origin stacks, legend, and per-segment hover tooltip
