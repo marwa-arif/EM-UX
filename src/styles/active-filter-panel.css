@@ -62,7 +62,7 @@
 }
 
 .sfm-dialog {
-  position: fixed; z-index: 10006;
+  position: fixed; z-index: 300;
   top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: 400px; max-height: calc(100vh - 48px);
   background: var(--card-bg);

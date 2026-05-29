@@ -1229,7 +1229,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <div className="dc-field-sub-label" style={{ marginTop: 8 }}>Classification ( y-axis )</div>
+                  <div className="dc-field-sub-label dc-field-sub-label--mt">Classification ( y-axis )</div>
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
@@ -1470,27 +1470,23 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
         <FieldRow label="Widget Height">
           <SizeButtons options={WIDGET_HEIGHTS} value={widgetHeight} onChange={setWidgetHeight} />
         </FieldRow>
-        <div style={{ fontSize: 12, fontWeight: 500, color: PAI.fg1, marginBottom: 8 }}>Widget Type</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 16 }}>
+        <div className="dc-field-label dc-field-label--mb8">Widget Type</div>
+        <div className="dc-chart-type-grid">
           {rows.map((row, ri) => (
-            <div key={ri} style={{ display: 'flex', gap: 8 }}>
+            <div key={ri} className="dc-chart-type-row">
               {row.map(ct => (
                 <button
                   key={ct.id}
                   onClick={() => setSelected(ct.id)}
+                  className="dc-chart-type-btn"
                   style={{
-                    flex: 1, height: 76, padding: 10,
-                    background: selected === ct.id ? PAI.indigoTint : 'var(--card-bg)',
-                    border: `1.5px solid ${selected === ct.id ? PAI.indigo : 'var(--shell-border)'}`,
-                    borderRadius: 12, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: 6,
-                    color: selected === ct.id ? PAI.indigo : PAI.fg3,
-                    transition: 'border-color 120ms, color 120ms, background 120ms',
+                    '--dc-chartbtn-bg':     selected === ct.id ? PAI.indigoTint : 'var(--card-bg)',
+                    '--dc-chartbtn-border': selected === ct.id ? PAI.indigo : 'var(--shell-border)',
+                    '--dc-chartbtn-color':  selected === ct.id ? PAI.indigo : PAI.fg3,
                   }}
                 >
                   <ChartIcon id={ct.id} selected={selected === ct.id} />
-                  <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center', lineHeight: 1.3 }}>{ct.label}</span>
+                  <span className="dc-chart-type-btn-label">{ct.label}</span>
                 </button>
               ))}
             </div>
@@ -1566,7 +1562,7 @@ function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
             {showDownload && (
               <div ref={dlRef} className="comp-sort-wrap">
                 <button
-                  className="comp-drawer-download-btn"
+                  className="ds-btn sz-sm t-outline"
                   disabled
                   onClick={() => setDlOpen(o => !o)}
                 >

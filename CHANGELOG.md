@@ -22,6 +22,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.5.2] — 2026-05-29
+### Changed
+- `dashboard.css`: DS 2.0 token fixes — `border-radius` normalised (cards→4px, inputs→8px, toggles→12px), z-index clamped to 300 tier, font-size floor 11px, spacing to 4pt grid, toolbar height 48px
+- `active-filter-panel.css`: z-index `10006` → `300` on `.sfm-dialog`
+- `DashboardCanvas.jsx`: chart-type picker buttons use CSS classes + CSS vars only (no inline styles); `.dc-field-sub-label` margin-top via CSS modifier class
+
+---
+
 ## [0.5.1] — 2026-05-29
 ### Added
 - `error-page.css` — extracted ErrorPage styles from inline JSX to proper CSS classes
