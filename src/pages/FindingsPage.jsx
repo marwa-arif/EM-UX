@@ -391,37 +391,37 @@ export default function FindingsPage({ onNav }) {
               placeholder="Search Any"
               width={200}
             />
-            <button className="fin-btn fin-btn-outline">
+            <button className="ds-btn sz-md t-outline">
               <IcDownload /> Download Exposure Factors
             </button>
-            <button className="fin-btn fin-btn-primary">
+            <button className="ds-btn sz-md t-primary">
               <IcDownload /> Download
             </button>
           </div>
         </div>
 
-        <div className="fin-table-wrap">
-          <table className="fin-table">
+        <div className="ds-table-wrap">
+          <table className="ds-table">
             <thead>
               <tr>
                 {['Finding Title', 'Affected Assets', 'Exposure Category', 'Impact Score', 'Likelihood Score', 'Exposure Score'].map(h => (
-                  <th key={h} className="fin-th">
-                    <span className="fin-th-inner">{h} <IcSort /></span>
+                  <th key={h} className="ds-th">
+                    <span className="ds-th-inner">{h} <IcSort /></span>
                   </th>
                 ))}
-                <th className="fin-th"><span className="fin-th-inner">Action</span></th>
+                <th className="ds-th"><span className="ds-th-inner">Action</span></th>
               </tr>
             </thead>
             <tbody>
               {visibleRows.map((row, i) => (
-                <tr key={i} className="fin-tr">
-                  <td className="fin-td">
+                <tr key={i}>
+                  <td className="ds-td">
                     <div className="fin-td-flex">
                       <span className="fin-td-icon"><IcDoc /></span>
                       {row.title}
                     </div>
                   </td>
-                  <td className="fin-td">
+                  <td className="ds-td">
                     <div className="fin-td-flex">
                       <span className="fin-td-icon" style={{ color: '#6360D8' }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -432,11 +432,11 @@ export default function FindingsPage({ onNav }) {
                       {row.asset}
                     </div>
                   </td>
-                  <td className="fin-td fin-td-cat">{row.cat}</td>
-                  <td className="fin-td fin-score" style={{ color: scoreColor(row.impact) }}>{row.impact}</td>
-                  <td className="fin-td fin-score" style={{ color: scoreColor(row.likelihood) }}>{row.likelihood}</td>
-                  <td className="fin-td fin-score" style={{ color: scoreColor(row.exposure) }}>{row.exposure}</td>
-                  <td className="fin-td">
+                  <td className="ds-td fin-td-cat">{row.cat}</td>
+                  <td className="ds-td fin-score" style={{ color: scoreColor(row.impact) }}>{row.impact}</td>
+                  <td className="ds-td fin-score" style={{ color: scoreColor(row.likelihood) }}>{row.likelihood}</td>
+                  <td className="ds-td fin-score" style={{ color: scoreColor(row.exposure) }}>{row.exposure}</td>
+                  <td className="ds-td">
                     <div className="fin-td-actions">
                       <button className="fin-action-btn" title="Pin"><IcPin /></button>
                       <button className="fin-action-btn" title="Dismiss"><IcX /></button>

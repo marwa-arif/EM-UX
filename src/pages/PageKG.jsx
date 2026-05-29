@@ -2064,7 +2064,7 @@ function PageKG() {
             selectedEdgeKey={selectedEdgeKey}
             highlightOnly={highlightOnly}
             multiSelectedSet={multiMode ? multiSelected : null}
-            panelOpen={panelOpen}
+            panelOpen={false}
             onSelect={(id) => {
               if (multiMode) {
                 if (id === null) return;
@@ -2345,7 +2345,7 @@ function PageKG() {
                         {[
                           { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
                           { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
-                          { label: 'Medium',   pct: 68, color: 'var(--pai-high-fg)' },
+                          { label: 'Medium',   pct: 68, color: 'var(--pai-red-high)' },
                           { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
                         ].map(s => (
                           <div key={s.label} className="kg-dp-sev-row">

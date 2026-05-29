@@ -358,114 +358,64 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
 
   const labelById = (id) => entities.find(e => e.id === id)?.label || id;
 
-  const rowStyle = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1.2fr 24px',
-    gap: 6,
-    alignItems: 'center',
-    padding: '4px 0',
-  };
-  const selStyle = {
-    fontSize: 11, padding: '4px 6px', borderRadius: 4,
-    border: '1px solid var(--shell-border)', background: 'var(--card-bg)', color: 'var(--pai-fg1)',
-    fontFamily: 'inherit',
-    minWidth: 0,
-  };
-  const inputStyle = { ...selStyle };
-  const xBtnStyle = {
-    width: 22, height: 22, borderRadius: 4, border: '1px solid var(--shell-border)',
-    background: 'var(--card-bg)', color: 'var(--shell-text-muted)', cursor: 'pointer',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 14, lineHeight: 1, padding: 0,
-  };
-
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div className="ee-root">
       {/* Save bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        marginBottom: 8,
-      }}>
+      <div className="ee-save-bar">
         <button
           onClick={saveAsDefault}
           disabled={!dirty && !savedFlash}
-          style={{
-            flex: 1, padding: '6px 10px',
-            borderRadius: 6, border: '1px solid',
-            borderColor: savedFlash ? 'var(--pai-green)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-border)'),
-            background: savedFlash ? 'var(--pai-low-bg)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-raised)'),
-            color: savedFlash ? 'var(--pai-low-fg)' : (dirty ? 'var(--pai-surface)' : 'var(--shell-text-muted)'),
-            fontSize: 11, fontWeight: 500,
-            cursor: (dirty || savedFlash) ? 'pointer' : 'default',
-            fontFamily: 'inherit',
-            transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
-          }}
+          className={`ee-save-btn${savedFlash ? ' ee-save-btn--saved' : dirty ? ' ee-save-btn--dirty' : ''}`}
         >
           {savedFlash ? 'Saved' : (dirty ? 'Save as default' : 'Default saved')}
         </button>
         <button
           onClick={resetEdges}
           disabled={!dirty}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 6, border: '1px solid var(--shell-border)',
-            background: 'transparent',
-            color: dirty ? 'var(--shell-text-muted)' : 'var(--pai-disabled)',
-            fontSize: 11,
-            cursor: dirty ? 'pointer' : 'default',
-            fontFamily: 'inherit',
-          }}
+          className={`ee-reset-btn${dirty ? ' ee-reset-btn--dirty' : ''}`}
         >
           Reset
         </button>
       </div>
 
-      <div style={{ ...rowStyle, fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', paddingBottom: 4, borderBottom: '1px solid var(--shell-border)', marginBottom: 6 }}>
+      <div className="ee-row-header">
         <div>Source</div><div>Target</div><div>Label</div><div></div>
       </div>
 
-      <div style={{ maxHeight: 260, overflowY: 'auto', paddingRight: 4 }}>
+      <div className="ee-scroll-list">
         {edges.map((e, i) => (
-          <div key={i} style={rowStyle}>
-            <select style={selStyle} value={e[0]} onChange={(ev) => updateEdge(i, 'src', ev.target.value)}>
+          <div key={i} className="ee-row">
+            <select className="ee-field" value={e[0]} onChange={(ev) => updateEdge(i, 'src', ev.target.value)}>
               {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
             </select>
-            <select style={selStyle} value={e[1]} onChange={(ev) => updateEdge(i, 'tgt', ev.target.value)}>
+            <select className="ee-field" value={e[1]} onChange={(ev) => updateEdge(i, 'tgt', ev.target.value)}>
               {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
             </select>
-            <input style={inputStyle} placeholder="—"
+            <input className="ee-field" placeholder="—"
                    value={e[2] || ''}
                    onChange={(ev) => updateEdge(i, 'label', ev.target.value)} />
-            <button style={xBtnStyle} title="Remove edge"
-                    onClick={() => removeEdge(i)}
-                    onMouseEnter={(ev) => ev.currentTarget.style.background = 'var(--pai-crit-bg)'}
-                    onMouseLeave={(ev) => ev.currentTarget.style.background = 'var(--card-bg)'}
-            >×</button>
+            <button className="ee-x-btn" title="Remove edge" onClick={() => removeEdge(i)}>×</button>
           </div>
         ))}
         {edges.length === 0 && (
-          <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', padding: '8px 0' }}>No edges. Add one below.</div>
+          <div className="ee-empty">No edges. Add one below.</div>
         )}
       </div>
 
-      <div style={{ borderTop: '1px solid var(--shell-border)', marginTop: 8, paddingTop: 8 }}>
-        <div style={{ fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
-          Add edge
-        </div>
-        <div style={rowStyle}>
-          <select style={selStyle} value={newSrc} onChange={(e) => setNewSrc(e.target.value)}>
+      <div className="ee-add-section">
+        <div className="ee-add-label">Add edge</div>
+        <div className="ee-row">
+          <select className="ee-field" value={newSrc} onChange={(e) => setNewSrc(e.target.value)}>
             {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
           </select>
-          <select style={selStyle} value={newTgt} onChange={(e) => setNewTgt(e.target.value)}>
+          <select className="ee-field" value={newTgt} onChange={(e) => setNewTgt(e.target.value)}>
             {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
           </select>
-          <input style={inputStyle} placeholder="Relationship (optional)"
+          <input className="ee-field" placeholder="Relationship (optional)"
                  value={newLabel}
                  onChange={(e) => setNewLabel(e.target.value)}
                  onKeyDown={(e) => e.key === 'Enter' && addEdge()} />
-          <button style={{ ...xBtnStyle, color: 'var(--pai-indigo)', borderColor: 'var(--pai-indigo-secondary)' }}
-                  title="Add edge"
-                  onClick={addEdge}>+</button>
+          <button className="ee-x-btn ee-add-btn" title="Add edge" onClick={addEdge}>+</button>
         </div>
       </div>
     </div>
@@ -572,8 +522,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'    },
         ],
       },
@@ -598,7 +548,7 @@ const _UNUSED = {
           { label: 'Workstation',      count: '2,848', value: 2848, pct: '23%',  color: '#5BADB8'                 },
           { label: 'Network',          count: '2,600', value: 2600, pct: '21%',  color: 'var(--pai-green)'        },
           { label: 'Mobile',           count: '897',   value: 897,  pct: '8%',   color: 'var(--pai-high-fg)'      },
-          { label: 'Printers',         count: '124',   value: 124,  pct: '1%',   color: 'var(--pai-red-high)'     },
+          { label: 'Printers',         count: '124',   value: 124,  pct: '1%',   color: 'var(--pai-high-fg)'     },
           { label: 'IOT',              count: '122',   value: 122,  pct: '1%',   color: 'var(--pai-indigo-muted)' },
         ],
       },
@@ -616,8 +566,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '750',   pct: 6.38,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'    },
         ],
       },
@@ -642,7 +592,7 @@ const _UNUSED = {
           { label: 'Workstation',            count: '4,922', value: 4922, pct: '42%', color: '#5BADB8'                 },
           { label: 'Server',                 count: '381',   value: 381,  pct: '3%',  color: 'var(--pai-green)'        },
           { label: 'Kubernetes Container',   count: '353',   value: 353,  pct: '3%',  color: 'var(--pai-high-fg)'      },
-          { label: 'Security Group',         count: '224',   value: 224,  pct: '2%',  color: 'var(--pai-red-high)'     },
+          { label: 'Security Group',         count: '224',   value: 224,  pct: '2%',  color: 'var(--pai-high-fg)'     },
           { label: 'Serverless',             count: '66',    value: 66,   pct: '1%',  color: 'var(--pai-indigo-muted)' },
         ],
       },
@@ -660,8 +610,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '4,322',  pct: 6.05,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '17,503', pct: 24.50, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '40,197', pct: 56.27, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '17,503', pct: 24.50, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '40,197', pct: 56.27, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '9,420',  pct: 13.18, color: 'var(--pai-green)'    },
         ],
       },
@@ -945,16 +895,11 @@ function App() {
   );
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      height: '100vh', overflow: 'hidden',
-      fontFamily: "'Inter', system-ui",
-      color: PAI.fg1, background: 'var(--shell-bg)',
-    }}>
+    <div className="app-shell">
       {showSplash && <SplashScreen onDone={onSplashDone} />}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
 
-      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
         <LeftNav
           current={current}
           onNav={handleNav}
@@ -965,19 +910,19 @@ function App() {
         />
 
         {appMode === 'studio' ? (
-          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
+          <main className="exp-main exp-main--col">
             <SubHeader
               title="Studio"
               breadcrumb={['Studio']}
               breadcrumbHrefs={[null]}
             />
-            <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+            <div className="page-scroll">
               <ComingSoon />
             </div>
           </main>
         ) : (
-          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
-            <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <main className="exp-main exp-main--row">
+            <div className="exp-content-col">
               <SubHeader
                 title={pageMeta.title}
                 breadcrumb={pageMeta.breadcrumb}
@@ -1002,7 +947,7 @@ function App() {
                   history.pushState(null, '', '/workspace');
                 } : undefined}
               />
-              <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+              <div className="page-scroll">
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}

@@ -224,7 +224,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
   background: var(--asmts-fw-item-bg, var(--shell-raised));
@@ -248,7 +248,7 @@
 }
 
 .asmts-fw-abbr {
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--asmts-fw-abbr-color, var(--shell-text));
 }

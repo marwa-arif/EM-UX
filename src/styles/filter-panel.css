@@ -296,7 +296,7 @@
 }
 .gf-drawer__title-icon { opacity: 0.7; }
 .gf-drawer__title-text {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--pai-fg1);
 }
@@ -432,7 +432,7 @@
   overflow-y: auto;
 }
 .gf-add-hide-popover__title {
-  padding: 10px 12px 6px;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 600;
   color: var(--pai-fg3);
@@ -443,7 +443,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   cursor: pointer;
   font-size: 13px;
   color: var(--pai-fg1);
@@ -543,7 +543,7 @@
 /* Preview strip */
 .gf-preview {
   border-top: 1px solid var(--shell-border);
-  padding: 7px 20px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -578,7 +578,7 @@
   background: var(--ent-tint);
   border: 1px solid var(--ent-stroke);
   border-radius: 44px;
-  padding: 2px 8px 2px 6px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 500;
   color: var(--ent-color);
@@ -666,7 +666,7 @@
 
 /* Tabs row */
 .fp-tabs {
-  padding: 10px 16px 4px;
+  padding: 8px 16px 4px;
   flex-shrink: 0;
 }
 
@@ -726,7 +726,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--shell-border);
   opacity: 1;
   transition: opacity 120ms;
@@ -791,7 +791,7 @@
   width: 100%;
   height: 32px;
   box-sizing: border-box;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 1.5px solid var(--pai-indigo);
   border-radius: 6px;
   font-size: 12px;
@@ -835,7 +835,7 @@
 .fp-saved-settings__header {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 .fp-saved-settings__title {
@@ -957,7 +957,7 @@
 }
 .fp-saved-section__header {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
 }
 .fp-saved-section__title {
@@ -980,12 +980,12 @@
 }
 
 /* ── Quick Filters view ──────────────────────────────────────────── */
-.fp-quick-search-wrap { padding: 8px 16px 10px; }
+.fp-quick-search-wrap { padding: 8px 16px; }
 
 .fp-attr-group { border-bottom: 1px solid var(--shell-border); }
 .fp-attr-group__btn {
   width: 100%;
-  padding: 10px 16px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 8px;

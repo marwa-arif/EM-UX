@@ -231,7 +231,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
               <div ref={downloadRef} className="cfp-download-wrap">
                 <button
-                  className={`comp-drawer-download-btn${downloadOpen ? ' comp-sort-btn--active' : ''}`}
+                  className={`ds-btn sz-sm t-outline${downloadOpen ? ' comp-sort-btn--active' : ''}`}
                   onClick={() => setDownloadOpen(o => !o)}
                 >
                   <IcDownload />

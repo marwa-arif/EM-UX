@@ -77,7 +77,7 @@
   align-items: center;
   gap: 6px;
   margin: 0 12px;
-  padding: 0 10px;
+  padding: 0 8px;
   height: 28px;
   border-radius: 44px;
   border: 1px solid var(--shell-border);
@@ -140,7 +140,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px 6px;
+  padding: 8px;
   gap: 5px;
   width: 100%;
   box-sizing: border-box;
@@ -292,7 +292,7 @@
 }
 
 .comp-fw-pct {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--shell-text-muted);
   line-height: 1;
@@ -302,7 +302,7 @@
 }
 
 .comp-fw-pct-unit {
-  font-size: 20px;
+  font-size: 16px;
   vertical-align: baseline;
 }
 
@@ -490,7 +490,7 @@
   color: var(--shell-text);
   font-size: 12px;
   font-family: inherit;
-  padding: 0 28px 0 10px;
+  padding: 0 28px 0 8px;
   cursor: pointer;
   outline: none;
   appearance: none;
@@ -629,7 +629,7 @@
   height: 28px;
   border: 1px solid var(--shell-border);
   border-radius: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   gap: 6px;
   background: var(--card-bg);
   width: 180px;
@@ -803,7 +803,7 @@
   gap: 4px;
   border: 1px solid var(--shell-border);
   border-radius: 44px;
-  padding: 2px 10px;
+  padding: 2px 8px;
   height: 24px;
   background: var(--card-bg);
   font-size: 11px;
@@ -842,7 +842,7 @@
   text-align: left;
   border: none;
   background: transparent;
-  padding: 7px 10px;
+  padding: 8px;
   border-radius: 5px;
   font-size: 12px;
   font-family: inherit;
@@ -888,7 +888,7 @@
   align-items: center;
   gap: 5px;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 44px;
   border: none;
   background: var(--pai-indigo);
@@ -921,7 +921,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px;
   border: none;
   background: transparent;
   color: var(--shell-text);
@@ -1368,7 +1368,7 @@ html.theme-dark .comp-fw-card--selected {
   align-items: center;
   gap: 5px;
   height: 26px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 44px;
   border: none;
   background: rgba(99,103,238,0.08);
@@ -1416,7 +1416,7 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-drawer-table td {
-  padding: 10px 16px;
+  padding: 8px 16px;
   color: var(--shell-text);
   border-bottom: 1px solid var(--table-border);
   vertical-align: middle;
@@ -2428,7 +2428,7 @@ html.theme-dark .comp-fw-card--selected {
   top: 75%;
   left: 52%;
   transform: translate(-50%, -50%);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;

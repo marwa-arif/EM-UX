@@ -1508,7 +1508,7 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 }
 
 // ── Widget Card ──────────────────────────────────────────────────────
-function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
+function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
   const [hovered, setHovered]         = useState(false)
   const [dlOpen, setDlOpen]           = useState(false)
   const dlRef                         = useRef(null)
@@ -1546,7 +1546,7 @@ function WidgetCard({ widget, isEditing, onEdit, onDelete }) {
           <button title="Edit" onClick={onEdit} className="dc-action-btn">
             <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
-          <button title="Delete" onClick={onDelete} className="dc-action-btn dc-action-btn--delete">
+          <button title="Delete" onClick={() => onRequestDelete(widget)} className="dc-action-btn dc-action-btn--delete">
             <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
@@ -1690,6 +1690,7 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
   // Panel state: null | 'add' | 'settings'
   const [panelMode, setPanelMode]         = useState(null)
   const [settingsWidgetId, setSettingsWidgetId] = useState(null)
+  const [deletePending, setDeletePending] = useState(null)
 
   // Add widget form
   const [selectedChart, setSelectedChart]       = useState(null)
@@ -1751,6 +1752,7 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
   const settingsWidget = widgets.find(w => w.id === settingsWidgetId)
 
   return (
+    <>
     <div
       className="dc-root"
       style={{ '--dc-bg-app': PAI.bgApp, '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint, '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}
@@ -1820,7 +1822,7 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
                     widget={w}
                     isEditing={w.id === settingsWidgetId}
                     onEdit={() => openSettings(w.id)}
-                    onDelete={() => deleteWidget(w.id)}
+                    onRequestDelete={w => setDeletePending(w)}
                   />
                 ))}
 
@@ -1899,5 +1901,21 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
         )}
       </div>
     </div>
+
+    {deletePending && (
+      <div className="afp-modal-overlay" onClick={() => setDeletePending(null)}>
+        <div className="afp-modal" onClick={e => e.stopPropagation()}>
+          <p className="afp-modal-title">Delete widget</p>
+          <p className="afp-modal-body">
+            Delete <strong>"{deletePending.label}"</strong>? This widget will be permanently removed from the dashboard.
+          </p>
+          <div className="afp-modal-actions">
+            <button className="afp-modal-cancel" onClick={() => setDeletePending(null)}>Cancel</button>
+            <button className="afp-modal-confirm" onClick={() => { deleteWidget(deletePending.id); setDeletePending(null); }}>Delete widget</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import '../styles/shell.css'
 import Topbar from '../components/Topbar.jsx'
 import LeftNav from '../components/LeftNav.jsx'
 import SubHeader from '../components/SubHeader.jsx'
@@ -33,26 +34,16 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
 
   return (
     <WorkspaceProvider onNav={handleNav}>
-      <div style={{
-        display: 'flex', flexDirection: 'column',
-        height: '100vh', overflow: 'hidden',
-        fontFamily: "'Inter', system-ui",
-        color: 'var(--pai-fg1)', background: 'var(--shell-bg)',
-      }}>
+      <div className="wp-root">
         <Topbar theme={theme} onToggleTheme={onToggleTheme} />
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div className="wp-body">
           <LeftNav
             current={current}
             onNav={handleNav}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed(c => !c)}
           />
-          <main style={{
-            flex: 1, minWidth: 0,
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-            background: 'var(--ctrl-bg)',
-          }}>
+          <main className="wp-main">
             <SubHeader
               title={
                 isDashboard  ? dashTitle :

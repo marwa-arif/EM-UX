@@ -218,7 +218,7 @@ function ExposureOverviewSection() {
           <IcInfo />
         </div>
 
-        <button className="exp-trend-pill">
+        <button className="ds-btn exp-trend-pill">
           <IcExposure />
           <span>Exposure Trend</span>
           <IcInfo />
@@ -231,7 +231,7 @@ function ExposureOverviewSection() {
           <IcExplore />
         </button>
 
-        <button onClick={() => setCollapsed(c => !c)} className="exp-collapse-btn">
+        <button onClick={() => setCollapsed(c => !c)} className="ds-btn sz-sm t-outline exp-collapse-btn">
           {collapsed ? <IcChevron /> : <IcChevronUp />}
           {collapsed ? 'Expand' : 'Collapse'}
         </button>
@@ -298,8 +298,8 @@ export default function ExposureOverviewPage() {
   const visibleRows = filtered.slice(start, start + rowsPerPage);
 
   const TH = ({ children, align = 'left' }) => (
-    <th className="exp-th" style={{ textAlign: align }}>
-      <span className="exp-th-inner">
+    <th className="ds-th" style={{ textAlign: align }}>
+      <span className="ds-th-inner">
         {children}
         <span className="exp-th-sort-icon"><IcSort /></span>
       </span>
@@ -314,7 +314,7 @@ export default function ExposureOverviewPage() {
         <div className="exp-contrib-hdr">
           <div className="exp-contrib-hdr-left">
             <span className="exp-contrib-title">Exposure Contribution by</span>
-            <button className="exp-groupby-btn">
+            <button className="ds-btn sz-sm t-outline exp-groupby-btn">
               {groupBy}
               <IcChevron />
             </button>
@@ -338,14 +338,14 @@ export default function ExposureOverviewPage() {
                 <IcSearch />
               </div>
             </div>
-            <button className="exp-explore-btn">
+            <button className="ds-btn sz-sm t-outline exp-explore-btn">
               Explore More <IcExplore />
             </button>
           </div>
         </div>
 
-        <div className="exp-table-wrap">
-          <table className="exp-table">
+        <div className="ds-table-wrap">
+          <table className="ds-table">
             <thead>
               <tr>
                 <TH>Name</TH>
@@ -360,20 +360,20 @@ export default function ExposureOverviewPage() {
               {visibleRows.map((row, i) => {
                 const trendColor = changeColor(row.changeDir, row.changePct);
                 return (
-                  <tr key={i} className="exp-tr">
-                    <td className="exp-td exp-td-name">{row.name}</td>
-                    <td className="exp-td">
+                  <tr key={i}>
+                    <td className="ds-td exp-td-name">{row.name}</td>
+                    <td className="ds-td">
                       <span className="exp-td-score" style={{ color: scoreColor(row.score) }}>{row.score}</span>
                     </td>
-                    <td className="exp-td">
+                    <td className="ds-td">
                       <span className="exp-td-change" style={{ color: trendColor }}>
                         {row.changeDir === 'up' ? <IcTrendUp color={trendColor} /> : <IcTrendDown color={trendColor} />}
                         {row.changePct}%
                       </span>
                     </td>
-                    <td className="exp-td"><MiniBar pct={row.exposurePct} /></td>
-                    <td className="exp-td"><MiniBar pct={row.findingsPct} /></td>
-                    <td className="exp-td"><MiniBar pct={row.assetsPct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.exposurePct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.findingsPct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.assetsPct} /></td>
                   </tr>
                 );
               })}

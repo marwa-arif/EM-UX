@@ -168,7 +168,7 @@
 .dcp-canvas-sample-tag {
   position: absolute; bottom: 12px; right: 12px;
   font-size: 10px; font-weight: 500;
-  padding: 3px 10px; border-radius: 44px;
+  padding: 4px 8px; border-radius: 44px;
   background: rgba(0,0,0,0.55);
   color: rgba(255,255,255,0.80);
   display: flex; align-items: center; gap: 5px;
@@ -257,10 +257,10 @@
 
 .lib-quick-foot {
   border-top: 1px solid var(--card-border);
-  padding: 10px 16px;
+  padding: 8px 16px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.lib-quick-badge         { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 44px; letter-spacing: 0.05em; text-transform: uppercase; }
+.lib-quick-badge         { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 44px; letter-spacing: 0.05em; text-transform: uppercase; }
 .lib-quick-badge--dash   { background: #ECF8FD; color: var(--pai-teal); }
 .lib-quick-badge--report { background: rgba(217,139,29,0.12); color: var(--pai-high-fg); }
 
@@ -500,7 +500,7 @@
 .dcp-canvas-fname {
   position: absolute; bottom: 12px; left: 12px;
   font-size: 10px; font-weight: 500;
-  padding: 3px 10px; border-radius: 44px;
+  padding: 4px 8px; border-radius: 44px;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
   color: var(--shell-text-muted);

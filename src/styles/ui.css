@@ -23,8 +23,8 @@
 .pai-btn--tertiary { background: transparent; color: var(--pai-fg2); }
 .pai-btn--tertiary:hover { background: var(--pai-bg-raised); }
 
-.pai-btn--danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
-.pai-btn--danger:hover { background: var(--pai-crit-bg-hover); }
+.pai-btn--danger { background: #dc2626; color: #fff; }
+.pai-btn--danger:hover { background: #b91c1c; }
 
 /* ── IconBtn ──────────────────────────────────────────────────────── */
 .pai-icon-btn {
