@@ -318,8 +318,8 @@
   flex: 1;
   position: relative;
   overflow: hidden;
-  background-image: radial-gradient(circle, #CDD1D9 1.2px, transparent 1.2px);
-  background-size: 22px 22px;
+  background-image: radial-gradient(circle, var(--pai-border-strong) 1px, transparent 1px);
+  background-size: 24px 24px;
   background-color: var(--ctrl-bg);
 }
 .gf-canvas__zoom-controls {

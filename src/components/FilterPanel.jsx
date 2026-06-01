@@ -18,13 +18,13 @@ const BOOLEAN_OPTS    = ['(empty)', 'True', 'False'];
 
 const PAGE_FILTER_ATTRS = {
   'kg': [
-    { id: 'type',                              label: 'Type',                              icon: 'type',                options: [] },
-    { id: 'origin',                            label: 'Origin',                            icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: [] },
-    { id: 'business-unit',                     label: 'Business Unit',                     icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'type',                              label: 'Type',                              icon: 'type',                options: ['(empty)', 'Application', 'Asset Management', 'AWS Account', 'AWS IAM User', 'Azure Subscription', 'Bucket', 'Cloud Security', 'Compute Instance Group'] },
+    { id: 'origin',                            label: 'Origin',                            icon: 'data-source',         modes: ['AND', 'OR', 'EXACT'], options: ['AWS', 'AWS Cloudtrail', 'AWS IAM Center', 'AWS IAM Users', 'BambooHR', 'CISA Known Exploited Vulnerabilities', 'CISA Vulnrichment', 'CrowdStrike', 'EPSS'] },
+    { id: 'business-unit',                     label: 'Business Unit',                     icon: 'business-unit',       options: ['(empty)', 'Acme Corp Financial Services', 'Acme Corp Financial services', 'Business Development', 'Customer Service', 'DevOps', 'Global', 'HR', 'InfoSec'] },
     { id: 'exposure-severity',                 label: 'Exposure Severity',                 icon: 'score',               options: SEVERITY_OPTS },
-    { id: 'multiple-location-access-flag',     label: 'Multiple Location Access Flag',     icon: 'type',                options: [] },
-    { id: 'av-scan-sla-breach-status',         label: 'AV Scan SLA Breach Status',         icon: 'type',                options: [] },
-    { id: 'days-since-last-login',             label: 'Days Since Last Login',             icon: 'score',               options: [] },
+    { id: 'multiple-location-access-flag',     label: 'Multiple Location Access Flag',     icon: 'type',                options: ['(empty)', 'false', 'true'] },
+    { id: 'av-scan-sla-breach-status',         label: 'AV Scan SLA Breach Status',         icon: 'type',                options: ['(empty)', 'false', 'true'] },
+    { id: 'days-since-last-login',             label: 'Days Since Last Login',             icon: 'score',               type: 'range', min: 0, max: 1121, options: [] },
     { id: 'av-block-malicious-code-status',    label: 'AV Block Malicious Code Status',    icon: 'type',                options: [] },
     { id: 'active-registered-host-count',      label: 'Active Registered Host Count',      icon: 'score',               options: [] },
     { id: 'registered-host-count',             label: 'Registered Host Count',             icon: 'score',               options: [] },
