@@ -13,6 +13,7 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-05-25 11:06 | branch: feature/ui-updates | 17dc21e chore: bump to v0.3.0 -->
 <!-- pull: 2026-05-26 11:49 | branch: feature/ui-updates | ea7d844 Merge branch 'develop' into feature/ui-updates -->
 <!-- pull: 2026-05-29 18:19 | branch: feature/ui-updates | 1ff149a chore: bump to v0.5.0 -->
+<!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
