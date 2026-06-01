@@ -1558,6 +1558,7 @@ html.theme-dark .comp-fw-card--selected {
   transition: opacity 120ms;
 }
 .comp-drawer-download-btn:hover { opacity: 0.88; }
+.comp-drawer-download-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .comp-drawer-th-inner {
   display: inline-flex;

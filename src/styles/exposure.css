@@ -1,3 +1,50 @@
+/* ── Bubble orbit animation ──────────────────────────────────────── */
+/* Animate the orbit radius from 0 → r so circles start at origin    */
+/* and ease out into their orbit — no position jump on load.          */
+@property --exp-orbit-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --exp-orbit-r-lg {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes exp-orbit-spin {
+  from { transform: rotate(0deg)   translateX(var(--exp-orbit-r)) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(var(--exp-orbit-r)) rotate(-360deg); }
+}
+
+@keyframes exp-orbit-spin-lg {
+  from { transform: rotate(0deg)   translateX(var(--exp-orbit-r-lg)) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(var(--exp-orbit-r-lg)) rotate(-360deg); }
+}
+
+@keyframes exp-orbit-grow {
+  from { --exp-orbit-r: 0px; }
+  to   { --exp-orbit-r: 5px; }
+}
+
+@keyframes exp-orbit-grow-lg {
+  from { --exp-orbit-r-lg: 0px; }
+  to   { --exp-orbit-r-lg: 7px; }
+}
+
+.exp-bubble-circle {
+  animation:
+    exp-orbit-spin  9s  linear   infinite,
+    exp-orbit-grow  2s  ease-out forwards;
+}
+
+.exp-gauge-float {
+  animation:
+    exp-orbit-spin-lg 12s linear   infinite,
+    exp-orbit-grow-lg  3s ease-out forwards;
+}
+
 /* ── Exposure Overview page layout ───────────────────────────────── */
 .exp-main { gap: 16px; }
 .exp-content-col .subheader { border-right: 1px solid var(--shell-border); border-bottom-right-radius: 8px; }

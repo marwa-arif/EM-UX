@@ -927,6 +927,7 @@ function App() {
                 title={pageMeta.title}
                 breadcrumb={pageMeta.breadcrumb}
                 breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+                breadcrumbClicks={[() => handleNav('exposure/overview')]}
                 pageId={current}
                 activeFilterCount={activeFilterCount}
                 activeFilters={activeFilters}

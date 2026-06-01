@@ -1714,6 +1714,7 @@ function EntityKpiGrid() {
 // ─────────────────────────────────────────────────────────────────────
 function PageKG() {
   const [summaryTab, setSummaryTab] = useState('Relationships');
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelRow, setPanelRow] = useState(null);
@@ -1985,17 +1986,17 @@ function PageKG() {
             onChange={setSummaryTab}
             options={['Relationships','Entities','Data Sources']}
           />
-          <button className="kg-summary-collapse-btn">
-            <Ic size={12} path={<><path d="m18 15-6-6-6 6"/></>}/>
-            Collapse
+          <button className="kg-summary-collapse-btn" onClick={() => setSummaryCollapsed(c => !c)}>
+            <Ic size={12} path={summaryCollapsed ? <><path d="m6 9 6 6 6-6"/></> : <><path d="m18 15-6-6-6 6"/></>}/>
+            {summaryCollapsed ? 'Expand' : 'Collapse'}
           </button>
         </div>
 
-        {summaryTab === 'Entities' && <EntityKpiGrid />}
-        {summaryTab === 'Data Sources' && <SankeyView />}
+        {!summaryCollapsed && summaryTab === 'Entities' && <EntityKpiGrid />}
+        {!summaryCollapsed && summaryTab === 'Data Sources' && <SankeyView />}
 
         {/* Toolbar — Relationships tab only */}
-        {summaryTab === 'Relationships' && <div className="kg-relationships-toolbar">
+        {!summaryCollapsed && summaryTab === 'Relationships' && <div className="kg-relationships-toolbar">
           <span className="kg-relationships-label">Attack Surface:</span>
           <ViewTabs value={viewMode} onChange={setViewMode} options={['None','Device','Cloud','Identity']}/>
           <div className="kg-toolbar-spacer" />
@@ -2058,7 +2059,7 @@ function PageKG() {
         </div>}
 
         {/* Graph + zoom rail — Relationships tab only */}
-        {summaryTab === 'Relationships' && <div className="kg-relationships-canvas-wrap">
+        {!summaryCollapsed && summaryTab === 'Relationships' && <div className="kg-relationships-canvas-wrap">
           <GraphCanvas
             selected={selected}
             selectedEdgeKey={selectedEdgeKey}
@@ -2146,7 +2147,7 @@ function PageKG() {
         </div>}
 
         {/* Footer chip bar — relationships of selection */}
-        {summaryTab === 'Relationships' && (() => {
+        {!summaryCollapsed && summaryTab === 'Relationships' && (() => {
           if (multiMode) {
             if (multiSelected.size > 0) {
               return (

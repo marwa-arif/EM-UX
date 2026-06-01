@@ -20,7 +20,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const [collapsed, setCollapsed] = useState(false)
 
   const handleNav = (id) => {
-    if (id === 'kg' || id === 'home' || !id.startsWith('workspace')) {
+    if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
       onNav(id)
       return
     }
@@ -56,9 +56,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                 ['Home', 'Workspace']
               }
               breadcrumbClicks={
-                isDashboard  ? [() => handleNav('kg'), () => handleNav('workspace/library')] :
-                isConfigPage ? [() => handleNav('kg'), () => handleNav('workspace/library')] :
-                [() => handleNav('kg')]
+                isDashboard  ? [() => handleNav('exposure/overview'), () => handleNav('workspace/library')] :
+                isConfigPage ? [() => handleNav('exposure/overview'), () => handleNav('workspace/library')] :
+                [() => handleNav('exposure/overview')]
               }
               actions={null}
               showMenu={false}

@@ -100,7 +100,7 @@ const Sparkline = () => (
 );
 
 // ── Bubble component ──────────────────────────────────────────────
-function Bubble({ score, severity, icon, size = 105, label }) {
+function Bubble({ score, severity, icon, size = 105, label, index = 0 }) {
   const isHigh = severity === 'H';
   const color = isHigh ? 'var(--pai-crit-fg)' : 'var(--pai-high-fg)';
   const tagBg = isHigh ? 'var(--pai-crit-bg)' : 'var(--pai-warn-bg)';
@@ -110,7 +110,7 @@ function Bubble({ score, severity, icon, size = 105, label }) {
 
   return (
     <div className="exp-bubble-wrap">
-      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <div className="exp-bubble-circle" style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <div className="exp-bubble-ring" style={{ background: gradient }} />
         <div className="exp-bubble-inner" />
         <div className="exp-bubble-content">
@@ -157,7 +157,7 @@ function EnterpriseScore() {
   const innerDia = (INNER_R - 6) * 2;
   return (
     <div className="exp-gauge-wrap">
-      <div className="exp-gauge" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
+      <div className="exp-gauge exp-gauge-float" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
         <div className="exp-gauge-outer" />
         <svg className="exp-gauge-ticks" width={GAUGE_SIZE} height={GAUGE_SIZE}>{ticks}</svg>
         <div className="exp-gauge-inner" style={{ width: innerDia, height: innerDia }}>
@@ -200,13 +200,13 @@ function ExposureOverviewSection() {
     <div className="exp-col-label">{text} <IcInfo /></div>
   );
 
-  const BubbleTriangle = ({ items }) => (
+  const BubbleTriangle = ({ items, indexOffset = 0 }) => (
     <div className="exp-bubble-tri">
       <div className="exp-bubble-tri-top">
-        <Bubble {...items[0]} />
-        <Bubble {...items[1]} />
+        <Bubble {...items[0]} index={indexOffset} />
+        <Bubble {...items[1]} index={indexOffset + 1} />
       </div>
-      <Bubble {...items[2]} />
+      <Bubble {...items[2]} index={indexOffset + 2} />
     </div>
   );
 
@@ -259,11 +259,11 @@ function ExposureOverviewSection() {
             {colLabel('Enterprise Score')}
           </div>
           <div className="exp-ov-col">
-            <BubbleTriangle items={attackSurface} />
+            <BubbleTriangle items={attackSurface} indexOffset={0} />
             {colLabel('Attack Surface')}
           </div>
           <div className="exp-ov-col">
-            <BubbleTriangle items={expCategories} />
+            <BubbleTriangle items={expCategories} indexOffset={3} />
             {colLabel('Exposure Categories')}
           </div>
         </div>
