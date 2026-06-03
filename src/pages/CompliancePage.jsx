@@ -934,6 +934,25 @@ function AssessmentDrawer({ node, onClose }) {
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
+                <span className="comp-drawer-ov-label">Rating</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--relative">
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </div>
+              <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
                 <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
@@ -948,20 +967,6 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="comp-drawer-donut-col">
                 <div className="comp-drawer-score-header">
                   <span className="comp-drawer-score-label">Compliance Score</span>
-                  <span
-                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
-                    onMouseEnter={() => setRatingTooltip(true)}
-                    onMouseLeave={() => setRatingTooltip(false)}
-                  >
-                    {node.rating}
-                  </span>
-                  {ratingTooltip && (
-                    <div className="comp-rating-tooltip">
-                      <span className="comp-rating-tooltip-text">
-                        Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div className="comp-drawer-divider" />
@@ -1060,7 +1065,7 @@ function AssessmentDrawer({ node, onClose }) {
                         cursor={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
-                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-high-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
+                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       <Area type="monotone" dataKey="value"
                         stroke="var(--pai-teal)" strokeWidth={2}
                         fill="url(#drawerAreaFill)" dot={false}
@@ -1476,6 +1481,25 @@ function FunctionDrawer({ node, level, onClose }) {
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
+                <span className="comp-drawer-ov-label">Rating</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--relative">
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </div>
+              <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
                 <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
@@ -1489,20 +1513,6 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-donut-col">
                 <div className="comp-drawer-score-header">
                   <span className="comp-drawer-score-label">Compliance Score</span>
-                  <span
-                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
-                    onMouseEnter={() => setRatingTooltip(true)}
-                    onMouseLeave={() => setRatingTooltip(false)}
-                  >
-                    {node.rating}
-                  </span>
-                  {ratingTooltip && (
-                    <div className="comp-rating-tooltip">
-                      <span className="comp-rating-tooltip-text">
-                        Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div className="comp-drawer-divider" />
@@ -1570,7 +1580,7 @@ function FunctionDrawer({ node, level, onClose }) {
                         cursor={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
-                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-high-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
+                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2} fill="url(#fnDrawerFill)" dot={false} activeDot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                     </AreaChart>
                   </ResponsiveContainer>

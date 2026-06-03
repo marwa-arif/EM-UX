@@ -137,7 +137,7 @@ function LibraryPage() {
   ]
 
   const allQuickCards = [
-    { title: 'Executive Summary',                              desc: 'Summary of detected vulnerabilities and their severity levels.',                                                                  tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => {} },
+    { title: 'Executive Summary',                              desc: 'Summary of detected vulnerabilities and their severity levels.',                                                                  tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => onNav('workspace/report/executive-summary') },
     { title: 'Month over Month Comparison of Vulnerabilities', desc: 'Month-over-month analysis of vulnerability trends and severity changes.',                                                        tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => {} },
     { title: 'Detailed Report on Vulnerabilities',             desc: 'Comprehensive vulnerability inventory with detailed findings, statuses and vulnerability trends.',                               tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => {} },
     { title: 'Device Attack Surface',                          desc: 'Consolidated device posture overview including health, vulnerability load, compliance state, and security activity.',            tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },

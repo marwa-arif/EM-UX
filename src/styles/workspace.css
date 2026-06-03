@@ -9,6 +9,8 @@
 .ds-btn.t-outline:hover { border-color: var(--pai-border-strong); background: var(--shell-hover); }
 .ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: var(--pai-indigo); }
 .ds-btn.t-secondary:hover { background: rgba(99,96,216,0.18); }
+.ds-btn.t-tertiary { background: transparent; border: 1px solid rgba(99,96,216,0.45); color: var(--pai-indigo); }
+.ds-btn.t-tertiary:hover { background: rgba(99,96,216,0.06); border-color: var(--pai-indigo); }
 
 /* DS Badge */
 .ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
@@ -38,8 +40,7 @@
 .ds-td { padding: var(--table-td-padding); border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
 .ds-table tbody tr:last-child td { border-bottom: none; }
 .ds-table tbody tr:hover td { background: var(--shell-hover); }
-.row-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
-tr:hover .row-actions { visibility: visible; }
+.row-actions { display: flex; align-items: center; gap: 4px; }
 
 /* DS Pagination */
 .ds-page-btn { min-width: 28px; height: 28px; border-radius: 44px; border: 1px solid var(--shell-border); background: #fff; color: var(--shell-text-2); cursor: pointer; font-size: 11px; font-family: inherit; padding: 0 6px; display: flex; align-items: center; justify-content: center; transition: all 120ms; }

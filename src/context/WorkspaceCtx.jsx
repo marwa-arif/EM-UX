@@ -83,6 +83,11 @@ function WorkspaceProvider({ children, onNav }) {
   const [savedVisibility, setSavedVisibility] = React.useState('all');
   const [savedSearch, setSavedSearch] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [savedReports, setSavedReports] = React.useState([]);
+
+  const addSavedReport = React.useCallback((entry) => {
+    setSavedReports(prev => [entry, ...prev.filter(r => r.name !== entry.name)]);
+  }, []);
   const [uploadedFile, setUploadedFile] = React.useState(null);   // File object
   const [uploadSource, setUploadSource] = React.useState('html'); // 'html' | 'design'
 
@@ -130,6 +135,7 @@ function WorkspaceProvider({ children, onNav }) {
       savedVisibility, setSavedVisibility,
       savedSearch, setSavedSearch,
       deleteTarget, openDeleteModal, closeDeleteModal,
+      savedReports, addSavedReport,
       uploadedFile, setUploadedFile,
       uploadSource, setUploadSource,
     }}>

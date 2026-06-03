@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { PAI, Ic } from '../ui.jsx'
-import { ChartRender, DEFAULT_VERT_BAR } from '../components/ChartRender.jsx'
+import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
 import '../styles/dashboard.css'
@@ -40,6 +40,23 @@ const WIDGET_SIZES = [
   { id: 'xlarge',  label: 'Extra Large', span: 4 },
 ]
 const WIDGET_HEIGHTS = [
+  { id: 'small',     label: 'Small',       px: 260 },
+  { id: 'medium',    label: 'Medium',      px: 360 },
+  { id: 'large',     label: 'Large',       px: 460 },
+  { id: 'xlarge',    label: 'Extra Large', px: 560 },
+  { id: 'rpt-chart', label: 'Report Chart', px: 500 },
+  { id: 'rpt-pie',   label: 'Report Pie',   px: 480 },
+]
+const KPI_WIDGET_SIZES = [
+  { id: 'xsmall',  label: 'Extra Small', span: 1 },
+  { id: 'small',   label: 'Small',       span: 2 },
+  { id: 'medium',  label: 'Medium',      span: 3 },
+  { id: 'large',   label: 'Large',       span: 4 },
+  { id: 'xlarge',  label: 'Extra Large', span: 4 },
+]
+const KPI_WIDGET_HEIGHTS = [
+  { id: '2xsmall', label: '2x Small',    px: 120 },
+  { id: 'xsmall',  label: 'Extra Small', px: 160 },
   { id: 'small',   label: 'Small',       px: 260 },
   { id: 'medium',  label: 'Medium',      px: 360 },
   { id: 'large',   label: 'Large',       px: 460 },
@@ -91,13 +108,29 @@ const CHART_TYPES = [
   { id: 'table',      label: 'Table' },
 ]
 
+const CHART_DEFAULT_NAMES = {
+  'vert-bar':   'Type',
+  'hor-bar':    'Type',
+  'pie':        'Type',
+  'table':      'Type',
+  'stack-vert': 'Origin',
+  'stack-hor':  'Origin',
+}
+
 const VERT_BAR_PALETTE = ['#D12329','#D98B1D','#6360D8','#31A56D','#64748B','#94A3B8']
 
 function buildChartColors(widget) {
-  const rows  = widget.data || DEFAULT_VERT_BAR
-  const saved = widget.chartColors || {}
+  const saved   = widget.chartColors || {}
+  const chartId = widget.chartId
+  if (chartId === 'kpi') {
+    return { 'Accent': saved['Accent'] || '#5C6FC4' }
+  }
+  if (chartId === 'stack-vert' || chartId === 'stack-hor') {
+    return Object.fromEntries(STACK_ORIGINS.map(o => [o.key, saved[o.key] || o.color]))
+  }
+  const rows = Array.isArray(widget.data) ? widget.data : DEFAULT_VERT_BAR
   return Object.fromEntries(
-    rows.map((row, i) => [row.label, saved[row.label] || VERT_BAR_PALETTE[i % VERT_BAR_PALETTE.length]])
+    rows.map((row, i) => [row.label, saved[row.label] || row.color || VERT_BAR_PALETTE[i % VERT_BAR_PALETTE.length]])
   )
 }
 const GRAPH_FILTER_ATTRS = [
@@ -792,6 +825,8 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const [title, setTitle]         = useState(() => {
     const defaultLabel   = CHART_TYPES.find(c => c.id === widget.chartId)?.label
     const isClassChart   = widget.chartId === 'vert-bar' || widget.chartId === 'hor-bar' || widget.chartId === 'pie'
+    if (widget.chartId === 'stack-vert' && widget.label === defaultLabel)
+      return widget.magnitude || 'Origin'
     return isClassChart && widget.label === defaultLabel
       ? (widget.classification || 'Type')
       : widget.label
@@ -820,12 +855,17 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [widgetFilterModalOpen, setWidgetFilterModalOpen] = useState(false)
   const [exploreIn, setExploreIn] = useState(widget.exploreIn ?? false)
+  const [kpiCompOperation, setKpiCompOperation]   = useState('count-distinct')
+  const [kpiCompAggregateBy, setKpiCompAggregateBy] = useState('host')
 
   const isPie       = chartType === 'pie'
+  const isKpi       = chartType === 'kpi'
   const isTable     = chartType === 'table'
   const isVertBar   = chartType === 'vert-bar'
   const isHorBar    = chartType === 'hor-bar'
   const isStackVert = chartType === 'stack-vert'
+  const isStackHor  = chartType === 'stack-hor'
+  const isKPI       = chartType === 'kpi'
   const isHeading   = chartType === 'heading'
 
   return (
@@ -891,7 +931,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 <SizeSelectDropdown
                   value={sizeId}
                   onChange={v => setSizeId(v)}
-                  options={(isHeading ? HEADING_WIDGET_SIZES : WIDGET_SIZES).map(s => ({ value: s.id, label: s.label }))}
+                  options={(isHeading ? HEADING_WIDGET_SIZES : isKPI ? KPI_WIDGET_SIZES : WIDGET_SIZES).map(s => ({ value: s.id, label: s.label }))}
                 />
               </div>
               <div className="dc-size-sub-row">
@@ -899,40 +939,36 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 <SizeSelectDropdown
                   value={heightId}
                   onChange={v => setHeightId(v)}
-                  options={(isHeading ? HEADING_WIDGET_HEIGHTS : WIDGET_HEIGHTS).map(h => ({ value: h.id, label: h.label }))}
+                  options={(isHeading ? HEADING_WIDGET_HEIGHTS : isKPI ? KPI_WIDGET_HEIGHTS : WIDGET_HEIGHTS).map(h => ({ value: h.id, label: h.label }))}
                 />
               </div>
             </div>
-            {(isVertBar || isHorBar) && (
-              <>
-                <FieldRow label="Configure Colors">
-                  <div className="dc-color-config">
-                    {Object.entries(chartColors).map(([key, color]) => (
-                      <div key={key} className="dc-color-config-row">
-                        <span className="dc-color-config-label">{key}</span>
-                        <button
-                          className="dc-color-config-input"
-                          onClick={() => setColorPickerOpen(key)}
-                        >
-                          <span className="dc-color-config-dot" style={{ '--dc-dot-color': color }} />
-                          <span className="dc-color-config-hex">{color.toUpperCase()}</span>
-                        </button>
-                      </div>
-                    ))}
+            <FieldRow label="Configure Colors">
+              <div className="dc-color-config">
+                {Object.entries(chartColors).map(([key, color]) => (
+                  <div key={key} className="dc-color-config-row">
+                    <span className="dc-color-config-label">{key}</span>
+                    <button
+                      className="dc-color-config-input"
+                      onClick={() => setColorPickerOpen(key)}
+                    >
+                      <span className="dc-color-config-dot" style={{ '--dc-dot-color': color }} />
+                      <span className="dc-color-config-hex">{color.toUpperCase()}</span>
+                    </button>
                   </div>
-                </FieldRow>
-                {colorPickerOpen && (
-                  <ColorPickerModal
-                    color={chartColors[colorPickerOpen]}
-                    label={colorPickerOpen}
-                    onClose={() => setColorPickerOpen(null)}
-                    onApply={c => {
-                      setChartColors(prev => ({ ...prev, [colorPickerOpen]: c }))
-                      setColorPickerOpen(null)
-                    }}
-                  />
-                )}
-              </>
+                ))}
+              </div>
+            </FieldRow>
+            {colorPickerOpen && (
+              <ColorPickerModal
+                color={chartColors[colorPickerOpen]}
+                label={colorPickerOpen}
+                onClose={() => setColorPickerOpen(null)}
+                onApply={c => {
+                  setChartColors(prev => ({ ...prev, [colorPickerOpen]: c }))
+                  setColorPickerOpen(null)
+                }}
+              />
             )}
           </>
         )}
@@ -1210,6 +1246,144 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   onChange={setShowLegend}
                 />
               </>
+            ) : isStackHor ? (
+              <>
+                <FieldRow label="Attribute*">
+                  <div className="dc-field-sub-label">Magnitude ( y-axis )</div>
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      value={magnitude}
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg1 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setMagnitudeModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  <div className="dc-field-sub-label dc-field-sub-label--mt">Classification ( x-axis )</div>
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      value={classification}
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg1 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setStackClassModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                </FieldRow>
+                {magnitudeModalOpen && (
+                  <GraphFilterModal
+                    currentAttr={magnitude}
+                    onClose={() => setMagnitudeModalOpen(false)}
+                    onApply={attr => { setMagnitude(attr); setMagnitudeModalOpen(false) }}
+                  />
+                )}
+                {stackClassModalOpen && (
+                  <GraphFilterModal
+                    currentAttr={classification}
+                    onClose={() => setStackClassModalOpen(false)}
+                    onApply={attr => { setClassification(attr); setStackClassModalOpen(false) }}
+                  />
+                )}
+
+                <FieldRow label="Size" hint="Display total/distinct count in the horizontal stacked chart">
+                  <div className="dc-axis-row--no-mb dc-axis-row--with-action">
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Operation</div>
+                      <SelectInput
+                        value={operation}
+                        onChange={e => setOperation(e.target.value)}
+                        options={[
+                          { value: 'count-distinct', label: 'Count Distinct' },
+                          { value: 'count',          label: 'Count' },
+                          { value: 'sum',            label: 'Sum' },
+                        ]}
+                      />
+                    </div>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Aggregate By</div>
+                      <SelectInput
+                        value={aggregateBy}
+                        onChange={e => setAggregateBy(e.target.value)}
+                        options={[
+                          { value: 'host',      label: 'host' },
+                          { value: 'entity-id', label: 'Entity ID' },
+                          { value: 'ip',        label: 'IP Address' },
+                        ]}
+                      />
+                    </div>
+                    <button
+                      className="dc-kg-btn dc-kg-btn--bottom"
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                </FieldRow>
+
+                <FieldRow label="Widget Filter" tooltip="Filter data shown in this widget">
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      placeholder="Select Widget Filter"
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg3 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setWidgetFilterModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  {widgetFilters.length > 0 && (
+                    <div className="dc-chips">
+                      {widgetFilters.map((f, i) => (
+                        <span key={i} className="dc-chip">
+                          {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                          <button
+                            className="dc-chip-x"
+                            onClick={() => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </FieldRow>
+                {widgetFilterModalOpen && (
+                  <GraphFilterModal
+                    mode="filter"
+                    onClose={() => setWidgetFilterModalOpen(false)}
+                    onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
+                  />
+                )}
+                <div className="dc-divider" />
+                <ToggleRow
+                  label="Show Legend"
+                  description="Display or hide the legend for this chart"
+                  value={showLegend}
+                  onChange={setShowLegend}
+                />
+                <ToggleRow
+                  label="Explode Array Field Values"
+                  description="Show distinct rows for fields with multiple values."
+                  value={explodeArrayFields}
+                  onChange={setExplodeArrayFields}
+                  tooltip="When enabled, fields with multiple values will appear as separate entries in visualizations, instead of being grouped together."
+                />
+              </>
             ) : isStackVert ? (
               <>
                 <FieldRow label="Attribute*">
@@ -1351,7 +1525,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   tooltip="When enabled, fields with multiple values will appear as separate entries in visualizations, instead of being grouped together."
                 />
               </>
-            ) : (
+            ) : isKpi ? null : (
               <>
                 <FieldRow label="X Axis">
                   <TextInput placeholder="Select field" withKG />
@@ -1371,13 +1545,94 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
               </>
             )}
 
-            {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && (
+            {isKpi && (
+              <>
+                <div className="dc-kpi-metric-section">
+                  <div className="dc-kpi-metric-title">Primary Metric</div>
+                  <div className="dc-kpi-metric-desc">Display the main KPI value to display</div>
+                  <div className="dc-axis-row--no-mb dc-axis-row--with-action" style={{ marginTop: 8 }}>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Operation</div>
+                      <SizeSelectDropdown value={operation} onChange={v => setOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
+                    </div>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Aggregate By</div>
+                      <SizeSelectDropdown value={aggregateBy} onChange={v => setAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
+                    </div>
+                    <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <div className="dc-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                      Filter By
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </div>
+                    <div className="dc-text-input-wrap">
+                      <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
+                      <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                        <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="dc-divider" />
+                <div className="dc-kpi-metric-section">
+                  <div className="dc-kpi-metric-title">Comparison Metric (Optional)</div>
+                  <div className="dc-kpi-metric-desc">Compare with any other KPI value</div>
+                  <div className="dc-axis-row--no-mb dc-axis-row--with-action" style={{ marginTop: 8 }}>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Operation</div>
+                      <SizeSelectDropdown value={kpiCompOperation} onChange={v => setKpiCompOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
+                    </div>
+                    <div className="dc-axis-col">
+                      <div className="dc-axis-label">Aggregate By</div>
+                      <SizeSelectDropdown value={kpiCompAggregateBy} onChange={v => setKpiCompAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
+                    </div>
+                    <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <div className="dc-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                      Filter By
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </div>
+                    <div className="dc-text-input-wrap">
+                      <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
+                      <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                        <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="dc-divider" />
+                <ToggleRow
+                  label="Show Total Count"
+                  description='Display the denominator (e.g., "6 / 54,555")'
+                  value={showTotalCount}
+                  onChange={setShowTotalCount}
+                />
+                <ToggleRow
+                  label="Show Percentage Change"
+                  description='Display the change over time (e.g., "+12%" or "-5%")'
+                  value={showPctChange}
+                  onChange={setShowPctChange}
+                />
+              </>
+            )}
+
+            {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && !isStackHor && !isKpi && (
               <FieldRow label="Widget Filter">
                 <TextInput placeholder="Select Widget Filter" withKG />
               </FieldRow>
             )}
 
-            {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && (
+            {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && !isStackHor && !isKpi && (
               <FieldRow label="Sort By" hint="Define how data is ordered in chart">
                 <TextInput placeholder="Select field" />
               </FieldRow>
@@ -1422,10 +1677,11 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
           onClick={() => onSaveChanges({
             label: title, description, sizeId, heightId, chartId: chartType,
             showTotalCount, showPctChange, showLegend,
+            chartColors,
             ...(isTable                                    && { columns, enableDownload }),
-            ...((isVertBar || isHorBar)                   && { chartColors }),
             ...((isVertBar || isHorBar || isPie)          && { classification }),
             ...(isStackVert                               && { magnitude, classification, explodeArrayFields }),
+            ...(isStackHor                                && { magnitude, classification, explodeArrayFields }),
             ...(isHeading                                 && { exploreIn }),
           })}
           className="ds-btn sz-md t-primary"
@@ -1504,12 +1760,12 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 }
 
 // ── Widget Card ──────────────────────────────────────────────────────
-function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
+export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, reportMode, printMode = false }) {
   const [hovered, setHovered]         = useState(false)
   const [dlOpen, setDlOpen]           = useState(false)
   const dlRef                         = useRef(null)
-  const h = WIDGET_HEIGHTS.find(s => s.id === widget.heightId)?.px || 180
-  const showDownload = widget.chartId === 'table' && widget.enableDownload !== false
+  const h = [...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS].find(s => s.id === widget.heightId)?.px || 180
+  const showDownload = widget.chartId === 'table' && widget.enableDownload !== false && !reportMode
 
   useEffect(() => {
     if (!dlOpen) return
@@ -1520,9 +1776,9 @@ function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
 
   return (
     <div
-      className="dc-widget-col"
+      className={reportMode ? 'dc-report-widget' : 'dc-widget-col'}
       style={{
-        '--dc-widget-span': widget.span,
+        ...(reportMode ? {} : { '--dc-widget-span': widget.span }),
         '--dc-fg1': PAI.fg1,
         '--dc-fg3': PAI.fg3,
         '--dc-indigo': PAI.indigo,
@@ -1531,7 +1787,7 @@ function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
       onMouseLeave={() => setHovered(false)}
     >
       {/* Hover actions */}
-      {hovered && (
+      {hovered && !reportMode && (
         <div className="dc-widget-actions">
           <button title="Move" className="dc-action-btn dc-action-btn--grab">
             <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
@@ -1581,16 +1837,280 @@ function WidgetCard({ widget, isEditing, onEdit, onRequestDelete }) {
               </div>
             )}
           </div>
-          {widget.description && (
-            <div className="dc-widget-card-desc">{widget.description}</div>
-          )}
         </div>
         <div className="dc-widget-card-body">
-          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} columns={widget.columns} chartColors={widget.chartColors} />
+          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} cardHeight={h} printMode={printMode} />
         </div>
       </div>
     </div>
   )
+}
+
+// ── Executive Summary report template ────────────────────────────────
+const ES_SUFF = 'from 31 Aug 2025'
+
+// Spans: row1 = 3×span2, row2 = 2×span3, full-width charts/tables = span6
+export const EXEC_SUMMARY_TEMPLATE = {
+  name: 'Executive Summary',
+  widgets: [
+    // ── Row 1: 3 KPIs ─────────────────────────────────────────────
+    {
+      id: 3001, label: 'Total Devices', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '4,280', label: 'Total Devices', trend: '78.5%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 2400 }, { name: 'Feb', value: 2800 }, { name: 'Mar', value: 3200 },
+        { name: 'Apr', value: 3600 }, { name: 'May', value: 3900 }, { name: 'Jun', value: 4280 },
+      ]},
+    },
+    {
+      id: 3002, label: 'Scanned Devices within 30 days', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '3,737', label: 'Scanned Devices within 30 days', trend: '4%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 3900 }, { name: 'Feb', value: 3860 }, { name: 'Mar', value: 3820 },
+        { name: 'Apr', value: 3790 }, { name: 'May', value: 3760 }, { name: 'Jun', value: 3737 },
+      ]},
+    },
+    {
+      id: 3003, label: 'Total Vulnerable Devices', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '1,322', label: 'Total Vulnerable Devices', trend: '2%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 1350 }, { name: 'Feb', value: 1345 }, { name: 'Mar', value: 1340 },
+        { name: 'Apr', value: 1335 }, { name: 'May', value: 1328 }, { name: 'Jun', value: 1322 },
+      ]},
+    },
+    // ── Row 2: 2 KPIs ─────────────────────────────────────────────
+    {
+      id: 3004, label: 'Total Vulnerability Findings', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true, rowBreak: true,
+      data: { value: '2,150', label: 'Total Vulnerability Findings', trend: '4%', trendUp: true, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 2070 }, { name: 'Feb', value: 2090 }, { name: 'Mar', value: 2100 },
+        { name: 'Apr', value: 2110 }, { name: 'May', value: 2130 }, { name: 'Jun', value: 2150 },
+      ]},
+    },
+    {
+      id: 3005, label: 'Total Vulnerabilities', chartId: 'kpi', span: 3, sizeId: 'medium', heightId: 'xsmall', phase: 'active', dataLocked: true,
+      data: { value: '1,746', label: 'Total Vulnerabilities', trend: '8%', trendUp: false, trendSuffix: ES_SUFF, trendData: [
+        { name: 'Jan', value: 1890 }, { name: 'Feb', value: 1860 }, { name: 'Mar', value: 1830 },
+        { name: 'Apr', value: 1810 }, { name: 'May', value: 1780 }, { name: 'Jun', value: 1746 },
+      ]},
+    },
+    // ── Widget 6: Vulnerability Findings by Vulnerability Severity ─
+    {
+      id: 3006, label: 'Vulnerability Findings by Vulnerability Severity', chartId: 'vert-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      xLabel: 'Vulnerability Severity', yLabel: 'Vulnerability Findings',
+      noteLabel: 'Total Vulnerability Findings', legendDesc: 'Out of which the distribution is as follows:',
+      data: [
+        { label: 'Critical', value: 556,  color: 'var(--pai-crit-fg)' },
+        { label: 'High',     value: 934,  color: 'var(--pai-high-fg)' },
+        { label: 'Medium',   value: 530,  color: 'var(--pai-med-fg)'  },
+        { label: 'Low',      value: 130,  color: 'var(--pai-green)'   },
+      ],
+    },
+    // ── Widget 7: Vulnerability Findings by Asset Criticality ──────
+    {
+      id: 3007, label: 'Vulnerability Findings by Asset Criticality', chartId: 'vert-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      xLabel: 'Asset Criticality', yLabel: 'Vulnerability Findings',
+      noteLabel: 'Total Vulnerability Findings', legendDesc: 'Distribution of vulnerability findings on devices grouped by asset criticality is as follows:',
+      data: [
+        { label: 'Critical', value: 1115, color: 'var(--pai-crit-fg)' },
+        { label: 'High',     value: 613,  color: 'var(--pai-high-fg)' },
+        { label: 'Medium',   value: 352,  color: 'var(--pai-med-fg)'  },
+        { label: 'Low',      value: 70,   color: 'var(--pai-green)'   },
+      ],
+    },
+    // ── Widget 8: Devices by Vulnerability Severity ────────────────
+    {
+      id: 3008, label: 'Devices by Vulnerability Severity', chartId: 'vert-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      xLabel: 'Vulnerability Severity', yLabel: 'Devices',
+      noteLabel: 'Total Vulnerable Device Occurrences by Severity', legendDesc: 'Represents total device severity combinations, not unique devices.',
+      data: [
+        { label: 'Critical', value: 297,  color: 'var(--pai-crit-fg)' },
+        { label: 'High',     value: 375,  color: 'var(--pai-high-fg)' },
+        { label: 'Medium',   value: 250,  color: 'var(--pai-med-fg)'  },
+        { label: 'Low',      value: 400,  color: 'var(--pai-green)'   },
+      ],
+    },
+    // ── Widget 9: Vulnerable Devices (donut) ──────────────────────
+    {
+      id: 3009, label: 'Vulnerable Devices', chartId: 'pie', span: 6, sizeId: 'xlarge', heightId: 'rpt-pie', phase: 'active', dataLocked: true,
+      totalLabel: '3,737', noteLabel: 'Total Devices',
+      description: 'Vulnerable Devices have one or more unresolved ("Open") Vulnerability Findings.',
+      note: 'Note : If a filter for any Vulnerability-related field has been applied to the Report, the scope of Devices changes to be those that currently or previously had Vulnerability Findings matching the filter criteria. This includes both Open and Closed Findings, unless Finding Status is specifically filtered for.',
+      data: [
+        { label: 'Vulnerable',     value: 1322, count: '1,322', pct: '35%', color: 'var(--pai-crit-fg)' },
+        { label: 'Non-Vulnerable', value: 2415, count: '2,415', pct: '65%', color: 'var(--pai-green)'   },
+      ],
+    },
+    // ── Widget 10: Host SLA Breach Status by Asset Type ────────────
+    {
+      id: 3010, label: 'Host SLA Breach Status by Asset Type', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      description: 'Breaching indicates that at least one open vulnerability finding on the host has exceeded the SLA timeline. Non-Breaching indicates that, although vulnerabilities are still open, none have breached SLA timeline.',
+      data: [
+        { assetType: 'Server',          nonBreaching: '15 (33.33%)', breaching: '5 (11.11%)',   total: '20 (44.44%)'  },
+        { assetType: 'Workstation',     nonBreaching: '7 (15.56%)',  breaching: '3 (6.67%)',    total: '10 (22.23%)'  },
+        { assetType: 'Network Devices', nonBreaching: '13 (28.89%)', breaching: '2 (4.44%)',    total: '15 (33.33%)'  },
+        { assetType: 'Total Devices',   nonBreaching: '35 (77.78%)', breaching: '10 (22.22%)',  total: '45 (100%)',    isTotal: true },
+      ],
+    },
+    // ── Widget 11: Vulnerability Findings SLA Timeline ────────────
+    {
+      id: 3011, label: 'Vulnerability Findings SLA Timeline by Vulnerability Severity', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'xlarge', phase: 'active', dataLocked: true,
+      description: 'Counts shown here include only findings with a defined SLA and may differ from Total Vulnerability Findings, which include both SLA and non-SLA findings.',
+      data: [
+        { severity: 'Critical', breaching: '480 (22.33%)', overHalfway: '100 (4.65%)',   underHalfway: '160 (7.44%)',   total: '740 (34.42%)'  },
+        { severity: 'High',     breaching: '225 (10.47%)', overHalfway: '85 (3.95%)',    underHalfway: '210 (9.77%)',   total: '520 (24.19%)'  },
+        { severity: 'Medium',   breaching: '490 (22.79%)', overHalfway: '90 (4.19%)',    underHalfway: '140 (6.51%)',   total: '720 (33.49%)'  },
+        { severity: 'Low',      breaching: '70 (3.26%)',   overHalfway: '55 (2.56%)',    underHalfway: '45 (2.09%)',    total: '170 (7.91%)'   },
+        { severity: 'Total Vulnerability Findings', breaching: '1,265 (58.84%)', overHalfway: '330 (15.35%)', underHalfway: '555 (25.81%)', total: '2,150 (100%)', isTotal: true },
+      ],
+    },
+    // ── Widget 12: Known Exploit Availability (donut) ─────────────
+    {
+      id: 3012, label: 'Known Exploit Availability', chartId: 'pie', span: 6, sizeId: 'xlarge', heightId: 'rpt-pie', phase: 'active', dataLocked: true,
+      totalLabel: '3,737', noteLabel: 'Total Vulnerabilities',
+      description: 'True indicates a known exploit is available, while False indicates no known exploit is available.',
+      data: [
+        { label: 'False', value: 2541, count: '2,541', pct: '70%', color: 'var(--pai-green)'   },
+        { label: 'True',  value: 1196, count: '1,196', pct: '30%', color: 'var(--pai-crit-fg)' },
+      ],
+    },
+    // ── Widget 13: Top 10 Most Common Vulnerabilities (hor-bar) ───
+    {
+      id: 3013, label: 'Top 10 Most Common Vulnerabilities', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      showLegend: false, xLabel: 'Number of devices', reportTotal: 1746, legendDesc: 'vulnerabilities',
+      data: [
+        { label: 'CVE-2025-8749',  value: 410, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-8088',  value: 400, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-53606', value: 350, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-48913', value: 350, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-6572',  value: 256, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-9754',  value: 150, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-7543',  value: 150, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-8754',  value: 100, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-34656', value: 100, color: 'var(--pai-indigo)' },
+        { label: 'CVE-2025-7657',  value: 50,  color: 'var(--pai-indigo)' },
+      ],
+    },
+    // ── Widget 14: Top 10 Most Common Critical Vulnerabilities ─────
+    {
+      id: 3014, label: 'Top 10 Most Common Critical Vulnerabilities', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      showLegend: false, xLabel: 'Number of devices', reportTotal: 1746, legendDesc: 'Critical Vulnerabilities',
+      data: [
+        { label: 'CVE-2025-53606', value: 400, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-48913', value: 380, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-6572',  value: 380, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-8749',  value: 300, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-8088',  value: 286, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-2536',  value: 100, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-3645',  value: 100, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-8674',  value: 100, color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-2435',  value: 50,  color: 'var(--pai-crit-fg)' },
+        { label: 'CVE-2025-7635',  value: 50,  color: 'var(--pai-crit-fg)' },
+      ],
+    },
+    // ── Widget 15: Top 10 Vuln Categories by Vulnerability Findings ─
+    {
+      id: 3015, label: 'Top 10 Most Common Vulnerability Categories by Vulnerability Findings', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      columns: ['Category', 'Count of Vulnerability Findings (%)'],
+      data: [
+        { category: 'Palo Alto Networks',                   count: '700',   pct: '32.56%' },
+        { category: 'Palo Alto Networks GlobalProtect App', count: '400',   pct: '18.60%' },
+        { category: 'CVSS Score Predicted with Rapid7 AI',  count: '250',   pct: '11.63%' },
+        { category: 'Privilege Escalation',                 count: '150',   pct: '6.98%'  },
+        { category: 'PAN-OS',                               count: '80',    pct: '3.72%'  },
+        { category: 'Web',                                  count: '20',    pct: '0.93%'  },
+        { category: 'Denial of Service',                    count: '7',     pct: '0.33%'  },
+        { category: 'Information Gathering',                count: '5',     pct: '0.23%'  },
+        { category: 'Network',                              count: '3',     pct: '0.14%'  },
+        { category: 'SSH',                                  count: '2',     pct: '0.09%'  },
+        { category: 'Total',                                count: '1,617', pct: '75.26%', isTotal: true },
+      ],
+    },
+    // ── Widget 16: Top 10 Vuln Categories by Vulnerabilities ───────
+    {
+      id: 3016, label: 'Top 10 Most Common Vulnerability Categories by Vulnerabilities', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      columns: ['Category', 'Count of Vulnerabilities (%)'],
+      data: [
+        { category: 'Palo Alto Networks',                   count: '300',   pct: '17.17%' },
+        { category: 'Palo Alto Networks GlobalProtect App', count: '200',   pct: '11.45%' },
+        { category: 'CVSS Score Predicted with Rapid7 AI',  count: '150',   pct: '8.59%'  },
+        { category: 'Privilege Escalation',                 count: '120',   pct: '6.87%'  },
+        { category: 'PAN-OS',                               count: '80',    pct: '4.58%'  },
+        { category: 'Web',                                  count: '60',    pct: '3.44%'  },
+        { category: 'Denial of Service',                    count: '50',    pct: '2.86%'  },
+        { category: 'Information Gathering',                count: '25',    pct: '1.43%'  },
+        { category: 'Network',                              count: '15',    pct: '0.86%'  },
+        { category: 'SSH',                                  count: '13',    pct: '0.74%'  },
+        { category: 'Total',                                count: '1,013', pct: '58%',    isTotal: true },
+      ],
+    },
+    // ── Widget 17: Top 10 Vulnerable OS by Vulnerability Findings ──
+    {
+      id: 3017, label: 'Top 10 Most Common Vulnerable Operating Systems by Vulnerability Findings', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      columns: ['OS', 'Count of Vulnerability Findings (%)'],
+      data: [
+        { category: 'Apple Mac OS X',                       count: '386',   pct: '17.95%' },
+        { category: 'Cisco 10S',                            count: '295',   pct: '13.72%' },
+        { category: 'Palo Alto Networks PAN-OS',            count: '241',   pct: '11.21%' },
+        { category: 'Palo Alto Networks GlobalProtect App', count: '191',   pct: '8.88%'  },
+        { category: 'Privilege Escalation',                 count: '155',   pct: '7.21%'  },
+        { category: 'Web',                                  count: '135',   pct: '6.28%'  },
+        { category: 'Denial of Service',                    count: '115',   pct: '5.35%'  },
+        { category: 'Information Gathering',                count: '96',    pct: '4.47%'  },
+        { category: 'Network',                              count: '86',    pct: '4.00%'  },
+        { category: 'SSH',                                  count: '84',    pct: '3.91%'  },
+        { category: 'Total',                                count: '1,784', pct: '82.98%', isTotal: true },
+      ],
+    },
+    // ── Widget 18: Top 10 Vulnerable OS by Vulnerabilities ─────────
+    {
+      id: 3018, label: 'Top 10 Most Common Vulnerable Operating Systems by Vulnerabilities', chartId: 'table', span: 6, sizeId: 'xlarge', heightId: 'large', phase: 'active', dataLocked: true,
+      columns: ['OS', 'Count of Vulnerabilities (%)'],
+      data: [
+        { category: 'Apple Mac OS X',                       count: '290',   pct: '16.61%'  },
+        { category: 'Cisco 10S',                            count: '210',   pct: '12.031%' },
+        { category: 'Palo Alto Networks PAN-OS',            count: '170',   pct: '9.74%'   },
+        { category: 'Palo Alto Networks GlobalProtect App', count: '140',   pct: '8.02%'   },
+        { category: 'Privilege Escalation',                 count: '120',   pct: '6.87%'   },
+        { category: 'Web',                                  count: '100',   pct: '5.73%'   },
+        { category: 'Denial of Service',                    count: '80',    pct: '4.58%'   },
+        { category: 'Information Gathering',                count: '75',    pct: '4.29%'   },
+        { category: 'Network',                              count: '72',    pct: '4.12%'   },
+        { category: 'SSH',                                  count: '70',    pct: '4.01%'   },
+        { category: 'Total',                                count: '1,327', pct: '76%',     isTotal: true },
+      ],
+    },
+    // ── Widget 19: Top 10 Most Common Operating Systems ───────────
+    {
+      id: 3019, label: 'Top 10 Most Common Operating Systems', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      showLegend: false, xLabel: 'Devices', legendDesc: 'os',
+      data: [
+        { label: 'Apple Mac OS X',   value: 200, color: 'var(--pai-indigo)' },
+        { label: 'Juniper Junos',    value: 100, color: 'var(--pai-indigo)' },
+        { label: 'Fortinet FortiOS', value: 50,  color: 'var(--pai-indigo)' },
+        { label: 'Linux',            value: 50,  color: 'var(--pai-indigo)' },
+        { label: 'Solaris',          value: 50,  color: 'var(--pai-indigo)' },
+        { label: 'Chrome OS',        value: 30,  color: 'var(--pai-indigo)' },
+        { label: 'Free BSD',         value: 30,  color: 'var(--pai-indigo)' },
+        { label: 'QNX',              value: 10,  color: 'var(--pai-indigo)' },
+        { label: 'VxWorks',          value: 10,  color: 'var(--pai-indigo)' },
+        { label: 'z/OS',             value: 10,  color: 'var(--pai-indigo)' },
+      ],
+    },
+    // ── Widget 20: Top 10 Most Common Services ─────────────────────
+    {
+      id: 3020, label: 'Top 10 Most Common Services', chartId: 'hor-bar', span: 6, sizeId: 'xlarge', heightId: 'rpt-chart', phase: 'active', dataLocked: true,
+      showLegend: false, xLabel: 'Devices', legendDesc: 'service',
+      data: [
+        { label: 'SSH',         value: 400, color: 'var(--pai-indigo)' },
+        { label: 'SNMP',        value: 300, color: 'var(--pai-indigo)' },
+        { label: 'HTTPS',       value: 200, color: 'var(--pai-indigo)' },
+        { label: 'callbook',    value: 200, color: 'var(--pai-indigo)' },
+        { label: 'uucp-rlogin', value: 200, color: 'var(--pai-indigo)' },
+        { label: 'NTP',         value: 100, color: 'var(--pai-indigo)' },
+        { label: 'Telnet',      value: 80,  color: 'var(--pai-indigo)' },
+        { label: 'FTP',         value: 80,  color: 'var(--pai-indigo)' },
+        { label: 'DNS',         value: 50,  color: 'var(--pai-indigo)' },
+        { label: 'NetBIOS',     value: 50,  color: 'var(--pai-indigo)' },
+      ],
+    },
+  ],
 }
 
 // ── Main ─────────────────────────────────────────────────────────────
@@ -1675,9 +2195,9 @@ const DISCOVER_TEMPLATE = {
   ],
 }
 
-export default function DashboardCanvas({ onNav, templateId = null }) {
-  const template = templateId === 'discover' ? DISCOVER_TEMPLATE : null
-  const [name, setName]       = useState(template?.name ?? '')
+export default function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '' }) {
+  const template = templateId === 'discover' ? DISCOVER_TEMPLATE : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE : null
+  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? ''))
   const [widgets, setWidgets] = useState(() => {
     if (!template) return []
     return template.widgets
@@ -1708,7 +2228,7 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
     const size = WIDGET_SIZES.find(s => s.id === widgetSize)
     const newId = (widgets.length > 0 ? Math.max(...widgets.map(w => w.id)) : 0) + 1
     setWidgets(w => [...w, {
-      id: newId, label: widgetTitle || CHART_TYPES.find(c => c.id === selectedChart)?.label,
+      id: newId, label: widgetTitle || CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label,
       description: widgetDescription,
       chartId: selectedChart, span: size.span, sizeId: widgetSize, heightId: widgetHeight,
       phase: 'active',
@@ -1720,7 +2240,8 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
   const handleAddCancel = () => { setPanelMode(null) }
 
   const handleSettingsSave = (newId, changes) => {
-    const size = WIDGET_SIZES.find(s => s.id === changes.sizeId)
+    const allSizes = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
+    const size = allSizes.find(s => s.id === changes.sizeId) || WIDGET_SIZES[0]
     setWidgets(ws => ws.map(w => w.id === newId
       ? { ...w, ...changes, span: size.span, phase: 'active' }
       : w
@@ -1769,11 +2290,11 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
 
             <input
               value={name} onChange={e => setName(e.target.value)}
-              placeholder="Enter dashboard name here..."
+              placeholder={reportMode ? 'Enter report name here...' : 'Enter dashboard name here...'}
               className="dc-toolbar-name-input"
             />
 
-            {perf && (
+            {perf && !reportMode && (
               <span
                 className="dc-perf-badge"
                 style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
@@ -1785,30 +2306,96 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
 
             <div className="dc-toolbar-spacer" />
 
-            <button className="ds-btn sz-md t-outline">Convert to Report</button>
+            {!reportMode && <button className="ds-btn sz-md t-outline">Convert to Report</button>}
 
-            <span className="dc-scope-badge">
-              Dashboard Scope
-              <span className="dc-scope-icon">
-                <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+            {!reportMode && (
+              <span className="dc-scope-badge">
+                Dashboard Scope
+                <span className="dc-scope-icon">
+                  <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+                </span>
               </span>
-            </span>
+            )}
 
             <div className="dc-toolbar-divider" />
 
-            <button className="ds-icon-btn" title="Reset" onClick={() => { setWidgets([]); setName(''); setPanelMode(null) }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-              </svg>
-            </button>
+            {reportMode ? (
+              <>
+                <button className="ds-icon-btn" title="Undo">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 14 4 9 9 4"/>
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                  </svg>
+                </button>
+                <button className="ds-icon-btn" title="Redo">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 14 20 9 15 4"/>
+                    <path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <span className="dc-tip" data-tip="Reset the whole dashboard">
+                <button className="ds-icon-btn" onClick={() => { setWidgets([]); setName(''); setPanelMode(null) }}>
+                  <img src="/assets/icons/reset.svg" width={16} height={16} alt="Reset" />
+                </button>
+              </span>
+            )}
 
-            <button className="ds-btn sz-md t-primary">Save</button>
+            <button
+              className="ds-btn sz-md t-primary"
+              onClick={() => reportMode && onNav('workspace/report-preview/executive-summary')}
+            >{reportMode ? 'Preview' : 'Save'}</button>
           </div>
 
           {/* Canvas body */}
-          <div className={`dc-canvas-body${templateId === 'discover' ? ' dc-canvas-body--plain' : ''}`}>
+          <div className={`dc-canvas-body${templateId === 'discover' ? ' dc-canvas-body--plain' : ''}${reportMode ? ' dc-canvas-body--report' : ''}`}>
             {templateId === 'discover' ? (
-              <DiscoverDevicePage dashboardMode onEditWidget={handleDiscoverEdit} onAddWidget={openAdd} />
+              <DiscoverDevicePage
+                dashboardMode
+                typeColors={widgets.find(w => w.id === 1004)?.chartColors}
+                kpiCardHeight={(() => {
+                  const kw = widgets.find(w => w.id === 1001)
+                  return kw ? ([...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS].find(s => s.id === kw.heightId)?.px || 360) : 360
+                })()}
+                onEditWidget={handleDiscoverEdit}
+                onAddWidget={openAdd}
+              />
+            ) : reportMode ? (
+              // ── Report layout: KPI rows grouped, charts full-width ──
+              (() => {
+                const rows = []
+                let kpiBuf = []
+                for (const w of widgets) {
+                  if (w.chartId === 'kpi') {
+                    if (w.rowBreak && kpiBuf.length) { rows.push({ type: 'kpi', widgets: kpiBuf }); kpiBuf = [] }
+                    kpiBuf.push(w)
+                  } else {
+                    if (kpiBuf.length) { rows.push({ type: 'kpi', widgets: kpiBuf }); kpiBuf = [] }
+                    rows.push({ type: 'chart', widget: w })
+                  }
+                }
+                if (kpiBuf.length) rows.push({ type: 'kpi', widgets: kpiBuf })
+                return (
+                  <div className="dc-report-layout">
+                    {rows.map((row, i) =>
+                      row.type === 'kpi' ? (
+                        <div key={i} className="dc-report-kpi-row">
+                          {row.widgets.map(w => (
+                            <div key={w.id} className="dc-report-kpi-item">
+                              <WidgetCard widget={w} isEditing={false} onEdit={() => openSettings(w.id)} onRequestDelete={() => {}} reportMode />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div key={row.widget.id} className={`dc-report-chart-row${row.widget.chartId === 'table' ? ' dc-report-chart-row--table' : ''}`}>
+                          <WidgetCard widget={row.widget} isEditing={false} onEdit={() => openSettings(row.widget.id)} onRequestDelete={() => {}} reportMode />
+                        </div>
+                      )
+                    )}
+                  </div>
+                )
+              })()
             ) : (
               <div className="dc-grid">
 
@@ -1816,14 +2403,15 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
                   <WidgetCard
                     key={w.id}
                     widget={w}
-                    isEditing={w.id === settingsWidgetId}
+                    isEditing={panelMode === 'settings' && w.id === settingsWidgetId}
                     onEdit={() => openSettings(w.id)}
                     onRequestDelete={w => setDeletePending(w)}
+                    reportMode={false}
                   />
                 ))}
 
-                {/* Add Widget placeholder / Live preview */}
-                {panelMode === 'add' ? (
+                {/* Add Widget placeholder / Live preview — hidden in report mode */}
+                {!reportMode && (panelMode === 'add' ? (
                   <div
                     className="dc-preview-col"
                     style={{ '--dc-preview-span': WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1 }}
@@ -1848,7 +2436,7 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
                     >
                       <div className="dc-preview-header">
                         <span className="dc-preview-title">
-                          {widgetTitle || (selectedChart ? CHART_TYPES.find(c => c.id === selectedChart)?.label : '')}
+                          {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
                         </span>
                         {widgetDescription && (
                           <div className="dc-preview-desc">{widgetDescription}</div>
@@ -1869,14 +2457,14 @@ export default function DashboardCanvas({ onNav, templateId = null }) {
                     </svg>
                     <span className="dc-add-widget-btn-label">Add Widget</span>
                   </button>
-                )}
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Right Panel (custom dashboards only) ── */}
-        {panelMode === 'add' && (
+        {/* ── Right Panel (custom dashboards only, not report mode) ── */}
+        {panelMode === 'add' && !reportMode && (
           <AddWidgetPanel
             selected={selectedChart} setSelected={setSelectedChart}
             widgetTitle={widgetTitle} setWidgetTitle={setWidgetTitle}

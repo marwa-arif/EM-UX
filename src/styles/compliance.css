@@ -1326,7 +1326,7 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-drawer-trend-legend--critical { color: var(--pai-crit-fg); }
-.comp-drawer-trend-legend--warning  { color: var(--pai-high-fg); }
+.comp-drawer-trend-legend--warning  { color: var(--pai-med-fg); }
 
 .comp-drawer-trend-legend-dash {
   width: 20px;
@@ -2584,7 +2584,8 @@ html.theme-dark .comp-fw-card--selected {
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   padding: 8px 12px;
-  white-space: nowrap;
+  white-space: normal;
+  width: 300px;
   z-index: 10;
   pointer-events: none;
 }
