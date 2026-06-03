@@ -24,6 +24,25 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.0] — 2026-06-03
+### Added
+- Executive Summary report template (20 widgets: KPI, vert-bar, pie, hor-bar, table) in DashboardCanvas
+- ReportPreviewPage: paginated A4 layout, cover page, save/schedule/share/download modals
+- workspace/report filter panel, breadcrumb, and active-filter chip support in WorkspacePage
+- hor-bar charts: LabelList value labels, x-axis label, per-widget description notes (vulnerability/os/service templates)
+- `printMode` prop on WidgetCard/ChartRender — suppresses tooltips in PDF preview
+- Table widgets hug content height via `dc-report-chart-row--table` CSS modifier
+### Changed
+- WidgetCard exported from DashboardCanvas so ReportPreviewPage renders identical widgets to editor
+- Report editor chart cards restore explicit height (removed `height:auto` override that collapsed Recharts)
+- sfm-checkbox-row: `align-items: flex-start` + `line-height: 1.4` to fix multi-line label alignment
+- hor-bar chart description note: removed border-top divider
+### Fixed
+- 500 error on Library → Executive Summary: undeclared `note` variable in ChartRender pie renderer
+- Recharts charts invisible in report editor due to `height:auto` collapsing card body flex chain
+
+---
+
 ## [0.5.2] — 2026-05-29
 ### Changed
 - `dashboard.css`: DS 2.0 token fixes — `border-radius` normalised (cards→4px, inputs→8px, toggles→12px), z-index clamped to 300 tier, font-size floor 11px, spacing to 4pt grid, toolbar height 48px
