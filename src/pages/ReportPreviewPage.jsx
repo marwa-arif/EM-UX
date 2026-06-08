@@ -120,13 +120,8 @@ function DownloadDropdown({ template }) {
             </div>
             <div className="sfm-body sfm-body--compact">
               <p className="sfm-desc">
-                Excel export includes only the <strong>tables</strong> in this report. Charts and KPI cards will not be included.
+                Select the tables you'd like to export as Excel files.
               </p>
-
-              <div className="sfm-section-divider">
-                <span className="sfm-section-divider-label">Tables to include</span>
-                <div className="sfm-section-divider-line" />
-              </div>
 
               <div className="sfm-table-list">
                 {REPORT_TABLES.map(t => (
@@ -140,6 +135,12 @@ function DownloadDropdown({ template }) {
                   </label>
                 ))}
               </div>
+
+              <p className="sfm-note">
+                <strong>Note:</strong><br />
+                Charts and other visualizations are not available for export.<br />
+                Each table will be downloaded as a separate Excel file.
+              </p>
             </div>
             <div className="sfm-footer">
               <button className="sfm-cancel" onClick={() => setExcelWarn(false)}>Cancel</button>
