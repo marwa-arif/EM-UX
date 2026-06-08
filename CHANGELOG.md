@@ -24,6 +24,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.3] — 2026-06-08
+### Changed
+- Download as Excel modal: replaced radio buttons (All/Specific tables) with a direct checkbox list
+- Download as Excel modal: removed "Don't show this again" option and localStorage gate
+- Download as Excel modal: updated description text and removed "Tables to include" section header
+- Download as Excel modal: added Note footer clarifying charts are not exportable and each table downloads separately
+- sfm-table-list padding set to 12px left and right
+
+---
+
 ## [0.6.2] — 2026-06-08
 ### Added
 - Assessments table: styled hover tooltips on findings counts showing "Passed Findings" / "Failed Findings"

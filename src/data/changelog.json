@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.6.3",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Download as Excel modal: replaced radio buttons (All/Specific tables) with a direct checkbox list",
+        "Download as Excel modal: removed \"Don't show this again\" option and localStorage gate",
+        "Download as Excel modal: updated description text and removed \"Tables to include\" section header",
+        "Download as Excel modal: added Note footer clarifying charts are not exportable and each table downloads separately",
+        "sfm-table-list padding set to 12px left and right"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.6.2",
     "date": "2026-06-08",
     "changes": {
