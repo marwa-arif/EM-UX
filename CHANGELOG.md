@@ -24,6 +24,18 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.1] — 2026-06-08
+### Changed
+- Renamed Open/Closed terminology to Failed/Passed across compliance, findings, and assessments
+- Compliance table headers: Closed → Passed, Open → Failed
+- Findings Breakdown KPI labels: added (Closed)/(Open) suffixes in grey regular weight
+- "Include Closed Findings" toggle renamed to "Include Passed Findings" in all drawers and ComplianceFindingsPage
+- Compliance matrix tooltip: Open findings → Failed findings
+- Exposure Findings table header: Open Findings → Failed Findings
+- Compliance tree table cells: removed vertical padding
+
+---
+
 ## [0.6.0] — 2026-06-03
 ### Added
 - Executive Summary report template (20 widgets: KPI, vert-bar, pie, hor-bar, table) in DashboardCanvas

@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.6.1",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Renamed Open/Closed terminology to Failed/Passed across compliance, findings, and assessments",
+        "Compliance table headers: Closed → Passed, Open → Failed",
+        "Findings Breakdown KPI labels: added (Closed)/(Open) suffixes in grey regular weight",
+        "\"Include Closed Findings\" toggle renamed to \"Include Passed Findings\" in all drawers and ComplianceFindingsPage",
+        "Compliance matrix tooltip: Open findings → Failed findings",
+        "Exposure Findings table header: Open Findings → Failed Findings",
+        "Compliance tree table cells: removed vertical padding"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.6.0",
     "date": "2026-06-03",
     "changes": {
