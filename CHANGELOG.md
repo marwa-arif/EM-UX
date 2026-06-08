@@ -24,6 +24,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.2] — 2026-06-08
+### Added
+- Assessments table: styled hover tooltips on findings counts showing "Passed Findings" / "Failed Findings"
+
+---
+
 ## [0.6.1] — 2026-06-08
 ### Changed
 - Renamed Open/Closed terminology to Failed/Passed across compliance, findings, and assessments

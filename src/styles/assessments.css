@@ -133,6 +133,33 @@
   color: var(--shell-text);
 }
 
+.asmts-findings-val--tip {
+  position: relative;
+}
+
+.asmts-findings-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.asmts-findings-val--tip:hover .asmts-findings-tooltip {
+  display: block;
+}
+
 .asmts-dot {
   width: 7px;
   height: 7px;

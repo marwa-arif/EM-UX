@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.6.2",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [
+        "Assessments table: styled hover tooltips on findings counts showing \"Passed Findings\" / \"Failed Findings\""
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.6.1",
     "date": "2026-06-08",
     "changes": {
