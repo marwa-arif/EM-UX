@@ -24,6 +24,13 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.4] — 2026-06-08
+### Changed
+- SplashScreen: reworked animation to stroke-draw SVG paths with staggered delays
+- ComplianceMatrixPage: replaced `pai-high-fg` with `pai-med-fg` for Moderate score color
+
+---
+
 ## [0.6.3] — 2026-06-08
 ### Changed
 - Download as Excel modal: replaced radio buttons (All/Specific tables) with a direct checkbox list

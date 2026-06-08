@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.6.4",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "SplashScreen: reworked animation to stroke-draw SVG paths with staggered delays",
+        "ComplianceMatrixPage: replaced `pai-high-fg` with `pai-med-fg` for Moderate score color"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.6.3",
     "date": "2026-06-08",
     "changes": {
