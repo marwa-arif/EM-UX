@@ -8,12 +8,11 @@
  * onDone  () => void   Called after the exit animation completes (~3.15 s total).
  *                      Mount this component until onDone fires, then unmount it.
  *
- * Required assets (public/assets/logo/)
- * ──────────────────────────────────────
- * em-wordmark.svg          – "Exposure Management" wordmark, dark
- * em-wordmark-white.svg    – same, for dark mode
- * pai-wordmark-black.svg   – "Prevalent AI" wordmark, dark
- * pai-wordmark-white.svg   – same, for dark mode
+ * Client logo
+ * ───────────
+ * Swap LOGO_LIGHT / LOGO_DARK below per deployment.
+ * The PAI symbol (constellation) is inline SVG — replace DOT_PATHS or the
+ * entire <svg> block with the client's icon if needed.
  *
  * Theme detection
  * ───────────────
@@ -23,13 +22,17 @@
  * ────────
  * 0 ms      mount
  * 120 ms    6 constellation dots pop in (staggered 110 ms each)
- * 860 ms    EM wordmark slides in from right
- * 1 260 ms  PAI wordmark slides in
+ * 860 ms    PAI wordmark rises in
  * 2 600 ms  fade-out begins (550 ms ease)
  * 3 150 ms  onDone() fires → unmount
  */
 
 import React, { useState, useEffect } from 'react';
+
+// ─── Client logo — swap these two paths per deployment ───────────────────────
+const LOGO_LIGHT = '/assets/logo/pai-wordmark-black.svg';
+const LOGO_DARK  = '/assets/logo/pai-wordmark-white.svg';
+// ─────────────────────────────────────────────────────────────────────────────
 
 const DOT_PATHS = [
   'M45.6001 5.86863C43.7483 7.72044 43.7483 10.7228 45.6001 12.5746C47.4519 14.4264 50.4543 14.4264 52.3061 12.5746C54.1579 10.7228 54.1579 7.72044 52.3061 5.86863C50.4543 4.01682 47.4519 4.01682 45.6001 5.86863Z',
@@ -45,23 +48,22 @@ const ALL_DOTS_MS    = DOT_STAGGER_MS * DOT_PATHS.length; // 660 ms
 
 export default function SplashScreen({ onDone }) {
   const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
-  const [phase, setPhase] = useState('idle'); // idle | dots | word | sub | out
+  const [phase, setPhase] = useState('idle'); // idle | dots | logo | out
 
   const after = (...phases) => phases.includes(phase);
 
   useEffect(() => {
     const t0 = setTimeout(() => setPhase('dots'), 120);
-    const t1 = setTimeout(() => setPhase('word'), 120 + ALL_DOTS_MS + 80);
-    const t2 = setTimeout(() => setPhase('sub'),  120 + ALL_DOTS_MS + 480);
-    const t3 = setTimeout(() => setPhase('out'),  2600);
-    const t4 = setTimeout(() => onDone(),          3150);
-    return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
+    const t1 = setTimeout(() => setPhase('logo'), 120 + ALL_DOTS_MS + 120);
+    const t2 = setTimeout(() => setPhase('out'),  2600);
+    const t3 = setTimeout(() => onDone(),          3150);
+    return () => [t0, t1, t2, t3].forEach(clearTimeout);
   }, [onDone]);
 
-  const dotColor   = isDark ? '#FFFFFF'                    : '#101010';
-  const barTrack   = isDark ? 'rgba(255,255,255,0.07)'     : '#E8E8F4';
-  const emWordmark = isDark ? '/assets/logo/em-wordmark-white.svg' : '/assets/logo/em-wordmark.svg';
-  const paiMark    = isDark ? '/assets/logo/pai-wordmark-white.svg' : '/assets/logo/pai-wordmark-black.svg';
+  const dotColor = isDark ? '#FFFFFF' : '#101010';
+  const barTrack = isDark ? 'rgba(255,255,255,0.07)' : '#E8E8F4';
+  const logoSrc  = isDark ? LOGO_DARK : LOGO_LIGHT;
+
   return (
     <>
       <style>{`
@@ -70,9 +72,17 @@ export default function SplashScreen({ onDone }) {
           70%  { opacity: 1; transform: scale(1.15); }
           100% { opacity: 1; transform: scale(1); }
         }
-        @keyframes splash-slide-in {
-          from { opacity: 0; transform: translateX(22px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes splash-symbol-float {
+          0%, 100% { transform: translateY(0px); }
+          50%      { transform: translateY(-5px); }
+        }
+        @keyframes splash-symbol-glow {
+          0%, 100% { filter: drop-shadow(0 0 0px rgba(99,96,216,0)); }
+          50%       { filter: drop-shadow(0 0 12px rgba(99,96,216,0.55)); }
+        }
+        @keyframes splash-logo-rise {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes splash-bar {
           from { transform: scaleX(0); }
@@ -100,7 +110,7 @@ export default function SplashScreen({ onDone }) {
         background: isDark ? '#0D0D18' : '#F7F7FF',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 16, overflow: 'hidden',
+        gap: 24, overflow: 'hidden',
         opacity: phase === 'out' ? 0 : 1,
         transition: 'opacity 550ms ease',
       }}>
@@ -134,12 +144,22 @@ export default function SplashScreen({ onDone }) {
           pointerEvents: 'none', filter: 'blur(64px)',
         }} />
 
-        {/* ── Logo row: constellation + EM wordmark ── */}
+        {/* ── Brand lockup: PAI symbol + wordmark ── */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 18,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 20,
           position: 'relative', zIndex: 1,
         }}>
-          <svg width="58" height="71" viewBox="0 0 58 71" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* PAI symbol (constellation) */}
+          <svg
+            width="58" height="71" viewBox="0 0 58 71" fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              animation: after('logo', 'out')
+                ? 'splash-symbol-float 3.2s ease-in-out infinite, splash-symbol-glow 3.2s ease-in-out infinite'
+                : 'none',
+            }}
+          >
             {DOT_PATHS.map((d, i) => (
               <path
                 key={i}
@@ -149,7 +169,7 @@ export default function SplashScreen({ onDone }) {
                   opacity: 0,
                   transformBox: 'fill-box',
                   transformOrigin: 'center',
-                  animation: after('dots', 'word', 'sub', 'out')
+                  animation: after('dots', 'logo', 'out')
                     ? `splash-dot-pop 350ms cubic-bezier(0.34,1.3,0.64,1) ${i * DOT_STAGGER_MS}ms forwards`
                     : 'none',
                 }}
@@ -157,32 +177,19 @@ export default function SplashScreen({ onDone }) {
             ))}
           </svg>
 
+          {/* Client wordmark */}
           <img
-            src={emWordmark}
+            src={logoSrc}
             height={28}
-            alt="Exposure Management"
+            alt="Logo"
             style={{
-              animation: after('word', 'sub', 'out')
-                ? 'splash-slide-in 520ms cubic-bezier(0.22,1,0.36,1) forwards'
+              animation: after('logo', 'out')
+                ? 'splash-logo-rise 480ms cubic-bezier(0.22,1,0.36,1) forwards'
                 : 'none',
               opacity: after('idle', 'dots') ? 0 : undefined,
             }}
           />
         </div>
-
-        {/* ── PAI wordmark ── */}
-        <img
-          src={paiMark}
-          height={28}
-          alt="Prevalent AI"
-          style={{
-            position: 'relative', zIndex: 1,
-            animation: after('sub', 'out')
-              ? 'splash-slide-in 520ms cubic-bezier(0.22,1,0.36,1) forwards'
-              : 'none',
-            opacity: after('idle', 'dots', 'word') ? 0 : undefined,
-          }}
-        />
 
         {/* ── Progress bar ── */}
         <div style={{
@@ -194,7 +201,7 @@ export default function SplashScreen({ onDone }) {
             background: 'linear-gradient(90deg, #6360D8 0%, #47ADCB 100%)',
             transformOrigin: 'left center',
             transform: 'scaleX(0)',
-            animation: after('dots', 'word', 'sub', 'out')
+            animation: after('dots', 'logo', 'out')
               ? 'splash-bar 2200ms cubic-bezier(0.4,0,0.6,1) forwards'
               : 'none',
           }} />
