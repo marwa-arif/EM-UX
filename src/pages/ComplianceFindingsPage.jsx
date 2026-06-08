@@ -224,7 +224,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
             <div className="cfp-header-actions">
               {!filter && (
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={v => { setInclClosed(v); setPage(1) }} />
                 </label>
               )}

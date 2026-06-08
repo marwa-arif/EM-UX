@@ -272,7 +272,7 @@ function CellTooltip({ row, col, score, prevScore, delta, canCompare, x, y }) {
         <span className="comp-matrix-tt-val">{score === null ? '—' : assessments}</span>
       </div>
       <div className="comp-matrix-tt-row">
-        <span>Open findings</span>
+        <span>Failed findings</span>
         <span className="comp-matrix-tt-val">{score === null ? '—' : openFindings.toLocaleString()}</span>
       </div>
       {canCompare && delta !== undefined && (

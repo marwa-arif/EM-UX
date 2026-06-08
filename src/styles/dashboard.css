@@ -794,7 +794,7 @@
 }
 .sfm-textarea-field:focus { border-color: var(--pai-indigo); }
 .sfm-info-note { font-size: 12px; color: var(--pai-fg3); margin-top: 4px; }
-.sfm-table-list { display: flex; flex-direction: column; gap: 10px; padding-left: 24px; }
+.sfm-table-list { display: flex; flex-direction: column; gap: 10px; padding-left: 12px; padding-right: 12px; }
 .sfm-footer--split { justify-content: space-between; }
 .sfm-copy-link-btn {
   display: inline-flex; align-items: center; gap: 6px;

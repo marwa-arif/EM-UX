@@ -48,15 +48,11 @@ const IcFileExcel = () => (
   </svg>
 )
 
-const EXCEL_WARN_KEY = 'pai-excel-warn-dismissed'
-
 function DownloadDropdown({ template }) {
   const REPORT_TABLES = template.widgets.filter(w => w.chartId === 'table')
-  const [open, setOpen]               = useState(false)
-  const [excelWarn, setExcelWarn]     = useState(false)
-  const [dontShow, setDontShow]       = useState(false)
-  const [tableScope, setTableScope]   = useState('all')
-  const [selected, setSelected]       = useState(() => new Set(REPORT_TABLES.map(t => t.id)))
+  const [open, setOpen]           = useState(false)
+  const [excelWarn, setExcelWarn] = useState(false)
+  const [selected, setSelected]   = useState(() => new Set(REPORT_TABLES.map(t => t.id)))
   const ref = useRef(null)
 
   useEffect(() => {
@@ -67,9 +63,7 @@ function DownloadDropdown({ template }) {
   }, [open])
 
   const openExcelModal = () => {
-    setTableScope('all')
     setSelected(new Set(REPORT_TABLES.map(t => t.id)))
-    setDontShow(false)
     setExcelWarn(true)
   }
 
@@ -81,7 +75,7 @@ function DownloadDropdown({ template }) {
     })
   }
 
-  const canDownload = tableScope === 'all' || selected.size > 0
+  const canDownload = selected.size > 0
 
   return (
     <>
@@ -101,7 +95,6 @@ function DownloadDropdown({ template }) {
             </button>
             <button className="comp-dl-item" onClick={() => {
               setOpen(false)
-              if (localStorage.getItem(EXCEL_WARN_KEY)) return
               openExcelModal()
             }}>
               <IcFileExcel /> Excel
@@ -135,47 +128,22 @@ function DownloadDropdown({ template }) {
                 <div className="sfm-section-divider-line" />
               </div>
 
-              <label className="sfm-radio-row">
-                <input type="radio" name="excel-scope" value="all" checked={tableScope === 'all'} onChange={() => setTableScope('all')} />
-                All tables
-              </label>
-              <label className="sfm-radio-row">
-                <input type="radio" name="excel-scope" value="specific" checked={tableScope === 'specific'} onChange={() => setTableScope('specific')} />
-                Specific tables
-              </label>
-
-              {tableScope === 'specific' && (
-                <div className="sfm-table-list">
-                  {REPORT_TABLES.map(t => (
-                    <label key={t.id} className="sfm-checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(t.id)}
-                        onChange={() => toggleTable(t.id)}
-                      />
-                      {t.label}
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              <div className="sfm-section-divider">
-                <div className="sfm-section-divider-line" />
+              <div className="sfm-table-list">
+                {REPORT_TABLES.map(t => (
+                  <label key={t.id} className="sfm-checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(t.id)}
+                      onChange={() => toggleTable(t.id)}
+                    />
+                    {t.label}
+                  </label>
+                ))}
               </div>
-
-              <label className="sfm-checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={dontShow}
-                  onChange={e => setDontShow(e.target.checked)}
-                />
-                Don't show this again
-              </label>
             </div>
             <div className="sfm-footer">
               <button className="sfm-cancel" onClick={() => setExcelWarn(false)}>Cancel</button>
               <button className="sfm-create" disabled={!canDownload} onClick={() => {
-                if (dontShow) localStorage.setItem(EXCEL_WARN_KEY, '1')
                 setExcelWarn(false)
               }}>Download</button>
             </div>

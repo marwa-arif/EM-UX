@@ -378,11 +378,11 @@ export default function FindingsPage({ onNav }) {
         </div>
       </div>
 
-      {/* ── Bottom: open findings table ── */}
+      {/* ── Bottom: failed findings table ── */}
       <div className="card fin-table-section">
         <div className="fin-table-hdr">
           <span className="fin-table-title">
-            Open Findings <span className="fin-table-count">(3,282,373)</span>
+            Failed Findings <span className="fin-table-count">(3,282,373)</span>
           </span>
           <div className="fin-table-actions">
             <DSPillSearch

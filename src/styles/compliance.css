@@ -678,7 +678,7 @@
 }
 
 .comp-domain-table td {
-  padding: var(--table-td-padding);
+  padding: 0 16px;
   font-size: 12px;
   color: var(--shell-text);
   vertical-align: middle;
@@ -2468,6 +2468,13 @@ html.theme-dark .comp-fw-card--selected {
   font-size: 12px;
   font-weight: 600;
   color: var(--shell-text);
+}
+
+.comp-findings-kpi-suffix {
+  margin-left: 4px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  color: var(--shell-text-muted);
 }
 
 .comp-findings-kpi-count {

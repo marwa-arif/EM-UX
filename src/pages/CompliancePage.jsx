@@ -724,7 +724,7 @@ function FindingsKpi({ closed, open, pct }) {
   const openPct = 100 - pct
   const rows = [
     {
-      label: 'Passed findings',
+      label: 'Passed findings', suffix: '(Closed)',
       count: closed,
       pct,
       icon: (
@@ -734,7 +734,7 @@ function FindingsKpi({ closed, open, pct }) {
       ),
     },
     {
-      label: 'Failed findings',
+      label: 'Failed findings', suffix: '(Open)',
       count: open,
       pct: openPct,
       icon: (
@@ -763,7 +763,10 @@ function FindingsKpi({ closed, open, pct }) {
           <div className="comp-findings-kpi-icon">
             {row.icon}
           </div>
-          <span className="comp-findings-kpi-label">{row.label}</span>
+          <span className="comp-findings-kpi-label">
+            {row.label}
+            {row.suffix && <span className="comp-findings-kpi-suffix">{row.suffix}</span>}
+          </span>
           <span className="comp-findings-kpi-count">
             {row.count.toLocaleString()}
           </span>
@@ -967,6 +970,20 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="comp-drawer-donut-col">
                 <div className="comp-drawer-score-header">
                   <span className="comp-drawer-score-label">Compliance Score</span>
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div className="comp-drawer-divider" />
@@ -1098,7 +1115,7 @@ function AssessmentDrawer({ node, onClose }) {
               </div>
               <div className="comp-drawer-findings-actions">
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
                 <div ref={downloadMenuRef} className="comp-sort-wrap">
@@ -1513,6 +1530,20 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-donut-col">
                 <div className="comp-drawer-score-header">
                   <span className="comp-drawer-score-label">Compliance Score</span>
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <SemiDonutChart pct={node.pct} rating={node.rating} width={482} />
                 <div className="comp-drawer-divider" />
@@ -1609,7 +1640,7 @@ function FunctionDrawer({ node, level, onClose }) {
               </div>
               <div className="comp-drawer-findings-actions">
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
                 <div ref={downloadMenuRef} className="comp-sort-wrap">
@@ -2375,8 +2406,8 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                       <SortDropdown value={sortBy} onChange={setSortBy} />
                     </div>
                   </th>
-                  <th className="right">Closed</th>
-                  <th className="right">Open</th>
+                  <th className="right">Passed</th>
+                  <th className="right">Failed</th>
                   <th>{showTrend ? 'Compliance (%) with Trend' : 'Compliance Posture'}</th>
                   <th>Rating</th>
                 </tr>
