@@ -24,6 +24,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.5] — 2026-06-23
+### Changed
+- SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css
+- DashboardCanvas, WorkspacePage, AssessmentsPage: minor UI fixes
+- device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup
+
+---
+
 ## [0.6.4] — 2026-06-08
 ### Changed
 - SplashScreen: reworked animation to stroke-draw SVG paths with staggered delays
