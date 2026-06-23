@@ -60,6 +60,7 @@
   position: fixed; inset: 0; z-index: 10005;
   background: rgba(0,0,0,0.45);
 }
+.sfm-overlay--z200 { z-index: 200; background: transparent; }
 
 .sfm-dialog {
   position: fixed; z-index: 10006;
@@ -72,7 +73,7 @@
 }
 
 .sfm-header {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 8px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--shell-border);
   flex-shrink: 0;
@@ -85,7 +86,7 @@
 }
 .sfm-icon-wrap svg { width: 16px; height: 16px; }
 
-.sfm-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--pai-fg1); }
+.sfm-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--pai-fg1); }
 
 .sfm-close {
   width: 28px; height: 28px; padding: 0; flex-shrink: 0;
@@ -106,11 +107,11 @@
 
 .sfm-section { display: flex; flex-direction: column; gap: 12px; }
 
-.sfm-section-header { display: flex; align-items: center; gap: 10px; }
+.sfm-section-header { display: flex; align-items: center; gap: 8px; }
 .sfm-section-label { font-size: 12px; font-weight: 600; color: var(--pai-fg2); white-space: nowrap; }
 .sfm-divider { flex: 1; height: 1px; background: var(--pai-border-strong); }
 
-.sfm-field { display: flex; flex-direction: column; gap: 6px; }
+.sfm-field { display: flex; flex-direction: column; gap: 8px; }
 .sfm-field-label { font-size: 13px; font-weight: 500; color: var(--pai-fg1); }
 
 .sfm-input {

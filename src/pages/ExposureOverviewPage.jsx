@@ -64,7 +64,7 @@ const IcExplore = () => (
   </svg>
 );
 const IcInfo = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="exp-icon-muted">
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
 );
@@ -110,7 +110,7 @@ function Bubble({ score, severity, icon, size = 105, label, index = 0 }) {
 
   return (
     <div className="exp-bubble-wrap">
-      <div className="exp-bubble-circle" style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <div className="exp-bubble-circle" style={{ '--exp-bubble-size': `${size}px` }}>
         <div className="exp-bubble-ring" style={{ background: gradient }} />
         <div className="exp-bubble-inner" />
         <div className="exp-bubble-content">
@@ -274,12 +274,12 @@ function ExposureOverviewSection() {
 
 // ── Mini bar ──────────────────────────────────────────────────────
 function MiniBar({ pct, maxPct = MAX_BAR_PCT }) {
-  const fillColor = pct >= 10 ? '#E15252' : '#D98B1D';
+  const fillColor = pct >= 10 ? 'var(--pai-crit-fg)' : 'var(--pai-high-fg)';
   const fillWidth = Math.round((pct / maxPct) * 100);
   return (
     <div className="exp-minibar-wrap">
       <div className="exp-minibar-track">
-        <div className="exp-minibar-fill" style={{ width: `${fillWidth}%`, background: fillColor }} />
+        <div className="exp-minibar-fill" style={{ '--exp-fill-w': `${fillWidth}%`, '--exp-fill-bg': fillColor }} />
       </div>
       <span className="exp-minibar-pct">{pct}%</span>
     </div>
@@ -298,7 +298,7 @@ export default function ExposureOverviewPage() {
   const visibleRows = filtered.slice(start, start + rowsPerPage);
 
   const TH = ({ children, align = 'left' }) => (
-    <th className="ds-th" style={{ textAlign: align }}>
+    <th className={`ds-th${align !== 'left' ? ` ds-th--${align}` : ''}`}>
       <span className="ds-th-inner">
         {children}
         <span className="exp-th-sort-icon"><IcSort /></span>
@@ -325,11 +325,7 @@ export default function ExposureOverviewPage() {
               {search && (
                 <button
                   onMouseDown={e => { e.preventDefault(); setSearch(''); }}
-                  style={{
-                    width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: 'var(--shell-text-muted)', borderRadius: 999, flexShrink: 0, marginRight: 4,
-                  }}
+                  className="exp-search-clear"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -363,10 +359,10 @@ export default function ExposureOverviewPage() {
                   <tr key={i}>
                     <td className="ds-td exp-td-name">{row.name}</td>
                     <td className="ds-td">
-                      <span className="exp-td-score" style={{ color: scoreColor(row.score) }}>{row.score}</span>
+                      <span className="exp-td-score" style={{ '--exp-score-color': scoreColor(row.score) }}>{row.score}</span>
                     </td>
                     <td className="ds-td">
-                      <span className="exp-td-change" style={{ color: trendColor }}>
+                      <span className="exp-td-change" style={{ '--exp-trend-color': trendColor }}>
                         {row.changeDir === 'up' ? <IcTrendUp color={trendColor} /> : <IcTrendDown color={trendColor} />}
                         {row.changePct}%
                       </span>

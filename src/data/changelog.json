@@ -7,7 +7,9 @@
       "Changed": [
         "SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css",
         "DashboardCanvas, WorkspacePage, AssessmentsPage: minor UI fixes",
-        "device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup"
+        "device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup",
+        "DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added --tooltip-bg/--tooltip-fg tokens to global.css; applied color-scheme:light to .rv-page",
+        "Font scale audit: fixed out-of-scale font sizes (7/8/9px to 10px, 15px to 14px, 11.5/12.5px to 12px, 17px to 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css"
       ],
       "Fixed": []
     }

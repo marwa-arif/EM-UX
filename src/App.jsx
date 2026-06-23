@@ -286,12 +286,12 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
     <div
       className="rp-shell"
       style={{
-        width: isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0,
-        borderLeft: (isOpen && !isCollapsedForFloat) ? '1px solid var(--shell-border)' : 'none',
-        boxShadow: (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.18)' : 'none',
+        '--rp-shell-w': `${isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0}px`,
+        '--rp-shell-border': (isOpen && !isCollapsedForFloat) ? '1px solid var(--shell-border)' : 'none',
+        '--rp-shell-shadow': (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.18)' : 'none',
       }}
     >
-      <div className="rp-shell__inner" style={{ width: SHELL_WIDTH }}>
+      <div className="rp-shell__inner" style={{ '--rp-shell-inner-w': `${SHELL_WIDTH}px` }}>
         {/* Tab strip — 48px to align with SubHeader */}
         <div className="rp-tabstrip">
           <div className={`rp-tabstrip__tabs${visibleTabs.length > 1 ? ' rp-seg-tabs' : ''}`}>

@@ -8,10 +8,10 @@ import DSDropdown from '../components/DSDropdown.jsx'
 
 // ── Severity palette ─────────────────────────────────────────────
 const SEV = {
-  Critical: '#C9373C',
-  High:     '#E06B4A',
-  Medium:   '#D98B1D',
-  Low:      '#31A56D',
+  Critical: 'var(--pai-crit-fg)',
+  High:     'var(--pai-high-fg)',
+  Medium:   'var(--pai-med-fg)',
+  Low:      'var(--pai-green)',
 };
 
 // ── Chart data ───────────────────────────────────────────────────
@@ -99,16 +99,16 @@ const REMEDIATE_NOW = [
 ];
 
 const BACKLOG_PULSE = [
-  { val: '892',  label: 'new this week',      color: '#C9373C' },
-  { val: '234',  label: 'closed this week',   color: '#31A56D' },
-  { val: '+658', label: 'net backlog growth', color: '#C9373C' },
-  { val: '47',   label: 'SLA breaches',       color: '#E06B4A' },
+  { val: '892',  label: 'new this week',      color: 'var(--pai-crit-fg)' },
+  { val: '234',  label: 'closed this week',   color: 'var(--pai-green)' },
+  { val: '+658', label: 'net backlog growth', color: 'var(--pai-crit-fg)' },
+  { val: '47',   label: 'SLA breaches',       color: 'var(--pai-high-fg)' },
 ];
 
 const SLA_STATUS = [
-  { sev: 'Critical', color: '#C9373C', target: '14d SLA', pct: 77, overdue: 47  },
-  { sev: 'High',     color: '#E06B4A', target: '30d SLA', pct: 93, overdue: 12  },
-  { sev: 'Medium',   color: '#D98B1D', target: '60d SLA', pct: 98, overdue: 3   },
+  { sev: 'Critical', color: 'var(--pai-crit-fg)', target: '14d SLA', pct: 77, overdue: 47  },
+  { sev: 'High',     color: 'var(--pai-high-fg)', target: '30d SLA', pct: 93, overdue: 12  },
+  { sev: 'Medium',   color: 'var(--pai-med-fg)',  target: '60d SLA', pct: 98, overdue: 3   },
 ];
 
 const TOP_EXPOSED = [
@@ -198,7 +198,7 @@ function ProgramStatusWidget() {
       <div className="fin-ps-pulse">
         {BACKLOG_PULSE.map((s, i) => (
           <div key={i} className="fin-ps-pulse-item">
-            <span className="fin-ps-pulse-val" style={{ color: s.color }}>{s.val}</span>
+            <span className="fin-ps-pulse-val" style={{ '--fin-pulse-color': s.color }}>{s.val}</span>
             <span className="fin-ps-pulse-label">{s.label}</span>
           </div>
         ))}
@@ -210,10 +210,10 @@ function ProgramStatusWidget() {
           <div className="fin-ps-col-title">SLA Compliance</div>
           {SLA_STATUS.map((row, i) => (
             <div key={i} className="fin-ps-sla-row">
-              <span className="fin-ps-sla-dot" style={{ background: row.color }} />
+              <span className="fin-ps-sla-dot" style={{ '--fin-sla-dot-bg': row.color }} />
               <span className="fin-ps-sla-sev">{row.sev}</span>
               <span className="fin-ps-sla-target">{row.target}</span>
-              <span className="fin-ps-sla-pct" style={{ color: row.pct >= 90 ? '#31A56D' : row.pct >= 80 ? '#D98B1D' : '#C9373C' }}>
+              <span className="fin-ps-sla-pct" style={{ '--fin-sla-pct-color': row.pct >= 90 ? 'var(--pai-green)' : row.pct >= 80 ? 'var(--pai-med-fg)' : 'var(--pai-crit-fg)' }}>
                 {row.pct}%
               </span>
               <span className="fin-ps-sla-overdue">{row.overdue} overdue</span>
@@ -230,7 +230,7 @@ function ProgramStatusWidget() {
                 <span className="fin-ps-exp-asset">{row.asset}</span>
                 <span className="fin-ps-exp-count">{row.count}</span>
               </div>
-              <span className="fin-ps-exp-pct" style={{ color: row.pct >= 20 ? '#C9373C' : '#D98B1D' }}>
+              <span className="fin-ps-exp-pct" style={{ '--fin-exp-pct-color': row.pct >= 20 ? 'var(--pai-crit-fg)' : 'var(--pai-med-fg)' }}>
                 {row.pct}%
               </span>
             </div>
@@ -248,8 +248,7 @@ function StackedBarChart({ title, rows, xLabel }) {
 
   return (
     <div
-      className="card fin-chart-card"
-      style={{ position: 'relative' }}
+      className="card fin-chart-card fin-chart-card--rel"
       onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
     >
       <div className="fin-chart-title">{title}</div>
@@ -264,7 +263,7 @@ function StackedBarChart({ title, rows, xLabel }) {
                 <div
                   key={j}
                   className="fin-sbc-seg"
-                  style={{ width: `${seg.pct}%`, background: SEV[seg.sev] }}
+                  style={{ '--fin-seg-w': `${seg.pct}%`, '--fin-seg-bg': SEV[seg.sev] }}
                   onMouseEnter={() => setHovSeg({ sev: seg.sev, pct: seg.pct, count: seg.count, label: row.label.join(' ') })}
                   onMouseLeave={() => setHovSeg(null)}
                 />
@@ -283,7 +282,7 @@ function StackedBarChart({ title, rows, xLabel }) {
       <div className="fin-sbc-legend">
         {Object.entries(SEV).map(([sev, color]) => (
           <span key={sev} className="fin-sbc-legend-item">
-            <span className="fin-sbc-legend-dot" style={{ background: color }} />
+            <span className="fin-sbc-legend-dot" style={{ '--fin-dot-bg': color }} />
             <span>{sev}</span>
           </span>
         ))}
@@ -294,15 +293,15 @@ function StackedBarChart({ title, rows, xLabel }) {
         const left = flipLeft ? mouse.x - W - 8 : mouse.x + 16;
         const color = SEV[hovSeg.sev];
         return (
-          <div style={{ position: 'fixed', left, top: mouse.y + 16, zIndex: 9999, pointerEvents: 'none', background: 'var(--card-bg)', border: `1px solid ${color}`, borderRadius: 8, padding: '12px 13px', minWidth: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{hovSeg.sev}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-              <span style={{ fontWeight: 600, color }}>{hovSeg.count?.toLocaleString()}</span>
+          <div className="tooltip-card tooltip-card--fixed fin-sbc-tooltip" style={{ left, top: mouse.y + 16, '--fin-tip-color': color }}>
+            <div className="fin-sbc-tooltip__title">{hovSeg.sev}</div>
+            <div className="fin-sbc-tooltip__row">
+              <span className="tooltip-card__label">Count</span>
+              <span className="fin-sbc-tooltip__val">{hovSeg.count?.toLocaleString()}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-              <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-              <span style={{ fontWeight: 600, color }}>{hovSeg.pct}%</span>
+            <div className="fin-sbc-tooltip__row">
+              <span className="tooltip-card__label">Percentage</span>
+              <span className="fin-sbc-tooltip__val">{hovSeg.pct}%</span>
             </div>
           </div>
         );
@@ -423,7 +422,7 @@ export default function FindingsPage({ onNav }) {
                   </td>
                   <td className="ds-td">
                     <div className="fin-td-flex">
-                      <span className="fin-td-icon" style={{ color: '#6360D8' }}>
+                      <span className="fin-td-icon fin-td-icon--indigo">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
                           <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
@@ -433,9 +432,9 @@ export default function FindingsPage({ onNav }) {
                     </div>
                   </td>
                   <td className="ds-td fin-td-cat">{row.cat}</td>
-                  <td className="ds-td fin-score" style={{ color: scoreColor(row.impact) }}>{row.impact}</td>
-                  <td className="ds-td fin-score" style={{ color: scoreColor(row.likelihood) }}>{row.likelihood}</td>
-                  <td className="ds-td fin-score" style={{ color: scoreColor(row.exposure) }}>{row.exposure}</td>
+                  <td className="ds-td fin-score" style={{ '--fin-score-color': scoreColor(row.impact) }}>{row.impact}</td>
+                  <td className="ds-td fin-score" style={{ '--fin-score-color': scoreColor(row.likelihood) }}>{row.likelihood}</td>
+                  <td className="ds-td fin-score" style={{ '--fin-score-color': scoreColor(row.exposure) }}>{row.exposure}</td>
                   <td className="ds-td">
                     <div className="fin-td-actions">
                       <button className="fin-action-btn" title="Pin"><IcPin /></button>

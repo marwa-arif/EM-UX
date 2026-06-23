@@ -6,44 +6,27 @@ import React from 'react'
 function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
   const [focused, setFocused] = React.useState(false);
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center',
-      height: 32, boxSizing: 'border-box', paddingLeft: 14, paddingRight: 4,
-      background: 'var(--card-bg)',
-      border: `1px solid ${focused ? 'var(--pai-indigo)' : 'var(--shell-border)'}`,
-      boxShadow: focused ? '0 0 0 3px rgba(99,96,216,0.18)' : 'none',
-      borderRadius: 44, width,
-      transition: 'border-color 120ms, box-shadow 120ms',
-    }}>
+    <div
+      className={`ds-pill-search${focused ? ' ds-pill-search--focused' : ''}`}
+      style={{ width }}
+    >
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        style={{
-          flex: 1, border: 'none', outline: 'none', background: 'transparent',
-          fontSize: 13, fontFamily: 'inherit', color: 'var(--pai-fg1)', minWidth: 0,
-        }}
+        className="ds-pill-search__input"
       />
       {value && (
         <button
           onMouseDown={e => { e.preventDefault(); onChange(''); }}
-          style={{
-            width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'var(--pai-fg3)', borderRadius: 999, flexShrink: 0, marginLeft: 4,
-          }}
+          className="ds-pill-search__clear"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       )}
-      <span style={{
-        width: 24, height: 24, marginLeft: 4, borderRadius: '50%',
-        background: 'var(--pai-indigo-tint)',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--pai-indigo)', flexShrink: 0,
-      }}>
+      <span className="ds-pill-search__icon">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>

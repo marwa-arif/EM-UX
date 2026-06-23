@@ -75,7 +75,7 @@
   transform: translateY(-50%);
   width: 16px; height: 16px; padding: 0; border: none; background: transparent;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--shell-text-muted); border-radius: 999px;
+  cursor: pointer; color: var(--shell-text-muted); border-radius: 50%;
 }
 .asmts-search-clear:hover { color: var(--shell-text); }
 
@@ -131,7 +131,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
   min-width: 72px;
   font-size: 12px;
   font-weight: 500;

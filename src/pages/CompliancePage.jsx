@@ -118,7 +118,7 @@ function FwLogo({ icon, meta }) {
     >
       {icon
         ? <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
-        : <span className="comp-fw-logo-abbr" style={{ color: meta.fg }}>{meta.abbr}</span>
+        : <span className="comp-fw-logo-abbr" style={{ '--comp-fw-abbr-color': meta.fg }}>{meta.abbr}</span>
       }
     </div>
   )
@@ -1127,7 +1127,7 @@ function AssessmentDrawer({ node, onClose }) {
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
                     Download
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 150ms', transform: downloadMenuOpen ? 'rotate(180deg)' : 'none' }}><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${downloadMenuOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
@@ -1649,7 +1649,7 @@ function FunctionDrawer({ node, level, onClose }) {
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
                     Download
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 150ms', transform: downloadMenuOpen ? 'rotate(180deg)' : 'none' }}><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${downloadMenuOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
@@ -1939,7 +1939,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
                 <div className="comp-posture-cell comp-posture-cell--trend">
                   <Sparkline pct={node.pct} seed={node.id.charCodeAt(0) * 31 + node.pct} />
                   <button className="comp-posture-expand" onClick={e => { e.stopPropagation(); onExpand(node, level) }}><IcExpand /></button>
-                  <span className="comp-posture-pct" style={{ color: ratingColor(node.rating) }}>{node.pct}%</span>
+                  <span className="comp-posture-pct" style={{ '--comp-posture-pct-color': ratingColor(node.rating) }}>{node.pct}%</span>
                 </div>
               ) : (
                 <div className="comp-posture-cell">
@@ -1947,7 +1947,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
                     <div className="comp-posture-fill" style={{ '--comp-posture-w': `${node.pct}%`, '--comp-posture-bg': postureColor(node.pct) }} />
                   </div>
                   <button className="comp-posture-expand" onClick={e => { e.stopPropagation(); onExpand(node, level) }}><IcExpand /></button>
-                  <span className="comp-posture-pct" style={{ color: ratingColor(node.rating) }}>{node.pct}%</span>
+                  <span className="comp-posture-pct" style={{ '--comp-posture-pct-color': ratingColor(node.rating) }}>{node.pct}%</span>
                 </div>
               )}
             </td>
@@ -2211,7 +2211,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                   onClick={() => setSelectedFw(fw.id)}
                 >
                   <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
-                  <span className="comp-fw-mini-pct" style={{ color: barColor(fw.pct) }}>{fw.pct}%</span>
+                  <span className="comp-fw-mini-pct" style={{ '--comp-fw-mini-pct-color': barColor(fw.pct) }}>{fw.pct}%</span>
                 </div>
               )
             }

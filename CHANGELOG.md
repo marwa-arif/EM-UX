@@ -15,6 +15,7 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-05-29 18:19 | branch: feature/ui-updates | 1ff149a chore: bump to v0.5.0 -->
 <!-- pull: 2026-06-01 10:58 | branch: feature/ui-updates | a2d3541 fix: DS 2.0 token compliance pass on dashboard.css, active-filter-panel.css, DashboardCanvas -->
 <!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
+<!-- pull: 2026-06-09 09:44 | branch: feature/ui-updates | 8d7c413 chore: bump to v0.6.4 -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
@@ -29,6 +30,8 @@ All notable UI changes are tracked here.
 - SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css
 - DashboardCanvas, WorkspacePage, AssessmentsPage: minor UI fixes
 - device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup
+- DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`
+- Font scale audit: fixed out-of-scale font sizes (7/8/9px → 10px, 15px → 14px, 11.5/12.5px → 12px, 17px → 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css
 
 ---
 

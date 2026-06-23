@@ -466,9 +466,8 @@ function SizeSelectDropdown({ value, onChange, options }) {
   return (
     <div ref={ref} className="dc-col-dropdown-wrap">
       <button
-        className={`dc-col-trigger${open ? ' dc-col-trigger--open' : ''}`}
+        className={`dc-col-trigger${open ? ' dc-col-trigger--open' : ''}${selected ? ' dc-col-trigger--selected' : ''}`}
         onClick={() => setOpen(o => !o)}
-        style={{ color: selected ? PAI.fg1 : PAI.fg3 }}
       >
         <span>{selected ? selected.label : 'Select...'}</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -476,7 +475,7 @@ function SizeSelectDropdown({ value, onChange, options }) {
         </svg>
       </button>
       {open && (
-        <div className="comp-sort-menu dc-col-menu" style={{ width: '100%' }}>
+        <div className="comp-sort-menu dc-col-menu">
           {options.map(o => (
             <button
               key={o.value}
@@ -641,7 +640,7 @@ function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
               <label className="dc-gf-select-all-label">
                 <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="dc-gf-checkbox" />
                 Select All as Pattern
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.45 }}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
               </label>
               <span className="dc-gf-sort-label">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
@@ -1550,7 +1549,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 <div className="dc-kpi-metric-section">
                   <div className="dc-kpi-metric-title">Primary Metric</div>
                   <div className="dc-kpi-metric-desc">Display the main KPI value to display</div>
-                  <div className="dc-axis-row--no-mb dc-axis-row--with-action" style={{ marginTop: 8 }}>
+                  <div className="dc-axis-row--no-mb dc-axis-row--with-action dc-axis-row--mt8">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
                       <SizeSelectDropdown value={operation} onChange={v => setOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
@@ -1563,10 +1562,10 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <div style={{ marginTop: 12 }}>
-                    <div className="dc-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <div className="dc-mt12">
+                    <div className="dc-field-label dc-field-label--icon-row">
                       Filter By
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="dc-label-icon">
                         <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                       </svg>
                     </div>
@@ -1582,7 +1581,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                 <div className="dc-kpi-metric-section">
                   <div className="dc-kpi-metric-title">Comparison Metric (Optional)</div>
                   <div className="dc-kpi-metric-desc">Compare with any other KPI value</div>
-                  <div className="dc-axis-row--no-mb dc-axis-row--with-action" style={{ marginTop: 8 }}>
+                  <div className="dc-axis-row--no-mb dc-axis-row--with-action dc-axis-row--mt8">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
                       <SizeSelectDropdown value={kpiCompOperation} onChange={v => setKpiCompOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
@@ -1595,10 +1594,10 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <div style={{ marginTop: 12 }}>
-                    <div className="dc-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <div className="dc-mt12">
+                    <div className="dc-field-label dc-field-label--icon-row">
                       Filter By
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="dc-label-icon">
                         <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                       </svg>
                     </div>
@@ -1697,15 +1696,15 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
   for (let i = 0; i < CHART_TYPES.length; i += 2) rows.push(CHART_TYPES.slice(i, i + 2))
 
   return (
-    <div style={{ width: 348, flexShrink: 0, background: 'var(--card-bg)', border: '1px solid var(--shell-border)', borderRadius: 8, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="dc-aw-panel">
       {/* header */}
-      <div style={{ padding: '12px', borderBottom: '1px solid var(--pai-border-strong)', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={PAI.fg1} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <div className="dc-aw-panel__header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="dc-aw-panel__header-icon">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
           <line x1="17" y1="14" x2="17" y2="20"/><line x1="14" y1="17" x2="20" y2="17"/>
         </svg>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: PAI.fg1 }}>Add Widget</span>
-        <button onClick={onCancel} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 2, color: PAI.fg3, display: 'flex' }}>
+        <span className="dc-aw-panel__title">Add Widget</span>
+        <button onClick={onCancel} className="dc-aw-panel__close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -1713,7 +1712,7 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
       </div>
 
       {/* body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 0' }}>
+      <div className="dc-aw-panel__body">
         <FieldRow label="Widget Title">
           <TextInput placeholder="Enter widget title..." value={widgetTitle} onChange={e => setWidgetTitle(e.target.value)} />
         </FieldRow>
@@ -1751,9 +1750,9 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
       </div>
 
       {/* footer */}
-      <div style={{ borderTop: '1px solid var(--shell-border)', padding: '12px', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div className="dc-aw-panel__footer">
         <button onClick={onCancel} className="ds-btn sz-md t-outline">Cancel</button>
-        <button onClick={onSave} className="ds-btn sz-md t-primary" disabled={!selected} style={{ opacity: selected ? 1 : 0.4 }}>Save</button>
+        <button onClick={onSave} className="ds-btn sz-md t-primary" disabled={!selected} style={{ '--dc-aw-save-opacity': selected ? 1 : 0.4 }}>Save</button>
       </div>
     </div>
   )
@@ -1826,7 +1825,7 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, reportM
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
                   Download
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 150ms', transform: dlOpen ? 'rotate(180deg)' : 'none' }}><path d="m6 9 6 6 6-6"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${dlOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
                 </button>
                 {dlOpen && (
                   <div className="comp-dl-menu">
@@ -2394,11 +2393,11 @@ function MomDropdown({ value, onChange, options, zIndex = 220 }) {
     <div ref={ref} className="mom-select-wrap" onClick={() => setOpen(o => !o)}>
       <span className="mom-select-val">{value}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className="mom-select-chevron" style={{ transform: open ? 'rotate(180deg)' : 'none' }}>
+        className={`mom-select-chevron${open ? ' mom-select-chevron--open' : ''}`}>
         <path d="m6 9 6 6 6-6"/>
       </svg>
       {open && (
-        <div className="comp-sort-menu comp-sort-menu--full" style={{ zIndex, maxHeight: 220, overflowY: 'auto' }}
+        <div className="comp-sort-menu comp-sort-menu--full comp-sort-menu--scrollable" style={{ zIndex }}
           onClick={e => e.stopPropagation()}>
           {options.map(opt => (
             <button
@@ -2473,7 +2472,7 @@ function MomTimelineModal({ defaultName, onConfirm, onCancel }) {
 
   return (
     <>
-      <div className="sfm-overlay" style={{ zIndex: 200 }} />
+      <div className="sfm-overlay sfm-overlay--z200" />
       <div className="mom-modal">
         <div className="mom-modal-header">
           <MomEditIcon />

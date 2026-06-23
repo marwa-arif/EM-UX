@@ -62,7 +62,7 @@
 .dev-stat-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dev-stat-label {
@@ -127,7 +127,7 @@
 .dev-chart-legend {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
   font-size: 11px;
   color: var(--shell-text-2, #444);
@@ -153,7 +153,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--pai-indigo);
   transition: background 150ms;
 }
@@ -207,7 +207,7 @@
   display: flex;
   align-items: center;
   flex: 1;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dev-source-bar-track {
@@ -353,7 +353,7 @@
 .dev-trend-cell {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-size: 11px;
   font-weight: 600;
   min-width: 36px;
@@ -420,7 +420,7 @@
 }
 
 .dev-crit-leg-label { font-size: 11px; color: var(--shell-text-muted); }
-.dev-crit-leg-bottom { display: flex; align-items: baseline; gap: 6px; }
+.dev-crit-leg-bottom { display: flex; align-items: baseline; gap: 8px; }
 .dev-crit-leg-count { font-size: 13px; font-weight: 600; color: var(--shell-text); }
 .dev-crit-leg-pct   { font-size: 11px; color: var(--shell-text-muted); }
 
@@ -553,7 +553,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   height: 28px;
   padding: 0 10px;
   border-radius: 50px;
@@ -842,7 +842,7 @@
 .dev-tip-row--medium { font-weight: 500; color: var(--shell-text); }
 .dev-tip-row--mb     { margin-bottom: 8px; }
 
-.dev-tip-col { display: flex; flex-direction: column; gap: 11px; }
+.dev-tip-col { display: flex; flex-direction: column; gap: 12px; }
 
 .dev-tip-text  { color: var(--shell-text); }
 .dev-tip-muted { color: var(--shell-text-muted); }
@@ -860,7 +860,7 @@
 .dev-tip-dot-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dev-tip-trend {

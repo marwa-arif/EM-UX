@@ -105,6 +105,10 @@ body { background: #F7F9FC; color: #101010; }
   --pai-orange:              #f97316;   /* report / template badge orange */
   --pai-teal-dark:           #286B88;   /* dashboard badge dark teal */
   --pai-emerald:             #10b981;   /* avatar / growth emerald */
+
+  /* Tooltip tokens */
+  --tooltip-bg:              #1c1c1c;   /* dark tooltip background */
+  --tooltip-fg:              #D1D1D1;   /* light tooltip text */
 }
 
 button { font-family: inherit; }

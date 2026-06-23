@@ -188,7 +188,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
   opacity: 1;
@@ -357,7 +357,7 @@
   border-radius: 44px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -372,7 +372,7 @@
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 28px 56px;
+  gap: 32px 48px;
   padding: 56px 80px 16px;
 }
 .gf-canvas__empty {
@@ -471,7 +471,7 @@
   padding: 8px 20px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .gf-toolbar__add-btn {
   height: 32px;
@@ -482,7 +482,7 @@
   border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -516,7 +516,7 @@
   border-radius: 44px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -532,7 +532,7 @@
   border-radius: 44px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -696,7 +696,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   font-weight: 500;
   color: var(--pai-fg2);
@@ -712,7 +712,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   font-weight: 500;
   color: var(--pai-indigo);
@@ -944,7 +944,7 @@
   border-radius: 68px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -1004,7 +1004,7 @@
   color: var(--pai-fg1);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .fp-attr-group__sub-text { color: var(--pai-fg3); font-weight: 400; }
 .fp-attr-group__badge {
@@ -1041,7 +1041,7 @@
 .fp-options__sort {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex-shrink: 0;
 }
 .fp-options__sort-label {
@@ -1199,7 +1199,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 .fp-footer-btn--primary {
   background: var(--pai-indigo);

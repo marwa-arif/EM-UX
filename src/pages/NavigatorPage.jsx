@@ -65,7 +65,7 @@ const VIEW_MODES = [
 ];
 
 // ── Click-outside-aware dropdown ─────────────────────────────────────
-function Dropdown({ children, onClose, style }) {
+function Dropdown({ children, onClose, className }) {
   const ref = useRef(null);
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -73,7 +73,7 @@ function Dropdown({ children, onClose, style }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
   return (
-    <div ref={ref} className="np-dropdown" style={style} role="menu">
+    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} role="menu">
       {children}
     </div>
   );
@@ -82,7 +82,7 @@ function Dropdown({ children, onClose, style }) {
 // ── Check icon for done steps ────────────────────────────────────────
 function StepDoneIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="np-flex-shrink-0">
       <circle cx="8" cy="8" r="7" stroke="var(--pai-green)" strokeWidth="1.5" opacity="0.4" />
       <path d="M5 8l2 2 4-4" stroke="var(--pai-green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -147,7 +147,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
               <button className="np-icon-btn" onClick={onNewChat} title="New chat (⌘K)" aria-label="New chat">
                 <IcEdit />
               </button>
-              <div style={{ position: 'relative' }}>
+              <div className="np-rel">
                 <button
                   className={`np-icon-btn${showViewMenu ? ' active' : ''}`}
                   onClick={() => { setViewMenu(o => !o); setMoreMenu(false); }}
@@ -158,7 +158,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
                   <IcFullscr />
                 </button>
                 {showViewMenu && (
-                  <Dropdown onClose={() => setViewMenu(false)} style={{ right: 0, top: 34, width: 186 }}>
+                  <Dropdown onClose={() => setViewMenu(false)} className="np-dropdown--view-menu">
                     <div className="np-dropdown-label">View mode</div>
                     {VIEW_MODES.map(m => (
                       <button
@@ -174,7 +174,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
                   </Dropdown>
                 )}
               </div>
-              <div style={{ position: 'relative' }}>
+              <div className="np-rel">
                 <button
                   className={`np-icon-btn${showMoreMenu ? ' active' : ''}`}
                   onClick={() => { setMoreMenu(o => !o); setViewMenu(false); }}
@@ -185,7 +185,7 @@ function NavPanel({ collapsed, setCollapsed, onNewChat, onSelectChat, onNav }) {
                   <IcDots />
                 </button>
                 {showMoreMenu && (
-                  <Dropdown onClose={() => setMoreMenu(false)} style={{ right: 0, top: 34, width: 194 }}>
+                  <Dropdown onClose={() => setMoreMenu(false)} className="np-dropdown--more-menu">
                     <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
                       <IcRename /> Rename
                     </button>
@@ -373,11 +373,8 @@ function ChatView({ query }) {
         <div className="chat-panel">
           <div className="chat-messages">
             {/* User bubble */}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <div
-                className="nav-avatar-ring"
-                style={{ background: 'var(--pai-indigo)', color: 'var(--card-bg)', fontSize: 11, fontWeight: 600 }}
-              >
+            <div className="chat-bubble-row">
+              <div className="nav-avatar-ring chat-bubble-avatar">
                 MP
               </div>
               <div className="msg-bubble">
@@ -386,16 +383,16 @@ function ChatView({ query }) {
             </div>
 
             {/* AI bubble */}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div className="chat-bubble-row">
               <div className="nav-avatar-ring active">
                 <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="chat-bubble-body">
                 <div className="nav-ai-card-wrap">
                   <div className="nav-ai-card">
                     {/* Reasoning steps */}
                     {DEMO_STEPS.map((s, i) => (
-                      <div key={i} className="sr-row done" style={{ marginLeft: 0 }}>
+                      <div key={i} className="sr-row done np-sr-row--no-indent">
                         <div className="sr-step-track">
                           <StepDoneIcon />
                           {i < DEMO_STEPS.length - 1 && <div className="sr-step-line" />}
@@ -409,10 +406,10 @@ function ChatView({ query }) {
                     ))}
 
                     {/* Answer prose */}
-                    <p className="prose-answer-text" style={{ borderTop: '1px solid var(--shell-border)', paddingTop: 12, marginTop: 4, marginBottom: 0 }}>
+                    <p className="prose-answer-text chat-bubble-prose">
                       <strong>vm-prod-42</strong> has <strong>14 open findings</strong>, of which{' '}
-                      <strong style={{ color: 'var(--pai-crit-fg)' }}>3 are critical severity</strong> and{' '}
-                      <strong style={{ color: 'var(--pai-high-fg)' }}>6 are high severity</strong>.
+                      <strong className="sev-crit">3 are critical severity</strong> and{' '}
+                      <strong className="sev-high">6 are high severity</strong>.
                       <br /><br />
                       Critical findings include an unpatched Log4Shell vulnerability, an exposed admin
                       credential in environment variables, and a misconfigured network security group
@@ -436,7 +433,7 @@ function ChatView({ query }) {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setFollowUp(''); }
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="flex-end-row">
               <button
                 className="nav-send-btn"
                 disabled={!followUp.trim()}
@@ -472,21 +469,21 @@ function ChatView({ query }) {
               {/* KPI row */}
               <div className="ds-kpi-row">
                 <div className="ds-kpi-card">
-                  <div className="ds-kpi-value" style={{ color: 'var(--pai-crit-fg)', fontSize: 22 }}>3</div>
+                  <div className="ds-kpi-value ds-kpi-value--lg sev-crit">3</div>
                   <div className="ds-kpi-label">Critical</div>
                 </div>
                 <div className="ds-kpi-card">
-                  <div className="ds-kpi-value" style={{ color: 'var(--pai-high-fg)', fontSize: 22 }}>6</div>
+                  <div className="ds-kpi-value ds-kpi-value--lg sev-high">6</div>
                   <div className="ds-kpi-label">High</div>
                 </div>
                 <div className="ds-kpi-card">
-                  <div className="ds-kpi-value" style={{ fontSize: 22 }}>5</div>
+                  <div className="ds-kpi-value ds-kpi-value--lg">5</div>
                   <div className="ds-kpi-label">Medium / Low</div>
                 </div>
               </div>
 
               {/* Findings table */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+              <table className="np-findings-table">
                 <thead>
                   <tr>
                     <th className="ds-th">Finding</th>
@@ -503,7 +500,7 @@ function ChatView({ query }) {
                           {f.sev}
                         </span>
                       </td>
-                      <td className="ds-td" style={{ color: 'var(--shell-text-muted)', fontSize: 11 }}>
+                      <td className="ds-td np-td--muted">
                         {f.src}
                       </td>
                     </tr>

@@ -150,23 +150,14 @@ function BarTooltip({ active, payload, total }) {
   const val = d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : String(d.value ?? '')
   const pct = total > 0 ? `${Math.round((d.value / total) * 100)}%` : ''
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: `1px solid ${d.fill}`,
-      borderRadius: 8,
-      padding: '10px 12px',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 140,
-    }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 6 }}>{d.name}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.fill, flexShrink: 0, display: 'inline-block' }} />
+    <div className="tooltip-card cr-bar-tip" style={{ '--cr-tip-border': d.fill }}>
+      <div className="cr-bar-tip__name">{d.name}</div>
+      <div className="cr-bar-tip__row">
+        <span className="cr-bar-tip__dot-row">
+          <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': d.fill }} />
           {val}
         </span>
-        <span style={{ color: d.fill }}>{pct}</span>
+        <span className="cr-bar-tip__pct" style={{ '--cr-tip-color': d.fill }}>{pct}</span>
       </div>
     </div>
   )
@@ -180,27 +171,18 @@ function StackTooltip({ active, payload, activeOrigin }) {
   const colTotal = payload.reduce((s, p) => s + (p.value || 0), 0)
   const pct = colTotal > 0 ? ((entry.value / colTotal) * 100).toFixed(2) : '0'
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: `1px solid ${entry.fill}`,
-      borderRadius: 8,
-      padding: '10px 14px',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 180,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: entry.fill, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>{entry.name}</span>
+    <div className="tooltip-card cr-stack-tip" style={{ '--cr-tip-border': entry.fill }}>
+      <div className="tooltip-card__row cr-stack-tip__header">
+        <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': entry.fill }} />
+        <span className="cr-stack-tip__name">{entry.name}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 11, marginBottom: 3 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Count Distinct</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{entry.value.toLocaleString()}</span>
+      <div className="cr-stack-tip__row">
+        <span className="tooltip-card__label">Count Distinct</span>
+        <span className="cr-stack-tip__val">{entry.value.toLocaleString()}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 11 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{pct}%</span>
+      <div className="cr-stack-tip__row">
+        <span className="tooltip-card__label">Percentage</span>
+        <span className="cr-stack-tip__val">{pct}%</span>
       </div>
     </div>
   )
@@ -211,24 +193,15 @@ function PieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const p = payload[0].payload
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: `1px solid ${p.color}`,
-      borderRadius: 6,
-      padding: '6px 10px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 130,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 4 }}>{p.label}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, marginBottom: 2 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.count}</span>
+    <div className="tooltip-card cr-pie-tip" style={{ '--cr-tip-border': p.color }}>
+      <div className="cr-pie-tip__label">{p.label}</div>
+      <div className="cr-pie-tip__row">
+        <span className="tooltip-card__label">Count</span>
+        <span className="cr-stack-tip__val">{p.count}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.pct}</span>
+      <div className="cr-pie-tip__row">
+        <span className="tooltip-card__label">Percentage</span>
+        <span className="cr-stack-tip__val">{p.pct}</span>
       </div>
     </div>
   )
@@ -396,31 +369,20 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
     const colTotal = props.payload.reduce((s, p) => s + (p.value || 0), 0)
     const pct = colTotal > 0 ? ((entry.value / colTotal) * 100).toFixed(2) : '0'
     return createPortal(
-      <div style={{
-        position: 'fixed',
-        left: tipPos.x + 14,
-        top: tipPos.y - 70,
-        zIndex: 99999,
-        background: 'var(--card-bg)',
-        border: `1px solid ${entry.fill}`,
-        borderRadius: 8,
-        padding: '10px 14px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-        fontFamily: 'Inter,system-ui',
-        pointerEvents: 'none',
-        minWidth: 180,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: entry.fill, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)' }}>{entry.name}</span>
+      <div className="tooltip-card tooltip-card--fixed cr-stack-tip cr-stack-tip--portal"
+        style={{ left: tipPos.x + 14, top: tipPos.y - 70, zIndex: 99999, '--cr-tip-border': entry.fill }}
+      >
+        <div className="tooltip-card__row cr-stack-tip__header">
+          <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': entry.fill }} />
+          <span className="cr-stack-tip__name">{entry.name}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 11, marginBottom: 3 }}>
-          <span style={{ color: 'var(--shell-text-muted)' }}>Count Distinct</span>
-          <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{entry.value.toLocaleString()}</span>
+        <div className="cr-stack-tip__row">
+          <span className="tooltip-card__label">Count Distinct</span>
+          <span className="cr-stack-tip__val">{entry.value.toLocaleString()}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 11 }}>
-          <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-          <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{pct}%</span>
+        <div className="cr-stack-tip__row">
+          <span className="tooltip-card__label">Percentage</span>
+          <span className="cr-stack-tip__val">{pct}%</span>
         </div>
       </div>,
       document.body

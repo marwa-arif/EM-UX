@@ -22,7 +22,7 @@ function Topbar({ onNav, navigatorActive, theme = 'light', onToggleTheme }) {
   return (
     <header className="topbar">
       <img src="/assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
-           style={{ display: 'block' }} />
+           className="topbar__logo" />
 
       <div className="topbar__spacer" />
 

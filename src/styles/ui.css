@@ -1,7 +1,7 @@
 /* ── Button ───────────────────────────────────────────────────────── */
 .pai-btn {
   border-radius: 44px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
   transition: background 150ms cubic-bezier(.2,.8,.2,1), color 150ms, border-color 150ms;
   outline: none; white-space: nowrap; user-select: none;
   font-weight: 500; font-family: inherit; border: none;
@@ -80,7 +80,7 @@
 .pai-kpi {
   background: var(--pai-surface); border: 1px solid var(--pai-border);
   border-radius: 4px; padding: 14px;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .pai-kpi__label {
   font-size: 10px; font-weight: 600; color: var(--pai-fg3);
@@ -118,9 +118,9 @@
 
 /* ── TablePagination ──────────────────────────────────────────────── */
 .tpg { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--shell-border); flex-shrink: 0; }
-.tpg__left { display: flex; align-items: center; gap: 14px; }
-.tpg__right { display: flex; align-items: center; gap: 14px; }
-.tpg__counts { display: flex; align-items: center; gap: 11px; }
+.tpg__left { display: flex; align-items: center; gap: 16px; }
+.tpg__right { display: flex; align-items: center; gap: 16px; }
+.tpg__counts { display: flex; align-items: center; gap: 12px; }
 .tpg__count { font-size: 14px; font-family: inherit; font-weight: 400; background: none; border: none; padding: 0; cursor: pointer; color: var(--shell-text-muted); line-height: 1; transition: color 0.1s; }
 .tpg__count:hover { color: var(--shell-text); }
 .tpg__count--active { color: var(--shell-text); }
@@ -132,3 +132,23 @@
 .tpg__nav { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 3px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--shell-text-2); transition: background 0.1s; }
 .tpg__nav:hover:not(:disabled) { background: var(--shell-hover); }
 .tpg__nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── ChartRender tooltip classes ────────────────────────────────── */
+.tooltip-card { border-color: var(--cr-tip-border, var(--shell-border)); }
+.cr-bar-tip { min-width: 140px; }
+.cr-bar-tip__name { font-size: 12px; font-weight: 600; color: var(--shell-text); margin-bottom: 6px; }
+.cr-bar-tip__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; font-weight: 700; color: var(--shell-text); }
+.cr-bar-tip__dot-row { display: flex; align-items: center; gap: 8px; }
+.cr-bar-tip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cr-dot-bg); flex-shrink: 0; display: inline-block; }
+.cr-bar-tip__pct { color: var(--cr-tip-color, var(--shell-text)); }
+.cr-stack-tip { min-width: 180px; }
+.cr-stack-tip__header { gap: 8px; margin-bottom: 8px; }
+.cr-stack-tip__name { font-size: 12px; font-weight: 600; color: var(--shell-text); }
+.cr-stack-tip__row { display: flex; justify-content: space-between; gap: 16px; font-size: 11px; margin-bottom: 3px; }
+.cr-stack-tip__row:last-child { margin-bottom: 0; }
+.cr-stack-tip__val { font-weight: 600; color: var(--shell-text); }
+.cr-stack-tip--portal { position: fixed; }
+.cr-pie-tip { min-width: 130px; }
+.cr-pie-tip__label { font-size: 11px; font-weight: 600; color: var(--shell-text); margin-bottom: 4px; }
+.cr-pie-tip__row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; margin-bottom: 2px; }
+.cr-pie-tip__row:last-child { margin-bottom: 0; }
