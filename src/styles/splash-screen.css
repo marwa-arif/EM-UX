@@ -1,0 +1,167 @@
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes splash-stroke-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes splash-fill-in {
+  from { fill-opacity: 0; stroke-opacity: 1; }
+  to   { fill-opacity: 1; stroke-opacity: 0; }
+}
+
+@keyframes splash-logo-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-7px); }
+}
+
+@keyframes splash-logo-glow {
+  0%, 100% { filter: drop-shadow(0 0 0px rgba(99,96,216,0)); }
+  50%      { filter: drop-shadow(0 0 24px rgba(99,96,216,0.5)); }
+}
+
+@keyframes splash-bar {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes splash-blob-a {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%      { transform: translate(35px, -22px) scale(1.08); }
+  66%      { transform: translate(-18px, 28px) scale(0.95); }
+}
+
+@keyframes splash-blob-b {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  40%      { transform: translate(-28px, 18px) scale(1.1); }
+  70%      { transform: translate(22px, -32px) scale(1.05); }
+}
+
+@keyframes splash-blob-c {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50%      { transform: translate(14px, 22px) scale(1.12); }
+}
+
+/* ── Root ────────────────────────────────────────────────────────────────── */
+.splash-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #F7F7FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 550ms ease;
+}
+
+.splash-root--dark { background: #0D0D18; }
+.splash-root--out  { opacity: 0; }
+
+/* ── Ambient blobs ───────────────────────────────────────────────────────── */
+.splash-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.splash-blob--a {
+  width: 520px;
+  height: 520px;
+  top: -8%;
+  left: 8%;
+  background: radial-gradient(circle, rgba(99,96,216,0.32) 0%, transparent 60%);
+  filter: blur(48px);
+  animation: splash-blob-a 9s ease-in-out infinite;
+}
+.splash-root--dark .splash-blob--a {
+  background: radial-gradient(circle, rgba(99,96,216,0.40) 0%, transparent 65%);
+}
+
+.splash-blob--b {
+  width: 440px;
+  height: 440px;
+  bottom: -5%;
+  right: 8%;
+  background: radial-gradient(circle, rgba(71,173,203,0.26) 0%, transparent 60%);
+  filter: blur(56px);
+  animation: splash-blob-b 11s ease-in-out infinite;
+}
+.splash-root--dark .splash-blob--b {
+  background: radial-gradient(circle, rgba(71,173,203,0.32) 0%, transparent 65%);
+}
+
+.splash-blob--c {
+  width: 320px;
+  height: 320px;
+  top: 50%;
+  left: 52%;
+  background: radial-gradient(circle, rgba(99,96,216,0.20) 0%, transparent 60%);
+  filter: blur(64px);
+  animation: splash-blob-c 13s ease-in-out infinite;
+}
+.splash-root--dark .splash-blob--c {
+  background: radial-gradient(circle, rgba(99,96,216,0.22) 0%, transparent 65%);
+}
+
+/* ── Wordmark SVG ────────────────────────────────────────────────────────── */
+.splash-logo {
+  position: relative;
+  z-index: 1;
+  color: #101010;
+}
+
+.splash-root--dark .splash-logo { color: white; }
+
+.splash-logo--hidden { opacity: 0; }
+
+.splash-logo--float {
+  animation:
+    splash-logo-float 3.4s ease-in-out infinite,
+    splash-logo-glow  3.4s ease-in-out infinite;
+}
+
+/* ── SVG paths ───────────────────────────────────────────────────────────── */
+.splash-path {
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke: #999;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.splash-path--draw {
+  animation: splash-stroke-draw 480ms cubic-bezier(0.42,0,0.58,1) var(--delay) both;
+}
+
+.splash-path--fill {
+  animation:
+    splash-stroke-draw 480ms cubic-bezier(0.42,0,0.58,1) var(--delay) both,
+    splash-fill-in     500ms cubic-bezier(0.42,0,0.58,1) forwards;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────────── */
+.splash-bar-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #E8E8F4;
+}
+
+.splash-root--dark .splash-bar-track { background: rgba(255, 255, 255, 0.07); }
+
+.splash-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6360D8 0%, #47ADCB 100%);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.splash-bar-fill--active {
+  animation: splash-bar 3000ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

@@ -2583,7 +2583,7 @@ function MomSkeleton() {
   )
 }
 
-export default function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '' }) {
+export default function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange }) {
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
     : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
     : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
@@ -2596,6 +2596,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   })
 
   const [timelineConfirmed, setTimelineConfirmed] = useState(templateId !== 'month-over-month' || !reportMode)
+  const [momTimeline, setMomTimeline] = useState('')
 
   // Panel state: null | 'add' | 'settings'
   const [panelMode, setPanelMode]         = useState(null)
@@ -2618,7 +2619,11 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
         <MomSkeleton />
         <MomTimelineModal
           defaultName={name}
-          onConfirm={({ name: n }) => { setName(n); setTimelineConfirmed(true) }}
+          onConfirm={({ name: n, startMonth, startYear, endMonth, endYear }) => {
+            setName(n)
+            setMomTimeline(`${MONTHS_LONG[startMonth]} ${startYear} – ${MONTHS_LONG[endMonth]} ${endYear}`)
+            setTimelineConfirmed(true)
+          }}
           onCancel={() => onNav('workspace/library')}
         />
       </div>
@@ -2696,10 +2701,14 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
             </button>
 
             <input
-              value={name} onChange={e => setName(e.target.value)}
+              value={name} onChange={e => { setName(e.target.value); onNameChange?.(e.target.value) }}
               placeholder={reportMode ? 'Enter report name here...' : 'Enter dashboard name here...'}
               className="dc-toolbar-name-input"
             />
+
+            {momTimeline && (
+              <span className="dc-toolbar-timeline"><span className="dc-toolbar-timeline__label">Timeline:</span> {momTimeline}</span>
+            )}
 
             {perf && !reportMode && (
               <span

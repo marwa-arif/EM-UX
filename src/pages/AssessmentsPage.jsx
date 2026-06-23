@@ -226,7 +226,7 @@ export default function AssessmentsPage() {
               return (
                 <tr key={a.id} className="asmts-row">
                   <td><EntityBadge type={a.entity} /></td>
-                  <td className="asmts-name-cell asmts-name-link" onClick={() => setDrawerNode(a)}>{a.name}</td>
+                  <td className="asmts-name-cell asmts-name-link" title={a.name} onClick={() => setDrawerNode(a)}>{a.name}</td>
                   <td>
                     <div className="asmts-findings-cell">
                       <span className="asmts-findings-val asmts-findings-val--tip">

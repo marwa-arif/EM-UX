@@ -348,9 +348,6 @@
 
 .dev-td-findings {
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 0;
 }
 
 .dev-trend-cell {
@@ -948,7 +945,7 @@
 .dev-crit-tooltip {
   position: fixed;
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--crit-color, var(--card-border));
   border-radius: 8px;
   padding: 10px 14px;
   z-index: 9999;

@@ -107,6 +107,9 @@
   font-size: 12px;
   color: var(--shell-text);
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asmts-name-link {
@@ -127,7 +130,9 @@
 .asmts-findings-val {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 5px;
+  min-width: 72px;
   font-size: 12px;
   font-weight: 500;
   color: var(--shell-text);

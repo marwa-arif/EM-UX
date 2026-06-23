@@ -583,6 +583,15 @@
   box-sizing: border-box;
 }
 
+.dc-toolbar-timeline {
+  font-size: 11px;
+  color: var(--shell-text);
+  white-space: nowrap;
+}
+.dc-toolbar-timeline__label {
+  color: var(--shell-text-muted);
+}
+
 .dc-perf-badge {
   display: inline-flex;
   align-items: center;

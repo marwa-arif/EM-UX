@@ -696,6 +696,7 @@
 }
 .kg-edge-label-group {
   pointer-events: none;
+  display: none;
 }
 
 /* ── Self-loop petal ──────────────────────────────────────────────────── */
@@ -713,6 +714,7 @@
 }
 .kg-petal-label-group {
   cursor: pointer;
+  display: none;
 }
 .kg-petal-label-bg {
   fill: var(--card-bg);

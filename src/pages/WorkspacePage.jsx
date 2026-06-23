@@ -29,6 +29,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
   const [reportFilterCount, setReportFilterCount] = useState(0)
+  const [customReportTitles, setCustomReportTitles] = useState({})
 
   const handleNav = (id) => {
     if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
@@ -50,9 +51,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
 
   const dashTitle   = DASHBOARD_TITLES[current] ?? 'New Dashboard'
   const reportTitle = isReport
-    ? (REPORT_TITLES[current] ?? 'Report Template')
+    ? (customReportTitles[current] ?? REPORT_TITLES[current] ?? 'Report Template')
     : isReportPreview
-      ? (REPORT_TITLES[current.replace('report-preview', 'report')] ?? 'Report Template')
+      ? (customReportTitles[current.replace('report-preview', 'report')] ?? REPORT_TITLES[current.replace('report-preview', 'report')] ?? 'Report Template')
       : 'Report Template'
 
   const reportRouteKey = isReport ? current : current.replace('report-preview', 'report')
@@ -135,7 +136,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                     : isDashboard
                       ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
                       : isReport
-                        ? <DashboardCanvas key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} />
+                        ? <DashboardCanvas key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} />
                         : isReportPreview
                           ? <ReportPreviewPage
                               reportTitle={reportTitle}
