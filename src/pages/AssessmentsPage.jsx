@@ -226,16 +226,18 @@ export default function AssessmentsPage() {
               return (
                 <tr key={a.id} className="asmts-row">
                   <td><EntityBadge type={a.entity} /></td>
-                  <td className="asmts-name-cell asmts-name-link" onClick={() => setDrawerNode(a)}>{a.name}</td>
+                  <td className="asmts-name-cell asmts-name-link" title={a.name} onClick={() => setDrawerNode(a)}>{a.name}</td>
                   <td>
                     <div className="asmts-findings-cell">
-                      <span className="asmts-findings-val">
+                      <span className="asmts-findings-val asmts-findings-val--tip">
                         {a.closed.toLocaleString()}
                         <span className="asmts-dot asmts-dot--green" />
+                        <span className="asmts-findings-tooltip">Passed Findings</span>
                       </span>
-                      <span className="asmts-findings-val">
+                      <span className="asmts-findings-val asmts-findings-val--tip">
                         {a.open.toLocaleString()}
                         <span className="asmts-dot asmts-dot--red" />
+                        <span className="asmts-findings-tooltip">Failed Findings</span>
                       </span>
                     </div>
                   </td>

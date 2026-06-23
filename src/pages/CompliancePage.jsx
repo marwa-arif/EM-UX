@@ -118,7 +118,7 @@ function FwLogo({ icon, meta }) {
     >
       {icon
         ? <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
-        : <span className="comp-fw-logo-abbr" style={{ color: meta.fg }}>{meta.abbr}</span>
+        : <span className="comp-fw-logo-abbr" style={{ '--comp-fw-abbr-color': meta.fg }}>{meta.abbr}</span>
       }
     </div>
   )
@@ -724,7 +724,7 @@ function FindingsKpi({ closed, open, pct }) {
   const openPct = 100 - pct
   const rows = [
     {
-      label: 'Passed findings',
+      label: 'Passed findings', suffix: '(Closed)',
       count: closed,
       pct,
       icon: (
@@ -734,7 +734,7 @@ function FindingsKpi({ closed, open, pct }) {
       ),
     },
     {
-      label: 'Failed findings',
+      label: 'Failed findings', suffix: '(Open)',
       count: open,
       pct: openPct,
       icon: (
@@ -763,7 +763,10 @@ function FindingsKpi({ closed, open, pct }) {
           <div className="comp-findings-kpi-icon">
             {row.icon}
           </div>
-          <span className="comp-findings-kpi-label">{row.label}</span>
+          <span className="comp-findings-kpi-label">
+            {row.label}
+            {row.suffix && <span className="comp-findings-kpi-suffix">{row.suffix}</span>}
+          </span>
           <span className="comp-findings-kpi-count">
             {row.count.toLocaleString()}
           </span>
@@ -934,6 +937,25 @@ function AssessmentDrawer({ node, onClose }) {
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
+                <span className="comp-drawer-ov-label">Rating</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--relative">
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </div>
+              <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
                 <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
@@ -958,7 +980,7 @@ function AssessmentDrawer({ node, onClose }) {
                   {ratingTooltip && (
                     <div className="comp-rating-tooltip">
                       <span className="comp-rating-tooltip-text">
-                        Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
                       </span>
                     </div>
                   )}
@@ -1060,7 +1082,7 @@ function AssessmentDrawer({ node, onClose }) {
                         cursor={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
-                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-high-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
+                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       <Area type="monotone" dataKey="value"
                         stroke="var(--pai-teal)" strokeWidth={2}
                         fill="url(#drawerAreaFill)" dot={false}
@@ -1093,7 +1115,7 @@ function AssessmentDrawer({ node, onClose }) {
               </div>
               <div className="comp-drawer-findings-actions">
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
                 <div ref={downloadMenuRef} className="comp-sort-wrap">
@@ -1105,7 +1127,7 @@ function AssessmentDrawer({ node, onClose }) {
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
                     Download
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 150ms', transform: downloadMenuOpen ? 'rotate(180deg)' : 'none' }}><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${downloadMenuOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
@@ -1476,6 +1498,25 @@ function FunctionDrawer({ node, level, onClose }) {
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
+                <span className="comp-drawer-ov-label">Rating</span>
+                <span className="comp-drawer-ov-value comp-drawer-ov-value--relative">
+                  <span
+                    className={`comp-rating-badge comp-rating-badge--small ${ratingClass(node.rating)}`}
+                    onMouseEnter={() => setRatingTooltip(true)}
+                    onMouseLeave={() => setRatingTooltip(false)}
+                  >
+                    {node.rating}
+                  </span>
+                  {ratingTooltip && (
+                    <div className="comp-rating-tooltip">
+                      <span className="comp-rating-tooltip-text">
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </div>
+              <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Last Evaluated</span>
                 <span className="comp-drawer-ov-value comp-drawer-ov-value--sm">08 August 2024</span>
               </div>
@@ -1499,7 +1540,7 @@ function FunctionDrawer({ node, level, onClose }) {
                   {ratingTooltip && (
                     <div className="comp-rating-tooltip">
                       <span className="comp-rating-tooltip-text">
-                        Compliance Rating: <span style={{ fontWeight: 600, color: ratingMeta.color }}>{node.rating}</span>
+                        Rating threshold categorizes compliance performance score into four bands: Fully Compliant (100%), Strong (&gt; Warning and &lt; 100%), Moderate (&gt; Critical Gap and &lt;= Warning), and Weak (&lt;= Critical Gap).
                       </span>
                     </div>
                   )}
@@ -1570,7 +1611,7 @@ function FunctionDrawer({ node, level, onClose }) {
                         cursor={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
-                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-high-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
+                      {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2} fill="url(#fnDrawerFill)" dot={false} activeDot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -1599,7 +1640,7 @@ function FunctionDrawer({ node, level, onClose }) {
               </div>
               <div className="comp-drawer-findings-actions">
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={setInclClosed} />
                 </label>
                 <div ref={downloadMenuRef} className="comp-sort-wrap">
@@ -1608,7 +1649,7 @@ function FunctionDrawer({ node, level, onClose }) {
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
                     Download
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 150ms', transform: downloadMenuOpen ? 'rotate(180deg)' : 'none' }}><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${downloadMenuOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
@@ -1898,7 +1939,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
                 <div className="comp-posture-cell comp-posture-cell--trend">
                   <Sparkline pct={node.pct} seed={node.id.charCodeAt(0) * 31 + node.pct} />
                   <button className="comp-posture-expand" onClick={e => { e.stopPropagation(); onExpand(node, level) }}><IcExpand /></button>
-                  <span className="comp-posture-pct" style={{ color: ratingColor(node.rating) }}>{node.pct}%</span>
+                  <span className="comp-posture-pct" style={{ '--comp-posture-pct-color': ratingColor(node.rating) }}>{node.pct}%</span>
                 </div>
               ) : (
                 <div className="comp-posture-cell">
@@ -1906,7 +1947,7 @@ function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend 
                     <div className="comp-posture-fill" style={{ '--comp-posture-w': `${node.pct}%`, '--comp-posture-bg': postureColor(node.pct) }} />
                   </div>
                   <button className="comp-posture-expand" onClick={e => { e.stopPropagation(); onExpand(node, level) }}><IcExpand /></button>
-                  <span className="comp-posture-pct" style={{ color: ratingColor(node.rating) }}>{node.pct}%</span>
+                  <span className="comp-posture-pct" style={{ '--comp-posture-pct-color': ratingColor(node.rating) }}>{node.pct}%</span>
                 </div>
               )}
             </td>
@@ -2170,7 +2211,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                   onClick={() => setSelectedFw(fw.id)}
                 >
                   <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
-                  <span className="comp-fw-mini-pct" style={{ color: barColor(fw.pct) }}>{fw.pct}%</span>
+                  <span className="comp-fw-mini-pct" style={{ '--comp-fw-mini-pct-color': barColor(fw.pct) }}>{fw.pct}%</span>
                 </div>
               )
             }
@@ -2365,8 +2406,8 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
                       <SortDropdown value={sortBy} onChange={setSortBy} />
                     </div>
                   </th>
-                  <th className="right">Closed</th>
-                  <th className="right">Open</th>
+                  <th className="right">Passed</th>
+                  <th className="right">Failed</th>
                   <th>{showTrend ? 'Compliance (%) with Trend' : 'Compliance Posture'}</th>
                   <th>Rating</th>
                 </tr>

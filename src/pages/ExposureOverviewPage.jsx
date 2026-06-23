@@ -64,7 +64,7 @@ const IcExplore = () => (
   </svg>
 );
 const IcInfo = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--shell-text-muted)' }}>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="exp-icon-muted">
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
 );
@@ -100,7 +100,7 @@ const Sparkline = () => (
 );
 
 // ── Bubble component ──────────────────────────────────────────────
-function Bubble({ score, severity, icon, size = 105, label }) {
+function Bubble({ score, severity, icon, size = 105, label, index = 0 }) {
   const isHigh = severity === 'H';
   const color = isHigh ? 'var(--pai-crit-fg)' : 'var(--pai-high-fg)';
   const tagBg = isHigh ? 'var(--pai-crit-bg)' : 'var(--pai-warn-bg)';
@@ -110,7 +110,7 @@ function Bubble({ score, severity, icon, size = 105, label }) {
 
   return (
     <div className="exp-bubble-wrap">
-      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <div className="exp-bubble-circle" style={{ '--exp-bubble-size': `${size}px` }}>
         <div className="exp-bubble-ring" style={{ background: gradient }} />
         <div className="exp-bubble-inner" />
         <div className="exp-bubble-content">
@@ -157,7 +157,7 @@ function EnterpriseScore() {
   const innerDia = (INNER_R - 6) * 2;
   return (
     <div className="exp-gauge-wrap">
-      <div className="exp-gauge" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
+      <div className="exp-gauge exp-gauge-float" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
         <div className="exp-gauge-outer" />
         <svg className="exp-gauge-ticks" width={GAUGE_SIZE} height={GAUGE_SIZE}>{ticks}</svg>
         <div className="exp-gauge-inner" style={{ width: innerDia, height: innerDia }}>
@@ -200,13 +200,13 @@ function ExposureOverviewSection() {
     <div className="exp-col-label">{text} <IcInfo /></div>
   );
 
-  const BubbleTriangle = ({ items }) => (
+  const BubbleTriangle = ({ items, indexOffset = 0 }) => (
     <div className="exp-bubble-tri">
       <div className="exp-bubble-tri-top">
-        <Bubble {...items[0]} />
-        <Bubble {...items[1]} />
+        <Bubble {...items[0]} index={indexOffset} />
+        <Bubble {...items[1]} index={indexOffset + 1} />
       </div>
-      <Bubble {...items[2]} />
+      <Bubble {...items[2]} index={indexOffset + 2} />
     </div>
   );
 
@@ -218,7 +218,7 @@ function ExposureOverviewSection() {
           <IcInfo />
         </div>
 
-        <button className="exp-trend-pill">
+        <button className="ds-btn exp-trend-pill">
           <IcExposure />
           <span>Exposure Trend</span>
           <IcInfo />
@@ -231,7 +231,7 @@ function ExposureOverviewSection() {
           <IcExplore />
         </button>
 
-        <button onClick={() => setCollapsed(c => !c)} className="exp-collapse-btn">
+        <button onClick={() => setCollapsed(c => !c)} className="ds-btn sz-sm t-outline exp-collapse-btn">
           {collapsed ? <IcChevron /> : <IcChevronUp />}
           {collapsed ? 'Expand' : 'Collapse'}
         </button>
@@ -259,11 +259,11 @@ function ExposureOverviewSection() {
             {colLabel('Enterprise Score')}
           </div>
           <div className="exp-ov-col">
-            <BubbleTriangle items={attackSurface} />
+            <BubbleTriangle items={attackSurface} indexOffset={0} />
             {colLabel('Attack Surface')}
           </div>
           <div className="exp-ov-col">
-            <BubbleTriangle items={expCategories} />
+            <BubbleTriangle items={expCategories} indexOffset={3} />
             {colLabel('Exposure Categories')}
           </div>
         </div>
@@ -274,12 +274,12 @@ function ExposureOverviewSection() {
 
 // ── Mini bar ──────────────────────────────────────────────────────
 function MiniBar({ pct, maxPct = MAX_BAR_PCT }) {
-  const fillColor = pct >= 10 ? '#E15252' : '#D98B1D';
+  const fillColor = pct >= 10 ? 'var(--pai-crit-fg)' : 'var(--pai-high-fg)';
   const fillWidth = Math.round((pct / maxPct) * 100);
   return (
     <div className="exp-minibar-wrap">
       <div className="exp-minibar-track">
-        <div className="exp-minibar-fill" style={{ width: `${fillWidth}%`, background: fillColor }} />
+        <div className="exp-minibar-fill" style={{ '--exp-fill-w': `${fillWidth}%`, '--exp-fill-bg': fillColor }} />
       </div>
       <span className="exp-minibar-pct">{pct}%</span>
     </div>
@@ -298,8 +298,8 @@ export default function ExposureOverviewPage() {
   const visibleRows = filtered.slice(start, start + rowsPerPage);
 
   const TH = ({ children, align = 'left' }) => (
-    <th className="exp-th" style={{ textAlign: align }}>
-      <span className="exp-th-inner">
+    <th className={`ds-th${align !== 'left' ? ` ds-th--${align}` : ''}`}>
+      <span className="ds-th-inner">
         {children}
         <span className="exp-th-sort-icon"><IcSort /></span>
       </span>
@@ -314,7 +314,7 @@ export default function ExposureOverviewPage() {
         <div className="exp-contrib-hdr">
           <div className="exp-contrib-hdr-left">
             <span className="exp-contrib-title">Exposure Contribution by</span>
-            <button className="exp-groupby-btn">
+            <button className="ds-btn sz-sm t-outline exp-groupby-btn">
               {groupBy}
               <IcChevron />
             </button>
@@ -325,11 +325,7 @@ export default function ExposureOverviewPage() {
               {search && (
                 <button
                   onMouseDown={e => { e.preventDefault(); setSearch(''); }}
-                  style={{
-                    width: 16, height: 16, padding: 0, border: 'none', background: 'transparent',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: 'var(--shell-text-muted)', borderRadius: 999, flexShrink: 0, marginRight: 4,
-                  }}
+                  className="exp-search-clear"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -338,14 +334,14 @@ export default function ExposureOverviewPage() {
                 <IcSearch />
               </div>
             </div>
-            <button className="exp-explore-btn">
+            <button className="ds-btn sz-sm t-outline exp-explore-btn">
               Explore More <IcExplore />
             </button>
           </div>
         </div>
 
-        <div className="exp-table-wrap">
-          <table className="exp-table">
+        <div className="ds-table-wrap">
+          <table className="ds-table">
             <thead>
               <tr>
                 <TH>Name</TH>
@@ -360,20 +356,20 @@ export default function ExposureOverviewPage() {
               {visibleRows.map((row, i) => {
                 const trendColor = changeColor(row.changeDir, row.changePct);
                 return (
-                  <tr key={i} className="exp-tr">
-                    <td className="exp-td exp-td-name">{row.name}</td>
-                    <td className="exp-td">
-                      <span className="exp-td-score" style={{ color: scoreColor(row.score) }}>{row.score}</span>
+                  <tr key={i}>
+                    <td className="ds-td exp-td-name">{row.name}</td>
+                    <td className="ds-td">
+                      <span className="exp-td-score" style={{ '--exp-score-color': scoreColor(row.score) }}>{row.score}</span>
                     </td>
-                    <td className="exp-td">
-                      <span className="exp-td-change" style={{ color: trendColor }}>
+                    <td className="ds-td">
+                      <span className="exp-td-change" style={{ '--exp-trend-color': trendColor }}>
                         {row.changeDir === 'up' ? <IcTrendUp color={trendColor} /> : <IcTrendDown color={trendColor} />}
                         {row.changePct}%
                       </span>
                     </td>
-                    <td className="exp-td"><MiniBar pct={row.exposurePct} /></td>
-                    <td className="exp-td"><MiniBar pct={row.findingsPct} /></td>
-                    <td className="exp-td"><MiniBar pct={row.assetsPct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.exposurePct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.findingsPct} /></td>
+                    <td className="ds-td"><MiniBar pct={row.assetsPct} /></td>
                   </tr>
                 );
               })}

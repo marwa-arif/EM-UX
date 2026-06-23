@@ -38,7 +38,7 @@ body { background: #F7F9FC; color: #101010; }
   --table-th-bg:        #F5F5F5;
   --table-border:       #E6E6E6;
   --table-th-padding:   8px 16px;
-  --table-td-padding:   10px 16px;
+  --table-td-padding:   8px 16px;
 
   /* PAI color tokens */
   --pai-indigo:        #6360D8;
@@ -60,11 +60,11 @@ body { background: #F7F9FC; color: #101010; }
 
   --pai-crit-fg:       #D12329;
   --pai-crit-bg:       #F9EEEE;
-  --pai-high-fg:       #D98B1D;
-  --pai-high-bg:       #FEF3C7;
-  --pai-med-fg:        #6360D8;
-  --pai-med-bg:        #F0F0FC;
-  --pai-low-fg:        #1A7549;
+  --pai-high-fg:       #E15252;
+  --pai-high-bg:       #FEE2E2;
+  --pai-med-fg:        #D98B1D;
+  --pai-med-bg:        #FEF3E2;
+  --pai-low-fg:        #31A56D;
   --pai-low-bg:        #EFF7ED;
   --pai-green:             #31A56D;
   --pai-red-high:          #E15252;
@@ -105,6 +105,10 @@ body { background: #F7F9FC; color: #101010; }
   --pai-orange:              #f97316;   /* report / template badge orange */
   --pai-teal-dark:           #286B88;   /* dashboard badge dark teal */
   --pai-emerald:             #10b981;   /* avatar / growth emerald */
+
+  /* Tooltip tokens */
+  --tooltip-bg:              #1c1c1c;   /* dark tooltip background */
+  --tooltip-fg:              #D1D1D1;   /* light tooltip text */
 }
 
 button { font-family: inherit; }
@@ -173,8 +177,8 @@ html.theme-dark {
   --pai-crit-bg-hover:  rgba(209,35,41,0.28);
   --pai-high-fg:        #E09830;
   --pai-high-bg:        rgba(225,82,82,0.15);
-  --pai-med-fg:         #7D7AE0;
-  --pai-med-bg:         rgba(99,96,216,0.15);
+  --pai-med-fg:         #E09830;
+  --pai-med-bg:         rgba(217,139,29,0.15);
   --pai-low-fg:         #31A56D;
   --pai-low-bg:         rgba(49,165,109,0.15);
   --pai-warn-bg:        rgba(205,185,0,0.08);

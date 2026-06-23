@@ -99,6 +99,11 @@ const PAGE_AFP_CONFIG = {
     implicitEntityFilters: [],
     implicitFindingFilters: [],
   },
+  'workspace/report': {
+    entityTree: [{ entity: 'Host', relation: null }],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
 }
 
 function getAfpConfig(pageId) {

@@ -111,7 +111,7 @@ function AgentIcon({ color }) {
 
 function NavIcon({ size = 18 }) {
   return (
-    <span className="np-nav-icon-mask" style={{ width: size, height: size, display: 'inline-flex', flexShrink: 0 }}>
+    <span className="np-nav-icon-mask" style={{ '--np-icon-size': `${size}px` }}>
       <img src="/assets/icons/Navigator icon.svg" width={size} height={size} alt="" />
     </span>
   )
@@ -119,7 +119,7 @@ function NavIcon({ size = 18 }) {
 
 function StepDone() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="np-flex-shrink-0">
       <circle cx="8" cy="8" r="7" stroke="#31A56D" strokeWidth="1.5" opacity="0.35" />
       <path d="M5 8l2 2 4-4" stroke="#31A56D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -127,7 +127,7 @@ function StepDone() {
 }
 
 // ── Dropdown (click-outside aware) ────────────────────────────────────
-function Dropdown({ children, onClose, style }) {
+function Dropdown({ children, onClose, className }) {
   const ref = useRef(null)
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
@@ -135,7 +135,7 @@ function Dropdown({ children, onClose, style }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
   return (
-    <div ref={ref} className="np-dropdown" style={style} role="menu">
+    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} role="menu">
       {children}
     </div>
   )
@@ -639,7 +639,7 @@ function PanelHome({ onSend, isFirstRun }) {
               ))}
             </div>
 
-            <div className="np-section-label" style={{ marginTop: 4 }}>Recent</div>
+            <div className="np-section-label np-section-label--mt4">Recent</div>
             <div className="np-recents-list">
               {CHAT_HISTORY.map(c => (
                 <button key={c.id} className="np-recent-item" onClick={() => handleSend(c.label)}>
@@ -693,7 +693,7 @@ function ChatQuickBar({ onSend }) {
         {showActions && (
           <Dropdown
             onClose={() => setShowActions(false)}
-            style={{ bottom: 33, left: 0, width: 220 }}
+            className="np-dropdown--quick-actions"
           >
             {QUICK_ACTIONS.map((a, i) => (
               <button
@@ -955,7 +955,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         />
       )}
 
-      <div style={{ width: embedded || isFloating ? '100%' : w, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <div className="np-panel-content" style={{ width: embedded || isFloating ? '100%' : w }}>
 
         {/* ── Splash ── */}
         {false && splash && <SplashScreen exiting={splashExit} />}
@@ -991,7 +991,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
             </button>
 
             {/* View mode */}
-            <div style={{ position: 'relative' }}>
+            <div className="np-rel">
               <button
                 className={`np-icon-btn${showViewMenu ? ' active' : ''}`}
                 onClick={() => { setViewMenu(o => !o); setMoreMenu(false) }}
@@ -1002,7 +1002,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 <ViewIcon />
               </button>
               {showViewMenu && (
-                <Dropdown onClose={() => setViewMenu(false)} style={{ right: 0, top: 34, width: 186 }}>
+                <Dropdown onClose={() => setViewMenu(false)} className="np-dropdown--view-menu">
                   <div className="np-dropdown-label">View mode</div>
                   {VIEW_MODES.map(m => (
                     <button
@@ -1020,7 +1020,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
             </div>
 
             {/* More menu */}
-            <div style={{ position: 'relative' }}>
+            <div className="np-rel">
               <button
                 className={`np-icon-btn${showMoreMenu ? ' active' : ''}`}
                 onClick={() => { setMoreMenu(o => !o); setViewMenu(false) }}
@@ -1031,7 +1031,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 <IcDots />
               </button>
               {showMoreMenu && (
-                <Dropdown onClose={() => setMoreMenu(false)} style={{ right: 0, top: 34, width: 194 }}>
+                <Dropdown onClose={() => setMoreMenu(false)} className="np-dropdown--more-menu">
                   <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
                     <IcRename /> Rename
                   </button>
@@ -1075,7 +1075,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
             >
               <IcEdit />
             </button>
-            <div style={{ position: 'relative' }}>
+            <div className="np-rel">
               <button
                 className={`np-icon-btn${showViewMenu ? ' active' : ''}`}
                 onClick={() => { setViewMenu(o => !o); setMoreMenu(false) }}
@@ -1086,7 +1086,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 <IcSidebar />
               </button>
               {showViewMenu && (
-                <Dropdown onClose={() => setViewMenu(false)} style={{ right: 0, top: 34, width: 186 }}>
+                <Dropdown onClose={() => setViewMenu(false)} className="np-dropdown--view-menu">
                   <div className="np-dropdown-label">View mode</div>
                   {VIEW_MODES.map(m => (
                     <button
@@ -1102,7 +1102,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 </Dropdown>
               )}
             </div>
-            <div style={{ position: 'relative' }}>
+            <div className="np-rel">
               <button
                 className={`np-icon-btn${showMoreMenu ? ' active' : ''}`}
                 onClick={() => { setMoreMenu(o => !o); setViewMenu(false) }}
@@ -1113,7 +1113,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 <IcDots />
               </button>
               {showMoreMenu && (
-                <Dropdown onClose={() => setMoreMenu(false)} style={{ right: 0, top: 34, width: 194 }}>
+                <Dropdown onClose={() => setMoreMenu(false)} className="np-dropdown--more-menu">
                   <button className="np-dropdown-item" onClick={() => setMoreMenu(false)} role="menuitem">
                     <IcRename /> Rename
                   </button>
@@ -1143,7 +1143,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         />
 
         {/* ── Body ── */}
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="np-panel-body">
           {view === 'home'
             ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} />
             : <PanelChat

@@ -15,7 +15,7 @@ function scoreTextColor(score) {
   if (score === null || score === undefined) return 'var(--shell-text-muted)'
   if (score === 100) return '#1A7D4D'
   if (score >= 85)   return 'var(--pai-green)'
-  if (score >= 50)   return 'var(--pai-high-fg)'
+  if (score >= 50)   return 'var(--pai-med-fg)'
   return 'var(--pai-crit-fg)'
 }
 
@@ -25,7 +25,7 @@ function cellStyle(score) {
   }
   if (score === 100) return { background: '#1A7D4D', color: '#fff', '--hover-border': '#5AA17F' }
   if (score >= 85)   return { background: 'rgba(43,160,76,0.14)',  color: 'var(--pai-green)' }
-  if (score >= 50)   return { background: 'rgba(245,130,13,0.14)', color: 'var(--pai-high-fg)' }
+  if (score >= 50)   return { background: 'rgba(245,130,13,0.14)', color: 'var(--pai-med-fg)' }
   return               { background: 'rgba(225,82,82,0.18)', color: 'var(--pai-crit-fg)' }
 }
 
@@ -272,7 +272,7 @@ function CellTooltip({ row, col, score, prevScore, delta, canCompare, x, y }) {
         <span className="comp-matrix-tt-val">{score === null ? '—' : assessments}</span>
       </div>
       <div className="comp-matrix-tt-row">
-        <span>Open findings</span>
+        <span>Failed findings</span>
         <span className="comp-matrix-tt-val">{score === null ? '—' : openFindings.toLocaleString()}</span>
       </div>
       {canCompare && delta !== undefined && (
@@ -502,7 +502,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
       <div className="comp-matrix-legend">
         {[
           { label: 'Weak',            bg: 'rgba(225,82,82,0.18)',  textColor: 'var(--pai-crit-fg)' },
-          { label: 'Moderate',        bg: 'rgba(245,130,13,0.14)', textColor: 'var(--pai-high-fg)' },
+          { label: 'Moderate',        bg: 'rgba(245,130,13,0.14)', textColor: 'var(--pai-med-fg)' },
           { label: 'Strong',          bg: 'rgba(43,160,76,0.14)',  textColor: 'var(--pai-green)' },
           { label: 'Fully Compliant', bg: '#1A7D4D',               textColor: '#1A7D4D' },
           { label: 'Not in Scope',    bg: 'var(--shell-raised)',   textColor: 'var(--shell-text-muted)' },

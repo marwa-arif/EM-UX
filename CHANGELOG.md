@@ -12,12 +12,110 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-05-25 09:39 | branch: feature/ui-updates | ffd274f fix: KG dark mode — entity node dark tints and SVG CSS variable fixes -->
 <!-- pull: 2026-05-25 11:06 | branch: feature/ui-updates | 17dc21e chore: bump to v0.3.0 -->
 <!-- pull: 2026-05-26 11:49 | branch: feature/ui-updates | ea7d844 Merge branch 'develop' into feature/ui-updates -->
+<!-- pull: 2026-05-29 18:19 | branch: feature/ui-updates | 1ff149a chore: bump to v0.5.0 -->
+<!-- pull: 2026-06-01 10:58 | branch: feature/ui-updates | a2d3541 fix: DS 2.0 token compliance pass on dashboard.css, active-filter-panel.css, DashboardCanvas -->
+<!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
+<!-- pull: 2026-06-09 09:44 | branch: feature/ui-updates | 8d7c413 chore: bump to v0.6.4 -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.6.6] — 2026-06-23
+### Changed
+- DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`
+- Font scale audit: fixed out-of-scale font sizes (7/8/9px → 10px, 15px → 14px, 11.5/12.5px → 12px, 17px → 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css
+
+---
+
+## [0.6.5] — 2026-06-23
+### Changed
+- SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css
+- DashboardCanvas, WorkspacePage, AssessmentsPage: minor UI fixes
+- device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup
+- DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`
+- Font scale audit: fixed out-of-scale font sizes (7/8/9px → 10px, 15px → 14px, 11.5/12.5px → 12px, 17px → 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css
+
+---
+
+## [0.6.4] — 2026-06-08
+### Changed
+- SplashScreen: reworked animation to stroke-draw SVG paths with staggered delays
+- ComplianceMatrixPage: replaced `pai-high-fg` with `pai-med-fg` for Moderate score color
+
+---
+
+## [0.6.3] — 2026-06-08
+### Changed
+- Download as Excel modal: replaced radio buttons (All/Specific tables) with a direct checkbox list
+- Download as Excel modal: removed "Don't show this again" option and localStorage gate
+- Download as Excel modal: updated description text and removed "Tables to include" section header
+- Download as Excel modal: added Note footer clarifying charts are not exportable and each table downloads separately
+- sfm-table-list padding set to 12px left and right
+
+---
+
+## [0.6.2] — 2026-06-08
+### Added
+- Assessments table: styled hover tooltips on findings counts showing "Passed Findings" / "Failed Findings"
+
+---
+
+## [0.6.1] — 2026-06-08
+### Changed
+- Renamed Open/Closed terminology to Failed/Passed across compliance, findings, and assessments
+- Compliance table headers: Closed → Passed, Open → Failed
+- Findings Breakdown KPI labels: added (Closed)/(Open) suffixes in grey regular weight
+- "Include Closed Findings" toggle renamed to "Include Passed Findings" in all drawers and ComplianceFindingsPage
+- Compliance matrix tooltip: Open findings → Failed findings
+- Exposure Findings table header: Open Findings → Failed Findings
+- Compliance tree table cells: removed vertical padding
+
+---
+
+## [0.6.0] — 2026-06-03
+### Added
+- Executive Summary report template (20 widgets: KPI, vert-bar, pie, hor-bar, table) in DashboardCanvas
+- ReportPreviewPage: paginated A4 layout, cover page, save/schedule/share/download modals
+- workspace/report filter panel, breadcrumb, and active-filter chip support in WorkspacePage
+- hor-bar charts: LabelList value labels, x-axis label, per-widget description notes (vulnerability/os/service templates)
+- `printMode` prop on WidgetCard/ChartRender — suppresses tooltips in PDF preview
+- Table widgets hug content height via `dc-report-chart-row--table` CSS modifier
+### Changed
+- WidgetCard exported from DashboardCanvas so ReportPreviewPage renders identical widgets to editor
+- Report editor chart cards restore explicit height (removed `height:auto` override that collapsed Recharts)
+- sfm-checkbox-row: `align-items: flex-start` + `line-height: 1.4` to fix multi-line label alignment
+- hor-bar chart description note: removed border-top divider
+### Fixed
+- 500 error on Library → Executive Summary: undeclared `note` variable in ChartRender pie renderer
+- Recharts charts invisible in report editor due to `height:auto` collapsing card body flex chain
+
+---
+
+## [0.5.2] — 2026-05-29
+### Changed
+- `dashboard.css`: DS 2.0 token fixes — `border-radius` normalised (cards→4px, inputs→8px, toggles→12px), z-index clamped to 300 tier, font-size floor 11px, spacing to 4pt grid, toolbar height 48px
+- `active-filter-panel.css`: z-index `10006` → `300` on `.sfm-dialog`
+- `DashboardCanvas.jsx`: chart-type picker buttons use CSS classes + CSS vars only (no inline styles); `.dc-field-sub-label` margin-top via CSS modifier class
+
+---
+
+## [0.5.1] — 2026-05-29
+### Added
+- `error-page.css` — extracted ErrorPage styles from inline JSX to proper CSS classes
+- `wp-root`, `wp-body`, `wp-main` layout classes added to `shell.css` for WorkspacePage shell
+### Changed
+- ExposureOverviewPage: `exp-trend-pill`, `exp-collapse-btn`, `exp-groupby-btn`, `exp-explore-btn` now layer `ds-btn` base classes
+- WorkspacePage: layout inline styles replaced with CSS class references
+### Fixed
+- FindingsPage: replaced `fin-btn` custom classes with `ds-btn sz-md t-outline / t-primary`
+- ComplianceFindingsPage: replaced `comp-drawer-download-btn` with `ds-btn sz-sm t-outline`
+- DashboardCanvas: widget delete now shows confirmation modal naming the widget before deletion
+- ErrorPage: all inline `style={{}}` blocks extracted to `error-page.css`
 
 ---
 

@@ -106,6 +106,23 @@ const PAGE_FILTER_ATTRS = {
     { id: 'av-block',                   label: 'AV Block',                   icon: 'type',                options: BOOLEAN_OPTS },
     { id: 'firewall-enabled',           label: 'Firewall Enabled',           icon: 'type',                options: BOOLEAN_OPTS },
   ],
+  'workspace/report': [
+    { id: 'business-unit',               label: 'Business Unit',               icon: 'business-unit',       options: ['(empty)', 'Customer Service', 'Global', 'Networking', 'PriorityAccess', 'Production Server', 'Shared Unity', 'Zone A Protect', 'Zone A Server'] },
+    { id: 'asset-criticality',           label: 'Asset Criticality',           icon: 'asset-criticality',   options: SEVERITY_OPTS },
+    { id: 'type',                        label: 'Type',                        icon: 'type',                options: ['Server', 'Workstation', 'Mobile', 'Network', 'Printers', 'IOT', 'Scanners', 'Hypervisor', 'Cloud Storage'] },
+    { id: 'deployment-type',             label: 'Deployment Type',             icon: 'infrastructure-type', options: ['Cloud', 'On-Premise'] },
+    { id: 'asset-role',                  label: 'Asset Role',                  icon: 'type',                modes: ['AND', 'OR', 'EXACT'], options: ['AIX Server', 'Database', 'DNS Server', 'Domain Controller', 'ERP System', 'File Transfer Protocol', 'General Purpose', 'General Server', 'Hypervisor'] },
+    { id: 'os-family',                   label: 'OS Family',                   icon: 'type',                options: ['(empty)', 'Android', 'iOS', 'Linux', 'macOS', 'Network OS', 'Windows'] },
+    { id: 'os',                          label: 'OS',                          icon: 'type',                patternSearch: true, options: ['android 11', 'Android 11', 'android 12', 'Android 13', 'android 13', 'Android 14', 'Android 9', 'Cisco IOS', 'Debian', 'Debian 10'] },
+    { id: 'accessibility',               label: 'Accessibility',               icon: 'type',                options: ['(empty)', 'External', 'Internal'] },
+    { id: 'cloud-provider',              label: 'Cloud Provider',              icon: 'data-source',         options: ['(empty)', 'AWS', 'Azure'] },
+    { id: 'cve-id',                      label: 'CVE ID',                      icon: 'score',               modes: ['AND', 'OR', 'EXACT'], patternSearch: true, options: ['cve-0000-0000', 'cve-1999-0005', 'cve-1999-0006', 'cve-1999-0017', 'cve-1999-0019', 'cve-1999-0024', 'cve-1999-0042', 'cve-1999-0043'] },
+    { id: 'vulnerability-severity',      label: 'Vulnerability Severity',      icon: 'score',               options: SEVERITY_OPTS },
+    { id: 'vulnerability-title',         label: 'Vulnerability Title',         icon: 'type',                patternSearch: true, options: ['(empty)', '".netrc" File Contains Authentication Credentials', '"B and R" Automation SiteManager', '"B and R" Automation Studio Multiple Vulnerabilities', '"B and R" Industrial Automation', '"git apply --reject" partially-corrupts', '"nph-test-cgi" CGI Vulnerability', '"test-cgi" CGI Vulnerability'] },
+    { id: 'exploit-available',           label: 'Exploit Available',           icon: 'type',                options: BOOLEAN_OPTS },
+    { id: 'sla-status',                  label: 'SLA Status',                  icon: 'type',                options: ['Breaching', 'No SLA', 'Over Halfway', 'Under Halfway'] },
+    { id: 'vulnerability-finding-status',label: 'Vulnerability Finding Status',icon: 'type',                options: ['Closed', 'Open'] },
+  ],
 };
 
 function getPageAttrs(pageId) {
@@ -917,6 +934,11 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                               <span className="fp-options__sort-label">A-Z</span>
                             </div>
                           </div>
+                          {attr.patternSearch && (
+                            <p className="fp-pattern-warning">
+                              Selection limited to a maximum of 100 values, but you can still search with pattern
+                            </p>
+                          )}
                           <label className="fp-option-label fp-option-label--bold">
                             <FPCheckbox checked={allChk} indeterminate={someChk} onChange={() => toggleSelectAll(attr)} />
                             Select All

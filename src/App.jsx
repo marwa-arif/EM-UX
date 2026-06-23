@@ -20,171 +20,7 @@ import CompliancePage       from './pages/CompliancePage.jsx'
 import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
-
-function SplashScreen({ onDone }) {
-  const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
-  const [phase, setPhase] = useState('idle'); // idle | dots | word | sub | out
-
-  // 6 dots in constellation order (top → bottom)
-  const dots = [
-    "M45.6001 5.86863C43.7483 7.72044 43.7483 10.7228 45.6001 12.5746C47.4519 14.4264 50.4543 14.4264 52.3061 12.5746C54.1579 10.7228 54.1579 7.72044 52.3061 5.86863C50.4543 4.01682 47.4519 4.01682 45.6001 5.86863Z",
-    "M31.172 15.7265C28.553 18.3455 28.553 22.5917 31.172 25.2107C33.7909 27.8297 38.0372 27.8297 40.6562 25.2107C43.2752 22.5917 43.2752 18.3455 40.6562 15.7265C38.0372 13.1075 33.7909 13.1075 31.172 15.7265Z",
-    "M45.2432 32.5381C43.7681 34.0132 43.7681 36.4048 45.2432 37.8799C46.7183 39.355 49.1099 39.355 50.585 37.8799C52.0601 36.4048 52.0601 34.0132 50.585 32.5381C49.1099 31.063 46.7183 31.063 45.2432 32.5381Z",
-    "M17.714 29.9422C14.7862 32.8701 14.786 37.6173 17.7138 40.5452C20.6417 43.473 25.3889 43.4728 28.3168 40.545C31.2447 37.6171 31.2449 32.8699 28.317 29.942C25.3891 27.0141 20.6419 27.0143 17.714 29.9422Z",
-    "M31.3126 43.5624C28.6936 46.1814 28.6936 50.4276 31.3126 53.0466C33.9316 55.6656 38.1778 55.6656 40.7968 53.0466C43.4158 50.4276 43.4158 46.1814 40.7968 43.5624C38.1778 40.9434 33.9316 40.9434 31.3126 43.5624Z",
-    "M45.7251 57.8374C43.8733 59.6892 43.8733 62.6916 45.7251 64.5434C47.5769 66.3952 50.5793 66.3952 52.4311 64.5434C54.2829 62.6916 54.2829 59.6892 52.4311 57.8374C50.5793 55.9856 47.5769 55.9856 45.7251 57.8374Z",
-  ];
-
-  const DOT_STAGGER = 110; // ms between each dot
-  const allDotsMs = DOT_STAGGER * dots.length; // 660ms
-
-  useEffect(() => {
-    const t0 = setTimeout(() => setPhase('dots'), 120);
-    const t1 = setTimeout(() => setPhase('word'), 120 + allDotsMs + 80);
-    const t2 = setTimeout(() => setPhase('sub'),  120 + allDotsMs + 480);
-    const t3 = setTimeout(() => setPhase('out'),  2600);
-    const t4 = setTimeout(() => onDone(),          3150);
-    return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
-  }, [onDone]);
-
-  const after = (...phases) => phases.includes(phase);
-
-  const dotColor   = isDark ? 'white' : '#101010';
-  const barTrack   = isDark ? 'rgba(255,255,255,0.07)' : '#E8E8F4';
-  const emWordmark = isDark ? '/assets/logo/em-wordmark-white.svg' : '/assets/logo/em-wordmark.svg';
-  const paiMark    = isDark ? '/assets/logo/pai-wordmark-white.svg' : '/assets/logo/pai-wordmark-black.svg';
-
-  return (
-    <>
-      <style>{`
-        @keyframes dot-pop {
-          0%   { opacity: 0; transform: scale(0.25); }
-          70%  { opacity: 1; transform: scale(1.15); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes em-text-in {
-          from { opacity: 0; transform: translateX(22px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes em-sub-in {
-          from { opacity: 0; transform: translateX(22px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes em-bar {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-        @keyframes blob-drift-a {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          33%      { transform: translate(35px, -22px) scale(1.08); }
-          66%      { transform: translate(-18px, 28px) scale(0.95); }
-        }
-        @keyframes blob-drift-b {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          40%      { transform: translate(-28px, 18px) scale(1.1); }
-          70%      { transform: translate(22px, -32px) scale(1.05); }
-        }
-        @keyframes blob-drift-c {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          50%      { transform: translate(14px, 22px) scale(1.12); }
-        }
-      `}</style>
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: isDark ? '#0D0D18' : '#F7F7FF',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        gap: 16, overflow: 'hidden',
-        opacity: phase === 'out' ? 0 : 1,
-        transition: 'opacity 550ms ease',
-      }}>
-
-        {/* Blobs */}
-        <div style={{
-          position: 'absolute', width: 520, height: 520, top: '-8%', left: '8%',
-          borderRadius: '50%',
-          background: isDark
-            ? 'radial-gradient(circle, rgba(99,96,216,0.40) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(99,96,216,0.32) 0%, transparent 60%)',
-          animation: 'blob-drift-a 9s ease-in-out infinite',
-          pointerEvents: 'none', filter: 'blur(48px)',
-        }} />
-        <div style={{
-          position: 'absolute', width: 440, height: 440, bottom: '-5%', right: '8%',
-          borderRadius: '50%',
-          background: isDark
-            ? 'radial-gradient(circle, rgba(71,173,203,0.32) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(71,173,203,0.26) 0%, transparent 60%)',
-          animation: 'blob-drift-b 11s ease-in-out infinite',
-          pointerEvents: 'none', filter: 'blur(56px)',
-        }} />
-        <div style={{
-          position: 'absolute', width: 320, height: 320, top: '50%', left: '52%',
-          borderRadius: '50%',
-          background: isDark
-            ? 'radial-gradient(circle, rgba(99,96,216,0.22) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(99,96,216,0.20) 0%, transparent 60%)',
-          animation: 'blob-drift-c 13s ease-in-out infinite',
-          pointerEvents: 'none', filter: 'blur(64px)',
-        }} />
-
-        {/* Logo row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, position: 'relative', zIndex: 1 }}>
-          {/* Dot constellation */}
-          <svg width="58" height="71" viewBox="0 0 58 71" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {dots.map((d, i) => (
-              <path key={i} d={d} fill={dotColor} style={{
-                opacity: 0,
-                transformBox: 'fill-box',
-                transformOrigin: 'center',
-                animation: after('dots','word','sub','out')
-                  ? `dot-pop 350ms cubic-bezier(0.34,1.3,0.64,1) ${i * DOT_STAGGER}ms forwards`
-                  : 'none',
-              }} />
-            ))}
-          </svg>
-
-          {/* EM wordmark */}
-          <img
-            src={emWordmark}
-            height={28}
-            alt="Exposure Management"
-            style={{
-              animation: after('word','sub','out') ? 'em-text-in 520ms cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
-              opacity: after('idle','dots') ? 0 : undefined,
-            }}
-          />
-        </div>
-
-        {/* PAI wordmark */}
-        <img
-          src={paiMark}
-          height={28}
-          alt="Prevalent AI"
-          style={{
-            position: 'relative', zIndex: 1,
-            animation: after('sub','out') ? 'em-sub-in 520ms cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
-            opacity: after('idle','dots','word') ? 0 : undefined,
-          }}
-        />
-
-        {/* Loading bar */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
-          background: barTrack,
-        }}>
-          <div style={{
-            height: '100%',
-            background: 'linear-gradient(90deg, #6360D8 0%, #47ADCB 100%)',
-            transformOrigin: 'left center',
-            animation: after('dots','word','sub','out') ? 'em-bar 2200ms cubic-bezier(0.4,0,0.6,1) forwards' : 'none',
-            transform: 'scaleX(0)',
-          }} />
-        </div>
-      </div>
-    </>
-  );
-}
+import SplashScreen           from './components/SplashScreen.jsx'
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -358,114 +194,64 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
 
   const labelById = (id) => entities.find(e => e.id === id)?.label || id;
 
-  const rowStyle = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1.2fr 24px',
-    gap: 6,
-    alignItems: 'center',
-    padding: '4px 0',
-  };
-  const selStyle = {
-    fontSize: 11, padding: '4px 6px', borderRadius: 4,
-    border: '1px solid var(--shell-border)', background: 'var(--card-bg)', color: 'var(--pai-fg1)',
-    fontFamily: 'inherit',
-    minWidth: 0,
-  };
-  const inputStyle = { ...selStyle };
-  const xBtnStyle = {
-    width: 22, height: 22, borderRadius: 4, border: '1px solid var(--shell-border)',
-    background: 'var(--card-bg)', color: 'var(--shell-text-muted)', cursor: 'pointer',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 14, lineHeight: 1, padding: 0,
-  };
-
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div className="ee-root">
       {/* Save bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        marginBottom: 8,
-      }}>
+      <div className="ee-save-bar">
         <button
           onClick={saveAsDefault}
           disabled={!dirty && !savedFlash}
-          style={{
-            flex: 1, padding: '6px 10px',
-            borderRadius: 6, border: '1px solid',
-            borderColor: savedFlash ? 'var(--pai-green)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-border)'),
-            background: savedFlash ? 'var(--pai-low-bg)' : (dirty ? 'var(--pai-indigo)' : 'var(--shell-raised)'),
-            color: savedFlash ? 'var(--pai-low-fg)' : (dirty ? 'var(--pai-surface)' : 'var(--shell-text-muted)'),
-            fontSize: 11, fontWeight: 500,
-            cursor: (dirty || savedFlash) ? 'pointer' : 'default',
-            fontFamily: 'inherit',
-            transition: 'all 150ms cubic-bezier(.2,.8,.2,1)',
-          }}
+          className={`ee-save-btn${savedFlash ? ' ee-save-btn--saved' : dirty ? ' ee-save-btn--dirty' : ''}`}
         >
           {savedFlash ? 'Saved' : (dirty ? 'Save as default' : 'Default saved')}
         </button>
         <button
           onClick={resetEdges}
           disabled={!dirty}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 6, border: '1px solid var(--shell-border)',
-            background: 'transparent',
-            color: dirty ? 'var(--shell-text-muted)' : 'var(--pai-disabled)',
-            fontSize: 11,
-            cursor: dirty ? 'pointer' : 'default',
-            fontFamily: 'inherit',
-          }}
+          className={`ee-reset-btn${dirty ? ' ee-reset-btn--dirty' : ''}`}
         >
           Reset
         </button>
       </div>
 
-      <div style={{ ...rowStyle, fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', paddingBottom: 4, borderBottom: '1px solid var(--shell-border)', marginBottom: 6 }}>
+      <div className="ee-row-header">
         <div>Source</div><div>Target</div><div>Label</div><div></div>
       </div>
 
-      <div style={{ maxHeight: 260, overflowY: 'auto', paddingRight: 4 }}>
+      <div className="ee-scroll-list">
         {edges.map((e, i) => (
-          <div key={i} style={rowStyle}>
-            <select style={selStyle} value={e[0]} onChange={(ev) => updateEdge(i, 'src', ev.target.value)}>
+          <div key={i} className="ee-row">
+            <select className="ee-field" value={e[0]} onChange={(ev) => updateEdge(i, 'src', ev.target.value)}>
               {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
             </select>
-            <select style={selStyle} value={e[1]} onChange={(ev) => updateEdge(i, 'tgt', ev.target.value)}>
+            <select className="ee-field" value={e[1]} onChange={(ev) => updateEdge(i, 'tgt', ev.target.value)}>
               {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
             </select>
-            <input style={inputStyle} placeholder="—"
+            <input className="ee-field" placeholder="—"
                    value={e[2] || ''}
                    onChange={(ev) => updateEdge(i, 'label', ev.target.value)} />
-            <button style={xBtnStyle} title="Remove edge"
-                    onClick={() => removeEdge(i)}
-                    onMouseEnter={(ev) => ev.currentTarget.style.background = 'var(--pai-crit-bg)'}
-                    onMouseLeave={(ev) => ev.currentTarget.style.background = 'var(--card-bg)'}
-            >×</button>
+            <button className="ee-x-btn" title="Remove edge" onClick={() => removeEdge(i)}>×</button>
           </div>
         ))}
         {edges.length === 0 && (
-          <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', padding: '8px 0' }}>No edges. Add one below.</div>
+          <div className="ee-empty">No edges. Add one below.</div>
         )}
       </div>
 
-      <div style={{ borderTop: '1px solid var(--shell-border)', marginTop: 8, paddingTop: 8 }}>
-        <div style={{ fontSize: 9, color: 'var(--shell-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
-          Add edge
-        </div>
-        <div style={rowStyle}>
-          <select style={selStyle} value={newSrc} onChange={(e) => setNewSrc(e.target.value)}>
+      <div className="ee-add-section">
+        <div className="ee-add-label">Add edge</div>
+        <div className="ee-row">
+          <select className="ee-field" value={newSrc} onChange={(e) => setNewSrc(e.target.value)}>
             {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
           </select>
-          <select style={selStyle} value={newTgt} onChange={(e) => setNewTgt(e.target.value)}>
+          <select className="ee-field" value={newTgt} onChange={(e) => setNewTgt(e.target.value)}>
             {entities.map(en => <option key={en.id} value={en.id}>{en.label}</option>)}
           </select>
-          <input style={inputStyle} placeholder="Relationship (optional)"
+          <input className="ee-field" placeholder="Relationship (optional)"
                  value={newLabel}
                  onChange={(e) => setNewLabel(e.target.value)}
                  onKeyDown={(e) => e.key === 'Enter' && addEdge()} />
-          <button style={{ ...xBtnStyle, color: 'var(--pai-indigo)', borderColor: 'var(--pai-indigo-secondary)' }}
-                  title="Add edge"
-                  onClick={addEdge}>+</button>
+          <button className="ee-x-btn ee-add-btn" title="Add edge" onClick={addEdge}>+</button>
         </div>
       </div>
     </div>
@@ -500,12 +286,12 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
     <div
       className="rp-shell"
       style={{
-        width: isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0,
-        borderLeft: (isOpen && !isCollapsedForFloat) ? '1px solid var(--shell-border)' : 'none',
-        boxShadow: (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.18)' : 'none',
+        '--rp-shell-w': `${isCollapsedForFloat ? 0 : isOpen ? SHELL_WIDTH : 0}px`,
+        '--rp-shell-border': (isOpen && !isCollapsedForFloat) ? '1px solid var(--shell-border)' : 'none',
+        '--rp-shell-shadow': (isOpen && !isCollapsedForFloat) ? '-4px 0 20px rgba(0,0,0,0.18)' : 'none',
       }}
     >
-      <div className="rp-shell__inner" style={{ width: SHELL_WIDTH }}>
+      <div className="rp-shell__inner" style={{ '--rp-shell-inner-w': `${SHELL_WIDTH}px` }}>
         {/* Tab strip — 48px to align with SubHeader */}
         <div className="rp-tabstrip">
           <div className={`rp-tabstrip__tabs${visibleTabs.length > 1 ? ' rp-seg-tabs' : ''}`}>
@@ -572,8 +358,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'    },
         ],
       },
@@ -598,7 +384,7 @@ const _UNUSED = {
           { label: 'Workstation',      count: '2,848', value: 2848, pct: '23%',  color: '#5BADB8'                 },
           { label: 'Network',          count: '2,600', value: 2600, pct: '21%',  color: 'var(--pai-green)'        },
           { label: 'Mobile',           count: '897',   value: 897,  pct: '8%',   color: 'var(--pai-high-fg)'      },
-          { label: 'Printers',         count: '124',   value: 124,  pct: '1%',   color: 'var(--pai-red-high)'     },
+          { label: 'Printers',         count: '124',   value: 124,  pct: '1%',   color: 'var(--pai-high-fg)'     },
           { label: 'IOT',              count: '122',   value: 122,  pct: '1%',   color: 'var(--pai-indigo-muted)' },
         ],
       },
@@ -616,8 +402,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '750',   pct: 6.38,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'    },
         ],
       },
@@ -642,7 +428,7 @@ const _UNUSED = {
           { label: 'Workstation',            count: '4,922', value: 4922, pct: '42%', color: '#5BADB8'                 },
           { label: 'Server',                 count: '381',   value: 381,  pct: '3%',  color: 'var(--pai-green)'        },
           { label: 'Kubernetes Container',   count: '353',   value: 353,  pct: '3%',  color: 'var(--pai-high-fg)'      },
-          { label: 'Security Group',         count: '224',   value: 224,  pct: '2%',  color: 'var(--pai-red-high)'     },
+          { label: 'Security Group',         count: '224',   value: 224,  pct: '2%',  color: 'var(--pai-high-fg)'     },
           { label: 'Serverless',             count: '66',    value: 66,   pct: '1%',  color: 'var(--pai-indigo-muted)' },
         ],
       },
@@ -660,8 +446,8 @@ const _UNUSED = {
         id: 1002, label: 'Criticality Insights', chartId: 'stack-hor', span: 2, sizeId: 'medium', heightId: 'medium', phase: 'active',
         data: [
           { label: 'Critical', count: '4,322',  pct: 6.05,  color: 'var(--pai-crit-fg)'  },
-          { label: 'High',     count: '17,503', pct: 24.50, color: 'var(--pai-red-high)' },
-          { label: 'Medium',   count: '40,197', pct: 56.27, color: 'var(--pai-high-fg)'  },
+          { label: 'High',     count: '17,503', pct: 24.50, color: 'var(--pai-red-high)'  },
+          { label: 'Medium',   count: '40,197', pct: 56.27, color: 'var(--pai-red-high)'  },
           { label: 'Low',      count: '9,420',  pct: 13.18, color: 'var(--pai-green)'    },
         ],
       },
@@ -693,7 +479,8 @@ const _UNUSED = {
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/workspace' || path.startsWith('/workspace/')) return 'workspace';
+    if (path === '/workspace') return 'workspace';
+    if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
     if (path === '/') return 'exposure/overview';
     return path.slice(1) || 'exposure/overview';
@@ -745,7 +532,8 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
-      if (path === '/workspace' || path.startsWith('/workspace/')) setCurrent('workspace');
+      if (path === '/workspace') setCurrent('workspace');
+      else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
       else if (path === '/') setCurrent('exposure/overview');
       else setCurrent(path.slice(1) || 'exposure/overview');
@@ -798,7 +586,8 @@ function App() {
     }
     setCurrent(id);
     let url;
-    if (id === 'workspace' || id.startsWith('workspace/')) url = '/workspace';
+    if (id === 'workspace') url = '/workspace';
+    else if (id.startsWith('workspace/')) url = `/${id}`;
     else if (id === 'kg') url = '/knowledge-graph';
     else url = `/${id}`;
     history.pushState(null, '', url);
@@ -945,16 +734,11 @@ function App() {
   );
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      height: '100vh', overflow: 'hidden',
-      fontFamily: "'Inter', system-ui",
-      color: PAI.fg1, background: 'var(--shell-bg)',
-    }}>
+    <div className="app-shell">
       {showSplash && <SplashScreen onDone={onSplashDone} />}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
 
-      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
         <LeftNav
           current={current}
           onNav={handleNav}
@@ -965,23 +749,24 @@ function App() {
         />
 
         {appMode === 'studio' ? (
-          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
+          <main className="exp-main exp-main--col">
             <SubHeader
               title="Studio"
               breadcrumb={['Studio']}
               breadcrumbHrefs={[null]}
             />
-            <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+            <div className="page-scroll">
               <ComingSoon />
             </div>
           </main>
         ) : (
-          <main className="exp-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--ctrl-bg)' }}>
-            <div className="exp-content-col" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <main className="exp-main exp-main--row">
+            <div className="exp-content-col">
               <SubHeader
                 title={pageMeta.title}
                 breadcrumb={pageMeta.breadcrumb}
                 breadcrumbHrefs={pageMeta.breadcrumbHrefs}
+                breadcrumbClicks={[() => handleNav('exposure/overview')]}
                 pageId={current}
                 activeFilterCount={activeFilterCount}
                 activeFilters={activeFilters}
@@ -1002,7 +787,7 @@ function App() {
                   history.pushState(null, '', '/workspace');
                 } : undefined}
               />
-              <div className="page-scroll" style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+              <div className="page-scroll">
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}

@@ -112,8 +112,8 @@ const INSIGHTS = [
 
 const CRITICALITY = [
   { label: 'Critical', count: '750',   pct: 6.38,  color: 'var(--pai-crit-fg)'   },
-  { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)'  },
-  { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-high-fg)'   },
+  { label: 'High',     count: '3,560', pct: 30.26, color: 'var(--pai-red-high)'   },
+  { label: 'Medium',   count: '4,188', pct: 35.60, color: 'var(--pai-med-fg)'      },
   { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'     },
 ];
 
@@ -372,8 +372,8 @@ export default function DiscoverCloudPage() {
   );
 
   const TH = ({ children }) => (
-    <th className="dev-th">
-      <span className="dev-th-inner">{children}<span className="dev-th-sort"><IcSort /></span></span>
+    <th className="ds-th">
+      <span className="ds-th-inner">{children}<span className="ds-th-sort"><IcSort /></span></span>
     </th>
   );
 
@@ -404,7 +404,7 @@ export default function DiscoverCloudPage() {
                     >{r}</button>
                   ))}
                 </div>
-                <button className="pai-btn pai-btn--tertiary pai-btn--sm" onClick={() => setShowDrawer(true)}>
+                <button className="ds-btn sz-sm t-tertiary" onClick={() => setShowDrawer(true)}>
                   Trend Explore <IcExplore />
                 </button>
               </div>
@@ -576,11 +576,11 @@ export default function DiscoverCloudPage() {
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
-                    <th className="dev-th dev-th-icon" />
+                    <th className="ds-th dev-th-icon" />
                     <TH>Assessment</TH>
                     <TH>Findings Failed</TH>
                     <TH>Exposure Category</TH>
@@ -588,12 +588,12 @@ export default function DiscoverCloudPage() {
                 </thead>
                 <tbody>
                   {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-icon">
+                    <tr key={i}>
+                      <td className="ds-td dev-td-icon">
                         {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
                       </td>
-                      <td className="dev-td dev-td-name">{r.text}</td>
-                      <td className="dev-td dev-td-findings">
+                      <td className="ds-td dev-td-name">{r.text}</td>
+                      <td className="ds-td dev-td-findings">
                         <div className="dev-findings-bar">
                           <div className="dev-findings-bar__track">
                             <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
@@ -601,7 +601,7 @@ export default function DiscoverCloudPage() {
                           <span className="dev-findings-bar__pct">{r.failPct}%</span>
                         </div>
                       </td>
-                      <td className="dev-td">{r.cat}</td>
+                      <td className="ds-td">{r.cat}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -660,8 +660,8 @@ export default function DiscoverCloudPage() {
               />
             </div>
 
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
                     <TH>Display Label</TH>
@@ -672,11 +672,11 @@ export default function DiscoverCloudPage() {
                 </thead>
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-name">{a.name}</td>
-                      <td className="dev-td">{a.type}</td>
-                      <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
-                      <td className="dev-td dev-td-score">{a.score.toLocaleString()}</td>
+                    <tr key={i}>
+                      <td className="ds-td dev-td-name">{a.name}</td>
+                      <td className="ds-td">{a.type}</td>
+                      <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
+                      <td className="ds-td dev-td-score">{a.score.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>

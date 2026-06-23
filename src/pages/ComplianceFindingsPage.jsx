@@ -224,14 +224,14 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
             <div className="cfp-header-actions">
               {!filter && (
                 <label className="comp-drawer-incl-label">
-                  Include Closed Findings
+                  Include Passed Findings
                   <Toggle checked={inclClosed} onChange={v => { setInclClosed(v); setPage(1) }} />
                 </label>
               )}
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
               <div ref={downloadRef} className="cfp-download-wrap">
                 <button
-                  className={`comp-drawer-download-btn${downloadOpen ? ' comp-sort-btn--active' : ''}`}
+                  className={`ds-btn sz-sm t-outline${downloadOpen ? ' comp-sort-btn--active' : ''}`}
                   onClick={() => setDownloadOpen(o => !o)}
                 >
                   <IcDownload />
