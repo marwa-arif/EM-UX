@@ -25,6 +25,13 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.6.6] — 2026-06-23
+### Changed
+- DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`
+- Font scale audit: fixed out-of-scale font sizes (7/8/9px → 10px, 15px → 14px, 11.5/12.5px → 12px, 17px → 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css
+
+---
+
 ## [0.6.5] — 2026-06-23
 ### Changed
 - SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css
