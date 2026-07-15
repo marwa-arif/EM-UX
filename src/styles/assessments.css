@@ -75,7 +75,7 @@
   transform: translateY(-50%);
   width: 16px; height: 16px; padding: 0; border: none; background: transparent;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--shell-text-muted); border-radius: 999px;
+  cursor: pointer; color: var(--shell-text-muted); border-radius: 50%;
 }
 .asmts-search-clear:hover { color: var(--shell-text); }
 
@@ -107,6 +107,9 @@
   font-size: 12px;
   color: var(--shell-text);
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asmts-name-link {
@@ -127,10 +130,39 @@
 .asmts-findings-val {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 72px;
   font-size: 12px;
   font-weight: 500;
   color: var(--shell-text);
+}
+
+.asmts-findings-val--tip {
+  position: relative;
+}
+
+.asmts-findings-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.asmts-findings-val--tip:hover .asmts-findings-tooltip {
+  display: block;
 }
 
 .asmts-dot {
@@ -224,7 +256,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
   background: var(--asmts-fw-item-bg, var(--shell-raised));
@@ -248,7 +280,7 @@
 }
 
 .asmts-fw-abbr {
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--asmts-fw-abbr-color, var(--shell-text));
 }

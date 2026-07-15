@@ -57,12 +57,15 @@ function SavedPage() {
     savedVisibility, setSavedVisibility,
     savedSearch, setSavedSearch,
     openDeleteModal,
+    savedReports,
   } = useWorkspace()
+
+  const allRows = [...savedReports, ...SAVED_ROWS]
 
   const [page, setPage]               = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  const filtered = SAVED_ROWS.filter(row => {
+  const filtered = allRows.filter(row => {
     const matchType   = savedFilter     === 'all' || (savedFilter     === 'dashboards' && row.type       === 'DASHBOARD') || (savedFilter     === 'reports' && row.type       === 'REPORT')
     const matchVis    = savedVisibility === 'all' || (savedVisibility === 'private'    && row.visibility === 'Private')   || (savedVisibility === 'public'  && row.visibility === 'Public')
     const matchSearch = savedSearch === '' || row.name.toLowerCase().includes(savedSearch.toLowerCase())
@@ -180,10 +183,10 @@ function SavedPage() {
                       {/* Actions */}
                       <td className="ds-td">
                         <div className="row-actions">
-                          <button className="ds-icon-btn" title="View" onClick={() => onNav(`workspace/dashboard/${row.id}`)}>
+                          <button className="ds-icon-btn" title="View" onClick={() => onNav(row.type === 'REPORT' ? 'workspace/report-preview/executive-summary' : `workspace/dashboard/${row.id}`)}>
                             <Ic size={14} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>} />
                           </button>
-                          <button className="ds-icon-btn" title="Edit" onClick={() => onNav('workspace/dashboard/new')}>
+                          <button className="ds-icon-btn" title="Edit" onClick={() => onNav(row.type === 'REPORT' ? 'workspace/report/executive-summary' : 'workspace/dashboard/new')}>
                             <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />
                           </button>
                           <button className="ds-icon-btn" title="Download">

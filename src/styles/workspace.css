@@ -1,5 +1,5 @@
 /* DS Button */
-.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
+.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
 .ds-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
 .ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
 .ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500; }
@@ -9,6 +9,8 @@
 .ds-btn.t-outline:hover { border-color: var(--pai-border-strong); background: var(--shell-hover); }
 .ds-btn.t-secondary { background: rgba(99,96,216,0.10); color: var(--pai-indigo); }
 .ds-btn.t-secondary:hover { background: rgba(99,96,216,0.18); }
+.ds-btn.t-tertiary { background: transparent; border: 1px solid rgba(99,96,216,0.45); color: var(--pai-indigo); }
+.ds-btn.t-tertiary:hover { background: rgba(99,96,216,0.06); border-color: var(--pai-indigo); }
 
 /* DS Badge */
 .ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
@@ -20,7 +22,7 @@
 .ds-tab:hover { color: var(--shell-text); }
 .ds-tab.active { color: var(--shell-accent); border-bottom-color: var(--shell-accent); font-weight: 600; }
 /* Tab with leading icon */
-.ds-tab.has-icon { display: inline-flex; align-items: center; gap: 6px; }
+.ds-tab.has-icon { display: inline-flex; align-items: center; gap: 8px; }
 
 /* Utility: table compact font size */
 .ds-table.sz-sm { font-size: 12px; }
@@ -32,8 +34,10 @@
 /* DS Table */
 .ds-table-wrap { width: 100%; overflow-x: auto; }
 .ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.ds-th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--shell-text-muted); background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
-.ds-td { padding: 10px 12px; border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
+.ds-th { padding: var(--table-th-padding); text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--shell-text-muted); background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+.ds-th-inner { display: inline-flex; align-items: center; gap: 4px; }
+.ds-th-sort { opacity: 0.5; }
+.ds-td { padding: var(--table-td-padding); border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
 .ds-table tbody tr:last-child td { border-bottom: none; }
 .ds-table tbody tr:hover td { background: var(--shell-hover); }
 .row-actions { display: flex; align-items: center; gap: 4px; }
@@ -43,3 +47,15 @@
 .ds-page-btn:hover { background: var(--shell-hover); }
 .ds-page-btn.active { background: var(--shell-accent); color: #fff; border-color: var(--shell-accent); font-weight: 600; }
 .ds-page-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* ── DSPillSearch ────────────────────────────────────────────────── */
+.ds-pill-search {
+  display: inline-flex; align-items: center; height: 32px; box-sizing: border-box;
+  padding-left: 14px; padding-right: 4px; background: var(--card-bg);
+  border: 1px solid var(--shell-border); border-radius: 44px;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.ds-pill-search--focused { border-color: var(--pai-indigo); box-shadow: 0 0 0 3px rgba(99,96,216,0.18); }
+.ds-pill-search__input { flex: 1; border: none; outline: none; background: transparent; font-size: 13px; font-family: inherit; color: var(--pai-fg1); min-width: 0; }
+.ds-pill-search__clear { width: 16px; height: 16px; padding: 0; border: none; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--pai-fg3); border-radius: 50%; flex-shrink: 0; margin-left: 4px; }
+.ds-pill-search__icon { width: 24px; height: 24px; margin-left: 4px; border-radius: 50%; background: var(--pai-indigo-tint); display: inline-flex; align-items: center; justify-content: center; color: var(--pai-indigo); flex-shrink: 0; }

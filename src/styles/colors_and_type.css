@@ -54,10 +54,10 @@
   /* ── Severity — one row per level (bg + text) ──────────────── */
   --severity-critical-fg: #D12329;
   --severity-critical-bg: #F9EEEE;
-  --severity-high-fg:     #D98B1D;
-  --severity-high-bg:     #FEF3C7;
+  --severity-high-fg:     #E15252;
+  --severity-high-bg:     #FEE2E2;
   --severity-medium-fg:   #D98B1D;
-  --severity-medium-bg:   #FEF3C7;
+  --severity-medium-bg:   #FEF3E2;
   --severity-low-fg:      #31A56D;
   --severity-low-bg:      #EFF7ED;
 

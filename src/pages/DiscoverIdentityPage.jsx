@@ -123,8 +123,8 @@ const INSIGHTS = [
 
 const CRITICALITY = [
   { label: 'Critical', count: '27',     pct: 0.03,  color: 'var(--pai-crit-fg)'   },
-  { label: 'High',     count: '178',    pct: 0.20,  color: 'var(--pai-red-high)'  },
-  { label: 'Medium',   count: '84,137', pct: 96.63, color: 'var(--pai-high-fg)'   },
+  { label: 'High',     count: '178',    pct: 0.20,  color: 'var(--pai-red-high)'   },
+  { label: 'Medium',   count: '84,137', pct: 96.63, color: 'var(--pai-med-fg)'      },
   { label: 'Low',      count: '2,731',  pct: 3.14,  color: 'var(--pai-green)'     },
 ];
 
@@ -384,8 +384,8 @@ export default function DiscoverIdentityPage() {
   );
 
   const TH = ({ children }) => (
-    <th className="dev-th">
-      <span className="dev-th-inner">{children}<span className="dev-th-sort"><IcSort /></span></span>
+    <th className="ds-th">
+      <span className="ds-th-inner">{children}<span className="ds-th-sort"><IcSort /></span></span>
     </th>
   );
 
@@ -416,7 +416,7 @@ export default function DiscoverIdentityPage() {
                     >{r}</button>
                   ))}
                 </div>
-                <button className="pai-btn pai-btn--tertiary pai-btn--sm" onClick={() => setShowDrawer(true)}>
+                <button className="ds-btn sz-sm t-tertiary" onClick={() => setShowDrawer(true)}>
                   Trend Explore <IcExplore />
                 </button>
               </div>
@@ -586,11 +586,11 @@ export default function DiscoverIdentityPage() {
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
-                    <th className="dev-th dev-th-icon" />
+                    <th className="ds-th dev-th-icon" />
                     <TH>Assessment</TH>
                     <TH>Findings Failed</TH>
                     <TH>Exposure Category</TH>
@@ -598,12 +598,12 @@ export default function DiscoverIdentityPage() {
                 </thead>
                 <tbody>
                   {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-icon">
+                    <tr key={i}>
+                      <td className="ds-td dev-td-icon">
                         {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
                       </td>
-                      <td className="dev-td dev-td-name">{r.text}</td>
-                      <td className="dev-td dev-td-findings">
+                      <td className="ds-td dev-td-name">{r.text}</td>
+                      <td className="ds-td dev-td-findings">
                         <div className="dev-findings-bar">
                           <div className="dev-findings-bar__track">
                             <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
@@ -611,7 +611,7 @@ export default function DiscoverIdentityPage() {
                           <span className="dev-findings-bar__pct">{r.failPctLabel || `${r.failPct}%`}</span>
                         </div>
                       </td>
-                      <td className="dev-td">
+                      <td className="ds-td">
                         {r.cat}
                       </td>
                     </tr>
@@ -672,8 +672,8 @@ export default function DiscoverIdentityPage() {
               />
             </div>
 
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
                     <TH>Display Label</TH>
@@ -684,11 +684,11 @@ export default function DiscoverIdentityPage() {
                 </thead>
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-name">{a.name}</td>
-                      <td className="dev-td">{a.type}</td>
-                      <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
-                      <td className="dev-td dev-td-score">{a.score.toLocaleString()}</td>
+                    <tr key={i}>
+                      <td className="ds-td dev-td-name">{a.name}</td>
+                      <td className="ds-td">{a.type}</td>
+                      <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
+                      <td className="ds-td dev-td-score">{a.score.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>

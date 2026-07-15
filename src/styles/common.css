@@ -4,41 +4,8 @@
    Page files keep only page-specific overrides.
    ================================================================= */
 
-/* ── Table wrapper ──────────────────────────────────────────────── */
-.dev-table-wrap,
-.exp-table-wrap,
-.fin-table-wrap { overflow-x: auto; }
-
-/* ── Table base ─────────────────────────────────────────────────── */
-.dev-table,
-.exp-table,
-.fin-table { width: 100%; border-collapse: collapse; }
-
-/* ── Table header cell ──────────────────────────────────────────── */
-.dev-th,
-.exp-th,
-.fin-th {
-  font-weight: 600;
-  color: var(--shell-text-muted);
-  background: var(--table-th-bg);
-  border-bottom: 1px solid var(--shell-border);
-  white-space: nowrap;
-}
-
 /* ── Table header inner (sort icon + label) ─────────────────────── */
-.dev-th-inner,
-.exp-th-inner,
-.fin-th-inner,
 .kg-th-inner { display: inline-flex; align-items: center; }
-
-/* ── Table body row border ──────────────────────────────────────── */
-.dev-tr,
-.exp-tr,
-.fin-tr { border-bottom: 1px solid var(--table-border); }
-
-/* ── Table body cell (base) ─────────────────────────────────────── */
-.dev-td,
-.fin-td { color: var(--shell-text-2); font-size: 12px; vertical-align: middle; }
 
 /* ── Card / section header bar ──────────────────────────────────── */
 .dev-card-hdr,
@@ -69,6 +36,7 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--fin-dot-bg);
 }
 
 /* ── Icon + text inline pair ────────────────────────────────────── */
@@ -76,5 +44,78 @@
 .kg-td-type {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+/* ── Tooltip card shell ─────────────────────────────────────────── */
+.tooltip-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--shell-border, #333);
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  font-family: inherit;
+  pointer-events: none;
+  z-index: 9999;
+}
+.tooltip-card--fixed {
+  position: fixed;
+}
+.tooltip-card__label {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  margin-bottom: 4px;
+}
+.tooltip-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tooltip-card__value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--shell-text);
+}
+
+/* ── Chat / AI bubble layout ────────────────────────────────────── */
+.chat-bubble-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.chat-bubble-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: var(--pai-indigo);
+  color: #fff;
+}
+.chat-bubble-body {
+  flex: 1;
+  min-width: 0;
+}
+.chat-bubble-prose {
+  border-top: 1px solid var(--shell-border);
+  padding-top: 8px;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+/* ── Stacked-bar segment fill ───────────────────────────────────── */
+.sbc-seg-fill {
+  height: 100%;
+  background: var(--seg-color);
+  flex: var(--seg-flex);
+}
+
+/* ── Flex utility rows ──────────────────────────────────────────── */
+.flex-end-row {
+  display: flex;
+  justify-content: flex-end;
 }

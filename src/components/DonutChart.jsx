@@ -12,7 +12,7 @@ export function ChartTooltip({ content, mousePos }) {
   const left = flipLeft ? mousePos.x - W - 8 : mousePos.x + 16;
   const top = mousePos.y + 16;
   return (
-    <div className="kg-tooltip" style={{ left, top, position: 'fixed' }}>
+    <div className="kg-tooltip kg-tooltip--fixed" style={{ left, top }}>
       {content}
     </div>
   );
@@ -36,7 +36,7 @@ export function AssetIcon({ type, color }) {
     other:   <><circle cx="12" cy="12" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/></>,
   };
   return (
-    <div className="fin-donut-asset-icon" style={{ background: `${color}18` }}>
+    <div className="fin-donut-asset-icon" style={{ '--fin-donut-icon-bg': `${color}18` }}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         {paths[type]}
       </svg>
@@ -48,14 +48,14 @@ function DonutTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div style={{ background: 'var(--card-bg)', border: `1px solid ${p.color}`, borderRadius: 8, padding: '12px 13px', width: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.14)', fontFamily: 'Inter,system-ui' }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{p.label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--shell-text)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0, display: 'inline-block' }} />
+    <div className="tooltip-card cr-bar-tip fin-donut-tip" style={{ '--cr-tip-border': p.color }}>
+      <div className="cr-bar-tip__name">{p.label}</div>
+      <div className="cr-bar-tip__row">
+        <span className="cr-bar-tip__dot-row">
+          <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': p.color }} />
           {p.val}
         </span>
-        <span style={{ color: p.color }}>{p.pct < 1 ? '<1%' : `${p.pct}%`}</span>
+        <span className="cr-bar-tip__pct" style={{ '--cr-tip-color': p.color }}>{p.pct < 1 ? '<1%' : `${p.pct}%`}</span>
       </div>
     </div>
   );
@@ -96,18 +96,14 @@ export default function DonutChart({ data }) {
               <Tooltip content={DonutTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center', pointerEvents: 'none',
-          }}>
-            <div style={{ fontSize: 11, color: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}>Total</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, marginTop: 2 }}>{data.total}</div>
+          <div className="fin-donut-center">
+            <div className="fin-donut-center__label">Total</div>
+            <div className="fin-donut-center__value">{data.total}</div>
           </div>
         </div>
         <div className="fin-donut-list">
           {data.items.map((item, i) => (
-            <div key={i} className="fin-donut-row" style={{ cursor: 'default' }}>
+            <div key={i} className="fin-donut-row fin-donut-row--no-pointer">
               <AssetIcon type={item.icon} color={DONUT_COLORS[i]} />
               <span className="fin-donut-label">{item.label}</span>
               <span className="fin-donut-val">{item.val}</span>

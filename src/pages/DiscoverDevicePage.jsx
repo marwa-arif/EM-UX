@@ -110,8 +110,8 @@ const INSIGHTS = [
 
 const CRITICALITY = [
   { label: 'Critical', count: '953',    pct: 1.74,  color: 'var(--pai-crit-fg)'   },
-  { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'  },
-  { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-high-fg)'   },
+  { label: 'High',     count: '12,353', pct: 22.59, color: 'var(--pai-red-high)'   },
+  { label: 'Medium',   count: '36,136', pct: 66.08, color: 'var(--pai-med-fg)'      },
   { label: 'Low',      count: '5,244',  pct: 9.59,  color: 'var(--pai-green)'     },
 ];
 
@@ -125,7 +125,7 @@ const ASSETS = [
 
 // ── Chart data ────────────────────────────────────────────────────
 
-const TYPES_PIE_DATA = TYPES.slice(0, 6).map(t => ({
+const typesPieData = TYPES.slice(0, 6).map(t => ({
   label: t.label,
   count: t.count.toLocaleString(),
   value: t.count,
@@ -331,7 +331,13 @@ function DdbControls({ canMove = true, onEdit }) {
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget, onAddWidget }) {
+export default function DiscoverDevicePage({ dashboardMode = false, typeColors, kpiCardHeight = 360, onEditWidget, onAddWidget }) {
+  const statValueSize = Math.max(20, Math.min(40, kpiCardHeight * 0.15))
+  const typesData     = TYPES.map(t => ({ ...t, color: typeColors?.[t.label] || t.color }))
+  const typesPieData  = typesData.slice(0, 6).map(t => ({
+    label: t.label, count: t.count.toLocaleString(), value: t.count,
+    pct: t.pct <= 1 ? '<1%' : `${t.pct}%`, color: t.color,
+  }))
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
@@ -423,8 +429,8 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
   );
 
   const TH = ({ children }) => (
-    <th className="dev-th">
-      <span className="dev-th-inner">{children}<span className="dev-th-sort"><IcSort /></span></span>
+    <th className="ds-th">
+      <span className="ds-th-inner">{children}<span className="ds-th-sort"><IcSort /></span></span>
     </th>
   );
 
@@ -461,7 +467,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                     >{r}</button>
                   ))}
                 </div>
-                <button className="pai-btn pai-btn--tertiary pai-btn--sm" onClick={() => setShowDrawer(true)}>
+                <button className="ds-btn sz-sm t-tertiary" onClick={() => setShowDrawer(true)}>
                   Trend Explore <IcExplore />
                 </button>
               </div>
@@ -469,7 +475,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
 
             <div className="dev-stat-value-row">
               <div>
-                <div className="dev-stat-value">12,382</div>
+                <div className="dev-stat-value" style={{ fontSize: `${statValueSize}px` }}>12,382</div>
                 <div className="dev-stat-meta">
                   <IcTrendUp size={13} color="var(--pai-crit-fg)" />
                   <span className="dev-stat-change up">2%</span>
@@ -595,7 +601,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={TYPES_PIE_DATA}
+                      data={typesPieData}
                       cx="50%"
                       cy="50%"
                       innerRadius="46%"
@@ -608,7 +614,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                       endAngle={-270}
                       cornerRadius={4}
                     >
-                      {TYPES_PIE_DATA.map((entry, index) => (
+                      {typesPieData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
@@ -621,7 +627,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                 </div>
               </div>
               <div className="dev-type-list">
-                {TYPES.map((t, i) => (
+                {typesData.map((t, i) => (
                   <div key={i} className="dev-type-row">
                     <div className="dev-type-row-left">
                       <span className="dev-type-icon" style={{ '--type-color': t.color }}>{TYPE_ICONS[t.icon]}</span>
@@ -668,11 +674,11 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
-                    <th className="dev-th dev-th-icon" />
+                    <th className="ds-th dev-th-icon" />
                     <TH>Assessment</TH>
                     <TH>Findings Failed</TH>
                     <TH>Exposure Category</TH>
@@ -680,12 +686,12 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                 </thead>
                 <tbody>
                   {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-icon">
+                    <tr key={i}>
+                      <td className="ds-td dev-td-icon">
                         {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
                       </td>
-                      <td className="dev-td dev-td-name">{r.text}</td>
-                      <td className="dev-td dev-td-findings">
+                      <td className="ds-td dev-td-name">{r.text}</td>
+                      <td className="ds-td dev-td-findings">
                         <div className="dev-findings-bar">
                           <div className="dev-findings-bar__track">
                             <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
@@ -693,7 +699,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                           <span className="dev-findings-bar__pct">{r.failPct}%</span>
                         </div>
                       </td>
-                      <td className="dev-td">
+                      <td className="ds-td">
                         {r.cat}
                       </td>
                     </tr>
@@ -768,8 +774,8 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
               />
             </div>
 
-            <div className="dev-table-wrap">
-              <table className="dev-table">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
                 <thead>
                   <tr>
                     <TH>Display Label</TH>
@@ -782,13 +788,13 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                 </thead>
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
-                    <tr key={i} className="dev-tr">
-                      <td className="dev-td dev-td-name">{a.name}</td>
-                      <td className="dev-td">{a.type}</td>
-                      <td className="dev-td">{a.deploy}</td>
-                      <td className="dev-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
-                      <td className="dev-td dev-td-score">{a.score.toLocaleString()}</td>
-                      <td className="dev-td"><span className="dev-cell-icon-text"><IcLinux />{a.os}</span></td>
+                    <tr key={i}>
+                      <td className="ds-td dev-td-name">{a.name}</td>
+                      <td className="ds-td">{a.type}</td>
+                      <td className="ds-td">{a.deploy}</td>
+                      <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
+                      <td className="ds-td dev-td-score">{a.score.toLocaleString()}</td>
+                      <td className="ds-td"><span className="dev-cell-icon-text"><IcLinux />{a.os}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -825,7 +831,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
         const isTypeFilter = drawerFilter === 'Type';
         const rawTypeRangeData = TYPE_TREND_DATA_BY_RANGE[drawerRange] ?? TYPE_TREND_DATA_BY_RANGE['1 Y'];
         const typeRangeData = baselineView
-          ? (() => { const b0 = rawTypeRangeData[0]; return rawTypeRangeData.map(d => ({ name: d.name, ...Object.fromEntries(TYPES.map(t => { const base = b0[t.label] ?? 1; return [t.label, base > 0 ? +((d[t.label] / base * 100) - 100).toFixed(2) : 0]; })) })); })()
+          ? (() => { const b0 = rawTypeRangeData[0]; return rawTypeRangeData.map(d => ({ name: d.name, ...Object.fromEntries(typesData.map(t => { const base = b0[t.label] ?? 1; return [t.label, base > 0 ? +((d[t.label] / base * 100) - 100).toFixed(2) : 0]; })) })); })()
           : rawTypeRangeData;
         typeRangeDataRef.current = typeRangeData;
         return (
@@ -907,7 +913,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                           tickFormatter={yFmt}
                           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                         <Tooltip content={() => null} isAnimationActive={false} cursor={{ strokeWidth: 0 }} />
-                        {TYPES.map(t => { const effectiveHL = selectedType !== null ? selectedType : hoveredType; const isActive = !effectiveHL || effectiveHL === t.label; return (
+                        {typesData.map(t => { const effectiveHL = selectedType !== null ? selectedType : hoveredType; const isActive = !effectiveHL || effectiveHL === t.label; return (
                           <Line key={t.label} type="monotone" dataKey={t.label} stroke={t.color} strokeWidth={2}
                             isAnimationActive={false}
                             strokeOpacity={isActive ? 1 : 0.2}
@@ -951,7 +957,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, onEditWidget
                   </ResponsiveContainer>
                   {isTypeFilter ? (
                     <div className="dev-type-legend">
-                      {TYPES.map(t => {
+                      {typesData.map(t => {
                         const f = typeRangeData[0]?.[t.label] ?? 0;
                         const l = typeRangeData[typeRangeData.length - 1]?.[t.label] ?? 0;
                         const pVal = f > 0 ? (((l - f) / f) * 100) : 0;

@@ -1,9 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import TablePagination from './TablePagination'
 import {
   AreaChart, Area,
+  LineChart, Line,
   BarChart, Bar, Cell,
   PieChart, Pie,
+  CartesianGrid,
   XAxis, YAxis,
   Tooltip, ResponsiveContainer,
   LabelList,
@@ -27,7 +30,7 @@ export const DEFAULT_VERT_BAR = [
 ]
 
 // Origins palette — matches screenshot legend colors
-const STACK_ORIGINS = [
+export const STACK_ORIGINS = [
   { key: 'MS Azure AD',                   color: '#4285F4' },
   { key: 'ServiceNow',                    color: '#E040FB' },
   { key: 'MS Active Directory Extract',   color: '#FFB300' },
@@ -147,59 +150,39 @@ function BarTooltip({ active, payload, total }) {
   const val = d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : String(d.value ?? '')
   const pct = total > 0 ? `${Math.round((d.value / total) * 100)}%` : ''
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: `1px solid ${d.fill}`,
-      borderRadius: 8,
-      padding: '10px 12px',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 140,
-    }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 6 }}>{d.name}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, fontWeight: 700, color: 'var(--shell-text)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.fill, flexShrink: 0, display: 'inline-block' }} />
+    <div className="tooltip-card cr-bar-tip" style={{ '--cr-tip-border': d.fill }}>
+      <div className="cr-bar-tip__name">{d.name}</div>
+      <div className="cr-bar-tip__row">
+        <span className="cr-bar-tip__dot-row">
+          <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': d.fill }} />
           {val}
         </span>
-        <span style={{ color: d.fill }}>{pct}</span>
+        <span className="cr-bar-tip__pct" style={{ '--cr-tip-color': d.fill }}>{pct}</span>
       </div>
     </div>
   )
 }
 
 // ── Stack tooltip ─────────────────────────────────────────────────
-function StackTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const total = payload.reduce((s, p) => s + (p.value || 0), 0)
+function StackTooltip({ active, payload, activeOrigin }) {
+  if (!active || !payload?.length || !activeOrigin) return null
+  const entry = payload.find(p => p.dataKey === activeOrigin)
+  if (!entry) return null
+  const colTotal = payload.reduce((s, p) => s + (p.value || 0), 0)
+  const pct = colTotal > 0 ? ((entry.value / colTotal) * 100).toFixed(2) : '0'
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: '1px solid var(--card-border)',
-      borderRadius: 8,
-      padding: '10px 12px',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 180,
-    }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 8 }}>{label}</div>
-      {[...payload].reverse().map((p, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.fill, flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: 11, color: 'var(--shell-text-muted)' }}>{p.name}</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--shell-text)' }}>
-            {p.value >= 1000 ? `${(p.value / 1000).toFixed(1)}k` : p.value}
-          </span>
-          <span style={{ fontSize: 10, color: p.fill, minWidth: 32, textAlign: 'right' }}>
-            {total > 0 ? `${Math.round((p.value / total) * 100)}%` : ''}
-          </span>
-        </div>
-      ))}
-      <div style={{ borderTop: '1px solid var(--shell-border)', marginTop: 6, paddingTop: 5, display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Total</span>
-        <span style={{ fontWeight: 700, color: 'var(--shell-text)' }}>{total >= 1000 ? `${(total / 1000).toFixed(1)}k` : total}</span>
+    <div className="tooltip-card cr-stack-tip" style={{ '--cr-tip-border': entry.fill }}>
+      <div className="tooltip-card__row cr-stack-tip__header">
+        <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': entry.fill }} />
+        <span className="cr-stack-tip__name">{entry.name}</span>
+      </div>
+      <div className="cr-stack-tip__row">
+        <span className="tooltip-card__label">Count Distinct</span>
+        <span className="cr-stack-tip__val">{entry.value.toLocaleString()}</span>
+      </div>
+      <div className="cr-stack-tip__row">
+        <span className="tooltip-card__label">Percentage</span>
+        <span className="cr-stack-tip__val">{pct}%</span>
       </div>
     </div>
   )
@@ -210,25 +193,292 @@ function PieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const p = payload[0].payload
   return (
-    <div style={{
-      background: 'var(--card-bg)',
-      border: `1px solid ${p.color}`,
-      borderRadius: 6,
-      padding: '6px 10px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
-      fontFamily: 'Inter,system-ui',
-      pointerEvents: 'none',
-      minWidth: 130,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--shell-text)', marginBottom: 4 }}>{p.label}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, marginBottom: 2 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Count</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.count}</span>
+    <div className="tooltip-card cr-pie-tip" style={{ '--cr-tip-border': p.color }}>
+      <div className="cr-pie-tip__label">{p.label}</div>
+      <div className="cr-pie-tip__row">
+        <span className="tooltip-card__label">Count</span>
+        <span className="cr-stack-tip__val">{p.count}</span>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11 }}>
-        <span style={{ color: 'var(--shell-text-muted)' }}>Percentage</span>
-        <span style={{ fontWeight: 600, color: 'var(--shell-text)' }}>{p.pct}</span>
+      <div className="cr-pie-tip__row">
+        <span className="tooltip-card__label">Percentage</span>
+        <span className="cr-stack-tip__val">{p.pct}</span>
       </div>
+    </div>
+  )
+}
+
+// ── Stacked vertical bar (extracted so it can own activeOrigin state) ──
+const COMPACT_LEGEND_PAGE_SIZE = 7
+
+function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
+  const [activeOrigin, setActiveOrigin] = useState(null)
+  const [legendPage, setLegendPage] = useState(0)
+  const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
+
+  const toggleOrigin = (key) => {
+    setHiddenOrigins(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+  const rows = data || DEFAULT_STACK_VERT
+  const chartData = rows.map(r => ({ ...r, name: r.type }))
+  const originTotals = STACK_ORIGINS.map(o => ({
+    ...o,
+    total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
+  }))
+  const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
+
+  const totalPages = Math.ceil(STACK_ORIGINS.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = STACK_ORIGINS.slice(
+    legendPage * COMPACT_LEGEND_PAGE_SIZE,
+    (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
+  )
+
+  return (
+    <div className="cr-vert-root">
+      <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 8, right: 8, bottom: 52, left: -10 }}
+            barSize={22}
+          >
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              axisLine={false} tickLine={false}
+              interval={0} angle={-35} textAnchor="end" dy={4}
+            />
+            <YAxis
+              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              axisLine={false} tickLine={false}
+              tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+            />
+            {!printMode && <Tooltip content={(props) => <StackTooltip {...props} activeOrigin={activeOrigin} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} wrapperStyle={{ zIndex: 9999 }} />}
+            {STACK_ORIGINS.map((o, i) => (
+              <Bar
+                key={o.key}
+                dataKey={o.key}
+                stackId="stack"
+                fill={chartColors?.[o.key] || o.color}
+                fillOpacity={activeOrigin && activeOrigin !== o.key ? 0.15 : 1}
+                hide={hiddenOrigins.has(o.key)}
+                radius={i === STACK_ORIGINS.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                isAnimationActive={false}
+                onMouseEnter={() => setActiveOrigin(o.key)}
+                onMouseLeave={() => setActiveOrigin(null)}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {showLegend && (
+        <div className="cr-bar-legend">
+          {originTotals.map((o, i) => (
+            <div key={i} className="cr-bar-legend-row">
+              <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
+              <span className="cr-bar-legend-name">{o.key}</span>
+              <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
+              <span className="cr-bar-legend-pct">
+                {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!showLegend && (
+        <div className="cr-compact-legend">
+          <div className="cr-compact-legend-items">
+            {pageItems.map((o, i) => (
+              <div
+                key={i}
+                className={`cr-compact-legend-item${hiddenOrigins.has(o.key) ? ' cr-compact-legend-item--disabled' : ''}`}
+                onClick={() => toggleOrigin(o.key)}
+              >
+                <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
+                <span className="cr-compact-legend-label">{o.key}</span>
+              </div>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="cr-compact-legend-nav">
+              <button
+                className="cr-compact-legend-btn"
+                onClick={() => setLegendPage(p => p - 1)}
+                disabled={legendPage === 0}
+              >◄</button>
+              <span className="cr-compact-legend-page">{legendPage + 1}/{totalPages}</span>
+              <button
+                className="cr-compact-legend-btn"
+                onClick={() => setLegendPage(p => p + 1)}
+                disabled={legendPage === totalPages - 1}
+              >►</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Stacked horizontal bar ────────────────────────────────────────
+function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
+  const [activeOrigin, setActiveOrigin] = useState(null)
+  const [legendPage, setLegendPage] = useState(0)
+  const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
+  const [tipPos, setTipPos] = useState({ x: 0, y: 0 })
+  const rafRef = useRef(null)
+
+  const toggleOrigin = (key) => {
+    setHiddenOrigins(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  const handleMouseMove = useCallback((e) => {
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        setTipPos({ x: e.clientX, y: e.clientY })
+        rafRef.current = null
+      })
+    }
+  }, [])
+
+  const rows = data || DEFAULT_STACK_VERT
+  const chartData = rows.map(r => ({ ...r, name: r.type }))
+  const originTotals = STACK_ORIGINS.map(o => ({
+    ...o,
+    total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
+  }))
+  const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
+
+  const totalPages = Math.ceil(STACK_ORIGINS.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = STACK_ORIGINS.slice(
+    legendPage * COMPACT_LEGEND_PAGE_SIZE,
+    (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
+  )
+
+  const portalTooltip = useCallback((props) => {
+    if (!props.active || !props.payload?.length || !activeOrigin) return null
+    const entry = props.payload.find(p => p.dataKey === activeOrigin)
+    if (!entry) return null
+    const colTotal = props.payload.reduce((s, p) => s + (p.value || 0), 0)
+    const pct = colTotal > 0 ? ((entry.value / colTotal) * 100).toFixed(2) : '0'
+    return createPortal(
+      <div className="tooltip-card tooltip-card--fixed cr-stack-tip cr-stack-tip--portal"
+        style={{ left: tipPos.x + 14, top: tipPos.y - 70, zIndex: 99999, '--cr-tip-border': entry.fill }}
+      >
+        <div className="tooltip-card__row cr-stack-tip__header">
+          <span className="cr-bar-tip__dot" style={{ '--cr-dot-bg': entry.fill }} />
+          <span className="cr-stack-tip__name">{entry.name}</span>
+        </div>
+        <div className="cr-stack-tip__row">
+          <span className="tooltip-card__label">Count Distinct</span>
+          <span className="cr-stack-tip__val">{entry.value.toLocaleString()}</span>
+        </div>
+        <div className="cr-stack-tip__row">
+          <span className="tooltip-card__label">Percentage</span>
+          <span className="cr-stack-tip__val">{pct}%</span>
+        </div>
+      </div>,
+      document.body
+    )
+  }, [activeOrigin, tipPos])
+
+  return (
+    <div className="cr-vert-root" onMouseMove={handleMouseMove}>
+      <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
+            barSize={12}
+          >
+            <XAxis
+              type="number"
+              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              axisLine={false} tickLine={false}
+              tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={90}
+              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              axisLine={false} tickLine={false}
+            />
+            <Tooltip
+              content={printMode ? () => null : portalTooltip}
+              cursor={printMode ? false : { fill: 'rgba(255,255,255,0.04)' }}
+              wrapperStyle={{ display: 'none' }}
+            />
+            {STACK_ORIGINS.map((o, i) => (
+              <Bar
+                key={o.key}
+                dataKey={o.key}
+                stackId="stack"
+                fill={chartColors?.[o.key] || o.color}
+                fillOpacity={activeOrigin && activeOrigin !== o.key ? 0.15 : 1}
+                hide={hiddenOrigins.has(o.key)}
+                radius={i === STACK_ORIGINS.length - 1 ? [0, 3, 3, 0] : [0, 0, 0, 0]}
+                isAnimationActive={false}
+                onMouseEnter={() => setActiveOrigin(o.key)}
+                onMouseLeave={() => setActiveOrigin(null)}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {showLegend && (
+        <div className="cr-bar-legend">
+          {originTotals.map((o, i) => (
+            <div key={i} className="cr-bar-legend-row">
+              <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
+              <span className="cr-bar-legend-name">{o.key}</span>
+              <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
+              <span className="cr-bar-legend-pct">
+                {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!showLegend && (
+        <div className="cr-compact-legend">
+          <div className="cr-compact-legend-items">
+            {pageItems.map((o, i) => (
+              <div
+                key={i}
+                className={`cr-compact-legend-item${hiddenOrigins.has(o.key) ? ' cr-compact-legend-item--disabled' : ''}`}
+                onClick={() => toggleOrigin(o.key)}
+              >
+                <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
+                <span className="cr-compact-legend-label">{o.key}</span>
+              </div>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="cr-compact-legend-nav">
+              <button
+                className="cr-compact-legend-btn"
+                onClick={() => setLegendPage(p => p - 1)}
+                disabled={legendPage === 0}
+              >◄</button>
+              <span className="cr-compact-legend-page">{legendPage + 1}/{totalPages}</span>
+              <button
+                className="cr-compact-legend-btn"
+                onClick={() => setLegendPage(p => p + 1)}
+                disabled={legendPage === totalPages - 1}
+              >►</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -264,9 +514,18 @@ export function ChartRender({
   data,
   series,
   xLabels,
+  xLabel,
+  yLabel,
   totalLabel,
+  noteLabel,
+  note,
+  legendDesc,
   columns,
   chartColors,
+  description,
+  cardHeight = 260,
+  printMode = false,
+  reportTotal = 0,
 }) {
   // ── SVG tooltip state ──────────────────────────────────────────
   const [svgTip, setSvgTip] = useState(null)
@@ -279,12 +538,17 @@ export function ChartRender({
 
   // ── KPI ─────────────────────────────────────────────────────────
   if (chartId === 'kpi' && data) {
+    const accent      = chartColors?.['Accent'] || 'var(--pai-indigo)'
+    const valSize     = Math.max(18, Math.min(36, cardHeight * 0.138))
+    const labelSize   = Math.max(9,  Math.min(11, cardHeight * 0.042))
+    const simValSize  = Math.max(20, Math.min(44, cardHeight * 0.169))
+    const gapSize     = Math.max(4,  Math.min(10, cardHeight * 0.04))
     const trendColor = data.trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
     const trendBg    = data.trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
 
     if (data.trendData) {
       return (
-        <div className="cr-kpi-root">
+        <div className="cr-kpi-root" style={{ '--cr-kpi-accent': accent, '--kpi-val-size': `${valSize}px`, '--kpi-label-size': `${labelSize}px` }}>
           <div className="cr-kpi-meta">
             <span className="cr-kpi-label">{data.label}</span>
             <span className="cr-kpi-value">{data.value}</span>
@@ -293,7 +557,14 @@ export function ChartRender({
                 className="cr-kpi-badge"
                 style={{ '--cr-trend-bg': trendBg, '--cr-trend-color': trendColor }}
               >
-                {data.trendUp ? '↑' : '↓'} {data.trend} from last month
+                <span className="cr-kpi-badge__trend">
+                  {data.trendUp
+                    ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 4.84669L6.10893 8.44976L8.51098 6.04771L13.3151 10.8518" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  }
+                  {data.trend}
+                </span>
+                <span className="cr-kpi-badge__suffix"> {data.trendSuffix || 'from last month'}</span>
               </span>
             )}
           </div>
@@ -302,8 +573,8 @@ export function ChartRender({
               <AreaChart data={data.trendData} margin={{ top: 8, right: 8, bottom: 0, left: -30 }}>
                 <defs>
                   <linearGradient id="crKpiFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="var(--pai-indigo)" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="var(--pai-indigo)" stopOpacity={0} />
+                    <stop offset="0%"   stopColor={accent} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis
@@ -315,10 +586,10 @@ export function ChartRender({
                 <Tooltip {...RECHARTS_TIP} cursor={{ stroke: 'var(--shell-border)', strokeWidth: 1 }} />
                 <Area
                   type="monotone" dataKey="value"
-                  stroke="var(--pai-indigo)" strokeWidth={2}
+                  stroke={accent} strokeWidth={2}
                   fill="url(#crKpiFill)"
-                  dot={{ r: 3, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
+                  dot={{ r: 3, fill: accent, strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: accent, strokeWidth: 0 }}
                   isAnimationActive={false}
                 />
               </AreaChart>
@@ -329,12 +600,12 @@ export function ChartRender({
     }
 
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: 'Inter,system-ui' }}>
-        <span style={{ fontSize: 11, color: 'var(--shell-text-muted)' }}>{data.label}</span>
-        <span style={{ fontSize: 44, fontWeight: 700, color: 'var(--pai-indigo)', lineHeight: 1 }}>{data.value}</span>
+      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: gapSize, fontFamily: 'Inter,system-ui' }}>
+        <span style={{ fontSize: labelSize, color: 'var(--shell-text-muted)' }}>{data.label}</span>
+        <span style={{ fontSize: simValSize, fontWeight: 700, color: accent, lineHeight: 1 }}>{data.value}</span>
         {data.trend && (
-          <span style={{ background: trendBg, borderRadius: 100, padding: '3px 12px', fontSize: 11, fontWeight: 600, color: trendColor }}>
-            {data.trendUp ? '↑' : '↓'} {data.trend} from last month
+          <span style={{ background: trendBg, borderRadius: 100, padding: '3px 12px', fontSize: labelSize, fontWeight: 600, color: trendColor }}>
+            {data.trendUp ? '↑' : '↓'} {data.trend} {data.trendSuffix || 'from last month'}
           </span>
         )}
       </div>
@@ -342,43 +613,8 @@ export function ChartRender({
   }
 
   // ── Stacked horizontal bar ──────────────────────────────────────
-  if (chartId === 'stack-hor' && data) {
-    return (
-      <div
-        data-cr-svgwrap=""
-        style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, padding: '4px 0', fontFamily: 'Inter,system-ui', position: 'relative' }}
-        onMouseMove={onSvgMove}
-        onMouseLeave={() => setSvgTip(null)}
-      >
-        <div style={{ display: 'flex', height: 12, borderRadius: 4, overflow: 'hidden', gap: 2 }}>
-          {data.map((d, i) => (
-            <div
-              key={i}
-              style={{ flex: d.pct, background: d.color, borderRadius: 3, cursor: 'default' }}
-              onMouseEnter={(e) => onSvgEnter(e, d.label, `${d.count} · ${d.pct.toFixed(2)}%`)}
-              onMouseLeave={() => setSvgTip(null)}
-            />
-          ))}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          {data.map((d, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 8, borderLeft: `2px solid ${d.color}`, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 11, color: 'var(--shell-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label}</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--shell-text)' }}>{d.count}</span>
-                <span style={{ fontSize: 10, color: 'var(--shell-text-muted)' }}>{d.pct.toFixed(2)}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        {svgTip && (
-          <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
-            <div className="cr-tooltip__label">{svgTip.label}</div>
-            <span className="cr-tooltip__val">{svgTip.value}</span>
-          </div>
-        )}
-      </div>
-    )
+  if (chartId === 'stack-hor') {
+    return <StackHorChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} />
   }
 
   // ── Pie / Donut ─────────────────────────────────────────────────
@@ -392,9 +628,9 @@ export function ChartRender({
       { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
     ]
     const raw   = data || DEFAULT_RAW
-    const sz    = 120
+    const sz    = 200
     const total = raw.reduce((s, d) => s + d.value, 0)
-    const segs  = raw.map((d, i) => ({ ...d, color: d.color || DCOLS[i % DCOLS.length] }))
+    const segs  = raw.map((d, i) => ({ ...d, color: chartColors?.[d.label] || d.color || DCOLS[i % DCOLS.length] }))
 
     const centerTop = totalLabel
       ? totalLabel
@@ -409,7 +645,7 @@ export function ChartRender({
                 <Pie
                   data={segs}
                   cx="50%" cy="50%"
-                  innerRadius="72%" outerRadius="90%"
+                  innerRadius="76%" outerRadius="90%"
                   dataKey="value" nameKey="label"
                   paddingAngle={3}
                   strokeWidth={0}
@@ -419,10 +655,7 @@ export function ChartRender({
                 >
                   {segs.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
-                <Tooltip
-                  content={<PieTooltip />}
-                  wrapperStyle={{ animation: 'none', overflow: 'visible', zIndex: 9999 }}
-                />
+                {!printMode && <Tooltip content={<PieTooltip />} wrapperStyle={{ animation: 'none', overflow: 'visible', zIndex: 9999 }} />}
               </PieChart>
             </ResponsiveContainer>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, pointerEvents: 'none' }}>
@@ -439,13 +672,20 @@ export function ChartRender({
         </div>
 
         {showLegend && (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5, padding: '0 8px 8px' }}>
+          <div className="cr-pie-legend">
+            {noteLabel && (
+              <p className="cr-pie-legend__note">
+                {noteLabel}: <strong>{total.toLocaleString()}</strong>
+              </p>
+            )}
+            {description && <p className="cr-pie-legend__desc">{description}</p>}
+            {note && <p className="cr-pie-legend__footer-note">{note}</p>}
             {segs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 11, color: PAI.fg1, fontFamily: 'Inter,system-ui' }}>{d.label}</span>
-                <span style={{ fontSize: 11, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 40, textAlign: 'right' }}>{d.count}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: PAI.fg1, fontFamily: 'Inter,system-ui', minWidth: 36, textAlign: 'right' }}>{d.pct}</span>
+              <div key={i} className="cr-pie-legend__row">
+                <span className="cr-pie-legend__dot" style={{ background: d.color }} />
+                <span className="cr-pie-legend__label">{d.label}</span>
+                <span className="cr-pie-legend__count">{d.count}</span>
+                <span className="cr-pie-legend__pct">{d.pct}</span>
                 {showPctChange && (
                   d.change > 0
                     ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: 'var(--pai-green)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>↗ {d.change}%</span>
@@ -580,7 +820,10 @@ export function ChartRender({
       value: d.value,
       fill: (chartColors && chartColors[d.label]) || d.color || DCOLS[i % DCOLS.length],
     }))
-    const horTotal = horChartData.reduce((s, d) => s + (d.value || 0), 0)
+    const horTotal   = horChartData.reduce((s, d) => s + (d.value || 0), 0)
+    const horRef     = reportTotal || horTotal
+    const horTopItem = horChartData[0]
+    const horTopPct  = horRef > 0 ? (horTopItem.value / horRef * 100).toFixed(2) : '0'
 
     return (
       <div className="cr-vert-root">
@@ -589,26 +832,36 @@ export function ChartRender({
             <BarChart
               data={horChartData}
               layout="vertical"
-              margin={{ top: 4, right: 40, bottom: 4, left: 0 }}
+              margin={{ top: 4, right: 100, bottom: xLabel ? 28 : 8, left: 0 }}
               barSize={14}
             >
               <XAxis
                 type="number"
-                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={{ fontSize: 9, fill: TG, fontFamily: 'Inter,system-ui' }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+                label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={<SourceTick />}
-                width={88}
+                tick={{ fontSize: 10, fill: TG, fontFamily: 'Inter,system-ui' }}
+                width={110}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<BarTooltip total={horTotal} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+              {!printMode && <Tooltip content={<BarTooltip total={horTotal} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />}
               <Bar dataKey="value" radius={[0, 3, 3, 0]} isAnimationActive={false}>
                 {horChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                <LabelList
+                  dataKey="value"
+                  position="right"
+                  formatter={(v) => {
+                    const pct = horRef > 0 ? (v / horRef * 100).toFixed(2) : '0'
+                    return `${v.toLocaleString()} (${pct}%)`
+                  }}
+                  style={{ fontSize: 11, fill: '#1a1a1a', fontFamily: 'Inter,system-ui', fontWeight: 600 }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -628,76 +881,29 @@ export function ChartRender({
             })}
           </div>
         )}
+        {legendDesc && (() => {
+          const n = horTopItem.name
+          const v = horTopItem.value.toLocaleString()
+          const p = horTopPct
+          const s = { fontSize: 11, color: '#374151', lineHeight: 1.55, margin: '8px 0 0', flexShrink: 0 }
+          const b = (t) => <strong style={{ fontWeight: 700 }}>{t}</strong>
+          if (legendDesc === 'os') return (
+            <p style={s}>{b(n)} is the dominant operating system accounting for {b(`${v} (${p}%)`)} of total vulnerable devices.</p>
+          )
+          if (legendDesc === 'service') return (
+            <p style={s}>{b(n)} is the most common service running for about {b(`${v} (${p}%)`)} of total vulnerable devices.</p>
+          )
+          return (
+            <p style={s}>Out of {horRef.toLocaleString()} {legendDesc}, {b(n)} is the most common, affecting {b(`${v} (${p}%)`)} of vulnerable devices.</p>
+          )
+        })()}
       </div>
     )
   }
 
   // ── Stacked vertical bar chart ────────────────────────────────
   if (chartId === 'stack-vert') {
-    const rows = data || DEFAULT_STACK_VERT
-    const chartData = rows.map(r => ({ ...r, name: r.type }))
-
-    // compute per-origin totals for the legend
-    const originTotals = STACK_ORIGINS.map(o => ({
-      ...o,
-      total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
-    }))
-    const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
-
-    return (
-      <div className="cr-vert-root">
-        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 8, right: 8, bottom: 52, left: -10 }}
-              barSize={22}
-            >
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
-                axisLine={false} tickLine={false}
-                interval={0} angle={-35} textAnchor="end" dy={4}
-              />
-              <YAxis
-                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
-                axisLine={false} tickLine={false}
-                tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
-              />
-              <Tooltip
-                content={<StackTooltip />}
-                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                wrapperStyle={{ zIndex: 9999 }}
-              />
-              {STACK_ORIGINS.map((o, i) => (
-                <Bar
-                  key={o.key}
-                  dataKey={o.key}
-                  stackId="stack"
-                  fill={o.color}
-                  radius={i === STACK_ORIGINS.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                  isAnimationActive={false}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        {showLegend && (
-          <div className="cr-bar-legend">
-            {originTotals.map((o, i) => (
-              <div key={i} className="cr-bar-legend-row">
-                <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': o.color }} />
-                <span className="cr-bar-legend-name">{o.key}</span>
-                <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
-                <span className="cr-bar-legend-pct">
-                  {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )
+    return <StackVertChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} />
   }
 
   // ── Vertical bar chart ─────────────────────────────────────────
@@ -716,24 +922,25 @@ export function ChartRender({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 8, right: 8, bottom: 52, left: -10 }}
+              margin={{ top: 8, right: 16, bottom: xLabel ? 32 : 8, left: yLabel ? 16 : -10 }}
               barSize={22}
             >
+              <CartesianGrid vertical={false} stroke="var(--shell-border)" strokeDasharray="0" />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={{ fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' }}
                 axisLine={false} tickLine={false}
                 interval={0}
-                angle={-35}
-                textAnchor="end"
-                dy={4}
+                label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
               />
               <YAxis
-                tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={{ fontSize: 10, fill: TG, fontFamily: 'Inter,system-ui' }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+                width={yLabel ? 52 : 40}
+                label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
               />
-              <Tooltip content={<BarTooltip total={total} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+              {!printMode && <Tooltip content={<BarTooltip total={total} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />}
               <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
                 {chartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
               </Bar>
@@ -741,18 +948,26 @@ export function ChartRender({
           </ResponsiveContainer>
         </div>
         {showLegend && (
-          <div className="cr-bar-legend">
-            {chartData.map((d, i) => {
-              const pct = total > 0 ? ((d.value / total) * 100).toFixed(2) : '0'
-              return (
-                <div key={i} className="cr-bar-legend-row">
-                  <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': d.fill }} />
-                  <span className="cr-bar-legend-name">{d.name}</span>
-                  <span className="cr-bar-legend-count">{d.value.toLocaleString()}</span>
-                  <span className="cr-bar-legend-pct">{pct}%</span>
-                </div>
-              )
-            })}
+          <div className="cr-bar-legend-wrap">
+            {noteLabel && (
+              <p className="cr-bar-legend-note">
+                {noteLabel}: <strong>{total.toLocaleString()}</strong>
+              </p>
+            )}
+            {legendDesc && <p className="cr-bar-legend-desc">{legendDesc}</p>}
+            <div className="cr-bar-legend">
+              {chartData.map((d, i) => {
+                const pct = total > 0 ? ((d.value / total) * 100).toFixed(2) : '0'
+                return (
+                  <div key={i} className="cr-bar-legend-row">
+                    <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': d.fill }} />
+                    <span className="cr-bar-legend-name">{d.name}</span>
+                    <span className="cr-bar-legend-count">{d.value.toLocaleString()}</span>
+                    <span className="cr-bar-legend-pct">{pct}%</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -764,7 +979,7 @@ export function ChartRender({
     if (data && Array.isArray(data) && data[0]?.text) {
       return (
         <div className="cr-insights-root">
-          <div className="cr-insights-scroll">
+          <div className={printMode ? undefined : 'cr-insights-scroll'}>
             <table className="cr-insights-table">
               <thead>
                 <tr>
@@ -788,6 +1003,113 @@ export function ChartRender({
                       </div>
                     </td>
                     <td className="cr-td cr-td-cat">{r.cat}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    }
+
+    // ── Host SLA Breach table: { assetType, nonBreaching, breaching, total, isTotal? }
+    if (data && Array.isArray(data) && data[0]?.assetType !== undefined) {
+      return (
+        <div className="cr-rpt-table-root">
+          <div className={printMode ? undefined : 'cr-rpt-table-scroll'}>
+            <table className="cr-rpt-table">
+              <thead>
+                <tr>
+                  <th className="cr-rpt-th cr-rpt-th--left">Asset Type</th>
+                  <th className="cr-rpt-th cr-rpt-th--green">Non-Breaching</th>
+                  <th className="cr-rpt-th cr-rpt-th--red">Breaching</th>
+                  <th className="cr-rpt-th">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((r, i) => (
+                  <tr key={i} className={r.isTotal ? 'cr-rpt-tr cr-rpt-tr--total' : 'cr-rpt-tr'}>
+                    <td className="cr-rpt-td cr-rpt-td--left">{r.assetType}</td>
+                    <td className="cr-rpt-td">{r.nonBreaching}</td>
+                    <td className="cr-rpt-td">{r.breaching}</td>
+                    <td className="cr-rpt-td">{r.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    }
+
+    // ── SLA Timeline table: { severity, breaching, overHalfway, underHalfway, total, isTotal? }
+    if (data && Array.isArray(data) && data[0]?.severity !== undefined && data[0]?.overHalfway !== undefined) {
+      const SEV_BADGE = {
+        Critical: { bg: 'rgba(220,38,38,0.10)',  color: 'var(--pai-crit-fg)',  border: 'var(--pai-crit-fg)'  },
+        High:     { bg: 'rgba(217,119,6,0.10)',  color: 'var(--pai-high-fg)',  border: 'var(--pai-high-fg)'  },
+        Medium:   { bg: 'rgba(202,138,4,0.10)',  color: 'var(--pai-med-fg)',   border: 'var(--pai-med-fg)'   },
+        Low:      { bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)',    border: 'var(--pai-green)'    },
+      }
+      return (
+        <div className="cr-rpt-table-root">
+          <div className={printMode ? undefined : 'cr-rpt-table-scroll'}>
+            <table className="cr-rpt-table">
+              <thead>
+                <tr>
+                  <th className="cr-rpt-th cr-rpt-th--left">Severity</th>
+                  <th className="cr-rpt-th">Breaching</th>
+                  <th className="cr-rpt-th">Over halfway</th>
+                  <th className="cr-rpt-th">Under halfway</th>
+                  <th className="cr-rpt-th">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((r, i) => {
+                  const sc = SEV_BADGE[r.severity]
+                  return (
+                    <tr key={i} className={r.isTotal ? 'cr-rpt-tr cr-rpt-tr--total' : 'cr-rpt-tr'}>
+                      <td className="cr-rpt-td cr-rpt-td--left">
+                        {sc
+                          ? <span className="cr-rpt-sev-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>{r.severity}</span>
+                          : r.severity
+                        }
+                      </td>
+                      <td className="cr-rpt-td">{r.breaching}</td>
+                      <td className="cr-rpt-td">{r.overHalfway}</td>
+                      <td className="cr-rpt-td">{r.underHalfway}</td>
+                      <td className="cr-rpt-td">{r.total}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    }
+
+    // ── Simple report table: { category, count, pct, isTotal? }
+    if (data && Array.isArray(data) && data[0]?.category !== undefined) {
+      const colA = columns?.[0] || 'Category'
+      const colB = columns?.[1] || 'Count (%)'
+      return (
+        <div className="cr-rpt-table-root">
+          <div className={printMode ? undefined : 'cr-rpt-table-scroll'}>
+            <table className="cr-rpt-table">
+              <thead>
+                <tr>
+                  <th className="cr-rpt-th cr-rpt-th--left cr-rpt-th--muted">{colA}</th>
+                  <th className="cr-rpt-th cr-rpt-th--muted">{colB}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((r, i) => (
+                  <tr key={i} className={r.isTotal ? 'cr-rpt-tr cr-rpt-tr--total' : 'cr-rpt-tr'}>
+                    <td className="cr-rpt-td cr-rpt-td--left">{r.category}</td>
+                    <td className="cr-rpt-td">
+                      <span className="cr-rpt-count">{r.count}</span>
+                      <span className="cr-rpt-pct"> ({r.pct})</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -849,63 +1171,85 @@ export function ChartRender({
 
   // ── Line chart ──────────────────────────────────────────────────
   if (chartId === 'line') {
-    if (series) return null
+    const PLACEHOLDER = [
+      { name: 'Jan', value: 420 },
+      { name: 'Feb', value: 680 },
+      { name: 'Mar', value: 510 },
+      { name: 'Apr', value: 790 },
+      { name: 'May', value: 630 },
+      { name: 'Jun', value: 870 },
+    ]
+    const hasData   = series && series.length > 0
+    const seriesDef = hasData ? series : [{ label: 'value', color: 'var(--pai-indigo)' }]
+    const labels    = hasData ? (xLabels || series[0].data.map((_, i) => `P${i + 1}`)) : PLACEHOLDER.map(d => d.name)
+    const chartData = hasData
+      ? labels.map((name, i) => {
+          const pt = { name }
+          series.forEach(s => { pt[s.label] = s.data[i] ?? 0 })
+          return pt
+        })
+      : PLACEHOLDER
 
-    const yToVal = (y) => Math.round((1000 - (y - 14) * 800 / 108) / 10) * 10
+    const isMulti   = seriesDef.length > 1
+    const axisProps = {
+      tick: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' },
+      axisLine: false,
+      tickLine: false,
+    }
+    const margin = { top: 16, right: 24, bottom: 8, left: 8 }
+
+    if (isMulti) {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={margin}>
+            <CartesianGrid horizontal vertical={false} stroke="var(--card-border, #F0F0F0)" />
+            <XAxis dataKey="name" {...axisProps} dy={8} />
+            <YAxis {...axisProps} width={40} />
+            <Tooltip {...RECHARTS_TIP} />
+            {seriesDef.map(s => (
+              <Line
+                key={s.label}
+                type="monotone"
+                dataKey={s.label}
+                stroke={s.color}
+                strokeWidth={2}
+                isAnimationActive={false}
+                dot={{ r: 4, fill: s.color, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: s.color, strokeWidth: 0 }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      )
+    }
+
+    const lineColor = seriesDef[0].color
+    const lineKey   = seriesDef[0].label
     return (
-      <div
-        data-cr-svgwrap=""
-        style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
-        onMouseMove={onSvgMove}
-        onMouseLeave={() => setSvgTip(null)}
-      >
-        <svg viewBox="0 0 220 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={margin}>
           <defs>
-            <linearGradient id="dsGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor={CAT[0]} stopOpacity="0.20"/>
-              <stop offset="100%" stopColor={CAT[0]} stopOpacity="0.01"/>
+            <linearGradient id="crLineFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={lineColor} stopOpacity={0.20} />
+              <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
             </linearGradient>
           </defs>
-          {[14,41,68,95,122].map(y => (
-            <line key={y} x1="30" y1={y} x2="210" y2={y} stroke={GRID} strokeWidth="0.8"/>
-          ))}
-          {[1000,800,600,400,200].map((v,i) => (
-            <text key={i} x="28" y={18+i*27} fontSize="7.5" textAnchor="end" fill={TG} fontFamily="Inter,system-ui">{v}</text>
-          ))}
-          <path d="M38,115 L76,75 L114,95 L152,55 L190,45 L190,133 L38,133 Z" fill="url(#dsGrad)"/>
-          <polyline points="38,115 76,75 114,95 152,55 190,45" fill="none" stroke={CAT[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="38,90 76,110 114,60 152,85 190,70"  fill="none" stroke={CAT[1]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="38,125 76,95 114,130 152,100 190,115" fill="none" stroke={SEV[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          {[[38,115],[76,75],[114,95],[152,55],[190,45]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={CAT[0]} strokeWidth="1.5" style={{ cursor: 'default' }}
-              onMouseEnter={(e) => onSvgEnter(e, `S1 · P${i+1}`, yToVal(y).toLocaleString())}
-              onMouseLeave={() => setSvgTip(null)}
-            />
-          ))}
-          {[[38,90],[76,110],[114,60],[152,85],[190,70]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={CAT[1]} strokeWidth="1.5" style={{ cursor: 'default' }}
-              onMouseEnter={(e) => onSvgEnter(e, `S2 · P${i+1}`, yToVal(y).toLocaleString())}
-              onMouseLeave={() => setSvgTip(null)}
-            />
-          ))}
-          {[[38,125],[76,95],[114,130],[152,100],[190,115]].map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r="5" fill="var(--card-bg)" stroke={SEV[0]} strokeWidth="1.5" style={{ cursor: 'default' }}
-              onMouseEnter={(e) => onSvgEnter(e, `S3 · P${i+1}`, yToVal(y).toLocaleString())}
-              onMouseLeave={() => setSvgTip(null)}
-            />
-          ))}
-          <line x1="30" y1="133" x2="210" y2="133" stroke={GRID} strokeWidth="1"/>
-          {['name','name','name','name','name'].map((lbl,i) => (
-            <text key={i} x={38+i*38} y="147" fontSize="7.5" textAnchor="middle" fill={TG} fontFamily="Inter,system-ui">{lbl}</text>
-          ))}
-        </svg>
-        {svgTip && (
-          <div className="cr-tooltip" style={{ left: svgTip.x + 14, top: svgTip.y - 44 }}>
-            <div className="cr-tooltip__label">{svgTip.label}</div>
-            <span className="cr-tooltip__val">{svgTip.value}</span>
-          </div>
-        )}
-      </div>
+          <CartesianGrid horizontal vertical={false} stroke="var(--card-border, #F0F0F0)" />
+          <XAxis dataKey="name" {...axisProps} dy={8} />
+          <YAxis {...axisProps} width={40} />
+          <Tooltip {...RECHARTS_TIP} isAnimationActive={false} cursor={false} />
+          <Area
+            type="monotone"
+            dataKey={lineKey}
+            stroke={lineColor}
+            strokeWidth={2}
+            fill="url(#crLineFill)"
+            dot={{ r: 5, fill: lineColor, strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: lineColor, strokeWidth: 0 }}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     )
   }
 

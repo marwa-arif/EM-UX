@@ -15,7 +15,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
   transition: width 220ms ease;
 }
@@ -75,9 +75,9 @@
 .comp-left-search {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0 12px;
-  padding: 0 10px;
+  padding: 0 8px;
   height: 28px;
   border-radius: 44px;
   border: 1px solid var(--shell-border);
@@ -140,8 +140,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px 6px;
-  gap: 5px;
+  padding: 8px;
+  gap: 4px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -151,6 +151,15 @@
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.01em;
+  color: var(--comp-fw-mini-pct-color, var(--shell-text));
+}
+
+.comp-dl-chevron {
+  transition: transform 150ms;
+  flex-shrink: 0;
+}
+.comp-dl-chevron--open {
+  transform: rotate(180deg);
 }
 
 /* ── Framework card ──────────────────────────────────────────────── */
@@ -217,7 +226,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -233,7 +242,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   overflow: hidden;
 }
@@ -292,7 +301,7 @@
 }
 
 .comp-fw-pct {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--shell-text-muted);
   line-height: 1;
@@ -302,7 +311,7 @@
 }
 
 .comp-fw-pct-unit {
-  font-size: 20px;
+  font-size: 16px;
   vertical-align: baseline;
 }
 
@@ -476,7 +485,7 @@
 .comp-rating-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--shell-text);
@@ -490,7 +499,7 @@
   color: var(--shell-text);
   font-size: 12px;
   font-family: inherit;
-  padding: 0 28px 0 10px;
+  padding: 0 28px 0 8px;
   cursor: pointer;
   outline: none;
   appearance: none;
@@ -629,8 +638,8 @@
   height: 28px;
   border: 1px solid var(--shell-border);
   border-radius: 44px;
-  padding: 0 10px;
-  gap: 6px;
+  padding: 0 8px;
+  gap: 8px;
   background: var(--card-bg);
   width: 180px;
 }
@@ -678,7 +687,7 @@
 }
 
 .comp-domain-table td {
-  padding: var(--table-td-padding);
+  padding: 0 16px;
   font-size: 12px;
   color: var(--shell-text);
   vertical-align: middle;
@@ -803,7 +812,7 @@
   gap: 4px;
   border: 1px solid var(--shell-border);
   border-radius: 44px;
-  padding: 2px 10px;
+  padding: 2px 8px;
   height: 24px;
   background: var(--card-bg);
   font-size: 11px;
@@ -842,7 +851,7 @@
   text-align: left;
   border: none;
   background: transparent;
-  padding: 7px 10px;
+  padding: 8px;
   border-radius: 5px;
   font-size: 12px;
   font-family: inherit;
@@ -886,9 +895,9 @@
 .comp-dl-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 44px;
   border: none;
   background: var(--pai-indigo);
@@ -921,7 +930,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px;
   border: none;
   background: transparent;
   color: var(--shell-text);
@@ -944,7 +953,7 @@
 
 .comp-posture-cell--trend {
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 36px;
 }
 
@@ -973,6 +982,7 @@
   white-space: nowrap;
   min-width: 32px;
   text-align: right;
+  color: var(--comp-posture-pct-color, var(--shell-text));
 }
 
 .comp-leaf-icon {
@@ -982,7 +992,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
   /* default fallback */
@@ -1152,7 +1162,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -1255,7 +1265,7 @@ html.theme-dark .comp-fw-card--selected {
   color: var(--shell-text);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .comp-drawer-finding-layout {
@@ -1283,7 +1293,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-semi-legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .comp-drawer-legend-dot {
@@ -1299,13 +1309,13 @@ html.theme-dark .comp-fw-card--selected {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .comp-drawer-trend-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .comp-drawer-trend-legends {
@@ -1319,14 +1329,14 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-trend-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .comp-drawer-trend-legend--critical { color: var(--pai-crit-fg); }
-.comp-drawer-trend-legend--warning  { color: var(--pai-high-fg); }
+.comp-drawer-trend-legend--warning  { color: var(--pai-med-fg); }
 
 .comp-drawer-trend-legend-dash {
   width: 20px;
@@ -1348,7 +1358,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-findings-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .comp-drawer-findings-title {
@@ -1366,9 +1376,9 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-kg-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   height: 26px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 44px;
   border: none;
   background: rgba(99,103,238,0.08);
@@ -1386,7 +1396,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-incl-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 11px;
   color: var(--shell-text-muted);
   cursor: pointer;
@@ -1416,7 +1426,7 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-drawer-table td {
-  padding: 10px 16px;
+  padding: 8px 16px;
   color: var(--shell-text);
   border-bottom: 1px solid var(--table-border);
   vertical-align: middle;
@@ -1435,7 +1445,7 @@ html.theme-dark .comp-fw-card--selected {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -1465,7 +1475,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-fw-popover-item {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   padding: 8px;
   border-radius: 6px;
   transition: background 100ms;
@@ -1482,7 +1492,7 @@ html.theme-dark .comp-fw-card--selected {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
   overflow: hidden;
@@ -1543,7 +1553,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-download-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 28px;
   padding: 0 12px;
   border-radius: 44px;
@@ -1558,6 +1568,7 @@ html.theme-dark .comp-fw-card--selected {
   transition: opacity 120ms;
 }
 .comp-drawer-download-btn:hover { opacity: 0.88; }
+.comp-drawer-download-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .comp-drawer-th-inner {
   display: inline-flex;
@@ -1604,7 +1615,7 @@ html.theme-dark .comp-fw-card--selected {
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .comp-remediation-rec {
@@ -1618,7 +1629,7 @@ html.theme-dark .comp-fw-card--selected {
   padding-left: 18px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   font-size: 12px;
   color: var(--shell-text);
   line-height: 1.5;
@@ -1636,7 +1647,7 @@ html.theme-dark .comp-fw-card--selected {
   border-top: 1px solid var(--shell-border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .comp-remediation-tickets-title {
@@ -1699,14 +1710,14 @@ html.theme-dark .comp-fw-card--selected {
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   overflow-y: auto;
 }
 
 .ct-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ct-label {
@@ -2107,7 +2118,7 @@ html.theme-dark .comp-fw-card--selected {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .comp-matrix-badge {
@@ -2187,7 +2198,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-matrix-legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 11px;
   font-weight: 500;
   color: var(--shell-text-muted);
@@ -2307,9 +2318,10 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .comp-fw-logo-abbr {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: var(--comp-fw-abbr-color, var(--shell-text));
 }
 
 /* ── Sparkline ── */
@@ -2428,7 +2440,7 @@ html.theme-dark .comp-fw-card--selected {
   top: 75%;
   left: 52%;
   transform: translate(-50%, -50%);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -2454,7 +2466,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-findings-kpi-icon {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: 50%;
   flex-shrink: 0;
   background: var(--pai-indigo-tint);
   display: flex;
@@ -2467,6 +2479,13 @@ html.theme-dark .comp-fw-card--selected {
   font-size: 12px;
   font-weight: 600;
   color: var(--shell-text);
+}
+
+.comp-findings-kpi-suffix {
+  margin-left: 4px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  color: var(--shell-text-muted);
 }
 
 .comp-findings-kpi-count {
@@ -2521,7 +2540,7 @@ html.theme-dark .comp-fw-card--selected {
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--shell-text-muted);
 }
@@ -2583,7 +2602,8 @@ html.theme-dark .comp-fw-card--selected {
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   padding: 8px 12px;
-  white-space: nowrap;
+  white-space: normal;
+  width: 300px;
   z-index: 10;
   pointer-events: none;
 }
@@ -2641,7 +2661,7 @@ html.theme-dark .comp-fw-card--selected {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 4px;
 }
 
@@ -2724,7 +2744,7 @@ html.theme-dark .comp-fw-card--selected {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* ── Drawer action icon indigo variant ── */
@@ -2736,7 +2756,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-table-entity-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .comp-table-entity-name {
@@ -2759,6 +2779,10 @@ html.theme-dark .comp-fw-card--selected {
 .comp-sort-menu--full {
   width: 100%;
   left: 0;
+}
+.comp-sort-menu--scrollable {
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .comp-select-btn--full {
@@ -2790,7 +2814,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-left-header-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .comp-fw-search-wrap {
@@ -2813,9 +2837,9 @@ html.theme-dark .comp-fw-card--selected {
 .comp-score-trend-pill {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   background: rgba(22,163,74,0.10);
-  border-radius: 100px;
+  border-radius: 44px;
   padding: 3px 8px;
   color: var(--pai-green);
   font-weight: 600;
@@ -2855,7 +2879,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-th-name-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* === ComplianceMatrixPage inline migrations === */
@@ -2880,7 +2904,7 @@ html.theme-dark .comp-fw-card--selected {
 .comp-matrix-delta-val {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-weight: 500;
   color: var(--comp-delta-color, var(--shell-text-muted));
 }
@@ -2942,7 +2966,7 @@ html.theme-dark .comp-fw-card--selected {
 .cfp-header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cfp-download-wrap { position: relative; }
@@ -2973,7 +2997,7 @@ html.theme-dark .comp-fw-card--selected {
 .cfp-filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 22px;
   padding: 0 8px;
   border-radius: 44px;
@@ -3018,7 +3042,7 @@ html.theme-dark .comp-fw-card--selected {
 .cfp-entity-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
 }
 
@@ -3084,7 +3108,7 @@ html.theme-dark .comp-fw-card--selected {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cfp-entity-badge {

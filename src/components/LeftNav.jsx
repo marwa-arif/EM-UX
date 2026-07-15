@@ -23,6 +23,38 @@ function IcEMDashboard() {
   )
 }
 
+// Up+down arrows — conveys "switch between options" (not navigation)
+function IcSortCaret() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M2.5 3.75 5 1.5 7.5 3.75" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2.5 6.25 5 8.5 7.5 6.25" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+// Panel-left-close: sidebar panel icon with left-pointing arrow inside
+function IcPanelClose() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
+      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
+      <path d="M9 5.5 L7 7.5 L9 9.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+// Panel-left-open: sidebar panel icon with right-pointing arrow inside
+function IcPanelOpen() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
+      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
+      <path d="M7 5.5 L9 7.5 L7 9.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
 function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onModeChange }) {
   const model = [
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
@@ -87,39 +119,50 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
 
   return (
     <aside className="leftnav" style={{ width }}>
-      <div
-        ref={headerRef}
-        className={`leftnav__header${collapsed ? ' leftnav__header--collapsed' : ''}`}
-      >
-        {!collapsed && (
-          <div className="leftnav__org">
-            <div
-              className="leftnav__org-name-row leftnav__org-name-row--clickable"
+      <div ref={headerRef} className="leftnav__header">
+        {!collapsed ? (
+          <>
+            <button
+              className={`leftnav__switcher${dropdownOpen ? ' leftnav__switcher--open' : ''}`}
               onClick={() => setDropdownOpen(o => !o)}
+              aria-haspopup="menu"
+              aria-expanded={dropdownOpen}
             >
-              <div className="leftnav__org-name">
-                {isStudio ? 'Studio' : 'EM Dashboard'}
-              </div>
-              <span className={`leftnav__org-chevron${dropdownOpen ? ' leftnav__org-chevron--open' : ''}`}>
-                <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
+              <span className="leftnav__switcher-icon">
+                {isStudio ? <IcBuildingBlock /> : <IcEMDashboard />}
               </span>
-            </div>
-            {!isStudio && (
-              <div className="leftnav__org-sub">Exposure Management</div>
-            )}
-          </div>
-        )}
+              <span className="leftnav__switcher-text">
+                <span className="leftnav__switcher-name">
+                  {isStudio ? 'Studio' : 'EM Dashboard'}
+                </span>
+                {!isStudio && (
+                  <span className="leftnav__switcher-sub">Exposure Management</span>
+                )}
+              </span>
+              <span className="leftnav__switcher-caret">
+                <IcSortCaret />
+              </span>
+            </button>
 
-        <button
-          onClick={onToggleCollapse}
-          title={collapsed ? 'Expand' : 'Collapse'}
-          className="leftnav__toggle-btn"
-        >
-          <Ic size={12} path={collapsed
-            ? <><path d="m9 18 6-6-6-6"/></>
-            : <><path d="m15 18-6-6 6-6"/></>
-          } />
-        </button>
+            <button
+              onClick={onToggleCollapse}
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+              className="leftnav__collapse-btn"
+            >
+              <IcPanelClose />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onToggleCollapse}
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+            className="leftnav__collapse-btn leftnav__collapse-btn--solo"
+          >
+            <IcPanelOpen />
+          </button>
+        )}
 
         {dropdownOpen && !collapsed && (
           <div className="leftnav__mode-dropdown">

@@ -1,5 +1,144 @@
 [
   {
+    "version": "0.6.6",
+    "date": "2026-06-23",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`",
+        "Font scale audit: fixed out-of-scale font sizes (7/8/9px → 10px, 15px → 14px, 11.5/12.5px → 12px, 17px → 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.5",
+    "date": "2026-06-23",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "SplashScreen: extracted from App.jsx into its own component file with dedicated splash-screen.css",
+        "DashboardCanvas, WorkspacePage, AssessmentsPage: minor UI fixes",
+        "device.css, kg.css, assessments.css, dashboard.css: style tweaks and token cleanup",
+        "DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added --tooltip-bg/--tooltip-fg tokens to global.css; applied color-scheme:light to .rv-page",
+        "Font scale audit: fixed out-of-scale font sizes (7/8/9px to 10px, 15px to 14px, 11.5/12.5px to 12px, 17px to 16px) across compliance.css, kg.css, navigator.css, active-filter-panel.css, library.css"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.4",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "SplashScreen: reworked animation to stroke-draw SVG paths with staggered delays",
+        "ComplianceMatrixPage: replaced `pai-high-fg` with `pai-med-fg` for Moderate score color"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.3",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Download as Excel modal: replaced radio buttons (All/Specific tables) with a direct checkbox list",
+        "Download as Excel modal: removed \"Don't show this again\" option and localStorage gate",
+        "Download as Excel modal: updated description text and removed \"Tables to include\" section header",
+        "Download as Excel modal: added Note footer clarifying charts are not exportable and each table downloads separately",
+        "sfm-table-list padding set to 12px left and right"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.2",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [
+        "Assessments table: styled hover tooltips on findings counts showing \"Passed Findings\" / \"Failed Findings\""
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.1",
+    "date": "2026-06-08",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Renamed Open/Closed terminology to Failed/Passed across compliance, findings, and assessments",
+        "Compliance table headers: Closed → Passed, Open → Failed",
+        "Findings Breakdown KPI labels: added (Closed)/(Open) suffixes in grey regular weight",
+        "\"Include Closed Findings\" toggle renamed to \"Include Passed Findings\" in all drawers and ComplianceFindingsPage",
+        "Compliance matrix tooltip: Open findings → Failed findings",
+        "Exposure Findings table header: Open Findings → Failed Findings",
+        "Compliance tree table cells: removed vertical padding"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.6.0",
+    "date": "2026-06-03",
+    "changes": {
+      "Added": [
+        "Executive Summary report template (20 widgets: KPI, vert-bar, pie, hor-bar, table) in DashboardCanvas",
+        "ReportPreviewPage: paginated A4 layout, cover page, save/schedule/share/download modals",
+        "workspace/report filter panel, breadcrumb, and active-filter chip support in WorkspacePage",
+        "hor-bar charts: LabelList value labels, x-axis label, per-widget description notes (vulnerability/os/service templates)",
+        "`printMode` prop on WidgetCard/ChartRender — suppresses tooltips in PDF preview",
+        "Table widgets hug content height via `dc-report-chart-row--table` CSS modifier"
+      ],
+      "Changed": [
+        "WidgetCard exported from DashboardCanvas so ReportPreviewPage renders identical widgets to editor",
+        "Report editor chart cards restore explicit height (removed `height:auto` override that collapsed Recharts)",
+        "sfm-checkbox-row: `align-items: flex-start` + `line-height: 1.4` to fix multi-line label alignment",
+        "hor-bar chart description note: removed border-top divider"
+      ],
+      "Fixed": [
+        "500 error on Library → Executive Summary: undeclared `note` variable in ChartRender pie renderer",
+        "Recharts charts invisible in report editor due to `height:auto` collapsing card body flex chain"
+      ]
+    }
+  },
+  {
+    "version": "0.5.2",
+    "date": "2026-05-29",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "`dashboard.css`: DS 2.0 token fixes — `border-radius` normalised (cards→4px, inputs→8px, toggles→12px), z-index clamped to 300 tier, font-size floor 11px, spacing to 4pt grid, toolbar height 48px",
+        "`active-filter-panel.css`: z-index `10006` → `300` on `.sfm-dialog`",
+        "`DashboardCanvas.jsx`: chart-type picker buttons use CSS classes + CSS vars only (no inline styles); `.dc-field-sub-label` margin-top via CSS modifier class"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.5.1",
+    "date": "2026-05-29",
+    "changes": {
+      "Added": [
+        "`error-page.css` — extracted ErrorPage styles from inline JSX to proper CSS classes",
+        "`wp-root`, `wp-body`, `wp-main` layout classes added to `shell.css` for WorkspacePage shell"
+      ],
+      "Changed": [
+        "ExposureOverviewPage: `exp-trend-pill`, `exp-collapse-btn`, `exp-groupby-btn`, `exp-explore-btn` now layer `ds-btn` base classes",
+        "WorkspacePage: layout inline styles replaced with CSS class references"
+      ],
+      "Fixed": [
+        "FindingsPage: replaced `fin-btn` custom classes with `ds-btn sz-md t-outline / t-primary`",
+        "ComplianceFindingsPage: replaced `comp-drawer-download-btn` with `ds-btn sz-sm t-outline`",
+        "DashboardCanvas: widget delete now shows confirmation modal naming the widget before deletion",
+        "ErrorPage: all inline `style={{}}` blocks extracted to `error-page.css`"
+      ]
+    }
+  },
+  {
     "version": "0.5.0",
     "date": "2026-05-27",
     "changes": {
