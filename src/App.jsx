@@ -10,6 +10,9 @@ import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from '
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
 import NavigatorPage from './pages/NavigatorPage.jsx'
+import UX3Page from './pages/UX3Page.jsx'
+import AdminPage from './pages/AdminPage.jsx'
+import StudioHomePage from './pages/StudioHomePage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
@@ -335,6 +338,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               onNav={navigatorProps?.onNav}
               initialViewMode={navigatorProps?.initialViewMode}
               onViewModeChange={navigatorProps?.onViewModeChange}
+              builderMode={navigatorProps?.builderMode}
+              builderApi={navigatorProps?.builderApi}
             />
           )}
         </div>
@@ -486,15 +491,19 @@ function App() {
     return path.slice(1) || 'exposure/overview';
   });
   const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
+  const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
+  const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
-  const [collapsed, setCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
   const [navigatorQuery, setNavigatorQuery] = useState('');
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
+  const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
+  const [assessmentBuilderApi, setAssessmentBuilderApi] = useState(null);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [filtersByPage, setFiltersByPage] = useState({});
@@ -557,17 +566,32 @@ function App() {
 
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
-    setRightPanel(prev => {
-      const next = prev === tabName ? null : tabName;
-      if (next) setCollapsed(true);
-      return next;
-    });
+    setRightPanel(prev => (prev === tabName ? null : tabName));
+  };
+
+  const handleModeChange = (mode) => {
+    setAppMode(mode);
+    if (mode === 'studio') {
+      setCurrent('studio-home');
+      history.pushState(null, '', '/studio-home');
+    } else {
+      setCurrent('exposure/overview');
+      history.pushState(null, '', '/exposure/overview');
+    }
   };
 
   const handleNav = (id, data) => {
     if (id === 'navigator') {
       setNavigatorViewMode('sidebar');
+      setNavigatorBuilderMode(false);
       openRightTab('navigator');
+      return;
+    }
+    if (id === 'navigator-builder') {
+      setNavigatorViewMode('sidebar');
+      setNavigatorBuilderMode(true);
+      setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
+      setRightPanel('navigator');
       return;
     }
     if (id === 'navigator-page') {
@@ -577,11 +601,26 @@ function App() {
       history.pushState(null, '', '/navigator');
       return;
     }
-    if (id === 'navigator-floating') {
-      setNavigatorViewMode('floating');
-      setCurrent('kg');
-      history.pushState(null, '', '/knowledge-graph');
-      openRightTab('navigator');
+    if (id === 'ux3-page') {
+      setRightPanel(null);
+      setCurrent('ux3');
+      history.pushState(null, '', '/ux3');
+      return;
+    }
+    if (id === 'ux3-exit') {
+      setCurrent('exposure/overview');
+      history.pushState(null, '', '/exposure/overview');
+      return;
+    }
+    if (id === 'admin-page') {
+      if (current !== 'admin') setAdminPrevPage(current);
+      setRightPanel(null);
+      setCurrent('admin');
+      history.pushState(null, '', '/admin');
+      return;
+    }
+    if (id === 'admin-exit') {
+      handleNav(adminPrevPage);
       return;
     }
     setCurrent(id);
@@ -621,7 +660,32 @@ function App() {
     return (
       <>
         {showSplash && <SplashScreen onDone={onSplashDone} />}
-        <NavigatorPage onNav={handleNav} current={current} initialQuery={navigatorQuery} />
+        <NavigatorPage
+          onNav={handleNav}
+          initialQuery={navigatorQuery}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          appMode={appMode}
+          onModeChange={handleModeChange}
+        />
+      </>
+    );
+  }
+
+  if (current === 'ux3' || current.startsWith('ux3/')) {
+    return (
+      <>
+        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        <UX3Page onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
+      </>
+    );
+  }
+
+  if (current === 'admin') {
+    return (
+      <>
+        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        <AdminPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
   }
@@ -700,18 +764,22 @@ function App() {
     },
   };
 
-  if (!PAGE_META[current] && current !== 'kg') {
+  if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
     return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', '/exposure/overview'); }} />;
   }
 
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
+  const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
+  // Auto-collapse while a right panel (navigator/filter) is open, but never
+  // let that override the user's manual preference once the panel closes.
+  const collapsed = navCollapsed || rightPanel !== null;
 
   const sharedRightPanel = (
     <RightPanelShell
       tab={rightPanel}
       onTabSwitch={openRightTab}
-      onClose={() => { setRightPanel(null); setNavigatorFloating(false); }}
+      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); }}
       visitedTabs={visitedTabs}
       filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
         if (merge) {
@@ -728,6 +796,8 @@ function App() {
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
         onViewModeChange: (mode) => setNavigatorFloating(mode === 'floating'),
+        builderMode: current === 'report/assessments' && navigatorBuilderMode,
+        builderApi: assessmentBuilderApi,
       }}
       navigatorFloating={navigatorFloating}
     />
@@ -743,30 +813,37 @@ function App() {
           current={current}
           onNav={handleNav}
           collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed(!collapsed)}
+          onToggleCollapse={() => setNavCollapsed(!navCollapsed)}
           mode={appMode}
-          onModeChange={setAppMode}
+          onModeChange={handleModeChange}
         />
 
         {appMode === 'studio' ? (
-          <main className="exp-main exp-main--col">
-            <SubHeader
-              title="Studio"
-              breadcrumb={['Studio']}
-              breadcrumbHrefs={[null]}
-            />
-            <div className="page-scroll">
-              <ComingSoon />
+          <main className="exp-main exp-main--row studio-main">
+            <div className="exp-content-col">
+              <SubHeader
+                title="Studio"
+                breadcrumb={['Home']}
+                breadcrumbHrefs={[null]}
+                showMenu={false}
+                showExplore={false}
+                actions={null}
+              />
+              <div className="page-scroll">
+                <StudioHomePage onNav={handleNav} />
+              </div>
             </div>
+            {sharedRightPanel}
           </main>
         ) : (
           <main className="exp-main exp-main--row">
             <div className="exp-content-col">
               <SubHeader
-                title={pageMeta.title}
-                breadcrumb={pageMeta.breadcrumb}
-                breadcrumbHrefs={pageMeta.breadcrumbHrefs}
-                breadcrumbClicks={[() => handleNav('exposure/overview')]}
+                title={showingAssessmentBuilder ? 'Assessment Builder' : pageMeta.title}
+                breadcrumb={showingAssessmentBuilder ? ['Home', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
+                breadcrumbHrefs={showingAssessmentBuilder ? [null, null, null, null] : pageMeta.breadcrumbHrefs}
+                breadcrumbClicks={showingAssessmentBuilder ? [undefined, undefined, () => setAssessmentBuilderOpen(false)] : [() => handleNav('exposure/overview')]}
+                leading={undefined}
                 pageId={current}
                 activeFilterCount={activeFilterCount}
                 activeFilters={activeFilters}
@@ -780,7 +857,7 @@ function App() {
                 onClearFilters={() => setPageFilters(current, 0, [])}
                 filterActive={rightPanel === 'filter'}
                 onFilter={() => openRightTab('filter')}
-                onAdd={pageMeta.onAdd}
+                onAdd={showingAssessmentBuilder ? undefined : pageMeta.onAdd}
                 onExplore={handleExplore}
                 onEdit={DISCOVER_PAGES.has(current) ? () => {
                   setCurrent('workspace/dashboard/discover');
@@ -794,7 +871,7 @@ function App() {
                 {current === 'discover/cloud'      && <DiscoverCloudPage />}
                 {current === 'discover/identity'   && <DiscoverIdentityPage />}
                 {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
-                {current === 'report/assessments'       && <AssessmentsPage />}
+                {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
                 {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
                 {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}

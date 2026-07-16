@@ -3,7 +3,7 @@
 .ds-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
 .ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
 .ds-btn.sz-md { height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500; }
-.ds-btn.t-primary { background: var(--pai-indigo); color: var(--pai-indigo-tint); }
+.ds-btn.t-primary { background: var(--pai-indigo); color: var(--pai-on-primary); }
 .ds-btn.t-primary:hover { background: var(--pai-indigo-hover); }
 .ds-btn.t-outline { background: transparent; border: 1px solid var(--ctrl-border, #CFCFCF); color: var(--shell-text-2); }
 .ds-btn.t-outline:hover { border-color: var(--pai-border-strong); background: var(--shell-hover); }

@@ -77,6 +77,7 @@ const IcClock     = () => <Ic size={13} path={<><circle cx="12" cy="12" r="10"/>
 const IcChat      = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />
 const IcAgents    = () => <Ic size={14} path={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />
 const IcViewAll   = () => <Ic size={13} path={<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>} />
+const IcStar      = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />
 const IcFile      = () => <Ic size={13} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></>} />
 const IcGraph     = () => <Ic size={13} path={<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></>} />
 const IcSearch    = () => <Ic size={13} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
@@ -143,6 +144,8 @@ function Dropdown({ children, onClose, className }) {
 
 // ── History overlay ───────────────────────────────────────────────────
 function HistoryOverlay({ open, onClose, onNewChat, onSelectChat, firstFocusRef }) {
+  const [menuOpenId, setMenuOpenId] = useState(null)
+
   useEffect(() => {
     if (open && firstFocusRef?.current) firstFocusRef.current.focus()
   }, [open, firstFocusRef])
@@ -188,17 +191,42 @@ function HistoryOverlay({ open, onClose, onNewChat, onSelectChat, firstFocusRef 
             </button>
           </div>
           {CHAT_HISTORY.map(c => (
-            <button
+            <div
               key={c.id}
-              className={`np-history-chat-row${c.active ? ' active' : ''}`}
-              onClick={() => { onSelectChat(c.label); onClose() }}
+              className={`np-history-chat-row${c.active ? ' active' : ''}${menuOpenId === c.id ? ' menu-open' : ''}`}
             >
-              <span className="np-history-chat-icon"><IcChat /></span>
-              <span className="np-history-chat-body">
-                <span className="np-history-chat-label">{c.label}</span>
-                <span className="np-history-chat-time">{c.time}</span>
-              </span>
-            </button>
+              <button className="np-history-chat-main" onClick={() => { onSelectChat(c.label); onClose() }}>
+                <span className="np-history-chat-icon"><IcChat /></span>
+                <span className="np-history-chat-body">
+                  <span className="np-history-chat-label">{c.label}</span>
+                  <span className="np-history-chat-time">{c.time}</span>
+                </span>
+              </button>
+              <div className="np-rel">
+                <button
+                  className="np-history-chat-menu-btn"
+                  title="Chat options"
+                  aria-label="Chat options"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpenId(o => o === c.id ? null : c.id) }}
+                >
+                  <IcDots />
+                </button>
+                {menuOpenId === c.id && (
+                  <Dropdown onClose={() => setMenuOpenId(null)} className="np-dropdown--history-menu">
+                    <button className="np-dropdown-item" onClick={() => setMenuOpenId(null)}>
+                      <IcStar /> Star
+                    </button>
+                    <button className="np-dropdown-item" onClick={() => setMenuOpenId(null)}>
+                      <IcRename /> Rename
+                    </button>
+                    <div className="np-dropdown-sep" />
+                    <button className="np-dropdown-item danger" onClick={() => setMenuOpenId(null)}>
+                      <IcTrash /> Delete
+                    </button>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
           ))}
           <button className="np-history-viewall"><IcViewAll /> View all conversations</button>
         </div>
@@ -757,6 +785,127 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
   )
 }
 
+// ── Assessment-builder guided chat ─────────────────────────────────────
+// Scripted demo flow (not real NLU) — each stage's `action` drives the live
+// AssessmentBuilder canvas via the imperative `builderApi` ref, and its `ai`
+// message is generated from a post-action snapshot of that real state.
+const BUILDER_STAGES = [
+  {
+    ai: "Hi! Let's build an assessment together — what should we check?",
+    suggestions: ['Storage volumes must be encrypted at rest'],
+  },
+  {
+    action: (api) => { api.pickPrimary?.('storage'); api.addPrimaryFilter?.('Type', '=', 'Volume') },
+    ai: (snap) => `Got it — I've scoped this to ${snap.scopeSummary || 'Storage · 1 filter'}. Look right?`,
+    suggestions: ['Looks good'],
+  },
+  {
+    action: (api) => api.setSharedCondition?.('Encrypted at rest', '=', 'true'),
+    ai: (snap) => `Condition set: ${snap.conditionSummary || 'should have encrypted at rest'}. Ready to validate?`,
+    suggestions: ['Run validation'],
+  },
+  {
+    action: (api) => { api.goToStep?.(2); api.runValidation?.() },
+    ai: () => 'Running a dry-run…',
+    suggestions: [],
+    settleMs: 1100,
+  },
+  {
+    ai: (snap) => `Validation complete — ${(snap.estScopeTotal ?? 0).toLocaleString()} items in scope, ${snap.passPct ?? 0}% passing today. Move on to contribution?`,
+    suggestions: ['Continue to contribution'],
+  },
+  {
+    action: (api) => { api.goToStep?.(3); api.setContribution?.(true, false) },
+    ai: () => 'This now contributes to Compliance (CCM). Want me to auto-map frameworks?',
+    suggestions: ['Map to SCF'],
+  },
+  {
+    action: (api) => api.applyFrameworkMapping?.('scf'),
+    ai: (snap) => `Mapped to ${(snap.automapped || []).map(r => r.frameworkName).join(', ') || 'SCF'}. Ready to review and deploy?`,
+    suggestions: ['Review & deploy'],
+  },
+  {
+    action: (api) => { api.goToStep?.(4); api.openPreview?.() },
+    ai: () => "I've opened the deploy confirmation — it'll run in the background until it's live.",
+    suggestions: [],
+  },
+]
+
+function BuilderChat({ builderApi }) {
+  const [messages, setMessages]   = useState(() => [{ role: 'ai', text: BUILDER_STAGES[0].ai }])
+  const [stageIdx, setStageIdx]   = useState(0)
+  const [inputValue, setInputVal] = useState('')
+  const [busy, setBusy]           = useState(false)
+  const [mode, setMode]           = useState('quick')
+  const stageIdxRef  = useRef(0)
+  const messagesRef  = useRef(null)
+
+  useEffect(() => {
+    if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+  }, [messages, busy])
+
+  const advance = (userText) => {
+    if (busy) return
+    const nextIdx   = stageIdxRef.current + 1
+    const nextStage = BUILDER_STAGES[nextIdx]
+    if (!nextStage) return
+    if (userText) setMessages(m => [...m, { role: 'user', text: userText }])
+    setInputVal('')
+    setBusy(true)
+    if (nextStage.action) nextStage.action(builderApi?.current || {})
+    setTimeout(() => {
+      const snap   = builderApi?.current?.getSnapshot?.() || {}
+      const aiText = typeof nextStage.ai === 'function' ? nextStage.ai(snap) : nextStage.ai
+      setMessages(m => [...m, { role: 'ai', text: aiText }])
+      stageIdxRef.current = nextIdx
+      setStageIdx(nextIdx)
+      setBusy(false)
+      if (!nextStage.suggestions?.length && BUILDER_STAGES[nextIdx + 1]) {
+        setTimeout(() => advance(''), 300)
+      }
+    }, nextStage.settleMs || 450)
+  }
+
+  const currentStage = BUILDER_STAGES[stageIdx]
+
+  return (
+    <div className="np-builder-chat">
+      <div className="np-builder-caption">Guided assessment builder</div>
+      <div className="np-builder-messages" ref={messagesRef} role="log" aria-live="polite" aria-label="Assessment builder conversation">
+        {messages.map((m, i) => (
+          <div key={i} className={`np-builder-msg ${m.role}`}>
+            {m.role === 'ai' && <span className="np-builder-msg-badge" aria-hidden="true"><NavIcon size={13} /></span>}
+            <div className="np-builder-msg-bubble">{m.text}</div>
+          </div>
+        ))}
+        {busy && (
+          <div className="np-builder-msg ai">
+            <span className="np-builder-msg-badge" aria-hidden="true"><NavIcon size={13} /></span>
+            <div className="np-builder-msg-bubble np-builder-typing"><span /><span /><span /></div>
+          </div>
+        )}
+      </div>
+
+      {!busy && currentStage?.suggestions?.length > 0 && (
+        <div className="np-builder-suggestions">
+          {currentStage.suggestions.map(s => (
+            <button key={s} className="np-builder-suggestion" onClick={() => advance(s)}>{s}</button>
+          ))}
+        </div>
+      )}
+
+      <Composer
+        value={inputValue}
+        onChange={e => setInputVal(e.target.value)}
+        onSend={() => inputValue.trim() && advance(inputValue.trim())}
+        placeholder="Type anything to continue…"
+        mode={mode}
+        onModeChange={setMode}
+      />
+    </div>
+  )
+}
+
 // ── View modes ────────────────────────────────────────────────────────
 const VIEW_MODES = [
   { id: 'sidebar',    label: 'Sidebar',     Icon: IcSidebar },
@@ -765,8 +914,11 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null }) {
   const [view, setView]             = useState('home')
+
+  // Enter the scripted assessment-builder chat when triggered externally
+  useEffect(() => { if (builderMode) setView('builder') }, [builderMode])
   const [activeQuery, setQ]         = useState('')
   const [responseState, setRespSt]  = useState('done')
   const [historyOpen, setHistory]   = useState(false)
@@ -774,7 +926,9 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [showViewMenu, setViewMenu] = useState(false)
   const [showMoreMenu, setMoreMenu] = useState(false)
   const [panelWidth, setPanelWidth] = useState(400)
-  const [floatPos, setFloatPos]     = useState({ x: 0, y: 0 })
+  const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
+    ? { x: window.innerWidth - 400 - 16, y: 60 }
+    : { x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [copyToast, setCopyToast]   = useState(null)
   const [isFirstRun, setFirstRun]   = useState(true)
@@ -858,7 +1012,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
     setViewMenu(false)
     if (id === 'fullscreen') {
       onClose?.()
-      onNav?.('navigator')
+      onNav?.('navigator-page', activeQuery)
       return
     }
     if (id === 'floating' && viewMode !== 'floating') {
@@ -1144,7 +1298,9 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
 
         {/* ── Body ── */}
         <div className="np-panel-body">
-          {view === 'home'
+          {view === 'builder'
+            ? <BuilderChat builderApi={builderApi} />
+            : view === 'home'
             ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} />
             : <PanelChat
                 query={activeQuery}

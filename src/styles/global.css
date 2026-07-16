@@ -44,6 +44,7 @@ body { background: #F7F9FC; color: #101010; }
   --pai-indigo:        #6360D8;
   --pai-indigo-hover:  #504BB8;
   --pai-indigo-tint:   #F0F0FC;
+  --pai-on-primary:    #FFFFFF;   /* text on a solid indigo fill — stable across themes */
   --pai-fg1:           #101010;
   --pai-fg2:           #282828;
   --pai-fg3:           #6E6E6E;
@@ -177,7 +178,7 @@ html.theme-dark {
   --pai-crit-bg-hover:  rgba(209,35,41,0.28);
   --pai-high-fg:        #E09830;
   --pai-high-bg:        rgba(225,82,82,0.15);
-  --pai-med-fg:         #E09830;
+  --pai-med-fg:         #CDB900;
   --pai-med-bg:         rgba(217,139,29,0.15);
   --pai-low-fg:         #31A56D;
   --pai-low-bg:         rgba(49,165,109,0.15);

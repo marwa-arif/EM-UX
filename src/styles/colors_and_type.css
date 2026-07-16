@@ -10,7 +10,8 @@
   --pai-indigo:           #6360D8;   /* primary brand indigo */
   --pai-indigo-hover:     #504BB8;
   --pai-indigo-pressed:   #6360D8;
-  --pai-indigo-tint:      #F0F0FC;   /* light surface + on-primary text */
+  --pai-indigo-tint:      #F0F0FC;   /* light surface tint */
+  --pai-on-primary:       #FFFFFF;   /* text on a solid indigo fill — stable across themes */
   --pai-indigo-border:    #8B88E2;
 
   /* Gradient used on "Primary Special" — the only place in the UI
