@@ -26,6 +26,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.7.0] — 2026-07-16
+### Added
+- Studio Home page and Admin section (Workspace, Users & Access, Data Integrations, Identity & Security, Risk Config, Security & Compliance)
+- UX3 exposure overview and client servers views, with dedicated left nav
+- Assessment Builder and Canvas Panel components
+- Copilot FAB entry point and Reasoning Engine component
+- Navigator engine module supporting the Navigator redesign work
+
+---
+
 ## [0.6.6] — 2026-06-23
 ### Changed
 - DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`

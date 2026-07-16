@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.7.0",
+    "date": "2026-07-16",
+    "changes": {
+      "Added": [
+        "Studio Home page and Admin section (Workspace, Users & Access, Data Integrations, Identity & Security, Risk Config, Security & Compliance)",
+        "UX3 exposure overview and client servers views, with dedicated left nav",
+        "Assessment Builder and Canvas Panel components",
+        "Copilot FAB entry point and Reasoning Engine component",
+        "Navigator engine module supporting the Navigator redesign work"
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.6.6",
     "date": "2026-06-23",
     "changes": {
