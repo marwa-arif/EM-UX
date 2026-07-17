@@ -113,7 +113,7 @@ function IcOntologyNav() {
 // yet, so these route through the normal onNav/current wiring but the
 // Studio shell itself ignores `current` and always shows StudioHomePage).
 const STUDIO_MODEL = [
-  { id: 'navigator-page', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, solo: true },
+  { id: 'navigator', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
   { id: 'studio-home', label: 'Home', iconNode: <IcHomeNav />, solo: true, dividerAfter: true },
   { id: 'studio-workspace', label: 'Workspace', iconNode: <IcWorkspaceNav />, children: [
       { id: 'studio-workspace/device', label: 'Device', icon: 'nav-discover-device' },
@@ -131,7 +131,7 @@ const STUDIO_MODEL = [
 
 function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onModeChange, ux3Active = false }) {
   const model = [
-    { id: 'navigator-page', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, solo: true },
+    { id: 'navigator', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
     { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
         { id: 'exposure/overview',  label: 'Overview',  icon: 'nav-overview' },
@@ -316,7 +316,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
   const treatAsLeaf = !hasChildren;
 
   const handleClick = () => {
-    if (treatAsLeaf) onNav(item.id);
+    if (treatAsLeaf) onNav(item.navigateId ?? item.id);
     else onToggle();
   };
 

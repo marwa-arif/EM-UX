@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Ic } from '../ui.jsx'
 import NavWidget, { detectWidgetType, createWidget } from '../components/NavWidget.jsx'
-import Topbar from '../components/Topbar.jsx'
 import ReasoningEngine, { createExchange, useReasoningEngine } from '../components/ReasoningEngine.jsx'
 import CanvasPanel, { ChatDragger, ExchangeResult, FeedbackRow } from '../components/CanvasPanel.jsx'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
@@ -25,10 +24,6 @@ const CTX_PILLS = [
 // Each sample query is worded to reliably land in its labeled tier when run through
 // classifyQuery() — e.g. risk/deep phrasing is imperative rather than "what is/are…"
 // so it doesn't get intercepted by the (intentionally broad) concept-question regex.
-const CAT_LABELS = {
-  quick: 'Quick', graph: 'Graph', risk: 'Risk', deep: 'Deep',
-  concept: 'Concept', 'data-dict': 'Schema', summary: 'Summary', web: 'Web',
-};
 const SAMPLE_QUERIES = [
   { cat: 'quick',      q: 'Show me all admin users' },
   { cat: 'graph',      q: 'Which identities have access to the payment gateway, and what roles grant that access?' },
@@ -43,11 +38,9 @@ const SAMPLE_QUERIES = [
 // ── SVG icons (inline Lucide-style) ─────────────────────────────────
 const IcChat     = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
 const IcBook     = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
-const IcArrowL   = () => <Ic size={14} path={<><path d="m15 18-6-6 6-6"/></>} />;
 const IcChevR    = () => <Ic size={12} path={<><path d="m9 18 6-6-6-6"/></>} />;
 const IcGrid     = () => <Ic size={14} path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>} />;
 const IcChevDown = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
-const IcPlus     = () => <Ic size={16} path={<><path d="M12 5v14M5 12h14"/></>} />;
 const IcSend     = () => <Ic size={16} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />;
 const IcChevD    = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
 const IcEdit     = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />;
@@ -58,16 +51,12 @@ const IcDots     = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><ci
 const IcCanvasView = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></>} />;
 const IcCheck    = () => <Ic size={13} path={<><polyline points="20 6 9 17 4 12"/></>} />;
 const IcRename   = () => <Ic size={14} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
-const IcMoveTo   = () => <Ic size={14} path={<><path d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8"/><path d="M2 13v6a2 2 0 0 0 2 2h4"/><path d="M2 13h9"/><path d="m5 10-3 3 3 3"/></>} />;
 const IcShare    = () => <Ic size={14} path={<><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></>} />;
 const IcPin      = () => <Ic size={14} path={<><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></>} />;
 const IcArchive  = () => <Ic size={14} path={<><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></>} />;
 const IcTrash    = () => <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>} />;
 const IcFeedback = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
 const IcHelp     = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />;
-const IcSearch    = () => <Ic size={14} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></>} />;
-const IcDiscover  = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></>} />;
-const IcComponent = () => <Ic size={14} path={<><path d="m5.5 8.5 2.5 2.5-2.5 2.5L3 11l2.5-2.5z"/><path d="m12 2 2.5 2.5L12 7 9.5 4.5 12 2z"/><path d="m18.5 8.5 2.5 2.5-2.5 2.5L16 11l2.5-2.5z"/><path d="m12 15 2.5 2.5L12 20l-2.5-2.5L12 15z"/></>} />;
 const IcHistory   = () => <Ic size={14} path={<><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></>} />;
 const IcSettings  = () => <Ic size={14} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
 const IcVulnerability = () => <Ic size={16} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>} />;
@@ -106,59 +95,6 @@ function Dropdown({ children, onClose, className }) {
 }
 
 // ── Check icon for done steps ────────────────────────────────────────
-function IcPanelClose() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
-      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
-      <path d="M9 5.5 L7 7.5 L9 9.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-function IcPanelOpen() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
-      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
-      <path d="M7 5.5 L9 7.5 L7 9.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-// Up+down arrows — same "switch between options" glyph LeftNav's
-// workspace switcher uses, kept in sync for visual parity.
-function IcSortCaret() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path d="M2.5 3.75 5 1.5 7.5 3.75" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M2.5 6.25 5 8.5 7.5 6.25" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-// Same building-block / EM-dashboard glyphs LeftNav's switcher uses for
-// Studio / EM Dashboard, so the mode dropdown reads identically here.
-function IcBuildingBlock() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1"   y="1"   width="6" height="6" rx="1.5" fill="currentColor"/>
-      <rect x="9"   y="1"   width="6" height="6" rx="1.5" fill="currentColor"/>
-      <rect x="1"   y="9"   width="6" height="6" rx="1.5" fill="currentColor"/>
-      <rect x="9"   y="9"   width="6" height="6" rx="1.5" fill="currentColor"/>
-    </svg>
-  );
-}
-function IcEMDashboard() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="9" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="1" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-      <rect x="9" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-    </svg>
-  );
-}
-
 function StepDoneIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="np-flex-shrink-0">
@@ -168,182 +104,50 @@ function StepDoneIcon() {
   );
 }
 
-// ── Navigator left panel ─────────────────────────────────────────────
-function NavPanel({ collapsed, setCollapsed, onSelectChat, onNewMode, appMode = 'em', onNav, onModeChange }) {
-  const isStudio = appMode === 'studio';
-  const sourceLabel = isStudio ? 'Studio' : 'EM';
-  const [modeOpen, setModeOpen] = useState(false);
-  const [threadMenuOpen, setThreadMenuOpen] = useState(null);
-  const switcherRef = useRef(null);
-
-  useEffect(() => {
-    if (!modeOpen) return;
-    const handler = (e) => { if (switcherRef.current && !switcherRef.current.contains(e.target)) setModeOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [modeOpen]);
-
-  const goBack = () => onNav?.(isStudio ? 'studio-home' : 'kg');
-
+// ── History control — single trigger + panel reused across all views ──
+// (Home/Chat/Build each render a <HistoryButton/> in the same top-right
+// spot; the panel itself is rendered once by the page root so it always
+// appears in one consistent place regardless of which view is active.)
+function IcHome() {
   return (
-    <div className={`np-panel${collapsed ? ' collapsed' : ''}`}>
-      {!collapsed && (
-        <div ref={switcherRef} className="leftnav__header">
-          <button
-            className={`leftnav__switcher${modeOpen ? ' leftnav__switcher--open' : ''}`}
-            onClick={() => setModeOpen(o => !o)}
-            aria-haspopup="menu"
-            aria-expanded={modeOpen}
-          >
-            <span className="leftnav__switcher-icon">
-              {isStudio ? <IcBuildingBlock /> : <IcEMDashboard />}
-            </span>
-            <span className="leftnav__switcher-text">
-              <span className="leftnav__switcher-name">
-                {isStudio ? 'Studio' : 'EM Dashboard'}
-              </span>
-              <span className="leftnav__switcher-sub">
-                {isStudio ? 'Data Fabric' : 'Exposure Management'}
-              </span>
-            </span>
-            <span className="leftnav__switcher-caret">
-              <IcSortCaret />
-            </span>
-          </button>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 11.5 12 4l8 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M6 9.5V19a1 1 0 0 0 1 1h3v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5h3a1 1 0 0 0 1-1V9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
 
-          {modeOpen && (
-            <div className="leftnav__mode-dropdown">
-              {isStudio ? (
-                <button className="leftnav__mode-option" onClick={() => { setModeOpen(false); onModeChange?.('em'); }}>
-                  <IcEMDashboard />
-                  <span className="leftnav__mode-option-label">EM Dashboard</span>
-                </button>
-              ) : (
-                <button className="leftnav__mode-option" onClick={() => { setModeOpen(false); onModeChange?.('studio'); }}>
-                  <IcBuildingBlock />
-                  <span className="leftnav__mode-option-label">Studio</span>
-                  <span className="leftnav__mode-option-soon">Soon</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+// Drops the active Chat/Build session and returns to the Home composer —
+// the replacement for the old NavPanel's "New Thread"/"New Project" rows,
+// now living next to History in each view's own header.
+function HomeButton({ onClick }) {
+  return (
+    <button className="nav-history-btn" onClick={onClick} title="Back to Home">
+      <IcHome />
+      <span className="nav-history-btn-label">Home</span>
+    </button>
+  );
+}
 
-      <div className="np-body">
-        <button className="np-menu-row" onClick={goBack} title={`Back to ${sourceLabel}`}>
-          <span className="np-menu-row-icon"><IcArrowL /></span>
-          {!collapsed && <span className="np-menu-row-lbl">Back to {sourceLabel}</span>}
+function HistoryButton({ onClick }) {
+  return (
+    <button className="nav-history-btn" onClick={onClick} title="History" aria-haspopup="true">
+      <IcHistory />
+      <span className="nav-history-btn-label">History</span>
+    </button>
+  );
+}
+
+function HistoryPanel({ onClose, onSelect }) {
+  return (
+    <Dropdown onClose={onClose} className="nav-history-panel">
+      <div className="np-dropdown-label">Recent</div>
+      {RECENT_CHATS.map(c => (
+        <button key={c.id} className="np-dropdown-item" onClick={() => onSelect(c.label)}>
+          {c.label}
         </button>
-
-        <div className="np-divider" />
-
-        <button className="np-menu-row" onClick={() => onNewMode?.('ask')} title="New Thread">
-          <span className="np-menu-row-icon"><IcPlus /></span>
-          {!collapsed && <span className="np-menu-row-lbl">New Thread</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘N</span>}
-        </button>
-
-        <button className="np-menu-row" title="Search">
-          <span className="np-menu-row-icon"><IcSearch /></span>
-          {!collapsed && <span className="np-menu-row-lbl">Search</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘K</span>}
-        </button>
-
-        <button className="np-menu-row" title="Discover">
-          <span className="np-menu-row-icon"><IcDiscover /></span>
-          {!collapsed && <span className="np-menu-row-lbl">Discover</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘F</span>}
-        </button>
-
-        <div className="np-divider" />
-
-        <button className="np-menu-row" onClick={() => onNewMode?.('build')} title="New Project">
-          <span className="np-menu-row-icon"><IcPlus /></span>
-          {!collapsed && <span className="np-menu-row-lbl">New Project</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘⇧P</span>}
-        </button>
-
-        <button className="np-menu-row" title="Projects">
-          <span className="np-menu-row-icon"><IcComponent /></span>
-          {!collapsed && <span className="np-menu-row-lbl">Projects</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘P</span>}
-        </button>
-
-        <div className="np-divider" />
-
-        <button className="np-menu-row" title="History">
-          <span className="np-menu-row-icon"><IcHistory /></span>
-          {!collapsed && <span className="np-menu-row-lbl">History</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘H</span>}
-        </button>
-
-        {!collapsed && RECENT_CHATS.map(c => (
-          <div
-            key={c.id}
-            className={`np-menu-row np-menu-row--thread np-thread-row${threadMenuOpen === c.id ? ' np-thread-row--menu-open' : ''}`}
-          >
-            <button className="np-thread-row-main" onClick={() => onSelectChat(c.label)}>
-              <span className="np-menu-row-lbl np-menu-row-lbl--thread">{c.label}</span>
-            </button>
-            <div className="np-rel">
-              <button
-                className="np-thread-menu-btn"
-                title="Thread options"
-                onClick={(e) => { e.stopPropagation(); setThreadMenuOpen(o => o === c.id ? null : c.id); }}
-              >
-                <IcDots />
-              </button>
-              {threadMenuOpen === c.id && (
-                <Dropdown onClose={() => setThreadMenuOpen(null)} className="np-dropdown--thread-menu">
-                  <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(null)}>
-                    <IcShare /><span>Share</span>
-                  </button>
-                  <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(null)}>
-                    <IcRename /><span>Rename</span>
-                  </button>
-                  <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(null)}>
-                    <IcMoveTo /><span>Move to project</span>
-                  </button>
-                  <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(null)}>
-                    <IcPin /><span>Pin chat</span>
-                  </button>
-                  <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(null)}>
-                    <IcArchive /><span>Archive</span>
-                  </button>
-                  <div className="np-dropdown-sep" />
-                  <button className="np-dropdown-item danger" onClick={() => setThreadMenuOpen(null)}>
-                    <IcTrash /><span>Delete</span>
-                  </button>
-                </Dropdown>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="np-footer">
-        <button className="np-menu-row" title="Settings">
-          <span className="np-menu-row-icon"><IcSettings /></span>
-          {!collapsed && <span className="np-menu-row-lbl">Settings</span>}
-          {!collapsed && <span className="np-menu-row-kbd">⌘O</span>}
-        </button>
-      </div>
-
-      <div className="np-collapse-row">
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={`np-collapse-btn${collapsed ? ' np-collapse-btn--collapsed' : ''}`}
-        >
-          <span className="np-collapse-btn-icon">
-            {collapsed ? <IcPanelOpen /> : <IcPanelClose />}
-          </span>
-          {!collapsed && <span className="np-collapse-btn-label">Collapse</span>}
-        </button>
-      </div>
-    </div>
+      ))}
+    </Dropdown>
   );
 }
 
@@ -397,7 +201,7 @@ const BUILD_INIT_STEPS = [
   'Planning dashboard layout',
 ];
 
-function HomeView({ onSend, mode, onModeChange }) {
+function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
   const [query, setQuery] = useState('');
   const [contextFilters, setContextFilters] = useState([]);
 
@@ -421,6 +225,10 @@ function HomeView({ onSend, mode, onModeChange }) {
 
   return (
     <div className="hv-shell">
+      <div className="hv-top-actions">
+        <HistoryButton onClick={onToggleHistory} />
+      </div>
+
       <div className="hv-bg">
         <div className="hv-bg-blob hv-bg-blob-1" />
         <div className="hv-bg-blob hv-bg-blob-2" />
@@ -503,7 +311,6 @@ function HomeView({ onSend, mode, onModeChange }) {
           <div className="hv-sample-qs-list">
             {SAMPLE_QS_BY_MODE[mode].map((s, i) => (
               <button key={i} className="hv-sample-q sample-q-row" onClick={() => onSend(s.q, mode)}>
-                {s.cat && <span className={`sample-q-cat ${s.cat}`}>{CAT_LABELS[s.cat]}</span>}
                 <span className="hv-sample-q-text">{s.q}</span>
                 <span className="hv-sample-q-icon"><IcChevR /></span>
               </button>
@@ -522,13 +329,13 @@ const IcArrowRight = () => <Ic size={13} path={<><path d="M5 12h14M12 5l7 7-7 7"
 
 function FollowUpItem({ text, onClick }) {
   return (
-    <a className="follow-up-item" onClick={onClick} style={{ cursor: 'pointer' }}>
-      <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--shell-raised)', border: '1px solid var(--shell-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <button type="button" className="follow-up-item" onClick={onClick}>
+      <span className="follow-up-item-icon">
         <Ic size={13} path={<><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>} />
-      </div>
-      <span style={{ flex: 1, fontSize: 13, color: 'var(--shell-text-2)', lineHeight: 1.5 }}>{text}</span>
-      <span style={{ flexShrink: 0, color: 'var(--shell-text-faint)' }}><IcArrowRight /></span>
-    </a>
+      </span>
+      <span className="follow-up-item-text">{text}</span>
+      <span className="follow-up-item-chevron"><IcArrowRight /></span>
+    </button>
   );
 }
 
@@ -621,17 +428,14 @@ function ExchangeTurn({ exchange, live, updateExchange, phaseCollapsed, onToggle
             />
 
             <span className="cv-bubble-time">{exchange.time}</span>
-
-            {exchange.done && !isCanvasTier && (
-              <>
-                <div className="cv-ai-divider" />
-                <div className="cv-answer-block">
-                  <p className="cv-answer-eyebrow">Answer</p>
-                  <ExchangeResult tier={exchange.tier} />
-                </div>
-              </>
-            )}
           </div>
+
+          {exchange.done && !isCanvasTier && (
+            <div className="cv-answer-card">
+              <p className="cv-answer-eyebrow">Answer</p>
+              <ExchangeResult tier={exchange.tier} />
+            </div>
+          )}
 
           {exchange.done && (
             <>
@@ -698,6 +502,13 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
     setPendingDepth(ratio < 0.33 ? 0 : ratio < 0.66 ? 1 : 2);
   };
 
+  const handleTrackKeyDown = (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); setPendingDepth(d => Math.max(0, d - 1)); }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); setPendingDepth(d => Math.min(2, d + 1)); }
+    else if (e.key === 'Home') { e.preventDefault(); setPendingDepth(0); }
+    else if (e.key === 'End') { e.preventDefault(); setPendingDepth(2); }
+  };
+
   const thumbPct = [0, 50, 100][pendingDepth];
 
   return (
@@ -729,13 +540,28 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
           <div className="mode-depth-slider-wrap">
             <div className="mode-depth-labels">
               {DEPTH_LEVELS.map((d, i) => (
-                <span key={i} className={`mode-depth-label${pendingDepth === i ? ' active' : ''}`} onClick={() => setPendingDepth(i)}>{d.label}</span>
+                <button
+                  key={i}
+                  type="button"
+                  className={`mode-depth-label${pendingDepth === i ? ' active' : ''}`}
+                  onClick={() => setPendingDepth(i)}
+                >
+                  {d.label}
+                </button>
               ))}
             </div>
             <div
               className="mode-depth-track-wrap"
               ref={trackRef}
               onClick={(e) => setDepthFromClientX(e.clientX)}
+              onKeyDown={handleTrackKeyDown}
+              role="slider"
+              tabIndex={0}
+              aria-label="Depth of analysis"
+              aria-valuemin={0}
+              aria-valuemax={2}
+              aria-valuenow={pendingDepth}
+              aria-valuetext={DEPTH_LEVELS[pendingDepth].label}
             >
               <div className="mode-depth-track">
                 <div className="mode-depth-fill" style={{ width: `${thumbPct}%` }} />
@@ -760,7 +586,7 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query }) {
+function ChatView({ query, onToggleHistory, onGoHome }) {
   const [followUp, setFollowUp] = useState('');
   const [exchanges, setExchanges] = useState(() => [createExchange(query)]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
@@ -771,6 +597,9 @@ function ChatView({ query }) {
   const [appliedDepth, setAppliedDepth] = useState(1);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [threadMenuOpen, setThreadMenuOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
+  const [confirmDeleteThread, setConfirmDeleteThread] = useState(false);
   const splitRef = useRef(null);
   const messagesEndRef = useRef(null);
   const modeTriggerRef = useRef(null);
@@ -828,28 +657,66 @@ function ChatView({ query }) {
   const canStop = liveExchange && !liveExchange.chitChat && !liveExchange.done;
   const handleStop = () => { engineRegistry.current[liveId]?.stop(); updateExchange(liveId, ex => ({ ...ex, done: true, reasoningCollapsed: true })); };
 
+  const threadTitle = customTitle || exchanges[0]?.query;
+
+  const handleCopyLink = () => {
+    setThreadMenuOpen(false);
+    navigator.clipboard?.writeText(window.location.href).catch(() => {});
+  };
+
   const titleBar = (
     <div className="chat-space-title">
-      <p className="chat-space-title-text">{exchanges[0]?.query}</p>
-      <button className="np-thread-menu-btn" title="Thread options" onClick={(e) => { e.stopPropagation(); setThreadMenuOpen(o => !o); }}>
-        <IcDots />
-      </button>
-      {threadMenuOpen && (
-        <Dropdown onClose={() => setThreadMenuOpen(false)} className="np-dropdown--thread-menu">
-          <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(false)}>
-            <IcMoveTo /><span>Save to project</span>
-          </button>
-          <button className="np-dropdown-item" onClick={() => setThreadMenuOpen(false)}>
-            <IcRename /><span>Rename thread</span>
-          </button>
-          <button className="np-dropdown-item" onClick={() => { navigator.clipboard?.writeText(window.location.href); setThreadMenuOpen(false); }}>
-            <IcShare /><span>Copy link</span>
-          </button>
-          <div className="np-dropdown-sep" />
-          <button className="np-dropdown-item danger" onClick={() => setThreadMenuOpen(false)}>
-            <IcTrash /><span>Delete thread</span>
-          </button>
-        </Dropdown>
+      {editingTitle ? (
+        <input
+          className="chat-space-title-input"
+          value={threadTitle}
+          autoFocus
+          onChange={e => setCustomTitle(e.target.value)}
+          onFocus={e => e.target.select()}
+          onBlur={() => setEditingTitle(false)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingTitle(false); }}
+        />
+      ) : (
+        <button className="chat-space-title-text chat-space-title-btn" onClick={() => setEditingTitle(true)} title="Rename thread">
+          {threadTitle}
+        </button>
+      )}
+      <div className="chat-space-title-actions">
+        <HomeButton onClick={onGoHome} />
+        <HistoryButton onClick={onToggleHistory} />
+        <button className="np-thread-menu-btn" title="Thread options" onClick={(e) => { e.stopPropagation(); setThreadMenuOpen(o => !o); }}>
+          <IcDots />
+        </button>
+        {threadMenuOpen && (
+          <Dropdown onClose={() => setThreadMenuOpen(false)} className="np-dropdown--thread-menu">
+            <button className="np-dropdown-item" onClick={() => { setThreadMenuOpen(false); setEditingTitle(true); }}>
+              <IcRename /><span>Rename thread</span>
+            </button>
+            <button className="np-dropdown-item" onClick={handleCopyLink}>
+              <IcShare /><span>Copy link</span>
+            </button>
+            <div className="np-dropdown-sep" />
+            <button className="np-dropdown-item danger" onClick={() => { setThreadMenuOpen(false); setConfirmDeleteThread(true); }}>
+              <IcTrash /><span>Delete thread</span>
+            </button>
+          </Dropdown>
+        )}
+      </div>
+
+      {confirmDeleteThread && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title">Delete "{threadTitle}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDeleteThread(false)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This thread and its conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDeleteThread(false)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { setConfirmDeleteThread(false); onGoHome(); }}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1020,12 +887,13 @@ function parseWidgetIntent(text) {
 }
 
 // ── Build view ───────────────────────────────────────────────────────
-function BuildView({ initialQuery }) {
+function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
   const [dashName,    setDashName]    = useState('Untitled Dashboard');
   const [editingName, setEditingName] = useState(false);
   const [saveState,   setSaveState]   = useState('idle');
   const [widgets,          setWidgets]          = useState([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState(null);
+  const [confirmDeleteWidget, setConfirmDeleteWidget] = useState(null);
   const selectedWidget = widgets.find(w => w.id === selectedWidgetId) ?? null;
   const [msgs, setMsgs] = useState(() => [
     { id: 'm0', role: 'user', text: initialQuery },
@@ -1064,6 +932,11 @@ function BuildView({ initialQuery }) {
   const handleRemoveWidget = (id) => {
     setWidgets(prev => prev.filter(w => w.id !== id));
     if (id === selectedWidgetId) setSelectedWidgetId(null);
+  };
+
+  const requestRemoveWidget = (id) => {
+    const w = widgets.find(x => x.id === id);
+    if (w) setConfirmDeleteWidget(w);
   };
 
   const handleSelectWidget = (id) => {
@@ -1150,6 +1023,9 @@ function BuildView({ initialQuery }) {
         </div>
 
         <div className="build-topbar-spacer" />
+
+        <HomeButton onClick={onGoHome} />
+        <HistoryButton onClick={onToggleHistory} />
 
         <button
           className={`build-save-btn${saveState === 'saved' ? ' saved' : ''}`}
@@ -1287,7 +1163,7 @@ function BuildView({ initialQuery }) {
                     widget={w}
                     selected={w.id === selectedWidgetId}
                     onSelect={handleSelectWidget}
-                    onRemove={handleRemoveWidget}
+                    onRemove={requestRemoveWidget}
                     onRename={handleRenameWidget}
                     onDuplicate={handleDuplicateWidget}
                   />
@@ -1297,66 +1173,86 @@ function BuildView({ initialQuery }) {
           </div>
         </div>
       </div>
+
+      {confirmDeleteWidget && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title">Delete "{confirmDeleteWidget.title}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDeleteWidget(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This widget will be removed from the dashboard. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDeleteWidget(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { handleRemoveWidget(confirmDeleteWidget.id); setConfirmDeleteWidget(null); }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Page root ────────────────────────────────────────────────────────
 
-export default function NavigatorPage({ onNav, initialQuery = '', theme = 'light', onToggleTheme, appMode = 'em', onModeChange }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [view, setView]           = useState(initialQuery ? 'chat' : 'home');
-  const [activeQuery, setQuery]   = useState(initialQuery);
-  const [mode, setMode]           = useState('ask');
+// `resetToken` is bumped by App.jsx every time the LeftNav "Navigator" item
+// is clicked, so clicking it always lands back on the Home composer — even
+// when `current` is already 'navigator' (mid-chat), where a plain prop
+// change wouldn't otherwise cause anything to happen. The very first mount
+// skips this: an `initialQuery` (arriving from the docked chat panel's
+// "expand to full page" action) should open straight into its chat instead
+// of being reset back to Home.
+export default function NavigatorPage({ initialQuery = '', resetToken = 0 }) {
+  const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
+  const [activeQuery, setQuery] = useState(initialQuery);
+  const [mode, setMode]         = useState('ask');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    if (initialQuery) {
+      setMode('ask');
+      setQuery(initialQuery);
+      setView('chat');
+    } else {
+      setMode('ask');
+      setView('home');
+      setQuery('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetToken]);
 
   const handleSend = (q, m) => {
     const sentMode = m ?? mode;
     setQuery(q);
-    if (sentMode === 'build') {
-      setView('build');
-    } else {
-      setView('chat');
-    }
+    setView(sentMode === 'build' ? 'build' : 'chat');
   };
 
-  const handleNewMode = (m) => {
-    setMode(m);
-    setView('home');
-    setQuery('');
+  const toggleHistory = () => setHistoryOpen(o => !o);
+
+  const goHome = () => { setView('home'); setQuery(''); };
+
+  const handleSelectChat = (label) => {
+    setHistoryOpen(false);
+    setQuery(label);
+    setView('chat');
   };
 
   return (
-    <div className="nav-page-shell">
-      <Topbar
-        onNav={(id) => onNav?.(id === 'navigator' ? (appMode === 'studio' ? 'studio-home' : 'kg') : id)}
-        showNavigatorButton={false}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-      />
-
-      <div className="nav-page-body">
-        <NavPanel
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          onSelectChat={handleSend}
-          onNewMode={handleNewMode}
-          appMode={appMode}
-          onNav={onNav}
-          onModeChange={onModeChange}
-        />
-
-        <div className="nav-page-content">
-          {view === 'home' && (
-            <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} />
-          )}
-          {view === 'chat' && (
-            <ChatView query={activeQuery} />
-          )}
-          {view === 'build' && (
-            <BuildView initialQuery={activeQuery} />
-          )}
-        </div>
-      </div>
+    <div className="nav-page-content-only">
+      {view === 'home' && (
+        <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} />
+      )}
+      {view === 'chat' && (
+        <ChatView query={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} />
+      )}
+      {view === 'build' && (
+        <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} />
+      )}
+      {historyOpen && (
+        <HistoryPanel onClose={() => setHistoryOpen(false)} onSelect={handleSelectChat} />
+      )}
     </div>
   );
 }

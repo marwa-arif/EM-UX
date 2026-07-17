@@ -30,6 +30,7 @@
 /* DS Icon Button */
 .ds-icon-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; transition: background 120ms, color 120ms; flex-shrink: 0; }
 .ds-icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+.ds-icon-btn:disabled { opacity: .3; cursor: not-allowed; pointer-events: none; }
 
 /* DS Table */
 .ds-table-wrap { width: 100%; overflow-x: auto; }

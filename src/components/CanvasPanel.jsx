@@ -378,9 +378,11 @@ export default function CanvasPanel({ exchange, onFeedback }) {
   return (
     <div className="canvas-panel">
       <div className="canvas-topbar">
-        <span style={{ fontWeight: 600, fontSize: 13 }}>Analysis Results</span>
-        <div className="canvas-action-btns">
-          <button className="ds-btn sz-sm t-outline"><IcMaximize /> Add to Workspace</button>
+        <div className="canvas-topbar-row1">
+          <span className="canvas-topbar-title">Analysis Results</span>
+          <div className="canvas-action-btns">
+            <button className="ds-btn sz-sm t-outline"><IcMaximize /> Add to Workspace</button>
+          </div>
         </div>
       </div>
       {!empty && (

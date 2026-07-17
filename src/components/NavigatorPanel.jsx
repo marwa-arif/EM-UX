@@ -776,7 +776,12 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
       <Composer
         value={followUp}
         onChange={e => setFollowUp(e.target.value)}
-        onSend={() => setFollowUp('')}
+        onSend={() => {
+          const text = followUp.trim();
+          if (!text) return;
+          onSend(text);
+          setFollowUp('');
+        }}
         placeholder="Ask a follow-up…"
         mode={mode}
         onModeChange={setMode}
@@ -785,11 +790,13 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
   )
 }
 
-// ── Assessment-builder guided chat ─────────────────────────────────────
-// Scripted demo flow (not real NLU) — each stage's `action` drives the live
-// AssessmentBuilder canvas via the imperative `builderApi` ref, and its `ai`
-// message is generated from a post-action snapshot of that real state.
-const BUILDER_STAGES = [
+// ── Builder guided chats ────────────────────────────────────────────────
+// Scripted demo flows (not real NLU) — each stage's `action` drives the live
+// canvas for the active surface (Assessment Builder, Dashboard, ...) via its
+// imperative `builderApi` ref, and its `ai` message is generated from a
+// post-action snapshot of that real state. Which stage list runs is picked
+// by `builderKind`, so each surface gets its own scoped vocabulary/context.
+const ASSESSMENT_BUILDER_STAGES = [
   {
     ai: "Hi! Let's build an assessment together — what should we check?",
     suggestions: ['Storage volumes must be encrypted at rest'],
@@ -831,8 +838,61 @@ const BUILDER_STAGES = [
   },
 ]
 
-function BuilderChat({ builderApi }) {
-  const [messages, setMessages]   = useState(() => [{ role: 'ai', text: BUILDER_STAGES[0].ai }])
+// ── Dashboard-builder guided chat ────────────────────────────────────────
+// Same scripted-demo shape as the assessment builder, driving DashboardCanvas's
+// addWidget/configureWidget/removeWidget via its builderApi ref.
+const DASHBOARD_BUILDER_STAGES = [
+  {
+    ai: "Hi! Let's add something to your dashboard — what would you like to see?",
+    suggestions: ['Show me open findings by severity'],
+  },
+  {
+    action: (api) => api.addWidget?.({ chartId: 'vert-bar', label: 'Findings by Severity', sizeId: 'medium', heightId: 'medium' }),
+    ai: (snap) => `Added "${snap.widgets?.at(-1)?.label || 'the widget'}" to your dashboard (${snap.widgetCount} widget${snap.widgetCount === 1 ? '' : 's'} total). Want to adjust its size or colors?`,
+    suggestions: ['Make it larger', 'Looks good'],
+  },
+  {
+    action: (api) => { const last = api.getSnapshot?.().widgets?.at(-1); if (last) api.configureWidget?.(last.id, { sizeId: 'large', heightId: 'large' }) },
+    ai: (snap) => `Resized "${snap.widgets?.at(-1)?.label || 'the widget'}". Anything else you'd like on this dashboard?`,
+    suggestions: ['That’s all for now'],
+  },
+]
+
+// Triggered from a widget's "Edit with Copilot" hover action — scoped to that
+// one widget instead of the generic add-new-widget flow above.
+function buildDashboardEditStages(ctx) {
+  return [
+    {
+      ai: `Let's edit "${ctx.widgetLabel}" — what would you like to change?`,
+      suggestions: ['Make it larger', 'Change chart type'],
+    },
+    {
+      action: (api) => api.configureWidget?.(ctx.widgetId, { sizeId: 'large', heightId: 'large' }),
+      ai: (snap) => `Resized "${snap.widgets?.find(w => w.id === ctx.widgetId)?.label || ctx.widgetLabel}". Anything else you'd like to change?`,
+      suggestions: ['Looks good'],
+    },
+  ]
+}
+
+const BUILDER_STAGES_BY_KIND = {
+  assessment: ASSESSMENT_BUILDER_STAGES,
+  dashboard: DASHBOARD_BUILDER_STAGES,
+}
+
+const BUILDER_CAPTION_BY_KIND = {
+  assessment: 'Guided assessment builder',
+  dashboard: 'Guided dashboard builder',
+}
+
+function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = null }) {
+  const editingWidget = builderKind === 'dashboard' && builderContext?.widgetId
+  const stages = editingWidget
+    ? buildDashboardEditStages(builderContext)
+    : (BUILDER_STAGES_BY_KIND[builderKind] || ASSESSMENT_BUILDER_STAGES)
+  const caption = editingWidget
+    ? `Editing "${builderContext.widgetLabel}"`
+    : (BUILDER_CAPTION_BY_KIND[builderKind] || BUILDER_CAPTION_BY_KIND.assessment)
+  const [messages, setMessages]   = useState(() => [{ role: 'ai', text: stages[0].ai }])
   const [stageIdx, setStageIdx]   = useState(0)
   const [inputValue, setInputVal] = useState('')
   const [busy, setBusy]           = useState(false)
@@ -847,7 +907,7 @@ function BuilderChat({ builderApi }) {
   const advance = (userText) => {
     if (busy) return
     const nextIdx   = stageIdxRef.current + 1
-    const nextStage = BUILDER_STAGES[nextIdx]
+    const nextStage = stages[nextIdx]
     if (!nextStage) return
     if (userText) setMessages(m => [...m, { role: 'user', text: userText }])
     setInputVal('')
@@ -860,18 +920,18 @@ function BuilderChat({ builderApi }) {
       stageIdxRef.current = nextIdx
       setStageIdx(nextIdx)
       setBusy(false)
-      if (!nextStage.suggestions?.length && BUILDER_STAGES[nextIdx + 1]) {
+      if (!nextStage.suggestions?.length && stages[nextIdx + 1]) {
         setTimeout(() => advance(''), 300)
       }
     }, nextStage.settleMs || 450)
   }
 
-  const currentStage = BUILDER_STAGES[stageIdx]
+  const currentStage = stages[stageIdx]
 
   return (
     <div className="np-builder-chat">
-      <div className="np-builder-caption">Guided assessment builder</div>
-      <div className="np-builder-messages" ref={messagesRef} role="log" aria-live="polite" aria-label="Assessment builder conversation">
+      <div className="np-builder-caption">{caption}</div>
+      <div className="np-builder-messages" ref={messagesRef} role="log" aria-live="polite" aria-label={caption}>
         {messages.map((m, i) => (
           <div key={i} className={`np-builder-msg ${m.role}`}>
             {m.role === 'ai' && <span className="np-builder-msg-badge" aria-hidden="true"><NavIcon size={13} /></span>}
@@ -914,7 +974,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null }) {
   const [view, setView]             = useState('home')
 
   // Enter the scripted assessment-builder chat when triggered externally
@@ -1299,7 +1359,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         {/* ── Body ── */}
         <div className="np-panel-body">
           {view === 'builder'
-            ? <BuilderChat builderApi={builderApi} />
+            ? <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />
             : view === 'home'
             ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} />
             : <PanelChat

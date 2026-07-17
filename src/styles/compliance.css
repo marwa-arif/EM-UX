@@ -943,6 +943,9 @@
 
 .comp-dl-item:hover { background: var(--shell-hover); }
 
+.comp-dl-menu--wide { min-width: 170px; }
+.comp-dl-menu--wide .comp-dl-item { white-space: nowrap; }
+
 /* ── Posture cell ────────────────────────────────────────────────── */
 .comp-posture-cell {
   display: flex;

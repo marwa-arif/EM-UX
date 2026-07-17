@@ -340,6 +340,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               onViewModeChange={navigatorProps?.onViewModeChange}
               builderMode={navigatorProps?.builderMode}
               builderApi={navigatorProps?.builderApi}
+              builderKind={navigatorProps?.builderKind}
+              builderContext={navigatorProps?.builderContext}
             />
           )}
         </div>
@@ -500,10 +502,22 @@ function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
   const [navigatorQuery, setNavigatorQuery] = useState('');
+  // Bumped on every LeftNav "Navigator" click so NavigatorPage resets to its
+  // Home screen even when `current` is already 'navigator' (mid-chat) — a
+  // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
+  const [navigatorReset, setNavigatorReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
+  const [navigatorBuilderKind, setNavigatorBuilderKind] = useState('assessment');
+  const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
   const [assessmentBuilderApi, setAssessmentBuilderApi] = useState(null);
+  const [dashboardBuilderApi, setDashboardBuilderApi] = useState(null);
+  const BUILDER_SURFACES = {
+    assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
+    dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
+  };
+  const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [filtersByPage, setFiltersByPage] = useState({});
@@ -590,6 +604,8 @@ function App() {
     if (id === 'navigator-builder') {
       setNavigatorViewMode('sidebar');
       setNavigatorBuilderMode(true);
+      setNavigatorBuilderKind(data?.kind || 'assessment');
+      setNavigatorBuilderContext(data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel } : null);
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       setRightPanel('navigator');
       return;
@@ -597,6 +613,7 @@ function App() {
     if (id === 'navigator-page') {
       setRightPanel(null);
       setNavigatorQuery(data || '');
+      setNavigatorReset(n => n + 1);
       setCurrent('navigator');
       history.pushState(null, '', '/navigator');
       return;
@@ -647,26 +664,50 @@ function App() {
     handleNav(destId);
   };
 
+  const sharedRightPanel = (
+    <RightPanelShell
+      tab={rightPanel}
+      onTabSwitch={openRightTab}
+      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
+      visitedTabs={visitedTabs}
+      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
+        if (merge) {
+          setFiltersByPage(prev => {
+            const cur = prev[current] || { count: 0, chips: [] };
+            const merged = [...cur.chips, ...(chips || [])];
+            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+          });
+        } else {
+          setPageFilters(current, c, chips || []);
+        }
+      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      navigatorProps={{
+        onNav: handleNav,
+        initialViewMode: navigatorViewMode,
+        onViewModeChange: (mode) => setNavigatorFloating(mode === 'floating'),
+        builderMode: navigatorBuilderMode && !!activeBuilderSurface?.matchRoute(current),
+        builderApi: activeBuilderSurface?.api ?? null,
+        builderKind: navigatorBuilderKind,
+        builderContext: navigatorBuilderContext,
+      }}
+      navigatorFloating={navigatorFloating}
+    />
+  );
+
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
       <>
         {showSplash && <SplashScreen onDone={onSplashDone} />}
-        <WorkspacePage onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
-      </>
-    );
-  }
-
-  if (current === 'navigator' || current.startsWith('navigator/')) {
-    return (
-      <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
-        <NavigatorPage
+        <WorkspacePage
           onNav={handleNav}
-          initialQuery={navigatorQuery}
+          initialRoute={current}
           theme={theme}
           onToggleTheme={toggleTheme}
-          appMode={appMode}
-          onModeChange={handleModeChange}
+          onBuilderApiReady={setDashboardBuilderApi}
+          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: 'dashboard', ...ctx })}
+          rightPanelSlot={sharedRightPanel}
+          rightPanelOpen={rightPanel !== null}
+          navigatorActive={rightPanel === 'navigator'}
         />
       </>
     );
@@ -762,6 +803,11 @@ function App() {
       breadcrumbHrefs: ['/knowledge-graph', null],
       onAdd: () => {},
     },
+    navigator: {
+      title: 'Navigator',
+      breadcrumb: ['Home', 'Navigator'],
+      breadcrumbHrefs: [null, null],
+    },
   };
 
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
@@ -774,39 +820,12 @@ function App() {
   // Auto-collapse while a right panel (navigator/filter) is open, but never
   // let that override the user's manual preference once the panel closes.
   const collapsed = navCollapsed || rightPanel !== null;
-
-  const sharedRightPanel = (
-    <RightPanelShell
-      tab={rightPanel}
-      onTabSwitch={openRightTab}
-      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); }}
-      visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
-        if (merge) {
-          setFiltersByPage(prev => {
-            const cur = prev[current] || { count: 0, chips: [] };
-            const merged = [...cur.chips, ...(chips || [])];
-            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
-          });
-        } else {
-          setPageFilters(current, c, chips || []);
-        }
-      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
-      navigatorProps={{
-        onNav: handleNav,
-        initialViewMode: navigatorViewMode,
-        onViewModeChange: (mode) => setNavigatorFloating(mode === 'floating'),
-        builderMode: current === 'report/assessments' && navigatorBuilderMode,
-        builderApi: assessmentBuilderApi,
-      }}
-      navigatorFloating={navigatorFloating}
-    />
-  );
+  const isNavigatorRoute = current === 'navigator';
 
   return (
     <div className="app-shell">
       {showSplash && <SplashScreen onDone={onSplashDone} />}
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} theme={theme} onToggleTheme={toggleTheme} />
+      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
         <LeftNav
@@ -821,16 +840,22 @@ function App() {
         {appMode === 'studio' ? (
           <main className="exp-main exp-main--row studio-main">
             <div className="exp-content-col">
-              <SubHeader
-                title="Studio"
-                breadcrumb={['Home']}
-                breadcrumbHrefs={[null]}
-                showMenu={false}
-                showExplore={false}
-                actions={null}
-              />
+              {!isNavigatorRoute && (
+                <SubHeader
+                  title="Studio"
+                  breadcrumb={['Home']}
+                  breadcrumbHrefs={[null]}
+                  showMenu={false}
+                  showExplore={false}
+                  actions={null}
+                />
+              )}
               <div className="page-scroll">
-                <StudioHomePage onNav={handleNav} />
+                {isNavigatorRoute ? (
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} />
+                ) : (
+                  <StudioHomePage onNav={handleNav} />
+                )}
               </div>
             </div>
             {sharedRightPanel}
@@ -838,33 +863,36 @@ function App() {
         ) : (
           <main className="exp-main exp-main--row">
             <div className="exp-content-col">
-              <SubHeader
-                title={showingAssessmentBuilder ? 'Assessment Builder' : pageMeta.title}
-                breadcrumb={showingAssessmentBuilder ? ['Home', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
-                breadcrumbHrefs={showingAssessmentBuilder ? [null, null, null, null] : pageMeta.breadcrumbHrefs}
-                breadcrumbClicks={showingAssessmentBuilder ? [undefined, undefined, () => setAssessmentBuilderOpen(false)] : [() => handleNav('exposure/overview')]}
-                leading={undefined}
-                pageId={current}
-                activeFilterCount={activeFilterCount}
-                activeFilters={activeFilters}
-                onRemoveFilter={(idx) => {
-                  setFiltersByPage(prev => {
-                    const cur = prev[current] || { count: 0, chips: [] };
-                    const updated = cur.chips.filter((_, i) => i !== idx);
-                    return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
-                  });
-                }}
-                onClearFilters={() => setPageFilters(current, 0, [])}
-                filterActive={rightPanel === 'filter'}
-                onFilter={() => openRightTab('filter')}
-                onAdd={showingAssessmentBuilder ? undefined : pageMeta.onAdd}
-                onExplore={handleExplore}
-                onEdit={DISCOVER_PAGES.has(current) ? () => {
-                  setCurrent('workspace/dashboard/discover');
-                  history.pushState(null, '', '/workspace');
-                } : undefined}
-              />
+              {!isNavigatorRoute && (
+                <SubHeader
+                  title={showingAssessmentBuilder ? 'Assessment Builder' : pageMeta.title}
+                  breadcrumb={showingAssessmentBuilder ? ['Home', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
+                  breadcrumbHrefs={showingAssessmentBuilder ? [null, null, null, null] : pageMeta.breadcrumbHrefs}
+                  breadcrumbClicks={showingAssessmentBuilder ? [undefined, undefined, () => setAssessmentBuilderOpen(false)] : [() => handleNav('exposure/overview')]}
+                  leading={undefined}
+                  pageId={current}
+                  activeFilterCount={activeFilterCount}
+                  activeFilters={activeFilters}
+                  onRemoveFilter={(idx) => {
+                    setFiltersByPage(prev => {
+                      const cur = prev[current] || { count: 0, chips: [] };
+                      const updated = cur.chips.filter((_, i) => i !== idx);
+                      return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                    });
+                  }}
+                  onClearFilters={() => setPageFilters(current, 0, [])}
+                  filterActive={rightPanel === 'filter'}
+                  onFilter={() => openRightTab('filter')}
+                  onAdd={showingAssessmentBuilder ? undefined : pageMeta.onAdd}
+                  onExplore={handleExplore}
+                  onEdit={DISCOVER_PAGES.has(current) ? () => {
+                    setCurrent('workspace/dashboard/discover');
+                    history.pushState(null, '', '/workspace');
+                  } : undefined}
+                />
+              )}
               <div className="page-scroll">
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}
@@ -874,7 +902,7 @@ function App() {
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
                 {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
-                {!isKG && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
+                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
                 {isKG && <PageKG />}
               </div>
             </div>
