@@ -1,17 +1,23 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { AssessmentDrawer, FW_DISPLAY, FW_CONTROLS, SelectDropdown } from './CompliancePage.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
+import AssessmentBuilder from '../components/AssessmentBuilder.jsx'
 import '../styles/compliance.css'
 import '../styles/assessments.css'
 
 // ── Entity icons ──────────────────────────────────────────────────
 const ENTITY_ICONS = {
-  cloud:    '/assets/icons/entities/cloud-account.svg',
-  device:   '/assets/icons/entities/host.svg',
-  identity: '/assets/icons/entities/identity.svg',
-  storage:  '/assets/icons/entities/storage.svg',
-  multi:    '/assets/icons/entities/assessment.svg',
+  cloud:         '/assets/icons/entities/cloud-account.svg',
+  device:        '/assets/icons/entities/host.svg',
+  identity:      '/assets/icons/entities/identity.svg',
+  storage:       '/assets/icons/entities/storage.svg',
+  container:     '/assets/icons/entities/cloud-container.svg',
+  cluster:       '/assets/icons/entities/cluster.svg',
+  person:        '/assets/icons/entities/person.svg',
+  finding:       '/assets/icons/entities/finding.svg',
+  vulnerability: '/assets/icons/entities/vulnerability.svg',
+  multi:         '/assets/icons/entities/assessment.svg',
 }
 
 function EntityBadge({ type }) {
@@ -122,7 +128,13 @@ function FwStack({ keys, onOverflow }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────
-export default function AssessmentsPage() {
+export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiReady, builderOpen = false, onBuilderOpenChange = () => {} } = {}) {
+  const [assessments, setAssessments] = useState(ASSESSMENTS)
+  const showBuilder = builderOpen
+  const setShowBuilder = onBuilderOpenChange
+  const [builderEntry, setBuilderEntry] = useState('manual') // 'manual' | 'copilot'
+  const builderRef = useRef(null)
+  useEffect(() => { onBuilderApiReady?.(builderRef) }, [])
   const [search, setSearch]         = useState('')
   const [sortCol, setSortCol]       = useState(null)
   const [sortDir, setSortDir]       = useState('asc')
@@ -135,6 +147,16 @@ export default function AssessmentsPage() {
   const [ctDescription, setCtDescription] = useState('')
   const [ctAssignee, setCtAssignee]     = useState('Patch Admin')
   const [toast, setToast]               = useState(null)
+
+  const handleDeploy = useCallback((newAssessment) => {
+    setShowBuilder(false)
+    setAssessments(prev => [{ ...newAssessment, _new: true }, ...prev])
+    setToast({ type: 'success', msg: 'Assessment deployed. It will run with the next pipeline.' })
+    setTimeout(() => setToast(null), 4000)
+    setTimeout(() => {
+      setAssessments(prev => prev.map(a => a.id === newAssessment.id ? { ...a, pending: false } : a))
+    }, 6000)
+  }, [])
 
   const openTicket = useCallback((row, e) => {
     e.stopPropagation()
@@ -159,9 +181,9 @@ export default function AssessmentsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return q
-      ? ASSESSMENTS.filter(a => a.name.toLowerCase().includes(q) || a.entityLabel.toLowerCase().includes(q))
-      : ASSESSMENTS
-  }, [search])
+      ? assessments.filter(a => a.name.toLowerCase().includes(q) || a.entityLabel.toLowerCase().includes(q))
+      : assessments
+  }, [assessments, search])
 
   const sorted = useMemo(() => {
     if (!sortCol) return filtered
@@ -188,13 +210,29 @@ export default function AssessmentsPage() {
     className: 'asmts-th-sortable',
   })
 
+  if (showBuilder) {
+    return (
+      <AssessmentBuilder
+        ref={builderRef}
+        onClose={() => setShowBuilder(false)}
+        onDeploy={handleDeploy}
+        skipGuide={builderEntry === 'copilot'}
+        onUseNavigator={onOpenCopilotBuilder}
+      />
+    )
+  }
+
   return (
     <div className="asmts-page">
       <div className="asmts-card">
       {/* Header bar */}
       <div className="asmts-header">
         <span className="asmts-title">Assessments ({filtered.length.toLocaleString()})</span>
-        <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={220} />
+        <div className="asmts-header-actions">
+          <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={220} />
+          <button className="ds-btn sz-md t-outline" onClick={() => { setBuilderEntry('copilot'); setShowBuilder(true); onOpenCopilotBuilder?.() }}>Build with Copilot</button>
+          <button className="ds-btn sz-md t-primary" onClick={() => { setBuilderEntry('manual'); setShowBuilder(true) }}>+ New assessment</button>
+        </div>
       </div>
 
       {/* Table */}
@@ -223,8 +261,24 @@ export default function AssessmentsPage() {
           <tbody>
             {paginated.map(a => {
               const rs = ratingBadgeStyle(a.rating)
+              if (a.pending) {
+                return (
+                  <tr key={a.id} className={`asmts-row${a._new ? ' asmts-row--new' : ''}`}>
+                    <td><EntityBadge type={a.entity} /></td>
+                    <td className="asmts-name-cell asmts-name-link" title={a.name} onClick={() => setDrawerNode(a)}>{a.name}</td>
+                    <td colSpan={4} className="asmts-pending-cell">
+                      <span className="asmts-pending-spinner" />
+                      Deploying — runs on next pipeline
+                    </td>
+                    <td>
+                      <span className="asmts-entity-pill">{a.entityLabel}</span>
+                    </td>
+                    <td />
+                  </tr>
+                )
+              }
               return (
-                <tr key={a.id} className="asmts-row">
+                <tr key={a.id} className={`asmts-row${a._new ? ' asmts-row--new' : ''}`}>
                   <td><EntityBadge type={a.entity} /></td>
                   <td className="asmts-name-cell asmts-name-link" title={a.name} onClick={() => setDrawerNode(a)}>{a.name}</td>
                   <td>

@@ -1,7 +1,7 @@
 # Prevalent AI — Design System
 
-Context: https://anthu211.github.io/design-system-2.0/ds/context.json
-**Fetch this before any design or build task.**
+Context: `design-system-2.0/ds/context.json` (local directory in this repo — NEVER use WebFetch/the public URL for this. Always Read the local file.)
+**Read this before any design or build task.**
 
 ## Non-negotiable rules
 - CSS variables only. Never hardcode hex or px values.
@@ -15,8 +15,8 @@ Context: https://anthu211.github.io/design-system-2.0/ds/context.json
 - No page-level tabs unless explicitly requested.
 
 ## On every task
-1. If using a slash command (`/new-page`, `/new-component`, `/new-react-component`, `/ux-review`, `/persona-check`, `/audit-page`) — the command handles its own fetching. Do NOT also fetch context.json.
-2. For ad-hoc tasks (no slash command): fetch context.json first, then only the modules your task type needs (keep total JSON under 15KB).
+1. If using a slash command (`/new-page`, `/new-component`, `/new-react-component`, `/ux-review`, `/persona-check`, `/audit-page`) — the command handles its own fetching. Do NOT also read context.json.
+2. For ad-hoc tasks (no slash command): Read `design-system-2.0/ds/context.json` locally first, then only the module files under `design-system-2.0/ds/` your task type needs (keep total read under 15KB). Never WebFetch the github.io URL — the directory is checked out locally.
 3. Update ALL affected files — not just the main one.
 4. Confirm filename · persona applied · key decisions when done.
 

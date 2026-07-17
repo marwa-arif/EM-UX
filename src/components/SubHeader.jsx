@@ -20,7 +20,7 @@ const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, showMenu = true, showExplore = true, onEdit, pageId }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -57,6 +57,8 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
   return (
     <>
     <div className="subheader" ref={subheaderRef}>
+
+      {leading}
 
       <div className="subheader__title-block">
         <div className="subheader__title">{title}</div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
@@ -94,6 +94,15 @@ const KG_COLUMNS = [
   'AD ObjectGUID', 'AD Operational Status', 'AD UAC Compliance Status', 'AD User Account Control',
   'Aggregated Quality Score', 'Anti Virus Scan Completed', 'Asset Compliance Scope',
   'Asset Criticality', 'Asset Criticality Score', 'Display Label', 'Type',
+]
+
+const DOWNLOAD_TABLE_OPTIONS = [
+  { id: 'host-sla-breach',        label: 'Host SLA Breach Status by Asset Type' },
+  { id: 'vuln-sla-timeline',      label: 'Vulnerability Findings SLA Timeline by Vulnerability Severity' },
+  { id: 'top10-vuln-cat-findings', label: 'Top 10 Most Common Vulnerability Categories by Vulnerability Findings' },
+  { id: 'top10-vuln-cat',         label: 'Top 10 Most Common Vulnerability Categories by Vulnerabilities' },
+  { id: 'top10-os-findings',      label: 'Top 10 Most Common Vulnerable Operating Systems by Vulnerability Findings' },
+  { id: 'top10-os',               label: 'Top 10 Most Common Vulnerable Operating Systems by Vulnerabilities' },
 ]
 
 const CHART_TYPES = [
@@ -413,11 +422,12 @@ function FieldRow({ label, hint, tooltip, children }) {
   )
 }
 
-function TextInput({ placeholder, value, onChange, withKG }) {
+function TextInput({ placeholder, value, onChange, withKG, readOnly = false }) {
   return (
     <div className="dc-text-input-wrap">
       <input
         value={value || ''} onChange={onChange}
+        readOnly={readOnly}
         placeholder={placeholder}
         className="dc-text-input"
         style={{ '--dc-input-color': value ? PAI.fg1 : PAI.fg3 }}
@@ -427,12 +437,12 @@ function TextInput({ placeholder, value, onChange, withKG }) {
   )
 }
 
-function TextArea({ placeholder, value, onChange }) {
+function TextArea({ placeholder, value, onChange, rows = 3 }) {
   return (
     <textarea
       value={value || ''} onChange={onChange}
       placeholder={placeholder}
-      rows={3}
+      rows={rows}
       className="dc-textarea"
       style={{ '--dc-fg3': PAI.fg3 }}
     />
@@ -1759,7 +1769,7 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 }
 
 // ── Widget Card ──────────────────────────────────────────────────────
-export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, reportMode, printMode = false }) {
+export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, reportMode, printMode = false }) {
   const [hovered, setHovered]         = useState(false)
   const [dlOpen, setDlOpen]           = useState(false)
   const dlRef                         = useRef(null)
@@ -1797,6 +1807,11 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, reportM
           <button title="Edit" onClick={onEdit} className="dc-action-btn">
             <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
+          {onEditWithCopilot && (
+            <button title="Edit with Copilot" onClick={() => onEditWithCopilot(widget)} className="dc-action-btn">
+              <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="edit with copilot" />
+            </button>
+          )}
           <button title="Delete" onClick={() => onRequestDelete(widget)} className="dc-action-btn dc-action-btn--delete">
             <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
@@ -1841,6 +1856,48 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, reportM
           <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} cardHeight={h} printMode={printMode} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Floating canvas toolbar (Undo / Redo / Zoom) ───────────────────────
+function DashboardFloatingToolbar({ canUndo, canRedo, onUndo, onRedo, zoom, onZoomIn, onZoomOut, onZoomReset, onReset }) {
+  return (
+    <div className="dc-float-toolbar">
+      <button className="ds-icon-btn" title="Undo" disabled={!canUndo} onClick={onUndo}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 14 4 9 9 4"/>
+          <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+        </svg>
+      </button>
+      <button className="ds-icon-btn" title="Redo" disabled={!canRedo} onClick={onRedo}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 14 20 9 15 4"/>
+          <path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
+        </svg>
+      </button>
+      <div className="dc-float-toolbar-divider" />
+      <button className="ds-icon-btn" title="Zoom out" disabled={zoom <= 0.5} onClick={onZoomOut}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </button>
+      <button className="dc-float-toolbar-zoom-label" title="Reset zoom" onClick={onZoomReset}>{Math.round(zoom * 100)}%</button>
+      <button className="ds-icon-btn" title="Zoom in" disabled={zoom >= 1.5} onClick={onZoomIn}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </button>
+      {onReset && (
+        <>
+          <div className="dc-float-toolbar-divider" />
+          <span className="dc-tip" data-tip="Reset the whole dashboard">
+            <button className="ds-icon-btn" onClick={onReset}>
+              <img src="/assets/icons/reset.svg" width={16} height={16} alt="Reset" />
+            </button>
+          </span>
+        </>
+      )}
     </div>
   )
 }
@@ -2582,7 +2639,7 @@ function MomSkeleton() {
   )
 }
 
-export default function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange }) {
+const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder }, ref) {
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
     : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
     : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
@@ -2601,6 +2658,93 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   const [panelMode, setPanelMode]         = useState(null)
   const [settingsWidgetId, setSettingsWidgetId] = useState(null)
   const [deletePending, setDeletePending] = useState(null)
+  const [deleteDashboardConfirm, setDeleteDashboardConfirm] = useState(false)
+
+  // Dashboard-level actions: share + schedule + stop schedule + download (UI only — this app has no backend)
+  const [shareOpen, setShareOpen]           = useState(false)
+  const [shareRecipients, setShareRecipients] = useState('')
+  const [shareMessage, setShareMessage]     = useState('')
+  const [shareSendCopy, setShareSendCopy]   = useState(true)
+
+  const [scheduleOpen, setScheduleOpen]         = useState(false)
+  const [scheduleActive, setScheduleActive]     = useState(false)
+  const [scheduleRecipients, setScheduleRecipients] = useState('')
+  const [scheduleSendCopy, setScheduleSendCopy] = useState(true)
+  const [scheduleMode, setScheduleMode]         = useState('specific') // 'daily' | 'specific'
+  const [scheduleStartDate, setScheduleStartDate] = useState('')
+  const [scheduleStartTime, setScheduleStartTime] = useState('09:00')
+  const [scheduleRepeatEvery, setScheduleRepeatEvery] = useState(1)
+  const [scheduleRepeatUnit, setScheduleRepeatUnit]   = useState('week')
+  const [scheduleRepeatUntil, setScheduleRepeatUntil] = useState('')
+
+  const [stopScheduleOpen, setStopScheduleOpen] = useState(false)
+
+  const [downloadOpen, setDownloadOpen] = useState(false)
+  const [downloadTables, setDownloadTables] = useState(() =>
+    Object.fromEntries(DOWNLOAD_TABLE_OPTIONS.map(t => [t.id, true]))
+  )
+
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const moreMenuRef = useRef(null)
+  useEffect(() => {
+    if (!moreMenuOpen) return
+    const handler = e => { if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) setMoreMenuOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [moreMenuOpen])
+
+  const perf = widgets.filter(w => w.phase === 'active').length > 0
+    ? perfLevel(widgets.filter(w => w.phase === 'active').length) : null
+
+  // The toolbar's identity row (back/name/scope) and actions row (Copilot/
+  // Share/Schedule/Download/kebab/Save) share one line by default. Only
+  // stack them into two lines once they'd actually overflow.
+  //
+  // Can't use scrollWidth here: once stacked, each row stretches to 100% of
+  // the outer toolbar's width (column-flex cross-axis stretch), so a row
+  // narrower than that reports scrollWidth == clientWidth == the stretched
+  // box width, not its real content width — a self-referential measurement
+  // that would flip-flop every render. Instead sum each visible child's own
+  // rendered width (stable regardless of row/column direction, since
+  // flex-shrink:0 children don't resize based on the row's box width),
+  // skipping the flex-grow spacer, which is the only child that does.
+  const toolbarOuterRef = useRef(null)
+  const toolbarTopRowRef = useRef(null)
+  const toolbarActionsRowRef = useRef(null)
+  const [toolbarStacked, setToolbarStacked] = useState(false)
+  const [toolbarCompact, setToolbarCompact] = useState(false)
+  useEffect(() => {
+    const outer = toolbarOuterRef.current
+    const top = toolbarTopRowRef.current
+    const actions = toolbarActionsRowRef.current
+    if (!outer || !top || !actions) return
+    const naturalWidth = row => {
+      const visible = Array.from(row.children).filter(c => !c.classList.contains('dc-toolbar-spacer'))
+      const sum = visible.reduce((total, c) => {
+        // The name input is flex-shrink:1, so its live rendered width is
+        // already compressed whenever space is tight — measuring that would
+        // underestimate how much room this row actually wants. Use its
+        // comfortable target width instead.
+        if (c.classList.contains('dc-toolbar-name-input')) return total + 200
+        return total + c.getBoundingClientRect().width
+      }, 0)
+      return sum + Math.max(0, visible.length - 1) * 8
+    }
+    const check = () => {
+      const available = outer.clientWidth
+      const topNatural = naturalWidth(top)
+      const actionsNatural = naturalWidth(actions)
+      setToolbarStacked(topNatural + actionsNatural + 8 > available)
+      setToolbarCompact(available < 900)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(outer)
+    return () => ro.disconnect()
+    // Re-check on relevant content changes too, not just outer resizes —
+    // the outer element's own width can stay the same while a row's natural
+    // content width changes (e.g. the perf/timeline badges appearing).
+  }, [momTimeline, perf, reportMode, toolbarCompact])
 
   // Add widget form
   const [selectedChart, setSelectedChart]       = useState(null)
@@ -2609,8 +2753,74 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   const [widgetSize, setWidgetSize]             = useState('small')
   const [widgetHeight, setWidgetHeight]         = useState('small')
 
-  const perf = widgets.filter(w => w.phase === 'active').length > 0
-    ? perfLevel(widgets.filter(w => w.phase === 'active').length) : null
+  const [zoom, setZoom]   = useState(1)
+  const [past, setPast]   = useState([])
+  const [future, setFuture] = useState([])
+  const canUndo = past.length > 0
+  const canRedo = future.length > 0
+
+  const zoomIn    = () => setZoom(z => Math.min(1.5, Math.round((z + 0.25) * 100) / 100))
+  const zoomOut   = () => setZoom(z => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))
+  const zoomReset = () => setZoom(1)
+
+  // Every committed widget change goes through here, so it's undoable
+  // regardless of whether it came from the manual panel or Copilot's builderApi.
+  const commitWidgets = (updater) => {
+    setPast(p => [...p, widgets])
+    setFuture([])
+    setWidgets(updater)
+  }
+
+  const undo = () => {
+    if (!canUndo) return
+    const previous = past[past.length - 1]
+    setPast(p => p.slice(0, -1))
+    setFuture(f => [widgets, ...f])
+    setWidgets(previous)
+  }
+
+  const redo = () => {
+    if (!canRedo) return
+    const next = future[0]
+    setFuture(f => f.slice(1))
+    setPast(p => [...p, widgets])
+    setWidgets(next)
+  }
+
+  // Widget mutators — the single path both the manual Add Widget panel and
+  // Copilot's builderApi use, so both stay in sync against one `widgets` state.
+  // Each call is its own undo step: for the manual panel, Save (create with
+  // defaults) and Apply (configure) are genuinely two distinct, real states.
+  const addWidget = ({ chartId, label, description = '', sizeId = 'small', heightId = 'small' }) => {
+    const size = WIDGET_SIZES.find(s => s.id === sizeId) || WIDGET_SIZES[0]
+    const newId = (widgets.length > 0 ? Math.max(...widgets.map(w => w.id)) : 0) + 1
+    commitWidgets(w => [...w, {
+      id: newId,
+      label: label || CHART_DEFAULT_NAMES[chartId] || CHART_TYPES.find(c => c.id === chartId)?.label,
+      description,
+      chartId, span: size.span, sizeId, heightId,
+      phase: 'active',
+    }])
+    return newId
+  }
+
+  const configureWidget = (id, changes) => {
+    const allSizes = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
+    const size = allSizes.find(s => s.id === changes.sizeId) || WIDGET_SIZES[0]
+    commitWidgets(ws => ws.map(w => w.id === id
+      ? { ...w, ...changes, span: size.span, phase: 'active' }
+      : w
+    ))
+  }
+
+  const removeWidget = (id) => { commitWidgets(ws => ws.filter(w => w.id !== id)) }
+
+  const getSnapshot = () => ({
+    widgetCount: widgets.length,
+    widgets: widgets.map(w => ({ id: w.id, label: w.label, chartId: w.chartId, phase: w.phase })),
+  })
+
+  useImperativeHandle(ref, () => ({ addWidget, configureWidget, removeWidget, getSnapshot }))
 
   if (!timelineConfirmed) {
     return (
@@ -2636,14 +2846,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
 
   const handleAddSave = () => {
     if (!selectedChart) return
-    const size = WIDGET_SIZES.find(s => s.id === widgetSize)
-    const newId = (widgets.length > 0 ? Math.max(...widgets.map(w => w.id)) : 0) + 1
-    setWidgets(w => [...w, {
-      id: newId, label: widgetTitle || CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label,
-      description: widgetDescription,
-      chartId: selectedChart, span: size.span, sizeId: widgetSize, heightId: widgetHeight,
-      phase: 'active',
-    }])
+    const newId = addWidget({ chartId: selectedChart, label: widgetTitle, description: widgetDescription, sizeId: widgetSize, heightId: widgetHeight })
     setSettingsWidgetId(newId)
     setPanelMode('settings')
   }
@@ -2651,12 +2854,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   const handleAddCancel = () => { setPanelMode(null) }
 
   const handleSettingsSave = (newId, changes) => {
-    const allSizes = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
-    const size = allSizes.find(s => s.id === changes.sizeId) || WIDGET_SIZES[0]
-    setWidgets(ws => ws.map(w => w.id === newId
-      ? { ...w, ...changes, span: size.span, phase: 'active' }
-      : w
-    ))
+    configureWidget(newId, changes)
     setPanelMode(null)
     setSettingsWidgetId(null)
   }
@@ -2669,7 +2867,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   }
 
   const openSettings = (id) => { setSettingsWidgetId(id); setPanelMode('settings') }
-  const deleteWidget = (id) => { setWidgets(ws => ws.filter(w => w.id !== id)); if (settingsWidgetId === id) setPanelMode(null) }
+  const deleteWidget = (id) => { removeWidget(id); if (settingsWidgetId === id) setPanelMode(null) }
 
   const DISCOVER_CARD_IDS = { total: 1001, crit: 1002, source: 1003, type: 1004, insights: 1005, assets: 1006 }
   const handleDiscoverEdit = (cardKey) => {
@@ -2678,6 +2876,16 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
   }
 
   const settingsWidget = widgets.find(w => w.id === settingsWidgetId)
+
+  const formatNextReport = () => {
+    if (!scheduleStartDate) return null
+    const d = new Date(`${scheduleStartDate}T${scheduleStartTime || '00:00'}`)
+    if (isNaN(d.getTime())) return null
+    const weekday = d.toLocaleDateString(undefined, { weekday: 'long' })
+    const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })
+    const timeStr = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    return `${weekday}, ${dateStr}, ${timeStr}`
+  }
 
   return (
     <>
@@ -2691,82 +2899,109 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
         <div className="dc-canvas-wrap">
 
           {/* Toolbar */}
-          <div className="dc-toolbar">
-            <button
-              onClick={() => onNav('workspace/library')}
-              className="dc-toolbar-back-btn"
-            >
-              <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
-            </button>
-
-            <input
-              value={name} onChange={e => { setName(e.target.value); onNameChange?.(e.target.value) }}
-              placeholder={reportMode ? 'Enter report name here...' : 'Enter dashboard name here...'}
-              className="dc-toolbar-name-input"
-            />
-
-            {momTimeline && (
-              <span className="dc-toolbar-timeline"><span className="dc-toolbar-timeline__label">Timeline:</span> {momTimeline}</span>
-            )}
-
-            {perf && !reportMode && (
-              <span
-                className="dc-perf-badge"
-                style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
+          <div className={`dc-toolbar${toolbarStacked ? ' dc-toolbar--stacked' : ''}`} ref={toolbarOuterRef}>
+            <div className="dc-toolbar-row dc-toolbar-row--top" ref={toolbarTopRowRef}>
+              <button
+                onClick={() => onNav('workspace/library')}
+                className="dc-toolbar-back-btn"
               >
-                <span className="dc-perf-dot" />
-                {perf.label}
-              </span>
-            )}
+                <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
+              </button>
 
-            <div className="dc-toolbar-spacer" />
+              <input
+                value={name} onChange={e => { setName(e.target.value); onNameChange?.(e.target.value) }}
+                placeholder={reportMode ? 'Enter report name here...' : 'Enter dashboard name here...'}
+                className="dc-toolbar-name-input"
+              />
 
-            {!reportMode && <button className="ds-btn sz-md t-outline">Convert to Report</button>}
-
-            {!reportMode && (
-              <span className="dc-scope-badge">
-                Dashboard Scope
-                <span className="dc-scope-icon">
-                  <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+              {!reportMode && (
+                <span className="dc-scope-badge" title="Dashboard Scope">
+                  <span className="dc-btn-label">Dashboard Scope</span>
+                  <span className="dc-scope-icon">
+                    <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+                  </span>
                 </span>
-              </span>
-            )}
+              )}
 
-            <div className="dc-toolbar-divider" />
+              {momTimeline && (
+                <span className="dc-toolbar-timeline"><span className="dc-toolbar-timeline__label">Timeline:</span> {momTimeline}</span>
+              )}
 
-            {reportMode ? (
-              <>
-                <button className="ds-icon-btn" title="Undo">
+              {perf && !reportMode && (
+                <span
+                  className="dc-perf-badge"
+                  style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
+                >
+                  <span className="dc-perf-dot" />
+                  {perf.label}
+                </span>
+              )}
+            </div>
+
+            <div className={`dc-toolbar-row dc-toolbar-row--actions${toolbarCompact ? ' dc-toolbar-row--compact' : ''}`} ref={toolbarActionsRowRef}>
+              {!reportMode && (
+                <button className="ds-btn sz-md t-outline" onClick={() => onOpenCopilotBuilder?.()}>Build with Copilot</button>
+              )}
+
+              <div className="dc-toolbar-divider" />
+
+              {!reportMode && (
+                <button className="ds-btn sz-md t-outline" title="Share" onClick={() => setShareOpen(true)}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 14 4 9 9 4"/>
-                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                   </svg>
+                  <span className="dc-btn-label">Share</span>
                 </button>
-                <button className="ds-icon-btn" title="Redo">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 14 20 9 15 4"/>
-                    <path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
-                  </svg>
-                </button>
-              </>
-            ) : (
-              <span className="dc-tip" data-tip="Reset the whole dashboard">
-                <button className="ds-icon-btn" onClick={() => { setWidgets([]); setName(''); setPanelMode(null) }}>
-                  <img src="/assets/icons/reset.svg" width={16} height={16} alt="Reset" />
-                </button>
-              </span>
-            )}
+              )}
 
-            <button
-              className="ds-btn sz-md t-primary"
-              onClick={() => {
-                if (!reportMode) return
-                const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
-                  : templateId === 'month-over-month' ? 'month-over-month'
-                  : 'executive-summary'
-                onNav(`workspace/report-preview/${previewSlug}`)
-              }}
-            >{reportMode ? 'Preview' : 'Save'}</button>
+              {!reportMode && (
+                <button className="ds-btn sz-md t-outline" title="Schedule Assistant" onClick={() => setScheduleOpen(true)}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>
+                  </svg>
+                  <span className="dc-btn-label">Schedule Assistant</span>
+                </button>
+              )}
+
+              {!reportMode && (
+                <button className="ds-btn sz-md t-outline" title="Download" onClick={() => setDownloadOpen(true)}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span className="dc-btn-label">Download</span>
+                </button>
+              )}
+
+              {!reportMode && (
+                <div ref={moreMenuRef} className="comp-sort-wrap">
+                  <button className="ds-icon-btn" title="More actions" onClick={() => setMoreMenuOpen(o => !o)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+                    </svg>
+                  </button>
+                  {moreMenuOpen && (
+                    <div className="comp-dl-menu comp-dl-menu--wide">
+                      <button className="comp-dl-item" onClick={() => setMoreMenuOpen(false)}>Convert to Report</button>
+                      <button className="comp-dl-item" onClick={() => { setMoreMenuOpen(false); setDeleteDashboardConfirm(true) }}>Delete</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="dc-toolbar-spacer" />
+
+              <button
+                className="ds-btn sz-md t-primary"
+                onClick={() => {
+                  if (!reportMode) return
+                  const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
+                    : templateId === 'month-over-month' ? 'month-over-month'
+                    : 'executive-summary'
+                  onNav(`workspace/report-preview/${previewSlug}`)
+                }}
+              >{reportMode ? 'Preview' : 'Save'}</button>
+            </div>
           </div>
 
           {/* Canvas body */}
@@ -2798,7 +3033,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
                 }
                 if (kpiBuf.length) rows.push({ type: 'kpi', widgets: kpiBuf })
                 return (
-                  <div className="dc-report-layout">
+                  <div className="dc-report-layout" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
                     {rows.map((row, i) =>
                       row.type === 'kpi' ? (
                         <div key={i} className="dc-report-kpi-row">
@@ -2818,7 +3053,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
                 )
               })()
             ) : (
-              <div className="dc-grid">
+              <div className="dc-grid" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
 
                 {widgets.map(w => (
                   <WidgetCard
@@ -2827,6 +3062,7 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
                     isEditing={panelMode === 'settings' && w.id === settingsWidgetId}
                     onEdit={() => openSettings(w.id)}
                     onRequestDelete={w => setDeletePending(w)}
+                    onEditWithCopilot={w => onOpenCopilotBuilder?.({ widgetId: w.id, widgetLabel: w.label })}
                     reportMode={false}
                   />
                 ))}
@@ -2882,6 +3118,20 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
               </div>
             )}
           </div>
+
+          {templateId !== 'discover' && (
+            <DashboardFloatingToolbar
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
+              zoom={zoom}
+              onZoomIn={zoomIn}
+              onZoomOut={zoomOut}
+              onZoomReset={zoomReset}
+              onReset={reportMode ? undefined : () => { setWidgets([]); setName(''); setPanelMode(null) }}
+            />
+          )}
         </div>
 
         {/* ── Right Panel (custom dashboards only, not report mode) ── */}
@@ -2921,6 +3171,246 @@ export default function DashboardCanvas({ onNav, templateId = null, reportMode =
         </div>
       </div>
     )}
+
+    {deleteDashboardConfirm && (
+      <div className="ds-modal-overlay">
+        <div className="ds-modal">
+          <div className="ds-modal-header">
+            <span className="ds-modal-title">Delete dashboard</span>
+            <button className="ds-modal-close" onClick={() => setDeleteDashboardConfirm(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            Delete <strong>"{name || 'Untitled Dashboard'}"</strong>? This dashboard and all of its widgets will be permanently removed.
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setDeleteDashboardConfirm(false)}>Cancel</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => { setDeleteDashboardConfirm(false); onNav('workspace/library') }}>Delete dashboard</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {stopScheduleOpen && (
+      <div className="ds-modal-overlay">
+        <div className="ds-modal" style={{ maxWidth: 600 }}>
+          <div className="ds-modal-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-red-critical, #d12329)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="15" y2="19"/><line x1="15" y1="15" x2="9" y2="19"/>
+            </svg>
+            <span className="ds-modal-title">Stop Report Schedule</span>
+            <button className="ds-modal-close" onClick={() => setStopScheduleOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            Are you sure you want to stop the automatic generation for <strong style={{ display: 'inline' }}>"{name || 'this dashboard'}"</strong>? The report will be saved and no longer be generated automatically.
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setStopScheduleOpen(false)}>Cancel</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => { setScheduleActive(false); setStopScheduleOpen(false) }}>Delete</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {downloadOpen && (
+      <div className="ds-modal-overlay" onClick={() => setDownloadOpen(false)}>
+        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 563 }}>
+          <div className="ds-modal-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+            <span className="ds-modal-title">Download as Excel</span>
+            <button className="ds-modal-close" onClick={() => setDownloadOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <div className="dc-modal-body-stack">
+              <div>Select the tables you'd like to export as Excel files</div>
+              {DOWNLOAD_TABLE_OPTIONS.map(t => (
+                <div className="dc-modal-checkbox-row" key={t.id}>
+                  <input
+                    type="checkbox"
+                    className="dc-gf-checkbox"
+                    id={`download-${t.id}`}
+                    checked={!!downloadTables[t.id]}
+                    onChange={e => setDownloadTables(prev => ({ ...prev, [t.id]: e.target.checked }))}
+                  />
+                  <label htmlFor={`download-${t.id}`}>{t.label}</label>
+                </div>
+              ))}
+              <div className="dc-modal-note">
+                <strong>Note:</strong>
+                Charts and other visualizations are not available for export.<br />
+                Each table will be downloaded as a separate Excel file.
+              </div>
+            </div>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setDownloadOpen(false)}>Cancel</button>
+            <button
+              className="ds-btn sz-md t-primary"
+              disabled={!Object.values(downloadTables).some(Boolean)}
+              style={{ '--dc-aw-save-opacity': Object.values(downloadTables).some(Boolean) ? 1 : 0.4 }}
+              onClick={() => setDownloadOpen(false)}
+            >Download</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {shareOpen && (
+      <div className="ds-modal-overlay" onClick={() => setShareOpen(false)}>
+        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+          <div className="ds-modal-header">
+            <span className="ds-modal-title">Share Report</span>
+            <button className="ds-modal-close" onClick={() => setShareOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <div className="dc-modal-body-stack">
+              <div className="dc-modal-field">
+                <div className="dc-field-label">Recipients</div>
+                <div className="dc-modal-to-field">
+                  <span className="dc-modal-to-field-prefix">To:</span>
+                  <input value={shareRecipients} onChange={e => setShareRecipients(e.target.value)} placeholder="Name, group or email" />
+                </div>
+              </div>
+              <div className="dc-modal-field">
+                <div className="dc-field-label">Message</div>
+                <TextArea
+                  rows={6}
+                  value={shareMessage || `Hi,\n\nI'm sharing "${name || 'this dashboard'}" with you. Please find the report attached/linked below.\n\nBest regards`}
+                  onChange={e => setShareMessage(e.target.value)}
+                />
+              </div>
+              <div className="dc-modal-checkbox-row">
+                <input type="checkbox" checked={shareSendCopy} onChange={e => setShareSendCopy(e.target.checked)} className="dc-gf-checkbox" id="share-send-copy" />
+                <label htmlFor="share-send-copy">Send me a copy</label>
+              </div>
+              <div className="dc-modal-note">Report will be shared via link and attachment in email.</div>
+            </div>
+          </div>
+          <div className="ds-modal-footer">
+            <div className="dc-modal-footer-split">
+              <button className="ds-btn sz-md t-outline" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
+                Copy link
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="ds-btn sz-md t-outline" onClick={() => setShareOpen(false)}>Cancel</button>
+                <button className="ds-btn sz-md t-primary" onClick={() => setShareOpen(false)}>Share</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {scheduleOpen && (
+      <div className="ds-modal-overlay" onClick={() => setScheduleOpen(false)}>
+        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 563 }}>
+          <div className="ds-modal-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>
+            </svg>
+            <span className="ds-modal-title">Schedule Report</span>
+            <button className="ds-modal-close" onClick={() => setScheduleOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <div className="dc-modal-body-stack">
+              {scheduleActive && (
+                <div className="dc-modal-schedule-status">
+                  <span>A schedule is currently active for this dashboard.</span>
+                  <button
+                    className="ds-btn sz-md t-outline"
+                    onClick={() => { setScheduleOpen(false); setStopScheduleOpen(true) }}
+                  >Stop Schedule</button>
+                </div>
+              )}
+              <div className="dc-modal-field">
+                <div className="dc-field-label">Recipients</div>
+                <div className="dc-modal-to-field">
+                  <span className="dc-modal-to-field-prefix">To:</span>
+                  <input value={scheduleRecipients} onChange={e => setScheduleRecipients(e.target.value)} placeholder="a@mail.com, b@mail.com" />
+                </div>
+              </div>
+
+              <div className="dc-modal-checkbox-row">
+                <input type="checkbox" checked={scheduleSendCopy} onChange={e => setScheduleSendCopy(e.target.checked)} className="dc-gf-checkbox" id="schedule-send-copy" />
+                <label htmlFor="schedule-send-copy">Send me a copy</label>
+              </div>
+
+              <div className="dc-modal-section-head">
+                <span className="dc-modal-section-head-label">Set Date and Time</span>
+                <div className="dc-modal-section-head-line" />
+              </div>
+
+              <div className="dc-modal-radio-row">
+                <input type="radio" name="scheduleMode" id="schedule-mode-daily" checked={scheduleMode === 'daily'} onChange={() => setScheduleMode('daily')} />
+                <label htmlFor="schedule-mode-daily">Send an email after each day's run to receive the latest report.</label>
+              </div>
+              <div className="dc-modal-radio-row">
+                <input type="radio" name="scheduleMode" id="schedule-mode-specific" checked={scheduleMode === 'specific'} onChange={() => setScheduleMode('specific')} />
+                <label htmlFor="schedule-mode-specific">Schedule the report for a specific time. It will include data from the latest available run.</label>
+              </div>
+
+              <div className="dc-modal-field-row">
+                <div className="dc-modal-field">
+                  <div className="dc-field-label">Start Date</div>
+                  <input type="date" className="dc-modal-input" value={scheduleStartDate} onChange={e => setScheduleStartDate(e.target.value)} />
+                </div>
+                <div className="dc-modal-field">
+                  <div className="dc-field-label">Time</div>
+                  <input type="time" className="dc-modal-input" value={scheduleStartTime} onChange={e => setScheduleStartTime(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="dc-modal-section-head">
+                <span className="dc-modal-section-head-label">Set frequency</span>
+                <div className="dc-modal-section-head-line" />
+              </div>
+
+              <div className="dc-modal-field">
+                <div className="dc-field-label">Repeat every</div>
+                <div className="dc-modal-field-row">
+                  <input
+                    type="number" min={1} className="dc-modal-input" style={{ maxWidth: 98 }}
+                    value={scheduleRepeatEvery}
+                    onChange={e => setScheduleRepeatEvery(Math.max(1, Number(e.target.value) || 1))}
+                  />
+                  <select className="dc-modal-select" value={scheduleRepeatUnit} onChange={e => setScheduleRepeatUnit(e.target.value)}>
+                    <option value="day">Day(s)</option>
+                    <option value="week">Week(s)</option>
+                    <option value="month">Month(s)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="dc-modal-field">
+                <div className="dc-field-label">Repeat until</div>
+                <input type="date" className="dc-modal-input" value={scheduleRepeatUntil} onChange={e => setScheduleRepeatUntil(e.target.value)} />
+              </div>
+
+              {formatNextReport() && (
+                <div className="dc-modal-note">Next report will be on <strong style={{ display: 'inline', marginBottom: 0 }}>{formatNextReport()}</strong></div>
+              )}
+              <div className="dc-modal-note">* Please note that all time details shown are in Coordinated Universal Time (UTC).</div>
+            </div>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setScheduleOpen(false)}>Cancel</button>
+            <button
+              className="ds-btn sz-md t-primary"
+              disabled={!scheduleRecipients.trim() || !scheduleStartDate}
+              style={{ '--dc-aw-save-opacity': (scheduleRecipients.trim() && scheduleStartDate) ? 1 : 0.4 }}
+              onClick={() => { setScheduleActive(true); setScheduleOpen(false) }}
+            >Schedule</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   )
-}
+})
+
+export default DashboardCanvas

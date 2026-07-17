@@ -26,6 +26,42 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.8.0] — 2026-07-17
+### Added
+- Navigator now opens as a full page (not modal) with its own left-nav entry and route.
+- Navigator gained a History panel and Home button, replacing the old sidebar/thread-switcher panel.
+- Copilot builder chat now supports both Assessment and Dashboard building, scoped per surface.
+- Dashboards/reports can be edited via a "Build with Copilot" flow and per-widget "Edit with Copilot".
+- DashboardCanvas: undo/redo, zoom controls, and a floating canvas toolbar.
+- DashboardCanvas: Share, Schedule Assistant, Stop Schedule, and Download (Excel) modals.
+- DashboardCanvas: delete-dashboard confirmation modal and a "More actions" menu.
+- Navigator chat: thread rename (inline) and delete-thread confirmation modal.
+- Navigator Build view: delete-widget confirmation modal.
+- Workspace pages now embed the shared right panel (Navigator/Filter), so Navigator can open docked while in Workspace.
+### Changed
+- Dashboard toolbar reorganized into two rows and auto-stacks/compacts responsively on narrow widths.
+- Widget mutations (add/configure/remove) now route through a single undo-aware state path shared by the manual panel and Copilot.
+- Navigator's mode-depth slider is now keyboard-operable (arrow keys, Home/End) with proper ARIA slider semantics.
+- Follow-up suggestion items converted from styled anchors to accessible buttons (removed inline styles).
+- Compliance dropdown menus support a wider variant for longer labels.
+### Fixed
+- Navigator panel follow-up composer previously discarded the typed message instead of sending it.
+- Clicking the LeftNav "Navigator" item while already mid-chat now correctly resets to the Home screen.
+- Canvas Results panel's "Add to Workspace" button no longer wraps to its own line — aligned top-right with the panel title.
+- Chat view lost its white background when the canvas panel was hidden; restored, centered on the conversation column.
+
+---
+
+## [0.7.0] — 2026-07-16
+### Added
+- Studio Home page and Admin section (Workspace, Users & Access, Data Integrations, Identity & Security, Risk Config, Security & Compliance)
+- UX3 exposure overview and client servers views, with dedicated left nav
+- Assessment Builder and Canvas Panel components
+- Copilot FAB entry point and Reasoning Engine component
+- Navigator engine module supporting the Navigator redesign work
+
+---
+
 ## [0.6.6] — 2026-06-23
 ### Changed
 - DS token pass: replaced all hardcoded hex in dashboard.css rv-* block and tooltip block with CSS variables; added `--tooltip-bg`/`--tooltip-fg` tokens to global.css; applied `color-scheme: light` to `.rv-page`

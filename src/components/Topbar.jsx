@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Icons } from '../ui.jsx'
 import VersionBadge from './VersionBadge.jsx'
 
@@ -18,7 +18,46 @@ const MoonIcon = () => (
   </svg>
 );
 
-function Topbar({ onNav, navigatorActive, theme = 'light', onToggleTheme }) {
+const AdminIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
+
+const HelpIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+);
+
+function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [menuOpen]);
+
+  const handleMenuOption = (option) => {
+    setMenuOpen(false);
+    if (option === 'admin') onNav?.('admin-page');
+    else if (option === 'logout') window.location.href = '/';
+  };
+
   return (
     <header className="topbar">
       <img src="/assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
@@ -26,9 +65,16 @@ function Topbar({ onNav, navigatorActive, theme = 'light', onToggleTheme }) {
 
       <div className="topbar__spacer" />
 
-      <div className="topbar__timestamp">
-        Last updated <span className="topbar__timestamp-val">Apr 20, 2026 · 14:32 UTC</span>
-      </div>
+      {showNavigatorButton && (
+        <button
+          className={`topbar__navigator${navigatorActive ? ' active' : ''}`}
+          onClick={() => onNav?.('navigator')}
+          title="Navigator"
+          aria-label="Navigator"
+        >
+          <span className="topbar__navigator-icon" />
+        </button>
+      )}
 
       <VersionBadge />
 
@@ -45,15 +91,45 @@ function Topbar({ onNav, navigatorActive, theme = 'light', onToggleTheme }) {
         <span className="topbar__notif-dot" />
       </button>
 
-      <div className="topbar__avatar">MP</div>
+      <div ref={menuRef} className="topbar__account">
+        <button
+          title="Account menu"
+          aria-label="Account menu"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className="topbar__avatar"
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          MP
+        </button>
 
-      <button
-        className={`topbar__navigator${navigatorActive ? ' active' : ''}`}
-        onClick={() => onNav?.('navigator')}
-      >
-        <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
-        <span className="topbar__navigator-label">Navigator</span>
-      </button>
+        {menuOpen && (
+          <div className="topbar__account-menu" role="menu">
+            <div className="topbar__account-menu-header">
+              <div className="topbar__account-menu-name">MP</div>
+              <div className="topbar__account-menu-email">mp@prevalent.ai</div>
+              <div className="topbar__account-menu-timestamp">
+                Last updated <span className="topbar__account-menu-timestamp-val">Apr 20, 2026 · 14:32 UTC</span>
+              </div>
+            </div>
+            <div className="topbar__account-menu-divider" />
+            <button className="topbar__account-menu-item" role="menuitem" onClick={() => handleMenuOption('admin')}>
+              <AdminIcon />
+              Admin Panel
+            </button>
+            <button className="topbar__account-menu-item" role="menuitem" onClick={() => handleMenuOption('help')}>
+              <HelpIcon />
+              Help &amp; Support
+              <span className="topbar__account-menu-soon">Soon</span>
+            </button>
+            <div className="topbar__account-menu-divider" />
+            <button className="topbar__account-menu-item topbar__account-menu-item--danger" role="menuitem" onClick={() => handleMenuOption('logout')}>
+              <LogoutIcon />
+              Log Out
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
