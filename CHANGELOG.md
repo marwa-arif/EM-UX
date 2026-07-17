@@ -21,6 +21,13 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
+### Changed
+### Fixed
+
+---
+
+## [0.8.0] — 2026-07-17
+### Added
 - Navigator now opens as a full page (not modal) with its own left-nav entry and route.
 - Navigator gained a History panel and Home button, replacing the old sidebar/thread-switcher panel.
 - Copilot builder chat now supports both Assessment and Dashboard building, scoped per surface.
@@ -31,14 +38,12 @@ All notable UI changes are tracked here.
 - Navigator chat: thread rename (inline) and delete-thread confirmation modal.
 - Navigator Build view: delete-widget confirmation modal.
 - Workspace pages now embed the shared right panel (Navigator/Filter), so Navigator can open docked while in Workspace.
-
 ### Changed
 - Dashboard toolbar reorganized into two rows and auto-stacks/compacts responsively on narrow widths.
 - Widget mutations (add/configure/remove) now route through a single undo-aware state path shared by the manual panel and Copilot.
 - Navigator's mode-depth slider is now keyboard-operable (arrow keys, Home/End) with proper ARIA slider semantics.
 - Follow-up suggestion items converted from styled anchors to accessible buttons (removed inline styles).
 - Compliance dropdown menus support a wider variant for longer labels.
-
 ### Fixed
 - Navigator panel follow-up composer previously discarded the typed message instead of sending it.
 - Clicking the LeftNav "Navigator" item while already mid-chat now correctly resets to the Home screen.
