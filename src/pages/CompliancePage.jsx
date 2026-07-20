@@ -50,11 +50,11 @@ const IcDownload = () => (
 )
 
 const ENTITY_ICON_SRCS = {
-  cloud:    '/assets/icons/entities/cloud-account.svg',
-  device:   '/assets/icons/entities/host.svg',
-  identity: '/assets/icons/entities/identity.svg',
-  storage:  '/assets/icons/entities/storage.svg',
-  multi:    '/assets/icons/entities/assessment.svg',
+  cloud:    'assets/icons/entities/cloud-account.svg',
+  device:   'assets/icons/entities/host.svg',
+  identity: 'assets/icons/entities/identity.svg',
+  storage:  'assets/icons/entities/storage.svg',
+  multi:    'assets/icons/entities/assessment.svg',
 }
 
 function EntityBadge({ type }) {
@@ -79,21 +79,21 @@ const FW_META = {
 }
 
 const FW_ICONS = {
-  scf:        '/assets/icons/frameworks/scf.svg',
-  nist_csf:   '/assets/icons/frameworks/nist_csf.svg',
-  nist_800:   '/assets/icons/frameworks/nist_800.svg',
-  pci_dss:    '/assets/icons/frameworks/pci_dss.svg',
-  cmmc_1:     '/assets/icons/frameworks/cmmc_1.svg',
-  cmmc_2:     '/assets/icons/frameworks/cmmc_2.svg',
-  cis:        '/assets/icons/frameworks/cis.svg',
-  hipaa:      '/assets/icons/frameworks/hipaa.svg',
+  scf:        'assets/icons/frameworks/scf.svg',
+  nist_csf:   'assets/icons/frameworks/nist_csf.svg',
+  nist_800:   'assets/icons/frameworks/nist_800.svg',
+  pci_dss:    'assets/icons/frameworks/pci_dss.svg',
+  cmmc_1:     'assets/icons/frameworks/cmmc_1.svg',
+  cmmc_2:     'assets/icons/frameworks/cmmc_2.svg',
+  cis:        'assets/icons/frameworks/cis.svg',
+  hipaa:      'assets/icons/frameworks/hipaa.svg',
   csa_ccm:    null,
   fedramp:    null,
   iso_27001:  null,
   soc2:       null,
   nist_ai:    null,
-  cis_csc:    '/assets/icons/frameworks/cis.svg',
-  cmmc_3:     '/assets/icons/frameworks/cmmc_2.svg',
+  cis_csc:    'assets/icons/frameworks/cis.svg',
+  cmmc_3:     'assets/icons/frameworks/cmmc_2.svg',
   fedramp_h:  null,
   gdpr:       null,
   ccpa:       null,
@@ -104,8 +104,8 @@ const FW_ICONS = {
   iasme:      null,
   cyber_ess:  null,
   soc2_cc:    null,
-  nist_priv:  '/assets/icons/frameworks/nist_800.svg',
-  pci_pin:    '/assets/icons/frameworks/pci_dss.svg',
+  nist_priv:  'assets/icons/frameworks/nist_800.svg',
+  pci_pin:    'assets/icons/frameworks/pci_dss.svg',
   iso_22301:  null,
   cobit:      null,
 }

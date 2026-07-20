@@ -106,7 +106,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
           onClick={() => setExploreOpen(o => !o)}
           className={`subheader__explore-btn${exploreOpen ? ' subheader__explore-btn--open' : ''}`}
         >
-          <img src="/assets/icons/Explore-in.svg" width={13} height={13} alt="" />
+          <img src="assets/icons/Explore-in.svg" width={13} height={13} alt="" />
           Explore in
           <Ic size={11} path={<><path d="m6 9 6 6 6-6"/></>} />
         </button>
@@ -116,7 +116,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               <div key={group.label}>
                 {gi > 0 && <div className="subheader__explore-divider" />}
                 <div className="subheader__explore-group">
-                  <img src={`/assets/icons/${group.icon}.svg`} width={13} height={13} alt="" style={{ opacity: 0.5 }} />
+                  <img src={`assets/icons/${group.icon}.svg`} width={13} height={13} alt="" style={{ opacity: 0.5 }} />
                   <span className="subheader__explore-group-label">{group.label}</span>
                 </div>
                 {group.items.map(item => (
@@ -125,7 +125,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
                     onClick={() => { setExploreOpen(false); onExplore && onExplore(item.id); }}
                     className="subheader__explore-item"
                   >
-                    <img src={`/assets/icons/${item.icon}.svg`} width={14} height={14} alt="" />
+                    <img src={`assets/icons/${item.icon}.svg`} width={14} height={14} alt="" />
                     {item.label}
                   </button>
                 ))}

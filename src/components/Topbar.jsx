@@ -55,12 +55,12 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
   const handleMenuOption = (option) => {
     setMenuOpen(false);
     if (option === 'admin') onNav?.('admin-page');
-    else if (option === 'logout') window.location.href = '/';
+    else if (option === 'logout') window.location.href = import.meta.env.BASE_URL;
   };
 
   return (
     <header className="topbar">
-      <img src="/assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
+      <img src="assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
            className="topbar__logo" />
 
       <div className="topbar__spacer" />

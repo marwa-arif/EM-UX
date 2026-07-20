@@ -8,16 +8,16 @@ import '../styles/assessments.css'
 
 // ── Entity icons ──────────────────────────────────────────────────
 const ENTITY_ICONS = {
-  cloud:         '/assets/icons/entities/cloud-account.svg',
-  device:        '/assets/icons/entities/host.svg',
-  identity:      '/assets/icons/entities/identity.svg',
-  storage:       '/assets/icons/entities/storage.svg',
-  container:     '/assets/icons/entities/cloud-container.svg',
-  cluster:       '/assets/icons/entities/cluster.svg',
-  person:        '/assets/icons/entities/person.svg',
-  finding:       '/assets/icons/entities/finding.svg',
-  vulnerability: '/assets/icons/entities/vulnerability.svg',
-  multi:         '/assets/icons/entities/assessment.svg',
+  cloud:         'assets/icons/entities/cloud-account.svg',
+  device:        'assets/icons/entities/host.svg',
+  identity:      'assets/icons/entities/identity.svg',
+  storage:       'assets/icons/entities/storage.svg',
+  container:     'assets/icons/entities/cloud-container.svg',
+  cluster:       'assets/icons/entities/cluster.svg',
+  person:        'assets/icons/entities/person.svg',
+  finding:       'assets/icons/entities/finding.svg',
+  vulnerability: 'assets/icons/entities/vulnerability.svg',
+  multi:         'assets/icons/entities/assessment.svg',
 }
 
 function EntityBadge({ type }) {

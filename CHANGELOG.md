@@ -26,6 +26,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.8.1] — 2026-07-20
+### Added
+- `public/404.html` SPA fallback so deep-linking/refreshing a route on GitHub Pages redirects back through `index.html` instead of hitting a real 404.
+### Changed
+- `vite.config.js`: `base` is now `/EM-UX/` when built with `GH_PAGES=true` (used by the Pages workflow), `/` otherwise.
+### Fixed
+- GitHub Pages deploy was fully broken under the `/EM-UX/` subpath: 132 hardcoded `/assets/...` image/icon references across 22 files resolved to the wrong URL (fixed via `<base href>` + relative paths); client-side routing (`history.pushState`/`window.location.pathname` parsing in App.jsx) assumed the app lived at domain root, so the very first render fell into the app's own 404 page; logout and the error page's "Go to dashboard" button hard-navigated to `/`, escaping the subpath.
+
+---
+
 ## [0.8.0] — 2026-07-17
 ### Added
 - Navigator now opens as a full page (not modal) with its own left-nav entry and route.

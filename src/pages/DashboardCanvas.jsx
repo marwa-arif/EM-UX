@@ -885,7 +885,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
       {/* Header */}
       <div className="dc-panel-header">
         <div className="dc-panel-title-row">
-          <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
+          <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
           <span className="dc-panel-title">Widget Settings</span>
           <button onClick={onClose} className="dc-panel-close-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -1069,7 +1069,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1122,7 +1122,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setWidgetFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   {widgetFilters.length > 0 && (
@@ -1170,7 +1170,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1223,7 +1223,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setWidgetFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   {widgetFilters.length > 0 && (
@@ -1271,7 +1271,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setMagnitudeModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   <div className="dc-field-sub-label dc-field-sub-label--mt">Classification ( x-axis )</div>
@@ -1287,7 +1287,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setStackClassModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1336,7 +1336,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       className="dc-kg-btn dc-kg-btn--bottom"
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1354,7 +1354,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setWidgetFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   {widgetFilters.length > 0 && (
@@ -1409,7 +1409,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setMagnitudeModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   <div className="dc-field-sub-label dc-field-sub-label--mt">Classification ( y-axis )</div>
@@ -1425,7 +1425,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setStackClassModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1474,7 +1474,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       className="dc-kg-btn dc-kg-btn--bottom"
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
@@ -1495,7 +1495,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       onClick={() => setWidgetFilterModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   {widgetFilters.length > 0 && (
@@ -1569,7 +1569,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       <SizeSelectDropdown value={aggregateBy} onChange={v => setAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
                     <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   <div className="dc-mt12">
@@ -1582,7 +1582,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                     <div className="dc-text-input-wrap">
                       <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
                       <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
-                        <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                        <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
                   </div>
@@ -1601,7 +1601,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                       <SizeSelectDropdown value={kpiCompAggregateBy} onChange={v => setKpiCompAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
                     <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
-                      <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                   <div className="dc-mt12">
@@ -1614,7 +1614,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                     <div className="dc-text-input-wrap">
                       <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
                       <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
-                        <img src="/assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                        <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
                   </div>
@@ -1799,21 +1799,21 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditW
       {hovered && !reportMode && (
         <div className="dc-widget-actions">
           <button title="Move" className="dc-action-btn dc-action-btn--grab">
-            <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+            <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
           </button>
           <button title="Add nested widget" className="dc-action-btn">
-            <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+            <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
           </button>
           <button title="Edit" onClick={onEdit} className="dc-action-btn">
-            <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+            <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
           </button>
           {onEditWithCopilot && (
             <button title="Edit with Copilot" onClick={() => onEditWithCopilot(widget)} className="dc-action-btn">
-              <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="edit with copilot" />
+              <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="edit with copilot" />
             </button>
           )}
           <button title="Delete" onClick={() => onRequestDelete(widget)} className="dc-action-btn dc-action-btn--delete">
-            <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+            <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
       )}
@@ -1893,7 +1893,7 @@ function DashboardFloatingToolbar({ canUndo, canRedo, onUndo, onRedo, zoom, onZo
           <div className="dc-float-toolbar-divider" />
           <span className="dc-tip" data-tip="Reset the whole dashboard">
             <button className="ds-icon-btn" onClick={onReset}>
-              <img src="/assets/icons/reset.svg" width={16} height={16} alt="Reset" />
+              <img src="assets/icons/reset.svg" width={16} height={16} alt="Reset" />
             </button>
           </span>
         </>
@@ -2172,7 +2172,7 @@ export const EXEC_SUMMARY_TEMPLATE = {
 // ── Detailed Report on Vulnerabilities template ──────────────────────
 export const VULN_DETAIL_TEMPLATE = {
   name: 'Detailed Report on Vulnerabilities',
-  coverImage: '/assets/reports/executive-summary-cover.svg',
+  coverImage: 'assets/reports/executive-summary-cover.svg',
   coverDescription: 'This report provides a comprehensive inventory of all vulnerability findings across the infrastructure. It includes detailed breakdowns by severity, affected hosts, vulnerability categories, and remediation status, enabling targeted and prioritised remediation efforts.',
   widgets: [
     { id: 4001, label: 'Total Vulnerability Findings', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
@@ -2251,7 +2251,7 @@ export const VULN_DETAIL_TEMPLATE = {
 // ── Month over Month Report template ────────────────────────────────
 export const MOM_TEMPLATE = {
   name: 'Month over Month Report',
-  coverImage: '/assets/reports/executive-summary-cover.svg',
+  coverImage: 'assets/reports/executive-summary-cover.svg',
   coverDescription: 'This report presents a month-over-month analysis of vulnerability trends across the environment. It tracks changes in severity distribution, newly discovered and remediated findings, and overall risk posture over time to support continuous improvement in security operations.',
   widgets: [
     { id: 5001, label: 'New Vulnerabilities (MoM)', chartId: 'kpi', span: 2, sizeId: 'small', heightId: 'xsmall', phase: 'active', dataLocked: true,
@@ -2918,7 +2918,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 <span className="dc-scope-badge" title="Dashboard Scope">
                   <span className="dc-btn-label">Dashboard Scope</span>
                   <span className="dc-scope-icon">
-                    <img src="/assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+                    <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
                   </span>
                 </span>
               )}
@@ -3075,16 +3075,16 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   >
                     <div className="dc-widget-actions">
                       <button title="Move" className="dc-action-btn dc-action-btn--grab">
-                        <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+                        <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
                       </button>
                       <button title="Add nested widget" className="dc-action-btn">
-                        <img src="/assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                        <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
                       </button>
                       <button title="Edit" className="dc-action-btn">
-                        <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+                        <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
                       </button>
                       <button title="Delete" className="dc-action-btn dc-action-btn--delete">
-                        <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+                        <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
                       </button>
                     </div>
                     <div

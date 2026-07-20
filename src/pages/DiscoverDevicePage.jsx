@@ -277,7 +277,7 @@ const IcLinux = () => (
     <path d="M16 2C9.37 2 4 7.37 4 14c0 3.69 1.58 7 4.09 9.33C9.3 24.4 10 25.7 10 27h12c0-1.3.7-2.6 1.91-3.67C26.42 21 28 17.69 28 14 28 7.37 22.63 2 16 2zm-3 17a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-5c0 2.5-1.5 4-3 4.5V18c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v.5C11.5 18 10 16.5 10 14c0-3.31 2.69-6 6-6s6 2.69 6 6z"/>
   </svg>
 );
-const IcExplore = () => <img src="/assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
+const IcExplore = () => <img src="assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
 const IcNewlyAdded = () => (
   <svg width="10" height="10" viewBox="0 0 8.99512 8.98682" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
     <path d="M0.5 8.48682H5.48074"/><path d="M8.49512 0.5L8.49512 5.48074"/><path d="M2.49414 2.51758L6.46736 6.4908"/>
@@ -316,14 +316,14 @@ function DdbControls({ canMove = true, onEdit }) {
     <div className="ddb-controls">
       {canMove && (
         <button className="ddb-ctrl-btn ddb-ctrl-btn--grab" title="Move">
-          <img src="/assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+          <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
         </button>
       )}
       <button className="ddb-ctrl-btn" title="Settings" onClick={onEdit}>
-        <img src="/assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+        <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
       </button>
       <button className="ddb-ctrl-btn ddb-ctrl-btn--delete" title="Delete">
-        <img src="/assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+        <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
       </button>
     </div>
   );

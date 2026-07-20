@@ -94,11 +94,11 @@ function SavedPage() {
           <div className="lib-tabbar-right">
             <DSPillSearch value={savedSearch} onChange={setSavedSearch} placeholder="Search Saved" width={200} />
             <button className="lib-action-btn">
-              <img src="/assets/icons/new-report.svg" width={13} height={13} alt="" />
+              <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
               New Template
             </button>
             <button className="lib-action-btn" onClick={() => onNav('workspace/dashboard/new')}>
-              <img src="/assets/icons/template-add.svg" width={13} height={13} alt="" />
+              <img src="assets/icons/template-add.svg" width={13} height={13} alt="" />
               New Dashboard
             </button>
           </div>

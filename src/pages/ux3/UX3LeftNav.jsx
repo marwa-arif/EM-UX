@@ -65,8 +65,8 @@ function NavIcon({ icon }) {
     <span
       className="ux3-nav-icon"
       style={{
-        maskImage: `url('/assets/icons/${icon}.svg')`,
-        WebkitMaskImage: `url('/assets/icons/${icon}.svg')`,
+        maskImage: `url('assets/icons/${icon}.svg')`,
+        WebkitMaskImage: `url('assets/icons/${icon}.svg')`,
       }}
     />
   );

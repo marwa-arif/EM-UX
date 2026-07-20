@@ -285,7 +285,7 @@ const IcTrendDown = ({ size = 12, color = 'var(--pai-green)' }) => (
     <polyline points="17 18 23 18 23 12"/>
   </svg>
 );
-const IcExplore = () => <img src="/assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
+const IcExplore = () => <img src="assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
 const IcNewlyAdded = () => (
   <svg width="10" height="10" viewBox="0 0 8.99512 8.98682" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
     <path d="M0.5 8.48682H5.48074"/><path d="M8.49512 0.5L8.49512 5.48074"/><path d="M2.49414 2.51758L6.46736 6.4908"/>

@@ -113,7 +113,7 @@ function AgentIcon({ color }) {
 function NavIcon({ size = 18 }) {
   return (
     <span className="np-nav-icon-mask" style={{ '--np-icon-size': `${size}px` }}>
-      <img src="/assets/icons/Navigator icon.svg" width={size} height={size} alt="" />
+      <img src="assets/icons/Navigator icon.svg" width={size} height={size} alt="" />
     </span>
   )
 }

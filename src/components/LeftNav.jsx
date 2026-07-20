@@ -113,7 +113,7 @@ function IcOntologyNav() {
 // yet, so these route through the normal onNav/current wiring but the
 // Studio shell itself ignores `current` and always shows StudioHomePage).
 const STUDIO_MODEL = [
-  { id: 'navigator', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
+  { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
   { id: 'studio-home', label: 'Home', iconNode: <IcHomeNav />, solo: true, dividerAfter: true },
   { id: 'studio-workspace', label: 'Workspace', iconNode: <IcWorkspaceNav />, children: [
       { id: 'studio-workspace/device', label: 'Device', icon: 'nav-discover-device' },
@@ -131,7 +131,7 @@ const STUDIO_MODEL = [
 
 function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onModeChange, ux3Active = false }) {
   const model = [
-    { id: 'navigator', label: 'Navigator', iconNode: <img src="/assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
+    { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
     { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
         { id: 'exposure/overview',  label: 'Overview',  icon: 'nav-overview' },
@@ -337,7 +337,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
           </span>
         ) : (
           <img
-            src={`/assets/icons/${item.icon}.svg`}
+            src={`assets/icons/${item.icon}.svg`}
             width={16} height={16}
             className={`nav-item__icon${(hasChildren ? isOpen : isActiveParent) ? ' nav-item__icon--active' : ''}`}
             alt=""
@@ -372,8 +372,8 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
                   <span
                     className="nav-item__child-icon"
                     style={{
-                      maskImage: `url('/assets/icons/${c.icon}.svg')`,
-                      WebkitMaskImage: `url('/assets/icons/${c.icon}.svg')`,
+                      maskImage: `url('assets/icons/${c.icon}.svg')`,
+                      WebkitMaskImage: `url('assets/icons/${c.icon}.svg')`,
                       maskSize: 'contain',
                       WebkitMaskSize: 'contain',
                       maskRepeat: 'no-repeat',
