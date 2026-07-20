@@ -21,7 +21,7 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/library' : initialRoute
   )
@@ -45,6 +45,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     onNav(id)
   }
 
+  const isSeededDashboard = current.startsWith('workspace/dashboard/new-')
   const isDashboard     = current.startsWith('workspace/dashboard')
   const isReport        = current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/')
   const isReportPreview = current.startsWith('workspace/report-preview/')
@@ -136,7 +137,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                   : isConfigPage
                     ? <DataConfigPage />
                     : isDashboard
-                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} />
                       : isReport
                         ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} />
                         : isReportPreview

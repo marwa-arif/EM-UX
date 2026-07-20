@@ -361,6 +361,50 @@ export function FeedbackRow({ value, onChange }) {
   );
 }
 
+// ── Add to Workspace — synthesizes a real widget from the canned result ──
+// so the button does something even though these tier cards are bespoke,
+// static mock content rather than live query results. Reuses the same
+// headline numbers already shown in the matching result card above, so what
+// lands in Workspace visibly corresponds to what the user just reviewed.
+let workspaceWidgetSeq = 0
+function mkWidget(chartId, label, data) {
+  return { id: ++workspaceWidgetSeq, label, chartId, span: chartId === 'kpi' ? 1 : 2, sizeId: chartId === 'kpi' ? 'small' : 'medium', heightId: 'medium', phase: 'active', data };
+}
+const TIER_WORKSPACE_WIDGETS = {
+  quick: (q) => [mkWidget('table', 'Admin Users', [
+    { category: 'admin-svc-account', count: 'Critical', pct: 'admin' },
+    { category: 'jdoe@company.com', count: 'High', pct: 'elevated' },
+    { category: 'svc-cloud-deploy', count: 'High', pct: 'admin' },
+  ])],
+  graph: () => [mkWidget('table', 'Identity → Application Access', [
+    { category: 'jdoe@company.com → Payment Gateway', count: '', pct: '' },
+    { category: 'svc-cloud-deploy → Customer Data Platform', count: '', pct: '' },
+    { category: 'admin-svc-account → Payment Gateway', count: '', pct: '' },
+  ])],
+  risk: () => [
+    mkWidget('kpi', 'Critical Exposures', { value: '18', label: 'Critical Exposures', trend: '3', trendUp: true, trendSuffix: 'new this week' }),
+    mkWidget('vert-bar', 'Exposure by Asset', [{ label: 'vCenter-prod-01', value: 94 }, { label: 'admin-svc-account', value: 91 }, { label: 'AWS-prod-us-east-1', value: 62 }]),
+  ],
+  deep: () => [
+    mkWidget('kpi', 'Correlated Risk Chains', { value: '7', label: 'Correlated Risk Chains', trend: '2', trendUp: true, trendSuffix: 'vs last scan' }),
+    mkWidget('table', 'Cross-Domain Risk Chains', [
+      { category: 'vCenter → svc-cloud-deploy → S3 prod bucket', count: 'Critical', pct: '' },
+      { category: 'admin-svc-account → Payment Gateway', count: 'Critical', pct: '' },
+      { category: 'jdoe@company.com → Customer Data Platform', count: 'High', pct: '' },
+    ]),
+  ],
+  summary: () => [
+    mkWidget('kpi', 'Total Exposures', { value: '48,271', label: 'Total Exposures', trend: '6%', trendUp: true, trendSuffix: 'vs last week' }),
+    mkWidget('kpi', 'Critical Assets', { value: '847', label: 'Critical Assets' }),
+    mkWidget('kpi', 'Remediation Rate', { value: '34%', label: 'Remediation Rate', trend: '4%', trendUp: false, trendSuffix: 'vs last week' }),
+  ],
+};
+
+export function widgetsForTier(tier, query) {
+  const build = TIER_WORKSPACE_WIDGETS[tier];
+  return build ? build(query) : [mkWidget('table', query?.slice(0, 40) || 'Results', [{ category: 'Result', count: '', pct: '' }])];
+}
+
 const CANVAS_ANSWERS = {
   quick:    'Query resolved — matching records retrieved from your knowledge graph.',
   graph:    'Graph traversal complete — relationship chains mapped across connected entities.',
@@ -373,15 +417,19 @@ const CANVAS_ANSWERS = {
 };
 
 // ── The right-hand panel itself ───────────────────────────────────────
-export default function CanvasPanel({ exchange, onFeedback }) {
+export default function CanvasPanel({ exchange, onFeedback, onAddToWorkspace }) {
   const empty = !exchange || !exchange.done;
+  const handleAddToWorkspace = () => {
+    if (empty) return;
+    onAddToWorkspace?.({ widgets: widgetsForTier(exchange.tier, exchange.query), name: exchange.query?.slice(0, 60) || 'Untitled Dashboard' });
+  };
   return (
     <div className="canvas-panel">
       <div className="canvas-topbar">
         <div className="canvas-topbar-row1">
           <span className="canvas-topbar-title">Analysis Results</span>
           <div className="canvas-action-btns">
-            <button className="ds-btn sz-sm t-outline"><IcMaximize /> Add to Workspace</button>
+            <button className="ds-btn sz-sm t-outline" disabled={empty} onClick={handleAddToWorkspace}><IcMaximize /> Add to Workspace</button>
           </div>
         </div>
       </div>

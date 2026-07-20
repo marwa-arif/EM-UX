@@ -2639,16 +2639,22 @@ function MomSkeleton() {
   )
 }
 
-const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder }, ref) {
+const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '' }, ref) {
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
     : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
     : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
     : templateId === 'month-over-month'  ? MOM_TEMPLATE
     : null
-  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? ''))
+  // `seedWidgets`/`seedName` arrive when this canvas was just navigated to from
+  // Navigator's Build mode (or Ask/Research's "Add to Workspace") — see
+  // WorkspacePage's `isSeededDashboard` handling — and behave exactly like a
+  // template, just constructed at runtime from the chat session instead of a
+  // hard-coded constant.
+  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? seedName ?? ''))
   const [widgets, setWidgets] = useState(() => {
-    if (!template) return []
-    return template.widgets
+    if (template) return template.widgets
+    if (seedWidgets && seedWidgets.length) return seedWidgets
+    return []
   })
 
   const [timelineConfirmed, setTimelineConfirmed] = useState(templateId !== 'month-over-month' || !reportMode)
