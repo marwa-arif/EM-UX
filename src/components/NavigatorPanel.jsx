@@ -884,6 +884,40 @@ const BUILDER_CAPTION_BY_KIND = {
   dashboard: 'Guided dashboard builder',
 }
 
+// ── Canvas → Copilot sync ────────────────────────────────────────────────
+// The chat drives the canvas via `action(api)` (see stage defs above), but the
+// canvas can also change directly (user clicks in the builder itself). These
+// derive the scripted stage a live snapshot already corresponds to, so the
+// chat can catch its narration up to state the user reached by hand, instead
+// of only reacting to its own actions.
+function deriveAssessmentStageIdx(snap) {
+  if (!snap) return 0
+  let idx = 0
+  if (snap.scopeSummary) idx = 1
+  if (snap.conditionSummary) idx = 2
+  if (snap.step >= 2) idx = 3
+  if (snap.validated) idx = 4
+  if (snap.step >= 3) idx = 5
+  if (snap.automapped?.length) idx = 6
+  if (snap.step >= 4) idx = 7
+  return idx
+}
+
+function deriveDashboardAddStageIdx(snap, baseWidgetCount) {
+  if (!snap) return 0
+  let idx = 0
+  if (snap.widgetCount > baseWidgetCount) idx = 1
+  const last = snap.widgets?.at(-1)
+  if (idx === 1 && last?.sizeId === 'large' && last?.heightId === 'large') idx = 2
+  return idx
+}
+
+function deriveDashboardEditStageIdx(snap, widgetId) {
+  if (!snap) return 0
+  const w = snap.widgets?.find(w => w.id === widgetId)
+  return (w?.sizeId === 'large' && w?.heightId === 'large') ? 1 : 0
+}
+
 function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = null }) {
   const editingWidget = builderKind === 'dashboard' && builderContext?.widgetId
   const stages = editingWidget
@@ -898,20 +932,30 @@ function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = 
   const [busy, setBusy]           = useState(false)
   const [mode, setMode]           = useState('quick')
   const stageIdxRef  = useRef(0)
+  const busyRef      = useRef(false)
   const messagesRef  = useRef(null)
+  // Baseline widget count captured once, before any chat- or canvas-driven
+  // add, so the dashboard-add flow can tell "a widget appeared" from widgets
+  // the template already shipped with.
+  const baseWidgetCountRef = useRef(null)
+  if (builderKind === 'dashboard' && !editingWidget && baseWidgetCountRef.current === null) {
+    baseWidgetCountRef.current = builderApi?.current?.getSnapshot?.()?.widgetCount ?? 0
+  }
 
   useEffect(() => {
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
   }, [messages, busy])
 
+  const setBusyBoth = (v) => { busyRef.current = v; setBusy(v) }
+
   const advance = (userText) => {
-    if (busy) return
+    if (busyRef.current) return
     const nextIdx   = stageIdxRef.current + 1
     const nextStage = stages[nextIdx]
     if (!nextStage) return
     if (userText) setMessages(m => [...m, { role: 'user', text: userText }])
     setInputVal('')
-    setBusy(true)
+    setBusyBoth(true)
     if (nextStage.action) nextStage.action(builderApi?.current || {})
     setTimeout(() => {
       const snap   = builderApi?.current?.getSnapshot?.() || {}
@@ -919,12 +963,49 @@ function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = 
       setMessages(m => [...m, { role: 'ai', text: aiText }])
       stageIdxRef.current = nextIdx
       setStageIdx(nextIdx)
-      setBusy(false)
+      setBusyBoth(false)
       if (!nextStage.suggestions?.length && stages[nextIdx + 1]) {
         setTimeout(() => advance(''), 300)
       }
     }, nextStage.settleMs || 450)
   }
+
+  // Catches the chat's narration up to a stage the canvas already reached on
+  // its own — same shape as `advance`, but never re-runs `action`, since the
+  // canvas state it would produce is already there.
+  const catchUp = (targetIdx) => {
+    if (busyRef.current) return
+    const nextIdx   = stageIdxRef.current + 1
+    const nextStage = stages[nextIdx]
+    if (!nextStage || nextIdx > targetIdx) return
+    setBusyBoth(true)
+    setTimeout(() => {
+      const snap   = builderApi?.current?.getSnapshot?.() || {}
+      const aiText = typeof nextStage.ai === 'function' ? nextStage.ai(snap) : nextStage.ai
+      setMessages(m => [...m, { role: 'ai', text: aiText }])
+      stageIdxRef.current = nextIdx
+      setStageIdx(nextIdx)
+      setBusyBoth(false)
+      if (nextIdx < targetIdx) setTimeout(() => catchUp(targetIdx), 300)
+    }, nextStage.settleMs || 450)
+  }
+
+  useEffect(() => {
+    const deriveIdx = (snap) => {
+      if (editingWidget) return deriveDashboardEditStageIdx(snap, builderContext.widgetId)
+      if (builderKind === 'dashboard') return deriveDashboardAddStageIdx(snap, baseWidgetCountRef.current ?? 0)
+      return deriveAssessmentStageIdx(snap)
+    }
+    const id = setInterval(() => {
+      if (busyRef.current) return
+      const snap = builderApi?.current?.getSnapshot?.()
+      if (!snap) return
+      const target = deriveIdx(snap)
+      if (target > stageIdxRef.current) catchUp(target)
+    }, 600)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const currentStage = stages[stageIdx]
 

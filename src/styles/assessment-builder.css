@@ -103,6 +103,19 @@
 }
 .asb-use-nav-btn:hover { border-color: var(--shell-accent); color: var(--shell-accent); }
 
+/* Navigator-branded variant — matches the topbar/FAB brand gradient */
+.asb-use-nav-btn.asb-nav-gradient {
+  border: none;
+  background: linear-gradient(90deg, var(--pai-brand-blue), var(--pai-nav-teal));
+  color: var(--pai-on-primary);
+}
+.asb-use-nav-btn.asb-nav-gradient:hover {
+  border-color: transparent;
+  color: var(--pai-on-primary);
+  filter: brightness(1.05);
+}
+.asb-use-nav-btn.asb-nav-gradient .asb-nav-icon { filter: brightness(0) invert(1); }
+
 .asb-body {
   flex: 1;
   min-height: 0;
