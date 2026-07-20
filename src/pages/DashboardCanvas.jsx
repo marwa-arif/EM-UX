@@ -2817,7 +2817,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
   const getSnapshot = () => ({
     widgetCount: widgets.length,
-    widgets: widgets.map(w => ({ id: w.id, label: w.label, chartId: w.chartId, phase: w.phase })),
+    widgets: widgets.map(w => ({ id: w.id, label: w.label, chartId: w.chartId, phase: w.phase, sizeId: w.sizeId, heightId: w.heightId })),
   })
 
   useImperativeHandle(ref, () => ({ addWidget, configureWidget, removeWidget, getSnapshot }))

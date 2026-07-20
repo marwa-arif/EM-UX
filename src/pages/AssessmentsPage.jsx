@@ -230,7 +230,6 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
         <span className="asmts-title">Assessments ({filtered.length.toLocaleString()})</span>
         <div className="asmts-header-actions">
           <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={220} />
-          <button className="ds-btn sz-md t-outline" onClick={() => { setBuilderEntry('copilot'); setShowBuilder(true); onOpenCopilotBuilder?.() }}>Build with Copilot</button>
           <button className="ds-btn sz-md t-primary" onClick={() => { setBuilderEntry('manual'); setShowBuilder(true) }}>+ New assessment</button>
         </div>
       </div>

@@ -26,6 +26,15 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.9.0] — 2026-07-20
+### Added
+- Assessment Builder / Dashboard Copilot: canvas-driven changes (picking an entity, setting a condition, adding/resizing a widget, etc.) now sync back into the Copilot chat, matching the existing Copilot-to-canvas direction — `BuilderChat` polls the canvas snapshot and catches its narration up to whatever stage the canvas already reached.
+### Changed
+- Assessments page: removed the separate "Build with Copilot" button — "+ New assessment" is the only entry point now, since the manual builder already offers a "Use Navigator" hand-off.
+- Assessment Builder's "Use Navigator" button now uses the Navigator brand gradient and icon instead of a generic outline style.
+
+---
+
 ## [0.8.1] — 2026-07-20
 ### Added
 - `public/404.html` SPA fallback so deep-linking/refreshing a route on GitHub Pages redirects back through `index.html` instead of hitting a real 404.
