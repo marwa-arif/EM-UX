@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import '../styles/shell.css'
 import '../styles/filter-panel.css'
 import Topbar from '../components/Topbar.jsx'
@@ -21,10 +21,12 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/library' : initialRoute
   )
+  const dashboardBuilderRef = useRef(null)
+  useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
   const [collapsed, setCollapsed] = useState(false)
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
@@ -43,6 +45,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     onNav(id)
   }
 
+  const isSeededDashboard = current.startsWith('workspace/dashboard/new-')
   const isDashboard     = current.startsWith('workspace/dashboard')
   const isReport        = current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/')
   const isReportPreview = current.startsWith('workspace/report-preview/')
@@ -103,12 +106,12 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   return (
     <WorkspaceProvider onNav={handleNav}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton />
         <div className="wp-body">
           <LeftNav
             current={current}
             onNav={handleNav}
-            collapsed={collapsed}
+            collapsed={collapsed || rightPanelOpen}
             onToggleCollapse={() => setCollapsed(c => !c)}
           />
           <main className="wp-main">
@@ -134,9 +137,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                   : isConfigPage
                     ? <DataConfigPage />
                     : isDashboard
-                      ? <DashboardCanvas key={current} onNav={handleNav} templateId={templateId} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} />
                       : isReport
-                        ? <DashboardCanvas key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} />
+                        ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} />
                         : isReportPreview
                           ? <ReportPreviewPage
                               reportTitle={reportTitle}
@@ -163,6 +166,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
               )}
             </div>
           </main>
+          {rightPanelSlot}
         </div>
       </div>
     </WorkspaceProvider>

@@ -16,12 +16,82 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-06-01 10:58 | branch: feature/ui-updates | a2d3541 fix: DS 2.0 token compliance pass on dashboard.css, active-filter-panel.css, DashboardCanvas -->
 <!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
 <!-- pull: 2026-06-09 09:44 | branch: feature/ui-updates | 8d7c413 chore: bump to v0.6.4 -->
+<!-- pull: 2026-06-23 11:03 | branch: develop | 3a6e66c Merge feature/ui-updates into develop (v0.6.6 — DS token pass and font scale audit) -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.10.0] — 2026-07-20
+### Added
+- Navigator Build mode's chat now runs on the same reasoning engine as Ask/Research (streamed step traces, tool narration) instead of a separate scripted chat, via a new `build` reasoning tier.
+- Working "Add to Workspace": both Build mode's canvas and Ask/Research's canvas panel can now hand their widgets off into a brand-new, pre-populated Workspace dashboard — previously a dead, `onClick`-less button.
+- Research mode now reasons measurably deeper than Ask on the same question — forces the phased "deep" tier and adds a "Source Corroboration" phase — instead of only differing in home-screen placeholder text.
+### Changed
+- Navigator Build mode's widgets are now built on Workspace's own widget schema/renderer (`WidgetCard`/`ChartRender`) instead of a separate, disconnected `NavWidget` system — removes a translation layer and a dead-end `localStorage` save.
+- Build mode's shell (topbar, chat pane, resize dragger, canvas header) now matches Ask/Research's visual pattern instead of a separate, inconsistent layout.
+- Build mode's widget-context bar (shown when a widget is selected) now sits just above the composer instead of floating at the top of the chat pane, so it reads as scoped to the input right below it.
+### Fixed
+- KPI widgets synthesized from Ask/Research's "Add to Workspace" no longer render a duplicated trend arrow (e.g. "↓ ↑ 6%").
+
+---
+
+## [0.9.0] — 2026-07-20
+### Added
+- Assessment Builder / Dashboard Copilot: canvas-driven changes (picking an entity, setting a condition, adding/resizing a widget, etc.) now sync back into the Copilot chat, matching the existing Copilot-to-canvas direction — `BuilderChat` polls the canvas snapshot and catches its narration up to whatever stage the canvas already reached.
+### Changed
+- Assessments page: removed the separate "Build with Copilot" button — "+ New assessment" is the only entry point now, since the manual builder already offers a "Use Navigator" hand-off.
+- Assessment Builder's "Use Navigator" button now uses the Navigator brand gradient and icon instead of a generic outline style.
+
+---
+
+## [0.8.1] — 2026-07-20
+### Added
+- `public/404.html` SPA fallback so deep-linking/refreshing a route on GitHub Pages redirects back through `index.html` instead of hitting a real 404.
+### Changed
+- `vite.config.js`: `base` is now `/EM-UX/` when built with `GH_PAGES=true` (used by the Pages workflow), `/` otherwise.
+### Fixed
+- GitHub Pages deploy was fully broken under the `/EM-UX/` subpath: 132 hardcoded `/assets/...` image/icon references across 22 files resolved to the wrong URL (fixed via `<base href>` + relative paths); client-side routing (`history.pushState`/`window.location.pathname` parsing in App.jsx) assumed the app lived at domain root, so the very first render fell into the app's own 404 page; logout and the error page's "Go to dashboard" button hard-navigated to `/`, escaping the subpath.
+
+---
+
+## [0.8.0] — 2026-07-17
+### Added
+- Navigator now opens as a full page (not modal) with its own left-nav entry and route.
+- Navigator gained a History panel and Home button, replacing the old sidebar/thread-switcher panel.
+- Copilot builder chat now supports both Assessment and Dashboard building, scoped per surface.
+- Dashboards/reports can be edited via a "Build with Copilot" flow and per-widget "Edit with Copilot".
+- DashboardCanvas: undo/redo, zoom controls, and a floating canvas toolbar.
+- DashboardCanvas: Share, Schedule Assistant, Stop Schedule, and Download (Excel) modals.
+- DashboardCanvas: delete-dashboard confirmation modal and a "More actions" menu.
+- Navigator chat: thread rename (inline) and delete-thread confirmation modal.
+- Navigator Build view: delete-widget confirmation modal.
+- Workspace pages now embed the shared right panel (Navigator/Filter), so Navigator can open docked while in Workspace.
+### Changed
+- Dashboard toolbar reorganized into two rows and auto-stacks/compacts responsively on narrow widths.
+- Widget mutations (add/configure/remove) now route through a single undo-aware state path shared by the manual panel and Copilot.
+- Navigator's mode-depth slider is now keyboard-operable (arrow keys, Home/End) with proper ARIA slider semantics.
+- Follow-up suggestion items converted from styled anchors to accessible buttons (removed inline styles).
+- Compliance dropdown menus support a wider variant for longer labels.
+### Fixed
+- Navigator panel follow-up composer previously discarded the typed message instead of sending it.
+- Clicking the LeftNav "Navigator" item while already mid-chat now correctly resets to the Home screen.
+- Canvas Results panel's "Add to Workspace" button no longer wraps to its own line — aligned top-right with the panel title.
+- Chat view lost its white background when the canvas panel was hidden; restored, centered on the conversation column.
+
+---
+
+## [0.7.0] — 2026-07-16
+### Added
+- Studio Home page and Admin section (Workspace, Users & Access, Data Integrations, Identity & Security, Risk Config, Security & Compliance)
+- UX3 exposure overview and client servers views, with dedicated left nav
+- Assessment Builder and Canvas Panel components
+- Copilot FAB entry point and Reasoning Engine component
+- Navigator engine module supporting the Navigator redesign work
 
 ---
 

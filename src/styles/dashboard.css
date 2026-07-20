@@ -168,6 +168,165 @@
   margin-bottom: 8px;
 }
 
+.dc-share-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dc-share-link-row .dc-text-input-wrap { flex: 1; min-width: 0; }
+
+/* ── Modal form fields (Share / Schedule / Stop / Download) ───────────── */
+.dc-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.dc-modal-field-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.dc-modal-field-row > .dc-modal-field { flex: 1; min-width: 0; }
+
+.dc-modal-input {
+  height: 32px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--dc-fg1, var(--shell-text));
+  background: var(--card-bg);
+  box-sizing: border-box;
+  width: 100%;
+}
+.dc-modal-to-field {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  padding: 0 8px;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.dc-modal-to-field-prefix {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dc-fg1, var(--shell-text));
+  flex-shrink: 0;
+}
+.dc-modal-to-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--dc-fg1, var(--shell-text));
+}
+
+.dc-modal-select {
+  height: 32px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--dc-fg1, var(--shell-text));
+  background: var(--card-bg);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.dc-modal-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.dc-modal-section-head-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dc-fg1, var(--shell-text));
+  white-space: nowrap;
+}
+.dc-modal-section-head-line {
+  flex: 1;
+  height: 1px;
+  background: var(--shell-border);
+}
+
+.dc-modal-radio-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+.dc-modal-radio-row input[type="radio"] {
+  margin-top: 2px;
+  accent-color: var(--pai-indigo, #6360d8);
+  flex-shrink: 0;
+}
+.dc-modal-radio-row label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  cursor: pointer;
+}
+
+.dc-modal-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.dc-modal-checkbox-row label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  cursor: pointer;
+}
+
+.dc-modal-note {
+  font-size: 14px;
+  color: var(--shell-text-muted);
+}
+.dc-modal-note strong {
+  display: block;
+  font-weight: 600;
+  color: var(--shell-text);
+  margin-bottom: 4px;
+}
+
+.dc-modal-body-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+.dc-modal-footer-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dc-modal-schedule-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-hover);
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
 .dc-field-label--no-hint {
   margin-bottom: 8px;
 }
@@ -533,6 +692,7 @@
 
 /* ── Canvas area ───────────────────────────────────────────────────────── */
 .dc-canvas-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -543,17 +703,81 @@
   overflow: hidden;
 }
 
-/* ── Toolbar ───────────────────────────────────────────────────────────── */
+/* ── Floating canvas toolbar (Undo / Redo / Zoom) ─────────────────────── */
+.dc-float-toolbar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 44px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+}
+.dc-float-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--shell-border);
+}
+.dc-float-toolbar-zoom-label {
+  min-width: 44px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--shell-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 44px;
+  transition: background 120ms, color 120ms;
+}
+.dc-float-toolbar-zoom-label:hover {
+  background: var(--shell-hover);
+  color: var(--shell-text);
+}
+
+/* ── Toolbar (identity row + actions row — single line by default, ─────
+   stacked into two lines only once they'd overflow) ──────────────────── */
 .dc-toolbar {
-  height: 48px;
   flex-shrink: 0;
   box-sizing: border-box;
   background: var(--card-bg);
   display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+.dc-toolbar--stacked {
+  flex-direction: column;
+  gap: 0;
+}
+.dc-toolbar-row {
+  height: 48px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
   padding: 0 12px;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  min-width: 0;
 }
+.dc-toolbar-row > * { flex-shrink: 0; }
+.dc-toolbar-row--actions {
+  flex-grow: 1;
+  /* The kebab dropdown is taller than this row and must escape it, so this
+     row can't clip overflow the way --top safely can (it has no dropdowns). */
+  overflow: visible;
+}
+.dc-toolbar--stacked .dc-toolbar-row--top { border-bottom: 1px solid var(--shell-border); }
+.dc-toolbar-row--compact .dc-btn-label { display: none; }
+.dc-toolbar-row--compact .ds-btn { padding: 0 8px; }
 
 .dc-toolbar-back-btn {
   width: 28px;
@@ -571,7 +795,8 @@
 
 .dc-toolbar-name-input {
   height: 32px;
-  min-width: 220px;
+  min-width: 120px;
+  flex-shrink: 1;
   border: 1px solid var(--shell-border);
   border-radius: 8px;
   padding: 0 14px;

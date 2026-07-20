@@ -30,7 +30,7 @@ export default function ErrorPage({ type = 'notFound', onReset, onHome }) {
           ) : (
             <button
               className="ds-btn sz-md t-primary"
-              onClick={onHome ?? (() => { window.location.href = '/'; })}
+              onClick={onHome ?? (() => { window.location.href = import.meta.env.BASE_URL; })}
             >
               Go to dashboard
             </button>

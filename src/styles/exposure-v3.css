@@ -1,0 +1,180 @@
+/* ── UX 3.0 — Exposure Overview ──────────────────────────────────── */
+/* Fixes applied vs the reviewed design:
+   1. One dominant CTA (Export Executive Summary) — everything else demoted.
+   2. Active filters render as visible chips, not a bare count badge.
+   3. Score rings are real proportional arcs (score/1000), not decorative circles.
+   4. Bubble size is on one shared 0–1000 scale across both bubble groups.
+   5. "Explore More" renamed "View Full Table" — no longer collides with "Explore in".
+   6. The three % columns show distinct values with the bar+label kept close together.
+   Data-freshness is also surfaced inline near the title instead of buried in the topbar. */
+
+.xo3-card { padding: 16px; display: flex; flex-direction: column; border-radius: 12px; /* experiment: DS default is 4px, trying 12px on this page only */ }
+
+/* ── Header ───────────────────────────────────────────────────── */
+.xo3-card-hdr { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.xo3-card-hdr-left { display: flex; flex-direction: column; gap: 4px; }
+.xo3-card-title { font-size: 14px; font-weight: 600; color: var(--shell-text); cursor: default; }
+.xo3-freshness { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--shell-text-muted); font-weight: 500; }
+
+.xo3-card-hdr-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.xo3-filter-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.xo3-filter-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px; border-radius: 44px;
+  background: var(--pai-indigo-tint); color: var(--shell-text-2);
+  font-size: 14px; font-weight: 500;
+}
+.xo3-filter-chip strong { color: var(--shell-text); font-weight: 600; }
+.xo3-filter-chip button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 44px; border: none;
+  background: transparent; color: var(--pai-indigo); cursor: pointer; padding: 0;
+}
+.xo3-filter-chip button:hover { background: var(--pai-indigo-border); color: var(--card-bg); }
+
+.xo3-export-btn { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ── Score body: hero ring + two category-meter groups ───────────── */
+.xo3-body { display: flex; align-items: stretch; gap: 24px; }
+
+.xo3-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px 0; min-width: 0; }
+.xo3-col--hero { flex: 0 0 308px; }
+.xo3-divider { padding-left: 24px; border-left: 1px solid var(--shell-border); align-items: stretch; }
+
+.xo3-col-label { font-size: 14px; font-weight: 500; color: var(--shell-text-muted); }
+
+/* ── Score gauge — banded dial + needle ────────────────────────────
+   The colored zones are the instrument; the needle just marks a position
+   on it, so "which zone am I in" doesn't require reading the number first.
+   Gradient stops reuse the app's own severity tokens — no invented colors. */
+.xo3-gauge-track { filter: drop-shadow(0 3px 8px rgba(16,16,16,0.14)); }
+.xo3-gauge-stop--low      { stop-color: var(--pai-low-fg); }
+.xo3-gauge-stop--caution  { stop-color: var(--pai-med-fg); }
+.xo3-gauge-stop--high     { stop-color: var(--pai-high-fg); }
+.xo3-gauge-stop--critical { stop-color: var(--pai-crit-fg); }
+
+.xo3-gauge-tick { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.xo3-gauge-tick--low      { fill: var(--pai-low-fg); }
+.xo3-gauge-tick--caution  { fill: var(--pai-med-fg); }
+.xo3-gauge-tick--high     { fill: var(--pai-high-fg); }
+.xo3-gauge-tick--critical { fill: var(--pai-crit-fg); }
+
+.xo3-gauge-needle-halo { fill: var(--card-bg); filter: drop-shadow(0 1px 3px rgba(16,16,16,0.35)); }
+.xo3-gauge-needle-core { fill: var(--shell-text); }
+
+.xo3-gauge-needle { fill: var(--shell-text); stroke: var(--card-bg); stroke-width: 1.5px; stroke-linejoin: round; }
+
+/* ── Category bar chart — one shared 0–1,000 baseline across every row,
+   with gridlines at the same 400/700 thresholds the hero gauge bands on.
+   That shared scale is what makes this a chart rather than three
+   disconnected fills, and it's why it doesn't just repeat the table's
+   per-cell bars below: those compare percent-of-total across ten rows,
+   this compares absolute score against the dial's own risk zones. ── */
+.xo3-chart { display: flex; flex-direction: column; width: 100%; flex: 1; justify-content: center; }
+.xo3-chart-axis { display: grid; grid-template-columns: 26px 132px 1fr 40px 64px; gap: 10px; margin-bottom: 8px; }
+.xo3-chart-axis-track { position: relative; height: 12px; }
+.xo3-chart-axis-tick {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-size: 14px; font-weight: 500; color: var(--shell-text-faint);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.xo3-chart-axis-tick--start { transform: none; }
+.xo3-chart-axis-tick--end   { transform: translateX(-100%); }
+
+.xo3-mrow-list { display: flex; flex-direction: column; gap: 14px; width: 100%; justify-content: center; flex: 1; }
+.xo3-mrow { display: grid; grid-template-columns: 26px 132px 1fr 40px 64px; align-items: center; gap: 10px; }
+
+.xo3-mrow-icon {
+  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+  background: var(--shell-raised); color: var(--shell-text-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.xo3-mrow-label { font-size: 12.5px; font-weight: 500; color: var(--shell-text-2); line-height: 1.25; }
+
+/* Bar mark: square at the baseline (left/zero), 4px rounded data-end
+   (right) — never a full pill, so it reads as a bar anchored to zero
+   rather than a status pill. Track is a lighter step of the fill's own
+   ramp so severity carries across the whole bar, not just the filled part. */
+.xo3-chart-bar-wrap { position: relative; height: 8px; }
+.xo3-chart-track { position: absolute; inset: 0; border-radius: 0 4px 4px 0; overflow: hidden; }
+.xo3-chart-track--high    { background: var(--pai-high-bg); }
+.xo3-chart-track--caution { background: var(--pai-med-bg); }
+.xo3-chart-track--low     { background: var(--pai-low-bg); }
+.xo3-chart-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 0 4px 4px 0; transition: width 200ms var(--ease-out, ease); }
+.xo3-chart-fill--high    { background: var(--pai-high-fg); }
+.xo3-chart-fill--caution { background: var(--pai-med-fg); }
+.xo3-chart-fill--low     { background: var(--pai-low-fg); }
+.xo3-chart-gridline { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--shell-border); opacity: 0.7; }
+
+.xo3-mrow-score { font-size: 14px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.xo3-mrow-score--high    { color: var(--pai-high-fg); }
+.xo3-mrow-score--caution { color: var(--pai-med-fg); }
+.xo3-mrow-score--low     { color: var(--pai-low-fg); }
+
+.xo3-mrow-chip {
+  justify-self: start; font-size: 10.5px; font-weight: 600;
+  border-radius: 44px; padding: 2px 9px; white-space: nowrap;
+}
+.xo3-mrow-chip--high    { color: var(--pai-high-fg); background: var(--pai-high-bg); }
+.xo3-mrow-chip--caution { color: var(--pai-med-fg); background: var(--pai-med-bg); }
+.xo3-mrow-chip--low     { color: var(--pai-low-fg); background: var(--pai-low-bg); }
+
+/* ── Enterprise score hero ring ───────────────────────────────── */
+.xo3-hero-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.xo3-hero-body { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.xo3-hero-score-row { display: flex; align-items: baseline; gap: 4px; }
+.xo3-hero-score { font-weight: 700; font-size: 40px; color: var(--shell-text); line-height: 1; }
+.xo3-hero-denom { font-size: 14px; color: var(--shell-text-muted); }
+.xo3-hero-caption { font-size: 14px; color: var(--shell-text-muted); }
+.xo3-hero-risk-badge { font-size: 14px; font-weight: 600; border-radius: 44px; padding: 4px 12px; margin-top: 4px; }
+.xo3-hero-risk-badge--high    { color: var(--pai-high-fg); background: var(--pai-high-bg); }
+.xo3-hero-risk-badge--caution { color: var(--pai-med-fg); background: var(--pai-med-bg); }
+.xo3-hero-risk-badge--low     { color: var(--pai-low-fg); background: var(--pai-low-bg); }
+.xo3-hero-trend {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 8px;
+  background: var(--shell-raised); border-radius: 44px; padding: 4px 12px; color: var(--pai-teal);
+}
+.xo3-hero-trend-pct { font-size: 14px; font-weight: 600; }
+.xo3-hero-trend-from { font-size: 14px; color: var(--shell-text-muted); }
+
+/* ── Contribution table card ──────────────────────────────────── */
+.xo3-contrib-card { padding: 16px 0; display: flex; flex-direction: column; gap: 0; border-radius: 12px; overflow: hidden; }
+.xo3-contrib-hdr { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 0 16px; margin-bottom: 16px; }
+.xo3-contrib-hdr-left { display: flex; align-items: center; gap: 12px; }
+.xo3-contrib-title { font-size: 14px; font-weight: 500; color: var(--shell-text); white-space: nowrap; }
+.xo3-groupby-btn { display: inline-flex; align-items: center; gap: 8px; }
+.xo3-contrib-hdr-right { display: flex; align-items: center; gap: 12px; }
+
+.xo3-search-box {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--card-border); border-radius: 44px; height: 32px;
+  padding: 0 12px; background: var(--card-bg); width: 260px; color: var(--shell-text-muted);
+}
+.xo3-search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--shell-text); font-family: inherit; }
+.xo3-search-clear { display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; padding: 0; }
+
+/* ── Table ────────────────────────────────────────────────────── */
+.xo3-table { min-width: 900px; }
+.xo3-th-sort { display: inline-flex; margin-left: 4px; color: var(--shell-text-faint); }
+.xo3-td-name { font-size: 14px; color: var(--shell-text); white-space: nowrap; }
+.xo3-empty { text-align: center; color: var(--shell-text-muted); font-size: 14px; padding: 32px 12px; }
+
+.xo3-score { font-size: 14px; font-weight: 600; }
+.xo3-score--high    { color: var(--pai-high-fg); }
+.xo3-score--caution { color: var(--pai-med-fg); }
+.xo3-score--low     { color: var(--pai-low-fg); }
+
+.xo3-change { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; }
+.xo3-change--good { color: var(--pai-green); }
+.xo3-change--bad  { color: var(--pai-high-fg); }
+
+/* Bar and its % value sit close together — no more floating label pinned
+   to the far edge of a mostly-empty column. */
+.xo3-pctbar { display: inline-flex; align-items: center; gap: 8px; }
+.xo3-pctbar-track { position: relative; width: 80px; height: 5px; border-radius: 4px; background: var(--shell-raised); flex-shrink: 0; }
+.xo3-pctbar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; width: var(--xo3-fill-w); }
+.xo3-pctbar-fill--high    { background: var(--pai-high-fg); }
+.xo3-pctbar-fill--caution { background: var(--pai-med-fg); }
+.xo3-pctbar-fill--low     { background: var(--pai-low-fg); }
+.xo3-pctbar-val { font-size: 14px; color: var(--shell-text-2); min-width: 32px; }

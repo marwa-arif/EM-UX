@@ -132,7 +132,7 @@
 }
 .kg-page-btn:hover:not(:disabled) { background: var(--pai-bg-app); }
 .kg-page-btn:disabled { opacity: 0.35; cursor: default; }
-.kg-page-btn--active { background: var(--pai-indigo); border-color: var(--pai-indigo); color: var(--pai-indigo-tint); font-weight: 600; }
+.kg-page-btn--active { background: var(--pai-indigo); border-color: var(--pai-indigo); color: var(--pai-on-primary); font-weight: 600; }
 .kg-details table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: inherit; }
 .kg-details th {
   text-align: left; padding: var(--table-th-padding);
@@ -735,7 +735,7 @@
   border: none;
   border-radius: 4px;
   height: 440px;
-  margin: 0 12px;
+  margin: 0 0 0 12px;
   background-image: radial-gradient(var(--border, #E5E7EB) 1px, transparent 1px);
   background-size: 14px 14px;
   background-position: 0 0;
@@ -845,7 +845,7 @@
   background: var(--bg-surface, #fff);
   border: 1px solid var(--border, #E6E6E6);
   border-radius: 6px;
-  margin: 0 12px 16px;
+  margin: 0 0 16px 12px;
   overflow: hidden;
 }
 .kg-details-header {
@@ -1112,7 +1112,7 @@
   background: var(--bg-surface, #fff);
   border: 1px solid var(--border, #E6E6E6);
   border-radius: 6px;
-  margin: 0 12px;
+  margin: 0 0 0 12px;
   overflow: hidden;
 }
 .kg-summary-header {

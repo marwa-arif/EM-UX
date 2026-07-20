@@ -48,7 +48,7 @@ function StartCard({ title, desc, cta, ctaType, action, iconType, highlighted })
     <div className={`lib-start-card${highlighted ? ' lib-start-card--hi' : ''}`}>
       <div className={`lib-start-icon${iconType === 'report' ? ' lib-start-icon--report' : ''}`}>
         {iconType === 'report'
-          ? <img src="/assets/icons/report.svg" width={22} height={22} alt="" />
+          ? <img src="assets/icons/report.svg" width={22} height={22} alt="" />
           : <DashboardIcon size={18} />
         }
       </div>
@@ -71,7 +71,7 @@ function QuickCard({ title, desc, tag, actionLabel, action }) {
       <div className="lib-quick-body">
         <div className={`lib-quick-icon${isReport ? ' lib-quick-icon--report' : ''}`}>
           {isReport
-            ? <img src="/assets/icons/report.svg" width={22} height={22} alt="" />
+            ? <img src="assets/icons/report.svg" width={22} height={22} alt="" />
             : <DashboardIcon size={18} />
           }
         </div>
@@ -237,11 +237,11 @@ function LibraryPage() {
           <div className="lib-tabbar-right">
             <DSPillSearch value={librarySearch} onChange={setLibrarySearch} placeholder="Search Library" width={200} />
             <button className="lib-action-btn">
-              <img src="/assets/icons/new-report.svg" width={13} height={13} alt="" />
+              <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
               New Template
             </button>
             <button className="lib-action-btn" onClick={() => onNav('workspace/dashboard/new')}>
-              <img src="/assets/icons/template-add.svg" width={13} height={13} alt="" />
+              <img src="assets/icons/template-add.svg" width={13} height={13} alt="" />
               New Dashboard
             </button>
           </div>
@@ -253,7 +253,7 @@ function LibraryPage() {
           {/* Get Started */}
           <div>
             <div className="lib-section-hdr">
-              <img src="/assets/icons/get-started.svg" width={16} height={16} alt="" />
+              <img src="assets/icons/get-started.svg" width={16} height={16} alt="" />
               <span className="lib-section-lbl">Get Started</span>
             </div>
             <div className="lib-start-row">

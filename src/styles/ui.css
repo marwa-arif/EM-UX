@@ -11,7 +11,7 @@
 .pai-btn--md { height: 32px; padding: 0 16px; font-size: 12px; }
 .pai-btn--lg { height: 40px; padding: 0 20px; font-size: 13px; }
 
-.pai-btn--primary { background: var(--pai-indigo); color: var(--pai-indigo-tint); }
+.pai-btn--primary { background: var(--pai-indigo); color: var(--pai-on-primary); }
 .pai-btn--primary:hover { background: var(--pai-indigo-hover); }
 
 .pai-btn--secondary { background: var(--pai-indigo-tint); color: var(--pai-indigo); }

@@ -183,7 +183,7 @@ const DEFAULT_COVER_DESC = 'This report summarises the software vulnerability la
 function CoverPage({ reportTitle, reportFilters, template }) {
   const today = formatDate(new Date())
   const criteriaGroups = groupFilters(reportFilters)
-  const coverImage = template.coverImage || '/assets/reports/executive-summary-cover.svg'
+  const coverImage = template.coverImage || 'assets/reports/executive-summary-cover.svg'
   const coverDesc  = template.coverDescription || DEFAULT_COVER_DESC
 
   return (
@@ -194,7 +194,7 @@ function CoverPage({ reportTitle, reportFilters, template }) {
       {/* Info content overlaid on the SVG's white area */}
       <div className="rv-info-body rv-info-body--on-cover">
         <div className="rv-info-section-icon">
-          <img src="/assets/reports/template-icon.svg" width={34} height={34} alt="" />
+          <img src="assets/reports/template-icon.svg" width={34} height={34} alt="" />
         </div>
         <h2 className="rv-info-title">{reportTitle}</h2>
         <p className="rv-info-desc">{coverDesc}</p>
