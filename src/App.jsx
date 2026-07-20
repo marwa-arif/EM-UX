@@ -25,6 +25,16 @@ import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 import SplashScreen           from './components/SplashScreen.jsx'
 
+// Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
+// so pushState-based routing and window.location.pathname parsing work the
+// same locally (BASE '') and on Pages (BASE '/EM-UX').
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const stripBase = (pathname) => {
+  const rest = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+  return rest || '/';
+};
+const navPath = (path) => `${BASE}${path}`;
+
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
   "ampX": 6,
@@ -274,7 +284,7 @@ const TAB_DEFS = [
   {
     id: 'navigator',
     label: 'Navigator',
-    icon: <img src="/assets/icons/Navigator icon.svg" width={12} height={12} alt="" />,
+    icon: <img src="assets/icons/Navigator icon.svg" width={12} height={12} alt="" />,
   },
 ];
 
@@ -485,7 +495,7 @@ const _UNUSED = {
 
 function App() {
   const [current, setCurrent] = useState(() => {
-    const path = window.location.pathname;
+    const path = stripBase(window.location.pathname);
     if (path === '/workspace') return 'workspace';
     if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
@@ -554,7 +564,7 @@ function App() {
 
   useEffect(() => {
     const onPop = () => {
-      const path = window.location.pathname;
+      const path = stripBase(window.location.pathname);
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
@@ -587,10 +597,10 @@ function App() {
     setAppMode(mode);
     if (mode === 'studio') {
       setCurrent('studio-home');
-      history.pushState(null, '', '/studio-home');
+      history.pushState(null, '', navPath('/studio-home'));
     } else {
       setCurrent('exposure/overview');
-      history.pushState(null, '', '/exposure/overview');
+      history.pushState(null, '', navPath('/exposure/overview'));
     }
   };
 
@@ -615,25 +625,25 @@ function App() {
       setNavigatorQuery(data || '');
       setNavigatorReset(n => n + 1);
       setCurrent('navigator');
-      history.pushState(null, '', '/navigator');
+      history.pushState(null, '', navPath('/navigator'));
       return;
     }
     if (id === 'ux3-page') {
       setRightPanel(null);
       setCurrent('ux3');
-      history.pushState(null, '', '/ux3');
+      history.pushState(null, '', navPath('/ux3'));
       return;
     }
     if (id === 'ux3-exit') {
       setCurrent('exposure/overview');
-      history.pushState(null, '', '/exposure/overview');
+      history.pushState(null, '', navPath('/exposure/overview'));
       return;
     }
     if (id === 'admin-page') {
       if (current !== 'admin') setAdminPrevPage(current);
       setRightPanel(null);
       setCurrent('admin');
-      history.pushState(null, '', '/admin');
+      history.pushState(null, '', navPath('/admin'));
       return;
     }
     if (id === 'admin-exit') {
@@ -646,7 +656,7 @@ function App() {
     else if (id.startsWith('workspace/')) url = `/${id}`;
     else if (id === 'kg') url = '/knowledge-graph';
     else url = `/${id}`;
-    history.pushState(null, '', url);
+    history.pushState(null, '', navPath(url));
   };
 
   // Per-page filter accessors
@@ -811,7 +821,7 @@ function App() {
   };
 
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
-    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', '/exposure/overview'); }} />;
+    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', navPath('/exposure/overview')); }} />;
   }
 
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
@@ -887,7 +897,7 @@ function App() {
                   onExplore={handleExplore}
                   onEdit={DISCOVER_PAGES.has(current) ? () => {
                     setCurrent('workspace/dashboard/discover');
-                    history.pushState(null, '', '/workspace');
+                    history.pushState(null, '', navPath('/workspace'));
                   } : undefined}
                 />
               )}

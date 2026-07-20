@@ -33,11 +33,11 @@ const IcDownload = () => (
 
 // ── Entity badge ───────────────────────────────────────────────────
 const ENTITY_ICON_SRCS = {
-  cloud:    '/assets/icons/entities/cloud-account.svg',
-  device:   '/assets/icons/entities/host.svg',
-  identity: '/assets/icons/entities/identity.svg',
-  storage:  '/assets/icons/entities/storage.svg',
-  multi:    '/assets/icons/entities/assessment.svg',
+  cloud:    'assets/icons/entities/cloud-account.svg',
+  device:   'assets/icons/entities/host.svg',
+  identity: 'assets/icons/entities/identity.svg',
+  storage:  'assets/icons/entities/storage.svg',
+  multi:    'assets/icons/entities/assessment.svg',
 }
 
 function EntityBadge({ type }) {

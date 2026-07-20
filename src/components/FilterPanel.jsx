@@ -168,7 +168,7 @@ const SHOW_LIMIT = 8;
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function FPAttrIcon({ icon, size = 16 }) {
-  return <img src={`/assets/icons/${icon}.svg`} width={size} height={size} alt="" className="fp-attr-icon" />;
+  return <img src={`assets/icons/${icon}.svg`} width={size} height={size} alt="" className="fp-attr-icon" />;
 }
 
 function FPDragHandle() {
@@ -286,7 +286,7 @@ function FPSavedCard({ item, selected, applied, onSelect }) {
           </div>
         </div>
         {item.pinned && (
-          <img src="/assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-card__pin" />
+          <img src="assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-card__pin" />
         )}
       </div>
     </div>
@@ -330,7 +330,7 @@ function GFNode({ entity, selected, dimmed, onClick, onContextMenu }) {
         className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}
         style={entVars}
       >
-        <img src={`/assets/icons/${entity.file}`} width={26} height={26} alt="" className="gf-node__img" />
+        <img src={`assets/icons/${entity.file}`} width={26} height={26} alt="" className="gf-node__img" />
       </div>
       <span
         className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}
@@ -384,7 +384,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
         {/* Header */}
         <div className="gf-drawer__header">
           <div className="gf-drawer__title-group">
-            <img src="/assets/icons/navbar-kg.svg" width={18} height={18} alt="" className="gf-drawer__title-icon" />
+            <img src="assets/icons/navbar-kg.svg" width={18} height={18} alt="" className="gf-drawer__title-icon" />
             <span className="gf-drawer__title-text">Graph Filter</span>
           </div>
           <button onClick={onClose} className="gf-drawer__close-btn">
@@ -476,7 +476,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                     className="gf-add-hide-popover__swatch"
                     style={{ '--ent-tint': entity.tint, '--ent-stroke': entity.stroke }}
                   >
-                    <img src={`/assets/icons/${entity.file}`} width={11} height={11} alt="" />
+                    <img src={`assets/icons/${entity.file}`} width={11} height={11} alt="" />
                   </div>
                   {entity.label}
                 </label>
@@ -540,7 +540,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                   return (
                     <span key={id} className="gf-preview__tag" style={entVars}>
                       <div className="gf-preview__tag-icon">
-                        <img src={`/assets/icons/${ent.file}`} width={9} height={9} alt="" />
+                        <img src={`assets/icons/${ent.file}`} width={9} height={9} alt="" />
                       </div>
                       {ent.label}
                       <button onClick={() => toggleGFNode(id)} className="gf-preview__tag-remove">
@@ -677,7 +677,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
         <div className="fp-header">
           <div className="fp-header__left">
             <button onClick={onClose} className="fp-header__close-btn">
-              <img src="/assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
+              <img src="assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
             </button>
             <span className="fp-header__title">Filter</span>
           </div>
@@ -826,7 +826,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
                           </div>
                         </div>
                         {item.pinned && (
-                          <img src="/assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-drag-card__pin" />
+                          <img src="assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-drag-card__pin" />
                         )}
                       </div>
                     </div>
@@ -846,7 +846,7 @@ function FilterPanel({ onApply, onClose, onOpenGraphFilter, graphFilterOpen, emb
               </div>
               <button className="fp-view-all-btn">
                 View all
-                <img src="/assets/icons/explore.svg" width={16} height={16} alt="" />
+                <img src="assets/icons/explore.svg" width={16} height={16} alt="" />
               </button>
             </div>
             <div className="fp-saved-section">

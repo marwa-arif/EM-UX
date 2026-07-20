@@ -201,7 +201,7 @@ function EntityGlyph({ kind, size = 18 }) {
   if (!file) return null;
   return (
     <img
-      src={`/assets/icons/${file}`}
+      src={`assets/icons/${file}`}
       width={size} height={size}
       className="kg-entity-glyph"
       alt=""
@@ -265,7 +265,7 @@ function EntityNode({ id, def, pos, selected, dimmed, onClick, onHover, hovered,
         );
       })()}
       {GLYPH_TO_FILE[def.glyph] && (
-        <image x={-11} y={-11} width={22} height={22} href={`/assets/icons/${GLYPH_TO_FILE[def.glyph]}`} pointerEvents="none" />
+        <image x={-11} y={-11} width={22} height={22} href={`assets/icons/${GLYPH_TO_FILE[def.glyph]}`} pointerEvents="none" />
       )}
       <text
         x="0" y={r + 14}
@@ -877,12 +877,12 @@ const ROWS = [
 // ── Data source pill (logo image chip) ───────────────────────────────
 function SourceBadge({ src }) {
   const logoMap = {
-    ms:    '/assets/Data source logos/MS Defender.svg',
-    crwd:  '/assets/Data source logos/logo-crowdstrike.svg',
-    azure: '/assets/Data source logos/logo-azure.svg',
-    aws:   '/assets/Data source logos/logo-aws.svg',
-    k8s:   '/assets/Data source logos/AWS EKS Container.svg',
-    jira:  '/assets/Data source logos/Jira.svg',
+    ms:    'assets/Data source logos/MS Defender.svg',
+    crwd:  'assets/Data source logos/logo-crowdstrike.svg',
+    azure: 'assets/Data source logos/logo-azure.svg',
+    aws:   'assets/Data source logos/logo-aws.svg',
+    k8s:   'assets/Data source logos/AWS EKS Container.svg',
+    jira:  'assets/Data source logos/Jira.svg',
   };
   const overflowMap = {
     '+2': '+2',

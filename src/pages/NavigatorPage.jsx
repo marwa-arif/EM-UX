@@ -372,7 +372,7 @@ function ExchangeTurn({ exchange, live, updateExchange, phaseCollapsed, onToggle
         </div>
         <div className="cv-msg cv-msg--ai">
           <div className="cv-msg-avatar cv-msg-avatar--ai" aria-hidden="true">
-            <img src="/assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
+            <img src="assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
           </div>
           <div className="cv-ai-card">
             <p className="cv-ai-text">{exchange.reply}</p>
@@ -411,7 +411,7 @@ function ExchangeTurn({ exchange, live, updateExchange, phaseCollapsed, onToggle
 
       <div className="cv-msg cv-msg--ai">
         <div className="cv-msg-avatar cv-msg-avatar--ai" aria-hidden="true">
-          <img src="/assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
+          <img src="assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
         </div>
         <div className="cv-ai-body">
           <div className="cv-ai-card">
@@ -1058,7 +1058,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
               ) : (
                 <div key={msg.id} className="build-msg-row build-msg-row--ai">
                   <div className="build-msg-avatar build-msg-avatar--ai">
-                    <img src="/assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
                   </div>
                   <div className="build-ai-card">
                     {msg.steps && (

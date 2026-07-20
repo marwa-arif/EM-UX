@@ -8,7 +8,7 @@ function CopilotFab({ onClick }) {
       title="Ask Navigator"
       aria-label="Ask Navigator"
     >
-      <img src="/assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
+      <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
     </button>
   )
 }
