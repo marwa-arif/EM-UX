@@ -21,11 +21,17 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
+### Changed
+### Fixed
+
+---
+
+## [0.9.0] — 2026-07-20
+### Added
 - Assessment Builder / Dashboard Copilot: canvas-driven changes (picking an entity, setting a condition, adding/resizing a widget, etc.) now sync back into the Copilot chat, matching the existing Copilot-to-canvas direction — `BuilderChat` polls the canvas snapshot and catches its narration up to whatever stage the canvas already reached.
 ### Changed
 - Assessments page: removed the separate "Build with Copilot" button — "+ New assessment" is the only entry point now, since the manual builder already offers a "Use Navigator" hand-off.
 - Assessment Builder's "Use Navigator" button now uses the Navigator brand gradient and icon instead of a generic outline style.
-### Fixed
 
 ---
 
