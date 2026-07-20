@@ -523,6 +523,10 @@ function App() {
   const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
   const [assessmentBuilderApi, setAssessmentBuilderApi] = useState(null);
   const [dashboardBuilderApi, setDashboardBuilderApi] = useState(null);
+  // Populated by Navigator's Build mode (and Ask/Research's "Add to Workspace")
+  // right before navigating to a freshly-seeded `workspace/dashboard/new-*`
+  // route — see the `workspace-dashboard-seed` handleNav branch below.
+  const [dashboardSeed, setDashboardSeed] = useState(null);
   const BUILDER_SURFACES = {
     assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
     dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
@@ -628,6 +632,19 @@ function App() {
       history.pushState(null, '', navPath('/navigator'));
       return;
     }
+    // Hand-off from Navigator (Build mode's "Add to Workspace", or Ask/
+    // Research's canvas equivalent) into a brand-new Workspace dashboard,
+    // pre-populated with the widgets built during the chat. The route gets
+    // a unique suffix each time so DashboardCanvas always mounts fresh
+    // instead of reusing a stale previous "new dashboard" instance.
+    if (id === 'workspace-dashboard-seed') {
+      const route = `workspace/dashboard/new-${Date.now()}`;
+      setDashboardSeed({ widgets: data?.widgets || [], name: data?.name || '' });
+      setRightPanel(null);
+      setCurrent(route);
+      history.pushState(null, '', navPath('/workspace/dashboard/new'));
+      return;
+    }
     if (id === 'ux3-page') {
       setRightPanel(null);
       setCurrent('ux3');
@@ -718,6 +735,7 @@ function App() {
           rightPanelSlot={sharedRightPanel}
           rightPanelOpen={rightPanel !== null}
           navigatorActive={rightPanel === 'navigator'}
+          seedDashboard={dashboardSeed}
         />
       </>
     );
@@ -862,7 +880,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -902,7 +920,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}

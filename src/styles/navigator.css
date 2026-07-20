@@ -295,6 +295,7 @@ html.theme-light .ds-btn.t-danger:hover { background: var(--pai-crit-bg-hover); 
   border-radius: 12px;
 }
 .cv-answer-eyebrow { font-size: 10px; font-weight: 700; color: var(--shell-text-muted); line-height: normal; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; }
+.build-widget-ready { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--shell-border); background: var(--pai-low-bg); color: var(--pai-low-fg); font-size: 12px; font-weight: 500; }
 .cv-answer-card .prose-answer-card,
 .cv-answer-card .field-def-card { padding: 0; max-width: none; margin: 0; }
 .prose-answer-card { padding: 24px; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
@@ -1587,24 +1588,28 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 }
 
 /* ── Secondary topbar ─────────────────────────────────────────── */
+/* Mirrors .chat-space-title's height/typography exactly (54px, 18px title)
+   so Build's topbar reads as the same product as Ask/Research's, not a
+   visually distinct secondary screen. */
 .build-topbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 0 20px;
-  height: 48px;
-  background: var(--card-bg);
+  height: 54px;
+  background: var(--shell-bg);
   border-bottom: 1px solid var(--shell-border);
   flex-shrink: 0;
 }
 
-.build-name-wrap { display: flex; align-items: center; }
+.build-name-wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
 
 .build-name-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
+  margin: 0 0 0 -8px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1622,20 +1627,21 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 .build-name-btn:hover .build-name-edit-icon { opacity: 1; }
 
 .build-name-text {
-  font-size: 11px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--shell-text);
 }
 
 .build-name-input {
-  height: 32px;
-  min-width: 200px;
+  height: 34px;
+  min-width: 240px;
   padding: 0 8px;
+  margin: 0 0 0 -8px;
   border: 1px solid var(--shell-accent);
   border-radius: 8px;
   background: var(--ctrl-bg);
   color: var(--shell-text);
-  font-size: 11px;
+  font-size: 18px;
   font-weight: 600;
   font-family: inherit;
   outline: none;
@@ -1643,45 +1649,28 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 
 .build-topbar-spacer { flex: 1; }
 
-.build-save-btn {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: 44px;
-  border: none;
-  background: var(--shell-accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.build-save-btn:hover { background: var(--accent-hover, #5754c2); }
-.build-save-btn.saved {
-  background: var(--status-success-bg);
-  color: var(--status-success-text);
-}
-
-/* ── Main workspace ───────────────────────────────────────────── */
+/* ── Main workspace — same padded/gapped shell as .chat-split ──── */
 .build-workspace {
   flex: 1;
   display: flex;
-  min-height: 0;
   overflow: hidden;
+  background: var(--shell-bg);
+  padding: 12px;
+  gap: 0;
+  min-height: 0;
 }
 
-/* ── Chat pane ────────────────────────────────────────────────── */
+/* ── Chat pane — same floating rounded card as .chat-panel, just narrower ── */
 .build-chat-pane {
   width: 360px;
   flex-shrink: 0;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--shell-border);
-  background: var(--shell-bg);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -1791,25 +1780,11 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
   border-top: 1px solid var(--shell-border);
 }
 
-/* ── Vertical resize dragger ──────────────────────────────────── */
-.build-dragger {
-  width: 1px;
-  background: var(--shell-border);
-  flex-shrink: 0;
-  cursor: col-resize;
-  position: relative;
-  transition: background 0.15s;
-}
-.build-dragger::after {
-  content: '';
-  position: absolute;
-  inset: 0 -3px;
-}
-.build-dragger:hover { background: var(--shell-accent); }
+/* Resize between chat/canvas now uses the shared <ChatDragger/> component
+   (.chat-dragger / .chat-dragger-handle, defined above) instead of a
+   separate static build-only element — real drag behavior, same handle. */
 
-.build-dragger-handle { display: none; }
-
-/* ── Canvas pane ──────────────────────────────────────────────── */
+/* ── Canvas pane — same shell as .canvas-panel ─────────────────── */
 .build-canvas-pane {
   flex: 1;
   display: flex;
@@ -1819,7 +1794,15 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
   overflow: hidden;
 }
 
-.build-canvas-hdr { display: none; }
+.build-canvas-hdr {
+  padding: 16px 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.build-canvas-title { flex: 1; font-size: 13px; font-weight: 600; }
+.build-widget-count { font-size: 12px; color: var(--shell-text-muted); }
 
 .build-canvas-content {
   flex: 1;
@@ -2216,10 +2199,13 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 }
 
 /* ── Chat context bar — shown only when a widget is selected ──── */
+/* Sits directly above the composer (not at the pane top) so it reads as
+   "here's what you're about to chat about", scoped to the input right below
+   it, rather than floating disconnected above the whole message list. */
 .build-ctx-bar {
   flex-shrink: 0;
   height: 40px;
-  border-bottom: 1px solid var(--shell-border);
+  border-top: 1px solid var(--shell-border);
   border-left: 3px solid var(--shell-accent);
   background: var(--shell-active);
   padding: 0 12px;
@@ -2294,8 +2280,11 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 }
 .build-ctx-done-btn:hover { background: var(--accent-hover, #5754c2); }
 
+/* Opens upward — the bar now sits at the bottom of the pane, just above the
+   composer, so there's no room to open downward. */
 .build-ctx-dropdown {
-  top: calc(100% + 4px);
+  bottom: calc(100% + 4px);
+  top: auto;
   left: 0;
   right: auto;
   min-width: 160px;

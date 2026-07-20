@@ -17,16 +17,27 @@ const IcAlert   = () => <Ic size={14} path={<><path d="M10.29 3.86 1.82 18a2 2 0
 let exchangeSeq = 0
 
 // ── Exchange factory — classify a query into a fresh exchange record ──
-export function createExchange(query) {
+// `opts.mode` (ask/research/build) only ever biases classification/step-plan
+// depth — see navigatorEngine.js's classifyQuery/buildStepPlan. `opts.forceTier`
+// skips classification entirely (used by Build mode, where the tier is always
+// 'build' rather than something classifyQuery would ever return on its own).
+// `opts.textReply` forces a plain chit-chat-style bubble with custom copy
+// (Build mode's "that's not a widget request" guidance) without matching the
+// chit-chat greeting regex. `opts.pendingWidget` is stashed on the exchange
+// so Build mode can materialize the widget once the trace finishes.
+export function createExchange(query, opts = {}) {
   const id = `ex${++exchangeSeq}-${Date.now().toString(36)}`
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (opts.textReply) {
+    return { id, query, time, chitChat: true, reply: opts.textReply, done: true, canvasOpen: false };
+  }
   if (isChitChat(query)) {
     return { id, query, time, chitChat: true, reply: chitChatReply(query), done: true, canvasOpen: false };
   }
-  const tier = classifyQuery(query);
+  const tier = opts.forceTier || classifyQuery(query, opts.mode);
   const tool = selectTool(tier);
   const needsApproval = !!(tool && TOOLS[tool].requiresApproval && tier !== 'quick');
-  const plan = flattenPlan(buildStepPlan(query, tier));
+  const plan = flattenPlan(buildStepPlan(query, tier, opts.mode));
   const steps = plan.map(item => item._phaseName
     ? item
     : { ...item, status: 'pending', thoughts: [], toolCallText: null, toolCallDone: false, expanded: false, chosenBranch: null });
@@ -45,6 +56,7 @@ export function createExchange(query) {
     canvasFeedback: null,
     followupChoice: null,
     elapsedMs: 0,
+    pendingWidget: opts.pendingWidget || null,
   };
 }
 

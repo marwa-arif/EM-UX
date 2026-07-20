@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Ic } from '../ui.jsx'
-import NavWidget, { detectWidgetType, createWidget } from '../components/NavWidget.jsx'
+import { WidgetCard } from './DashboardCanvas.jsx'
 import ReasoningEngine, { createExchange, useReasoningEngine } from '../components/ReasoningEngine.jsx'
 import CanvasPanel, { ChatDragger, ExchangeResult, FeedbackRow } from '../components/CanvasPanel.jsx'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
@@ -49,7 +49,6 @@ const IcFloat    = () => <Ic size={14} path={<><rect x="5" y="5" width="14" heig
 const IcFullscr  = () => <Ic size={14} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />;
 const IcDots     = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></>} />;
 const IcCanvasView = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></>} />;
-const IcCheck    = () => <Ic size={13} path={<><polyline points="20 6 9 17 4 12"/></>} />;
 const IcRename   = () => <Ic size={14} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
 const IcShare    = () => <Ic size={14} path={<><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></>} />;
 const IcPin      = () => <Ic size={14} path={<><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></>} />;
@@ -91,16 +90,6 @@ function Dropdown({ children, onClose, className }) {
     <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} role="menu">
       {children}
     </div>
-  );
-}
-
-// ── Check icon for done steps ────────────────────────────────────────
-function StepDoneIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="np-flex-shrink-0">
-      <circle cx="8" cy="8" r="7" stroke="var(--pai-green)" strokeWidth="1.5" opacity="0.4" />
-      <path d="M5 8l2 2 4-4" stroke="var(--pai-green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 
@@ -188,17 +177,11 @@ const SAMPLE_QS_BY_MODE = {
 };
 
 const BUILD_SUGGESTIONS = [
-  { id: 'bs1', label: 'Critical findings count',  type: 'kpi'   },
-  { id: 'bs2', label: 'Findings by source',        type: 'bar'   },
-  { id: 'bs3', label: 'Top affected hosts',        type: 'table' },
-  { id: 'bs4', label: 'Severity breakdown',        type: 'pie'   },
-  { id: 'bs5', label: 'Findings over time',        type: 'line'  },
-];
-
-const BUILD_INIT_STEPS = [
-  'Reading knowledge graph context',
-  'Analyzing 2,140 findings across 842 hosts',
-  'Planning dashboard layout',
+  { id: 'bs1', label: 'Critical findings count',  chartId: 'kpi'     },
+  { id: 'bs2', label: 'Findings by source',        chartId: 'hor-bar' },
+  { id: 'bs3', label: 'Top affected hosts',        chartId: 'table'   },
+  { id: 'bs4', label: 'Severity breakdown',        chartId: 'pie'     },
+  { id: 'bs5', label: 'Findings over time',        chartId: 'line'    },
 ];
 
 function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
@@ -586,9 +569,9 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query, onToggleHistory, onGoHome }) {
+function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav }) {
   const [followUp, setFollowUp] = useState('');
-  const [exchanges, setExchanges] = useState(() => [createExchange(query)]);
+  const [exchanges, setExchanges] = useState(() => [createExchange(query, { mode })]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
   const [phaseCollapsed, setPhaseCollapsed] = useState({});
   const [canvasFocusId, setCanvasFocusId] = useState(null);
@@ -616,7 +599,7 @@ function ChatView({ query, onToggleHistory, onGoHome }) {
   }, []);
 
   const appendExchange = (q) => {
-    const ex = createExchange(q);
+    const ex = createExchange(q, { mode });
     setExchanges(prev => [...prev, ex]);
     setLiveId(ex.id);
   };
@@ -681,6 +664,7 @@ function ChatView({ query, onToggleHistory, onGoHome }) {
           {threadTitle}
         </button>
       )}
+      {mode === 'research' && <span className="ds-badge info" title="Research runs deeper, multi-source analysis on every question in this thread">Research</span>}
       <div className="chat-space-title-actions">
         <HomeButton onClick={onGoHome} />
         <HistoryButton onClick={onToggleHistory} />
@@ -806,7 +790,11 @@ function ChatView({ query, onToggleHistory, onGoHome }) {
         {canvasExchange && (
           <>
             <ChatDragger onDrag={handleDrag} />
-            <CanvasPanel exchange={canvasExchange} onFeedback={handleCanvasFeedback} />
+            <CanvasPanel
+              exchange={canvasExchange}
+              onFeedback={handleCanvasFeedback}
+              onAddToWorkspace={({ widgets, name }) => onNav?.('workspace-dashboard-seed', { widgets, name })}
+            />
           </>
         )}
       </div>
@@ -815,19 +803,108 @@ function ChatView({ query, onToggleHistory, onGoHome }) {
 }
 
 // ── Widget type + source lists ───────────────────────────────────────
-const WIDGET_TYPES = [
-  { id: 'kpi',   label: 'KPI'   },
-  { id: 'bar',   label: 'Bar'   },
-  { id: 'line',  label: 'Line'  },
-  { id: 'pie',   label: 'Pie'   },
-  { id: 'table', label: 'Table' },
+// Chart types offered while building — a curated subset of Workspace's full
+// CHART_TYPES (DashboardCanvas.jsx), since Build mode's picker only needs the
+// shapes a chat-driven quick dashboard actually reaches for.
+const BUILD_CHART_TYPES = [
+  { id: 'kpi',      label: 'KPI'   },
+  { id: 'hor-bar',  label: 'Bar'   },
+  { id: 'line',     label: 'Line'  },
+  { id: 'pie',      label: 'Pie'   },
+  { id: 'table',    label: 'Table' },
 ];
 
-const WIDGET_SOURCES = [
-  { id: 'kg',   label: 'Knowledge Graph' },
-  { id: 'dict', label: 'Data Dictionary' },
-  { id: 'int',  label: 'Internal'        },
-];
+// ── Mock data shaped for ChartRender (components/ChartRender.jsx) — the same
+// renderer Workspace's DashboardCanvas uses, so a widget looks identical
+// whether it was built here or added manually in Workspace.
+function buildMockWidgetData(chartId, label) {
+  const t = (label || '').toLowerCase();
+  if (chartId === 'kpi') {
+    const value = t.includes('critical') ? '247' : t.includes('high') ? '613' : t.includes('host') ? '842' : '1,204';
+    return { value, label, trend: '↑ 12%', trendUp: true };
+  }
+  if (chartId === 'hor-bar') {
+    return [
+      { label: 'CrowdStrike', value: 87 },
+      { label: 'Azure',       value: 62 },
+      { label: 'MS Intune',   value: 45 },
+      { label: 'Qualys',      value: 38 },
+      { label: 'Tenable',     value: 15 },
+    ];
+  }
+  if (chartId === 'pie') {
+    const raw = [
+      { label: 'Critical', value: 42  },
+      { label: 'High',     value: 87  },
+      { label: 'Medium',   value: 134 },
+      { label: 'Low',      value: 63  },
+      { label: 'Info',     value: 21  },
+    ];
+    const total = raw.reduce((s, d) => s + d.value, 0);
+    return raw.map(d => ({ ...d, count: d.value.toLocaleString(), pct: `${Math.round((d.value / total) * 100)}%` }));
+  }
+  if (chartId === 'table') {
+    return [
+      { category: 'vm-prod-42',     count: '14', pct: '3 critical' },
+      { category: 'db-prod-01',     count: '11', pct: '2 critical' },
+      { category: 'api-gateway-02', count: '9',  pct: '1 critical' },
+      { category: 'web-prod-07',    count: '7',  pct: '1 critical' },
+    ];
+  }
+  return undefined; // 'line' renders ChartRender's own placeholder series, same as Workspace
+}
+
+function detectChartId(text) {
+  const t = (text || '').toLowerCase();
+  if (/\bkpi\b|^how many\b|count\b|total\b|\bnumber of\b/.test(t)) return 'kpi';
+  if (/pie|donut|breakdown|proportion|percent|split/.test(t))       return 'pie';
+  if (/line|trend|over time|timeline|by month|by week/.test(t))     return 'line';
+  if (/bar|by source|by data source|distribution/.test(t))          return 'hor-bar';
+  return 'table';
+}
+
+const BUILD_WIDGET_SIZE_SPAN = { small: 1, medium: 2, large: 3, xlarge: 4 };
+
+function buildWidgetSpec(chartId, label, idSeq) {
+  const sizeId = chartId === 'kpi' ? 'small' : 'medium';
+  return {
+    id: idSeq,
+    label,
+    chartId,
+    span: BUILD_WIDGET_SIZE_SPAN[sizeId],
+    sizeId,
+    heightId: 'medium',
+    phase: 'active',
+    data: buildMockWidgetData(chartId, label),
+  };
+}
+
+// ── Intent parser — determines if a message should create a widget ───
+// Strips the request-phrasing ("Add a pie chart for…") down to just the
+// subject, so the widget's title reads like a chart caption ("Severity
+// breakdown") instead of the literal sentence the user typed.
+function cleanWidgetTitle(text) {
+  let t = text.trim();
+  t = t.replace(/^(add|show|create|build|give me)\s+/i, '');
+  t = t.replace(/^(a|an|the)\s+/i, '');
+  t = t.replace(/^(kpi|pie|donut|line|bar|table)\s*(chart|graph|table)?\s*(for|of|showing)?\s*/i, '');
+  t = t.replace(/^(chart|graph)\s+(for|of|showing)?\s*/i, '');
+  t = t.trim();
+  if (!t) return text;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function parseWidgetIntent(text) {
+  const t = text.toLowerCase();
+  const addVerb   = /^(add|show|create|build|give me)\b/.test(t);
+  const chartWord = /\b(chart|graph|trend|breakdown|distribution|over time)\b/.test(t);
+  const dataList  = /\b(findings|hosts|cves|identities|accounts|severity)\b/.test(t);
+  const countWord = /\b(how many|count|total|top \d|list)\b/.test(t);
+  if (addVerb || chartWord || (dataList && countWord)) {
+    return { create: true, chartId: detectChartId(t), title: cleanWidgetTitle(text) };
+  }
+  return { create: false };
+}
 
 // ── Chat context bar — only shown when a widget is selected ─────────
 function BuildContextBar({ selectedWidget, onTypeChange, onDone }) {
@@ -835,13 +912,13 @@ function BuildContextBar({ selectedWidget, onTypeChange, onDone }) {
 
   if (!selectedWidget) return null;
 
-  const currentType = WIDGET_TYPES.find(t => t.id === selectedWidget.type) || WIDGET_TYPES[0];
+  const currentType = BUILD_CHART_TYPES.find(t => t.id === selectedWidget.chartId) || BUILD_CHART_TYPES[0];
 
   return (
     <div className="build-ctx-bar">
       <div className="build-ctx-row">
-        <span className={`build-ctx-type-dot build-ctx-type-dot--${selectedWidget.type}`} />
-        <span className="build-ctx-widget-name">{selectedWidget.title}</span>
+        <span className={`build-ctx-type-dot build-ctx-type-dot--${selectedWidget.chartId}`} />
+        <span className="build-ctx-widget-name">{selectedWidget.label}</span>
 
         {/* Type picker */}
         <div className="np-rel">
@@ -854,10 +931,10 @@ function BuildContextBar({ selectedWidget, onTypeChange, onDone }) {
           </button>
           {typeOpen && (
             <Dropdown onClose={() => setTypeOpen(false)} className="build-ctx-dropdown">
-              {WIDGET_TYPES.map(t => (
+              {BUILD_CHART_TYPES.map(t => (
                 <button
                   key={t.id}
-                  className={`np-dropdown-item${selectedWidget.type === t.id ? ' active' : ''}`}
+                  className={`np-dropdown-item${selectedWidget.chartId === t.id ? ' active' : ''}`}
                   onClick={() => { onTypeChange(t.id); setTypeOpen(false); }}
                 >
                   {t.label}
@@ -873,60 +950,131 @@ function BuildContextBar({ selectedWidget, onTypeChange, onDone }) {
   );
 }
 
-// ── Intent parser — determines if a message should create a widget ───
-function parseWidgetIntent(text) {
-  const t = text.toLowerCase();
-  const addVerb   = /^(add|show|create|build|give me)\b/.test(t);
-  const chartWord = /\b(chart|graph|trend|breakdown|distribution|over time)\b/.test(t);
-  const dataList  = /\b(findings|hosts|cves|identities|accounts|severity)\b/.test(t);
-  const countWord = /\b(how many|count|total|top \d|list)\b/.test(t);
-  if (addVerb || chartWord || (dataList && countWord)) {
-    return { create: true, type: detectWidgetType(t), title: text };
+const IcWidgetReady = () => <Ic size={13} path={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />;
+
+// ── One Build-mode chat turn — same reasoning-engine quality as Ask/Research,
+// but the "answer" is a widget landing on the canvas to the right rather than
+// an inline text/canvas result. `onWidgetReady` fires exactly once per
+// exchange (guarded by a ref, mirroring ExchangeTurn's canvas-auto-open guard)
+// so the widget materializes the moment its trace finishes — no extra click.
+function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
+  const engine = useReasoningEngine(exchange, live, updateExchange);
+  const readyFiredRef = useRef(false);
+
+  useEffect(() => {
+    if (readyFiredRef.current) return;
+    if (exchange.done && exchange.pendingWidget) {
+      readyFiredRef.current = true;
+      onWidgetReady(exchange.pendingWidget);
+    }
+  }, [exchange.done, exchange.pendingWidget, onWidgetReady]);
+
+  if (exchange.chitChat) {
+    return (
+      <>
+        <div className="cv-msg cv-msg--user-row">
+          <div className="cv-user-group">
+            <div className="cv-user-bubble">
+              <p className="cv-user-text">{exchange.query}</p>
+              <span className="cv-bubble-time">{exchange.time}</span>
+            </div>
+          </div>
+        </div>
+        <div className="cv-msg cv-msg--ai">
+          <div className="cv-msg-avatar cv-msg-avatar--ai" aria-hidden="true">
+            <img src="assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
+          </div>
+          <div className="cv-ai-card">
+            <p className="cv-ai-text">{exchange.reply}</p>
+          </div>
+        </div>
+      </>
+    );
   }
-  return { create: false };
+
+  const introText = exchange.done
+    ? INTRO_COMPLETION_MESSAGES.build
+    : "On it — figuring out the right chart and pulling data…";
+
+  return (
+    <>
+      <div className="cv-msg cv-msg--user-row">
+        <div className="cv-user-group">
+          <div className="cv-user-bubble">
+            <p className="cv-user-text">{exchange.query}</p>
+            <span className="cv-bubble-time">{exchange.time}</span>
+          </div>
+        </div>
+      </div>
+      <div className="cv-msg cv-msg--ai">
+        <div className="cv-msg-avatar cv-msg-avatar--ai" aria-hidden="true">
+          <img src="assets/icons/Navigator icon.svg" width={13} height={13} alt="" />
+        </div>
+        <div className="cv-ai-body">
+          <div className="cv-ai-card">
+            <p className="cv-ai-text">
+              {exchange.done && <Ic size={13} path={<><polyline points="20 6 9 17 4 12" /></>} />} {introText}
+            </p>
+            <ReasoningEngine exchange={exchange} live={live} engine={engine} phaseCollapsed={{}} onTogglePhase={() => {}} />
+            <span className="cv-bubble-time">{exchange.time}</span>
+          </div>
+          {exchange.done && exchange.pendingWidget && (
+            <p className="build-widget-ready">
+              <IcWidgetReady /> Added "{exchange.pendingWidget.label}" to your canvas
+            </p>
+          )}
+        </div>
+      </div>
+    </>
+  );
 }
 
 // ── Build view ───────────────────────────────────────────────────────
-function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
+function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
   const [dashName,    setDashName]    = useState('Untitled Dashboard');
   const [editingName, setEditingName] = useState(false);
-  const [saveState,   setSaveState]   = useState('idle');
   const [widgets,          setWidgets]          = useState([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState(null);
   const [confirmDeleteWidget, setConfirmDeleteWidget] = useState(null);
   const selectedWidget = widgets.find(w => w.id === selectedWidgetId) ?? null;
-  const [msgs, setMsgs] = useState(() => [
-    { id: 'm0', role: 'user', text: initialQuery },
-    {
-      id: 'm1',
-      role: 'ai',
-      steps: BUILD_INIT_STEPS,
-      text: `I'll build a dashboard for "${initialQuery}". Use the chat to add charts, tables, or KPIs — or tap a suggestion on the canvas.`,
-    },
+  const widgetIdSeq = useRef(0);
+  const nextWidgetId = () => (widgetIdSeq.current += 1);
+
+  // The very first message always describes what to build — the user just
+  // picked Build mode specifically to visualize it — so it always produces a
+  // widget, unlike later chat turns where parseWidgetIntent has to guess
+  // whether a follow-up message is a new widget request or just a question.
+  const [exchanges, setExchanges] = useState(() => [
+    createExchange(initialQuery, { forceTier: 'build', pendingWidget: buildWidgetSpec(detectChartId(initialQuery), cleanWidgetTitle(initialQuery), nextWidgetId()) }),
   ]);
+  const [liveId, setLiveId] = useState(() => exchanges[0].id);
   const [input, setInput] = useState('');
+  const [chatWidth, setChatWidth] = useState(null);
   const msgsEndRef = useRef(null);
+  const splitRef = useRef(null);
+
+  const handleDrag = (deltaX) => {
+    setChatWidth(w => {
+      const cur = w ?? 360;
+      const total = splitRef.current ? splitRef.current.clientWidth : 1200;
+      return Math.max(300, Math.min(cur + deltaX, total - 320));
+    });
+  };
 
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [msgs]);
+  }, [exchanges.length]);
 
-  const handleSave = () => {
-    const dash = { id: `dash-${Date.now()}`, name: dashName, widgets, savedAt: Date.now() };
-    const stored = JSON.parse(localStorage.getItem('nav-dashboards') || '[]');
-    stored.push(dash);
-    localStorage.setItem('nav-dashboards', JSON.stringify(stored));
-    setSaveState('saved');
-    setTimeout(() => setSaveState('idle'), 2000);
-  };
+  const updateExchange = useCallback((id, fn) => {
+    setExchanges(prev => prev.map(ex => ex.id === id ? fn(ex) : ex));
+  }, []);
 
-  const appendMsgs = (userText, aiText) => {
-    const id = String(Date.now());
-    setMsgs(prev => [
-      ...prev,
-      { id: `u${id}`, role: 'user', text: userText },
-      { id: `a${id}`, role: 'ai',   text: aiText   },
-    ]);
+  const handleWidgetReady = useCallback((widget) => {
+    setWidgets(prev => [...prev, widget]);
+  }, []);
+
+  const handleAddToWorkspace = () => {
+    onNav?.('workspace-dashboard-seed', { widgets, name: dashName });
   };
 
   const handleRemoveWidget = (id) => {
@@ -943,34 +1091,24 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
     setSelectedWidgetId(prev => prev === id ? null : id);
   };
 
-  const handleTypeChange = (newType) => {
+  const handleTypeChange = (newChartId) => {
     setWidgets(prev => prev.map(w =>
       w.id === selectedWidgetId
-        ? { ...createWidget(newType, w.title), id: w.id, source: w.source }
+        ? { ...w, chartId: newChartId, data: buildMockWidgetData(newChartId, w.label) }
         : w
     ));
   };
 
-  const handleSourceChange = (newSource) => {
-    setWidgets(prev => prev.map(w =>
-      w.id === selectedWidgetId ? { ...w, source: newSource } : w
-    ));
+  const appendTextExchange = (query, textReply) => {
+    const ex = createExchange(query, { textReply });
+    setExchanges(prev => [...prev, ex]);
+    setLiveId(ex.id);
   };
 
-  const handleRenameWidget = (id, newTitle) => {
-    setWidgets(prev => prev.map(w => w.id === id ? { ...w, title: newTitle } : w));
-  };
-
-  const handleDuplicateWidget = (id) => {
-    const orig = widgets.find(w => w.id === id);
-    if (!orig) return;
-    const copy = { ...orig, id: `w${Date.now()}cp`, title: `${orig.title} (copy)` };
-    setWidgets(prev => {
-      const idx = prev.findIndex(w => w.id === id);
-      const next = [...prev];
-      next.splice(idx + 1, 0, copy);
-      return next;
-    });
+  const appendBuildExchange = (query, chartId, title) => {
+    const ex = createExchange(query, { forceTier: 'build', pendingWidget: buildWidgetSpec(chartId, title, nextWidgetId()) });
+    setExchanges(prev => [...prev, ex]);
+    setLiveId(ex.id);
   };
 
   const handleSend = () => {
@@ -978,26 +1116,19 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
     if (!text) return;
     setInput('');
     if (selectedWidget) {
-      appendMsgs(
-        text,
-        `Noted for "${selectedWidget.title}" — deep widget editing via chat arrives in a future phase.`,
-      );
+      appendTextExchange(text, `Noted for "${selectedWidget.label}" — deep widget editing via chat arrives in a future phase.`);
       return;
     }
     const intent = parseWidgetIntent(text);
     if (intent.create) {
-      const w = createWidget(intent.type, intent.title);
-      setWidgets(prev => [...prev, w]);
-      appendMsgs(text, `Added a ${intent.type} widget for "${intent.title}" to your canvas.`);
+      appendBuildExchange(text, intent.chartId, intent.title);
     } else {
-      appendMsgs(text, `If you want to visualize this, try asking me to "add a chart" or pick a suggestion on the canvas.`);
+      appendTextExchange(text, `If you want to visualize this, try asking me to "add a chart" or pick a suggestion on the canvas.`);
     }
   };
 
   const handleSuggestion = (s) => {
-    const w = createWidget(s.type, s.label);
-    setWidgets(prev => [...prev, w]);
-    appendMsgs(`Add ${s.label}`, `Added a ${s.type} widget for "${s.label}" to your canvas.`);
+    appendBuildExchange(`Add ${s.label}`, s.chartId, s.label);
   };
 
   return (
@@ -1026,70 +1157,37 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
 
         <HomeButton onClick={onGoHome} />
         <HistoryButton onClick={onToggleHistory} />
-
-        <button
-          className={`build-save-btn${saveState === 'saved' ? ' saved' : ''}`}
-          onClick={handleSave}
-        >
-          {saveState === 'saved' ? (
-            <><IcCheck /><span>Saved</span></>
-          ) : (
-            <span>Save</span>
-          )}
-        </button>
       </div>
 
       {/* Chat + Canvas workspace */}
-      <div className="build-workspace">
+      <div className="build-workspace" ref={splitRef}>
         {/* Chat pane */}
-        <div className="build-chat-pane">
+        <div className="build-chat-pane" style={chatWidth ? { width: chatWidth } : undefined}>
+          <div className="build-chat-msgs">
+            {exchanges.map(ex => (
+              <BuildExchangeTurn
+                key={ex.id}
+                exchange={ex}
+                live={ex.id === liveId}
+                updateExchange={updateExchange}
+                onWidgetReady={handleWidgetReady}
+              />
+            ))}
+            <div ref={msgsEndRef} />
+          </div>
+
           <BuildContextBar
             selectedWidget={selectedWidget}
             onTypeChange={handleTypeChange}
             onDone={() => setSelectedWidgetId(null)}
           />
-          <div className="build-chat-msgs">
-            {msgs.map(msg =>
-              msg.role === 'user' ? (
-                <div key={msg.id} className="build-msg-row build-msg-row--user">
-                  <div className="build-msg-avatar build-msg-avatar--user">MP</div>
-                  <div className="build-msg-bubble">{msg.text}</div>
-                </div>
-              ) : (
-                <div key={msg.id} className="build-msg-row build-msg-row--ai">
-                  <div className="build-msg-avatar build-msg-avatar--ai">
-                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
-                  </div>
-                  <div className="build-ai-card">
-                    {msg.steps && (
-                      <div className="build-ai-steps">
-                        {msg.steps.map((s, i) => (
-                          <div key={i} className="sr-row done np-sr-row--no-indent">
-                            <div className="sr-step-track">
-                              <StepDoneIcon />
-                              {i < msg.steps.length - 1 && <div className="sr-step-line" />}
-                            </div>
-                            <div className="sr-content">
-                              <div className="sr-header"><span className="sr-label">{s}</span></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="build-ai-text">{msg.text}</p>
-                  </div>
-                </div>
-              )
-            )}
-            <div ref={msgsEndRef} />
-          </div>
 
           <div className="build-chat-composer">
             <div className="build-composer-box">
               <textarea
                 className="build-composer-ta"
                 placeholder={selectedWidget
-                  ? `Ask about "${selectedWidget.title}" or request changes…`
+                  ? `Ask about "${selectedWidget.label}" or request changes…`
                   : 'Add a widget, ask a question, or refine the dashboard…'
                 }
                 value={input}
@@ -1112,12 +1210,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
           </div>
         </div>
 
-        {/* Vertical resize dragger */}
-        <div className="build-dragger">
-          <div className="build-dragger-handle">
-            <span /><span /><span /><span />
-          </div>
-        </div>
+        <ChatDragger onDrag={handleDrag} />
 
         {/* Canvas pane */}
         <div className="build-canvas-pane">
@@ -1126,6 +1219,9 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
             <span className="build-widget-count">
               {widgets.length === 0 ? 'No widgets' : `${widgets.length} widget${widgets.length !== 1 ? 's' : ''}`}
             </span>
+            <button className="ds-btn sz-sm t-outline" disabled={widgets.length === 0} onClick={handleAddToWorkspace}>
+              <Ic size={13} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></>} /> Add to Workspace
+            </button>
           </div>
           <div className="build-canvas-content" onClick={() => setSelectedWidgetId(null)}>
             {widgets.length === 0 ? (
@@ -1148,7 +1244,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
                   <div className="build-empty-sugg-chips">
                     {BUILD_SUGGESTIONS.map(s => (
                       <button key={s.id} className="build-sugg-chip" onClick={() => handleSuggestion(s)}>
-                        <span className={`build-sugg-type build-sugg-type-${s.type}`}>{s.type}</span>
+                        <span className={`build-sugg-type build-sugg-type-${s.chartId}`}>{s.chartId}</span>
                         {s.label}
                       </button>
                     ))}
@@ -1156,16 +1252,14 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
                 </div>
               </div>
             ) : (
-              <div className="build-canvas-grid" onClick={e => e.stopPropagation()}>
+              <div className="dc-grid" onClick={e => e.stopPropagation()}>
                 {widgets.map(w => (
-                  <NavWidget
+                  <WidgetCard
                     key={w.id}
                     widget={w}
-                    selected={w.id === selectedWidgetId}
-                    onSelect={handleSelectWidget}
-                    onRemove={requestRemoveWidget}
-                    onRename={handleRenameWidget}
-                    onDuplicate={handleDuplicateWidget}
+                    isEditing={w.id === selectedWidgetId}
+                    onEdit={() => handleSelectWidget(w.id)}
+                    onRequestDelete={() => requestRemoveWidget(w.id)}
                   />
                 ))}
               </div>
@@ -1178,7 +1272,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDeleteWidget.title}"?</span>
+              <span className="ds-modal-title">Delete "{confirmDeleteWidget.label}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteWidget(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This widget will be removed from the dashboard. This can't be undone.</div>
@@ -1202,7 +1296,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome }) {
 // skips this: an `initialQuery` (arriving from the docked chat panel's
 // "expand to full page" action) should open straight into its chat instead
 // of being reset back to Home.
-export default function NavigatorPage({ initialQuery = '', resetToken = 0 }) {
+export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav }) {
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
@@ -1245,10 +1339,10 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0 }) {
         <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} />
       )}
       {view === 'chat' && (
-        <ChatView query={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} />
+        <ChatView query={activeQuery} mode={mode} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
       )}
       {view === 'build' && (
-        <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} />
+        <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
       )}
       {historyOpen && (
         <HistoryPanel onClose={() => setHistoryOpen(false)} onSelect={handleSelectChat} />

@@ -138,6 +138,19 @@ export const TOOLS = {
     input:  {},
     output: { updated_at: 'string' },
   },
+  // ── Dashboard Builder Agent (Navigator Build mode) ─────────────────
+  render_widget: {
+    tier: ['build'],
+    requiresApproval: false,
+    fallback: null,
+    label: 'render_widget',
+    description: 'Rendering the widget onto the build canvas',
+    actionLabel: 'Render widget',
+    fallbackLabel: null,
+    inputLabels: { chartId: 'Chart type', label: 'Widget title' },
+    input:  { chartId: 'string', label: 'string' },
+    output: { widgetId: 'number' },
+  },
 };
 
 // Primary tool per tier — drives the Tool Approval Card and the initial callTool()
@@ -150,6 +163,7 @@ const PRIMARY_TOOL_BY_TIER = {
   'data-dict':'get_entity_details',
   web:        null,
   summary:    'prepare_display',
+  build:      'render_widget',
 };
 
 export function selectTool(tier) {
@@ -257,16 +271,24 @@ export function chitChatReply(q) {
 }
 
 // ── Query Classification ──────────────────────────────────────────────
-export function classifyQuery(q) {
+// `mode` is the Ask/Research/Build segment the user picked on HomeView. It's
+// optional and only ever biases the *research* case — Ask's classification
+// is untouched — so research queries reliably land on the deepest, most
+// thorough reasoning tier instead of only differing in home-screen copy.
+export function classifyQuery(q, mode) {
   const ql = q.toLowerCase();
   // Web — CVE/NVD/MITRE/ATT&CK references always route to web search
   if (/CVE-\d{4}-\d+|CWE-\d+|\b(NVD|NIST|MITRE|ATT&CK)\b/i.test(q)) return 'web';
   // Data dictionary — field name lookups
   if (/\b(what (is|does|are)|define|meaning of|explain)\b.*(privilege_level|epss|cvss|asset_criticality|compliance|finding|exposure_score)/i.test(ql)) return 'data-dict';
-  // Summary / dashboard
-  if (/\b(summarize|summary|overview|dashboard|what.s my exposure|give me a picture)\b/i.test(ql)) return 'summary';
   // Concept — general EM terminology questions
   if (/\b(what (is|are|does)|explain|define|how does|tell me about)\b/i.test(ql)) return 'concept';
+  // Research always investigates rather than doing a quick lookup or a
+  // single-hop summary — everything else escalates straight to the phased
+  // "deep" tier (multi-source cross-referencing, interrupts, more steps).
+  if (mode === 'research') return 'deep';
+  // Summary / dashboard
+  if (/\b(summarize|summary|overview|dashboard|what.s my exposure|give me a picture)\b/i.test(ql)) return 'summary';
   // KG tiers
   if (/\b(analyz|analysis|deep\s*dive|risk\s*scor|compliance|impact|trend|correlat|anomal)\b/.test(ql) || q.length > 100) return 'deep';
   if (/\b(risk|vulnerab|critical|high.sever|exploit|threat|exposure)\b/.test(ql)) return 'risk';
@@ -285,7 +307,7 @@ export function detectEntity(q, fallback = 'entity') {
 // Extra steps are injected based on query complexity so the tool-call
 // count isn't always fixed at 3–4; in production the number of MCP
 // tools invoked varies with the request.
-export function buildStepPlan(q, tier) {
+export function buildStepPlan(q, tier, mode) {
   const ent = detectEntity(q, 'entity');
 
   // Complexity signals: multi-entity queries or long questions need more tools
@@ -346,8 +368,18 @@ export function buildStepPlan(q, tier) {
     if (extraCount > 1) steps.splice(4, 0, { label: 'Enriching findings with severity context', icon: 'brain', tool: 'get_entity_details' });
     return steps;
   }
-  // deep — phased
-  return [
+  if (tier === 'build') {
+    return [
+      { label: 'Understanding widget request', icon: 'search' },
+      { label: 'Selecting chart type and data source', icon: 'brain' },
+      { label: 'Querying knowledge graph for matching data', icon: 'node', tool: 'execute_graphql_query' },
+      { label: 'Rendering widget on canvas', icon: 'filter', tool: 'render_widget' },
+    ];
+  }
+  // deep — phased. Research mode always lands here (see classifyQuery) and
+  // gets one extra phase — cross-source corroboration — so the trace visibly
+  // does more than a regular Ask "deep dive" on the same question.
+  const plan = [
     { phase: 'Discovery', steps: [
       { label: 'Scanning entity registry and relationship schema', icon: 'brain', tool: 'list_entities' },
       { label: `Resolving ${ent} relationship graph`, icon: 'node', tool: 'list_relationships' },
@@ -362,6 +394,14 @@ export function buildStepPlan(q, tier) {
       { label: 'Formatting results for display', icon: 'filter', expandable: true, tool: 'prepare_display' },
     ]},
   ];
+  if (mode === 'research') {
+    plan.push({ phase: 'Source Corroboration', steps: [
+      { label: 'Cross-referencing external threat intelligence', icon: 'web' },
+      { label: 'Comparing findings against prior scan history', icon: 'brain', tool: 'get_entity_updated_at' },
+      { label: 'Compiling source citations', icon: 'route', expandable: true },
+    ]});
+  }
+  return plan;
 }
 
 // ── Flatten phased plan into a linear items array ─────────────────────
@@ -401,6 +441,7 @@ export const TITLE_COMPLETION_LABELS = {
   'data-dict': 'Schema loaded',
   summary: 'Summary ready',
   web: 'Search complete',
+  build: 'Widget ready',
 };
 export const INTRO_COMPLETION_MESSAGES = {
   quick:      'Analysis complete — matching records retrieved from your knowledge graph.',
@@ -411,6 +452,7 @@ export const INTRO_COMPLETION_MESSAGES = {
   'data-dict':'Analysis complete — field schema and usage examples loaded.',
   summary:    'Analysis complete — exposure dashboard summary ready.',
   web:        'Analysis complete — threat intelligence sourced and cross-referenced.',
+  build:      'Added to your canvas — knowledge graph data pulled and rendered.',
 };
 
 // "Explore Further" follow-up suggestions shown once an answer completes

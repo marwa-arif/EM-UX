@@ -26,6 +26,20 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.10.0] — 2026-07-20
+### Added
+- Navigator Build mode's chat now runs on the same reasoning engine as Ask/Research (streamed step traces, tool narration) instead of a separate scripted chat, via a new `build` reasoning tier.
+- Working "Add to Workspace": both Build mode's canvas and Ask/Research's canvas panel can now hand their widgets off into a brand-new, pre-populated Workspace dashboard — previously a dead, `onClick`-less button.
+- Research mode now reasons measurably deeper than Ask on the same question — forces the phased "deep" tier and adds a "Source Corroboration" phase — instead of only differing in home-screen placeholder text.
+### Changed
+- Navigator Build mode's widgets are now built on Workspace's own widget schema/renderer (`WidgetCard`/`ChartRender`) instead of a separate, disconnected `NavWidget` system — removes a translation layer and a dead-end `localStorage` save.
+- Build mode's shell (topbar, chat pane, resize dragger, canvas header) now matches Ask/Research's visual pattern instead of a separate, inconsistent layout.
+- Build mode's widget-context bar (shown when a widget is selected) now sits just above the composer instead of floating at the top of the chat pane, so it reads as scoped to the input right below it.
+### Fixed
+- KPI widgets synthesized from Ask/Research's "Add to Workspace" no longer render a duplicated trend arrow (e.g. "↓ ↑ 6%").
+
+---
+
 ## [0.9.0] — 2026-07-20
 ### Added
 - Assessment Builder / Dashboard Copilot: canvas-driven changes (picking an entity, setting a condition, adding/resizing a widget, etc.) now sync back into the Copilot chat, matching the existing Copilot-to-canvas direction — `BuilderChat` polls the canvas snapshot and catches its narration up to whatever stage the canvas already reached.
