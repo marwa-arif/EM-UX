@@ -500,11 +500,7 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 
 .subheader__spacer { flex: 1; }
 .subheader__filter-group {
-  display: flex; align-items: center; gap: 4px;
-  padding: 2px 2px 2px 4px;
-  border: 1px solid var(--pai-border-strong);
-  border-radius: 44px;
-  background: var(--card-bg);
+  display: flex; align-items: center; gap: 8px;
   flex-shrink: 0;
 }
 .subheader__save-btn {
@@ -521,9 +517,10 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 .subheader__filter-pill-wrap { position: relative; flex-shrink: 0; }
 .subheader__filter-pill {
   display: inline-flex; align-items: center; gap: 8px;
-  height: 24px; padding: 0 10px;
-  background: transparent; color: var(--pai-indigo-secondary-fg);
-  border: none;
+  height: 28px; padding: 0 12px;
+  box-sizing: border-box;
+  background: var(--card-bg); color: var(--pai-indigo-secondary-fg);
+  border: 1px solid var(--pai-border-strong);
   border-radius: 44px; font-size: 12px; font-weight: 500;
   font-family: inherit; cursor: default;
 }

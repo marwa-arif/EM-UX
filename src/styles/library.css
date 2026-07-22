@@ -618,3 +618,7 @@
   background: rgba(99,96,216,0.08);
   color: var(--pai-indigo);
 }
+
+/* Delete confirmation modal title — warning icon + text */
+.lib-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.lib-delete-modal-title svg { color: var(--pai-crit-fg); flex-shrink: 0; }
