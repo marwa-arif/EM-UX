@@ -3,14 +3,20 @@ import { Ic } from '../ui.jsx'
 import { WidgetCard } from './DashboardCanvas.jsx'
 import ReasoningEngine, { createExchange, useReasoningEngine } from '../components/ReasoningEngine.jsx'
 import CanvasPanel, { ChatDragger, ExchangeResult, FeedbackRow } from '../components/CanvasPanel.jsx'
+import TablePagination from '../components/TablePagination.jsx'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
 const RECENT_CHATS = [
-  { id: 'c1', label: 'High severity findings for host vm-prod-42' },
-  { id: 'c2', label: 'Identities with access to critical storage' },
-  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure' },
-  { id: 'c4', label: 'Compliance gaps in AWS environment' },
+  { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today' },
+  { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today' },
+  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday' },
+  { id: 'c4', label: 'Compliance gaps in AWS environment',          time: 'Yesterday, 9:03 AM', bucket: 'Yesterday' },
+  { id: 'c5', label: 'Top exposed cloud storage buckets',           time: '3 days ago',         bucket: 'Earlier' },
+  { id: 'c6', label: 'Identity risk overview for privileged accounts', time: '5 days ago',       bucket: 'Earlier' },
+  { id: 'c7', label: 'Findings trend over the last quarter',        time: '2 weeks ago',        bucket: 'Earlier' },
 ];
+
+const HISTORY_BUCKETS = ['Today', 'Yesterday', 'Earlier'];
 
 const CTX_PILLS = [
   { id: 'host',     label: 'Hosts',      count: 842  },
@@ -57,12 +63,19 @@ const IcTrash    = () => <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/>
 const IcFeedback = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
 const IcHelp     = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />;
 const IcHistory   = () => <Ic size={14} path={<><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></>} />;
+const IcArrowLeft = () => <Ic size={14} path={<><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></>} />;
+const IcSearchSm  = () => <Ic size={14} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />;
 const IcSettings  = () => <Ic size={14} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
 const IcVulnerability = () => <Ic size={16} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>} />;
 const IcDevice        = () => <Ic size={16} path={<><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></>} />;
 const IcCloud         = () => <Ic size={16} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></>} />;
 const IcApp           = () => <Ic size={16} path={<><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 2 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></>} />;
 const IcIdentity      = () => <Ic size={16} path={<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
+const IcBot           = () => <Ic size={14} path={<><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/><circle cx="9" cy="14.5" r="1.2"/><circle cx="15" cy="14.5" r="1.2"/><path d="M2 13h2M20 13h2"/></>} />;
+const IcPlay          = () => <Ic size={16} path={<><polygon points="6 3 20 12 6 21 6 3"/></>} />;
+const IcClock         = () => <Ic size={16} path={<><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></>} />;
+const IcCheckCircle   = () => <Ic size={28} path={<><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></>} />;
+const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />;
 
 const ENTITY_PILLS = [
   { id: 'vuln',   label: 'Vulnerability', count: '13,456', Icon: IcVulnerability },
@@ -71,6 +84,10 @@ const ENTITY_PILLS = [
   { id: 'app',    label: 'Application',   count: '6,324',  Icon: IcApp },
   { id: 'ident',  label: 'Identity',      count: '10,234', Icon: IcIdentity },
 ];
+
+// Colored dots for the saved-agents dropdown/list — cycled by index rather than
+// stored per-agent, since custom agents don't carry their own brand color.
+const AGENT_DOT_VARS = ['var(--pai-indigo)', 'var(--pai-nav-teal)', 'var(--pai-green)', 'var(--pai-high-fg)', 'var(--shell-accent)'];
 
 const VIEW_MODES = [
   { id: 'sidebar',    label: 'Sidebar',     Icon: IcSidebar },
@@ -127,16 +144,149 @@ function HistoryButton({ onClick }) {
   );
 }
 
-function HistoryPanel({ onClose, onSelect }) {
+// ── History page — replaces the old click-outside dropdown with a full-width
+// view so a growing chat list has room for search + per-item actions. It's an
+// overlay absolutely positioned over .nav-page-content-only (not a `view`
+// state) so Home/Chat/Build stay mounted underneath — "Back" just closes it,
+// landing exactly where the user was, with no lost chat/build state.
+function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(chat.label);
+
+  const commitRename = () => {
+    setRenaming(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== chat.label) onRename(chat.id, trimmed);
+  };
+
   return (
-    <Dropdown onClose={onClose} className="nav-history-panel">
-      <div className="np-dropdown-label">Recent</div>
-      {RECENT_CHATS.map(c => (
-        <button key={c.id} className="np-dropdown-item" onClick={() => onSelect(c.label)}>
-          {c.label}
+    <div className={`np-history-chat-row${active ? ' active' : ''}${menuOpen ? ' menu-open' : ''}`}>
+      {renaming ? (
+        <input
+          className="nav-history-rename-input"
+          value={draft}
+          autoFocus
+          onChange={e => setDraft(e.target.value)}
+          onFocus={e => e.target.select()}
+          onBlur={commitRename}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitRename();
+            if (e.key === 'Escape') { setDraft(chat.label); setRenaming(false); }
+          }}
+        />
+      ) : (
+        <button className="np-history-chat-main" onClick={() => onSelect(chat.label)}>
+          <span className="np-history-chat-icon"><IcChat /></span>
+          <span className="np-history-chat-body">
+            <span className="np-history-chat-label">{chat.label}</span>
+            <span className="np-history-chat-time">{chat.time}</span>
+          </span>
         </button>
-      ))}
-    </Dropdown>
+      )}
+      <div className="np-rel">
+        <button
+          className="np-history-chat-menu-btn"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(o => !o); }}
+          title="Chat options"
+          aria-haspopup="true"
+        >
+          <IcDots />
+        </button>
+        {menuOpen && (
+          <Dropdown onClose={() => setMenuOpen(false)} className="np-dropdown--history-menu">
+            <button className="np-dropdown-item" onClick={() => { setMenuOpen(false); setDraft(chat.label); setRenaming(true); }}>
+              <IcRename /><span>Rename</span>
+            </button>
+            <div className="np-dropdown-sep" />
+            <button className="np-dropdown-item danger" onClick={() => { setMenuOpen(false); onRequestDelete(chat); }}>
+              <IcTrash /><span>Delete</span>
+            </button>
+          </Dropdown>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HistoryPage({ activeLabel, onBack, onSelect }) {
+  const [query, setQuery] = useState('');
+  const [chats, setChats] = useState(RECENT_CHATS);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const q = query.trim().toLowerCase();
+  const filtered = q ? chats.filter(c => c.label.toLowerCase().includes(q)) : chats;
+  const groups = HISTORY_BUCKETS
+    .map(bucket => ({ bucket, items: filtered.filter(c => c.bucket === bucket) }))
+    .filter(g => g.items.length > 0);
+
+  const handleRename = (id, label) => setChats(prev => prev.map(c => c.id === id ? { ...c, label } : c));
+  const handleDelete = (id) => { setChats(prev => prev.filter(c => c.id !== id)); setConfirmDelete(null); };
+
+  return (
+    <div className="nav-history-page">
+      <div className="nav-history-page-hdr">
+        <button className="nav-history-back-btn" onClick={onBack}>
+          <IcArrowLeft /> Back
+        </button>
+        <h2 className="nav-history-page-title">History</h2>
+      </div>
+
+      <div className="nav-history-page-body">
+        <div className="ds-pill-search nav-history-search">
+          <span className="ds-pill-search__icon"><IcSearchSm /></span>
+          <input
+            className="ds-pill-search__input"
+            type="text"
+            placeholder="Search conversations…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        {groups.length === 0 ? (
+          <div className="nav-history-empty">
+            <p className="nav-history-empty-title">No conversations found</p>
+            <p className="nav-history-empty-sub">Try a different search term.</p>
+          </div>
+        ) : (
+          groups.map(g => (
+            <div key={g.bucket} className="np-history-section">
+              <div className="np-history-section-hdr">
+                <span className="np-history-section-title">{g.bucket}</span>
+              </div>
+              {g.items.map(c => (
+                <HistoryRow
+                  key={c.id}
+                  chat={c}
+                  active={c.label === activeLabel}
+                  onSelect={onSelect}
+                  onRename={handleRename}
+                  onRequestDelete={setConfirmDelete}
+                />
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+
+      {confirmDelete && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title">Delete "{confirmDelete.label}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => handleDelete(confirmDelete.id)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -184,9 +334,20 @@ const BUILD_SUGGESTIONS = [
   { id: 'bs5', label: 'Findings over time',        chartId: 'line'    },
 ];
 
-function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
+function AgentsButton({ onClick }) {
+  return (
+    <button className="nav-history-btn" onClick={onClick} title="Agents">
+      <IcBot />
+      <span className="nav-history-btn-label">Agents</span>
+    </button>
+  );
+}
+
+function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, agents }) {
   const [query, setQuery] = useState('');
   const [contextFilters, setContextFilters] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [agentMenuOpen, setAgentMenuOpen] = useState(false);
 
   const toggleFilter = (pill) => {
     setContextFilters(prev =>
@@ -198,17 +359,23 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
 
   const removeFilter = (id) => setContextFilters(prev => prev.filter(c => c.id !== id));
 
-  const hasContent = !!query.trim() || contextFilters.length > 0;
+  const hasContent = !!query.trim() || contextFilters.length > 0 || !!selectedAgent;
 
   const handleSend = () => {
     if (!hasContent) return;
-    const text = query.trim() || `Show ${contextFilters.map(c => c.label).join(', ')}`;
-    onSend(text, mode);
+    const text = query.trim()
+      || selectedAgent?.instructions
+      || `Show ${contextFilters.map(c => c.label).join(', ')}`;
+    onSend(text, mode, selectedAgent);
+    setSelectedAgent(null);
   };
+
+  const pickAgent = (a) => { setSelectedAgent(a); setAgentMenuOpen(false); };
 
   return (
     <div className="hv-shell">
       <div className="hv-top-actions">
+        <AgentsButton onClick={onOpenAgents} />
         <HistoryButton onClick={onToggleHistory} />
       </div>
 
@@ -244,7 +411,7 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
           <div className="hv-tx-input">
             <textarea
               className="hv-composer-ta"
-              placeholder={MODE_PLACEHOLDERS[mode]}
+              placeholder={selectedAgent ? `Add instructions for "${selectedAgent.name}" (optional)…` : MODE_PLACEHOLDERS[mode]}
               value={query}
               rows={2}
               onChange={e => setQuery(e.target.value)}
@@ -255,16 +422,63 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory }) {
           </div>
 
           <div className="hv-composer-bar">
-            <div className="hv-mode-seg">
-              {MODE_DEFS.map(m => (
+            <div className="hv-composer-bar-left">
+              <div className="np-rel">
                 <button
-                  key={m.id}
-                  className={`hv-mode-seg-item${mode === m.id ? ' active' : ''}`}
-                  onClick={() => onModeChange(m.id)}
+                  className={`np-composer-add${agentMenuOpen ? ' active' : ''}`}
+                  onClick={() => setAgentMenuOpen(o => !o)}
+                  aria-label="Use a saved agent"
+                  aria-haspopup="menu"
+                  aria-expanded={agentMenuOpen}
+                  title="Use a saved agent"
                 >
-                  {m.label}
+                  <IcPlus />
                 </button>
-              ))}
+                {agentMenuOpen && (
+                  <Dropdown onClose={() => setAgentMenuOpen(false)} className="np-dropdown--agent-menu">
+                    <div className="np-dropdown-label">Agents</div>
+                    {agents.length === 0 ? (
+                      <button className="np-dropdown-item" onClick={() => { setAgentMenuOpen(false); onOpenAgents(); }}>
+                        <IcBot /><span>Create your first agent</span>
+                      </button>
+                    ) : (
+                      agents.map((a, i) => (
+                        <button
+                          key={a.id}
+                          className={`np-dropdown-item${selectedAgent?.id === a.id ? ' selected' : ''}`}
+                          onClick={() => pickAgent(a)}
+                        >
+                          <span className="np-dropdown-agent-dot" style={{ background: AGENT_DOT_VARS[i % AGENT_DOT_VARS.length] }} aria-hidden="true" />
+                          {a.name}
+                          {selectedAgent?.id === a.id && (
+                            <span className="np-dropdown-check"><Ic size={12} path={<><polyline points="20 6 9 17 4 12" /></>} /></span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </Dropdown>
+                )}
+              </div>
+              {selectedAgent && (
+                <span className="np-ctx-chip active">
+                  <span className="np-ctx-dot" />
+                  {selectedAgent.name}
+                  <button className="np-ctx-chip-remove" onClick={() => setSelectedAgent(null)} aria-label={`Remove ${selectedAgent.name}`}>
+                    <Ic size={9} path={<><path d="M18 6 6 18M6 6l12 12" /></>} />
+                  </button>
+                </span>
+              )}
+              <div className="hv-mode-seg">
+                {MODE_DEFS.map(m => (
+                  <button
+                    key={m.id}
+                    className={`hv-mode-seg-item${mode === m.id ? ' active' : ''}`}
+                    onClick={() => onModeChange(m.id)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <button className="nav-send-btn" disabled={!hasContent} onClick={handleSend}>
               <IcSend />
@@ -569,7 +783,7 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav }) {
+function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runningAgent }) {
   const [followUp, setFollowUp] = useState('');
   const [exchanges, setExchanges] = useState(() => [createExchange(query, { mode })]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
@@ -665,6 +879,7 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav }) {
         </button>
       )}
       {mode === 'research' && <span className="ds-badge info" title="Research runs deeper, multi-source analysis on every question in this thread">Research</span>}
+      {runningAgent && <span className="ds-badge info" title={runningAgent.description || runningAgent.instructions}>Agent: {runningAgent.name}</span>}
       <div className="chat-space-title-actions">
         <HomeButton onClick={onGoHome} />
         <HistoryButton onClick={onToggleHistory} />
@@ -1287,6 +1502,389 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
   );
 }
 
+// ── Agent Builder ──────────────────────────────────────────────────
+// Config-form (not chat-driven, unlike Ask/Research/Build) since creating an
+// agent is a one-time setup task, not a query — reuses the same primitives
+// as the rest of Navigator (entity pills, MODE_OPTIONS/DEPTH_LEVELS, ds-btn)
+// so it reads as part of the same product rather than a bolted-on wizard.
+const AGENT_TRIGGER_OPTIONS = [
+  { id: 'manual',    name: 'Manual',    desc: 'Runs only when you launch it from Navigator.',       Icon: IcPlay  },
+  { id: 'scheduled', name: 'Scheduled', desc: 'Runs automatically on a recurring schedule.',        Icon: IcClock },
+];
+
+const SCHEDULE_FREQUENCIES = [
+  { id: 'daily',   label: 'Daily'   },
+  { id: 'weekly',  label: 'Weekly'  },
+  { id: 'monthly', label: 'Monthly' },
+];
+
+function AgentBuilderView({ onGoHome, onAgentCreated }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [dataAccess, setDataAccess] = useState([]);
+  const [autonomy, setAutonomy] = useState('interactive');
+  const [depth, setDepth] = useState(1);
+  const [triggerType, setTriggerType] = useState('manual');
+  const [scheduleFreq, setScheduleFreq] = useState('daily');
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [nameTouched, setNameTouched] = useState(false);
+  const [instructionsTouched, setInstructionsTouched] = useState(false);
+  const [created, setCreated] = useState(false);
+
+  const nameError = nameTouched && !name.trim() ? 'Agent name is required' : null;
+  const instructionsError = instructionsTouched && !instructions.trim()
+    ? 'Instructions are required so the agent knows what to do' : null;
+
+  const toggleDataAccess = (pill) => {
+    setDataAccess(prev => prev.find(p => p.id === pill.id) ? prev.filter(p => p.id !== pill.id) : [...prev, pill]);
+  };
+
+  const handleCreate = () => {
+    setNameTouched(true);
+    setInstructionsTouched(true);
+    if (!name.trim() || !instructions.trim()) return;
+    onAgentCreated?.({
+      name: name.trim(),
+      description: description.trim(),
+      instructions: instructions.trim(),
+      dataAccess,
+      autonomy,
+      depth,
+      triggerType,
+      scheduleFreq,
+      scheduleTime,
+    });
+    setCreated(true);
+  };
+
+  const resetForm = () => {
+    setName(''); setDescription(''); setInstructions(''); setDataAccess([]);
+    setAutonomy('interactive'); setDepth(1); setTriggerType('manual');
+    setScheduleFreq('daily'); setScheduleTime('09:00');
+    setNameTouched(false); setInstructionsTouched(false); setCreated(false);
+  };
+
+  const topbar = (
+    <div className="nav-history-page-hdr">
+      <button className="nav-history-back-btn" onClick={onGoHome}>
+        <IcArrowLeft /> Back
+      </button>
+      <h2 className="nav-history-page-title">Create Agent</h2>
+    </div>
+  );
+
+  if (created) {
+    const freqLabel = SCHEDULE_FREQUENCIES.find(f => f.id === scheduleFreq)?.label;
+    return (
+      <div className="nav-view-build">
+        {topbar}
+        <div className="agb-body agb-body--success">
+          <div className="agb-success">
+            <span className="agb-success-icon"><IcCheckCircle /></span>
+            <h2 className="agb-success-title">"{name}" is ready</h2>
+            <p className="agb-success-sub">Your agent has been created with the configuration below.</p>
+            <div className="agb-summary-card">
+              <div className="agb-summary-row">
+                <span className="agb-summary-label">Description</span>
+                <span className="agb-summary-value">{description.trim() || '—'}</span>
+              </div>
+              <div className="agb-summary-row">
+                <span className="agb-summary-label">Mode</span>
+                <span className="agb-summary-value">{autonomy === 'agentic' ? 'Agentic' : 'Interactive'} · {DEPTH_LEVELS[depth].label}</span>
+              </div>
+              <div className="agb-summary-row">
+                <span className="agb-summary-label">Trigger</span>
+                <span className="agb-summary-value">
+                  {triggerType === 'manual' ? 'Manual' : `Scheduled · ${freqLabel} at ${scheduleTime}`}
+                </span>
+              </div>
+              <div className="agb-summary-row">
+                <span className="agb-summary-label">Data access</span>
+                <span className="agb-summary-value">{dataAccess.length ? dataAccess.map(d => d.label).join(', ') : 'None selected'}</span>
+              </div>
+            </div>
+            <div className="agb-success-actions">
+              <button className="ds-btn sz-md t-outline" onClick={resetForm}>Create another</button>
+              <button className="ds-btn sz-md t-primary" onClick={onGoHome}>Back to Home</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="nav-view-build">
+      {topbar}
+
+      <div className="agb-body">
+        <div className="agb-intro">
+          <span className="agb-intro-icon"><IcBot /></span>
+          <div>
+            <p className="agb-intro-title">Build a custom agent</p>
+            <p className="agb-intro-sub">Give it a name, tell it what to do, and choose what it can access — then run it on demand or on a schedule.</p>
+          </div>
+        </div>
+
+        <div className="agb-section">
+          <p className="agb-section-title">Basic info</p>
+          <div className="ds-input-wrap">
+            <label className="ds-input-label">Agent name<span className="agb-required">*</span></label>
+            <input
+              className={`ds-input-field${nameError ? ' has-error' : ''}`}
+              placeholder="e.g. Critical Findings Triage"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onBlur={() => setNameTouched(true)}
+            />
+            {nameError && <span className="agb-field-error">{nameError}</span>}
+          </div>
+          <div className="ds-input-wrap">
+            <label className="ds-input-label">Description</label>
+            <input
+              className="ds-input-field"
+              placeholder="One line describing what this agent is for"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="agb-section">
+          <p className="agb-section-title">Instructions<span className="agb-required">*</span></p>
+          <p className="agb-section-sub">Describe the agent's behavior and what it should do each time it runs — this drives every response it gives.</p>
+          <div className="ds-input-wrap">
+            <textarea
+              className={`ds-input-field agb-textarea${instructionsError ? ' has-error' : ''}`}
+              placeholder="e.g. Every run, check for new critical findings on production hosts, summarize the top 5 by risk, and flag any that lack an owner."
+              value={instructions}
+              rows={5}
+              onChange={e => setInstructions(e.target.value)}
+              onBlur={() => setInstructionsTouched(true)}
+            />
+            {instructionsError && <span className="agb-field-error">{instructionsError}</span>}
+          </div>
+        </div>
+
+        <div className="agb-section">
+          <p className="agb-section-title">Data access</p>
+          <p className="agb-section-sub">Choose which entity types this agent is allowed to read from.</p>
+          <div className="hv-entity-pills">
+            {ENTITY_PILLS.map(pill => {
+              const isSelected = !!dataAccess.find(p => p.id === pill.id);
+              return (
+                <button
+                  key={pill.id}
+                  type="button"
+                  className={`hv-entity-pill${isSelected ? ' selected' : ''}`}
+                  onClick={() => toggleDataAccess(pill)}
+                >
+                  <span className="hv-entity-pill-icon"><pill.Icon /></span>
+                  <span className="hv-entity-pill-count">{pill.count}</span>
+                  <span className="hv-entity-pill-label"> {pill.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="agb-section">
+          <p className="agb-section-title">Autonomy</p>
+          <div className="agb-choice-grid">
+            {MODE_OPTIONS.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                className={`agb-choice-card${autonomy === m.id ? ' selected' : ''}`}
+                onClick={() => setAutonomy(m.id)}
+              >
+                <span className="agb-choice-row">
+                  <span className="agb-choice-icon"><Ic size={16} path={m.icon} /></span>
+                  <span className="agb-choice-name">{m.name}</span>
+                </span>
+                <span className="agb-choice-desc">{m.desc}</span>
+              </button>
+            ))}
+          </div>
+          <div className="agb-depth-row">
+            <span className="ds-input-label">Depth of analysis</span>
+            <div className="hv-mode-seg">
+              {DEPTH_LEVELS.map((d, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`hv-mode-seg-item${depth === i ? ' active' : ''}`}
+                  onClick={() => setDepth(i)}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="agb-section">
+          <p className="agb-section-title">Trigger</p>
+          <div className="agb-choice-grid">
+            {AGENT_TRIGGER_OPTIONS.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                className={`agb-choice-card${triggerType === t.id ? ' selected' : ''}`}
+                onClick={() => setTriggerType(t.id)}
+              >
+                <span className="agb-choice-row">
+                  <span className="agb-choice-icon"><t.Icon /></span>
+                  <span className="agb-choice-name">{t.name}</span>
+                </span>
+                <span className="agb-choice-desc">{t.desc}</span>
+              </button>
+            ))}
+          </div>
+          {triggerType === 'scheduled' && (
+            <div className="agb-schedule-row">
+              <div className="ds-input-wrap">
+                <label className="ds-input-label">Frequency</label>
+                <select className="ds-input-field" value={scheduleFreq} onChange={e => setScheduleFreq(e.target.value)}>
+                  {SCHEDULE_FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                </select>
+              </div>
+              <div className="ds-input-wrap">
+                <label className="ds-input-label">Time</label>
+                <input
+                  type="time"
+                  className="ds-input-field"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="agb-footer">
+        <button className="ds-btn sz-md t-outline" onClick={onGoHome}>Cancel</button>
+        <button className="ds-btn sz-md t-primary" onClick={handleCreate}>Create Agent</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Agents list — "the best way to see agents you've created": a full-width
+// overlay page (same pattern as HistoryPage), rendered as a real data table
+// (ds-table-wrap/ds-table/TablePagination) rather than plain cards — list
+// data belongs in a table per the design system, not a card list. ────────
+function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const start = (page - 1) * rowsPerPage;
+  const pageRows = agents.slice(start, start + rowsPerPage);
+
+  return (
+    <div className="nav-history-page">
+      <div className="nav-history-page-hdr">
+        <button className="nav-history-back-btn" onClick={onBack}>
+          <IcArrowLeft /> Back
+        </button>
+        <h2 className="nav-history-page-title">Agents</h2>
+        <div className="nav-history-page-hdr-spacer" />
+        <button className="ds-btn sz-sm t-primary" onClick={onCreateNew}>
+          <IcPlus /> New Agent
+        </button>
+      </div>
+
+      <div className="nav-history-page-body agp-body">
+        <div className="ds-table-wrap">
+          <table className="ds-table sz-sm">
+            <thead>
+              <tr>
+                <th className="ds-th">Agent</th>
+                <th className="ds-th">Autonomy</th>
+                <th className="ds-th">Trigger</th>
+                <th className="ds-th">Data access</th>
+                <th className="ds-th" style={{ width: 96 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length > 0 ? pageRows.map((a, i) => (
+                <tr key={a.id}>
+                  <td className="ds-td">
+                    <div className="agp-name-cell">
+                      <span className="agp-dot" style={{ background: AGENT_DOT_VARS[(start + i) % AGENT_DOT_VARS.length] }} aria-hidden="true" />
+                      <span className="agp-name-body">
+                        <span className="agp-td-name">{a.name}</span>
+                        <span className="agp-td-desc">{a.description || a.instructions}</span>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="ds-td">
+                    <span className={`ds-badge ${a.autonomy === 'agentic' ? 'info' : 'neutral'}`}>
+                      {a.autonomy === 'agentic' ? 'Agentic' : 'Interactive'}
+                    </span>
+                  </td>
+                  <td className="ds-td">
+                    {a.triggerType === 'manual'
+                      ? <span className="ds-badge neutral">Manual</span>
+                      : <span className="ds-badge success dot">Scheduled · {a.scheduleFreq}</span>
+                    }
+                  </td>
+                  <td className="ds-td lib-td-muted">
+                    {a.dataAccess?.length ? a.dataAccess.map(d => d.label).join(', ') : '—'}
+                  </td>
+                  <td className="ds-td">
+                    <div className="row-actions">
+                      <button className="ds-icon-btn" title={`Run "${a.name}"`} onClick={() => onRun(a)}>
+                        <IcPlay />
+                      </button>
+                      <button className="ds-icon-btn agp-td-delete" title={`Delete "${a.name}"`} onClick={() => setConfirmDelete(a)}>
+                        <IcTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="lib-no-results">
+                    No agents yet — create one to automate a recurring task, then run it here or from the chat composer.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <TablePagination
+          total={agents.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
+        />
+      </div>
+
+      {confirmDelete && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title">Delete "{confirmDelete.name}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This agent will be permanently removed. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page root ────────────────────────────────────────────────────────
 
 // `resetToken` is bumped by App.jsx every time the LeftNav "Navigator" item
@@ -1296,12 +1894,24 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
 // skips this: an `initialQuery` (arriving from the docked chat panel's
 // "expand to full page" action) should open straight into its chat instead
 // of being reset back to Home.
+const AGENTS_STORAGE_KEY = 'nav-agents';
+
 export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav }) {
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [agentsOpen, setAgentsOpen] = useState(false);
+  const [runningAgent, setRunningAgent] = useState(null);
+  const [agents, setAgents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(AGENTS_STORAGE_KEY)) || []; } catch { return []; }
+  });
+  const agentIdSeq = useRef(0);
   const mounted = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
+  }, [agents]);
 
   useEffect(() => {
     if (!mounted.current) { mounted.current = true; return; }
@@ -1314,18 +1924,39 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
       setView('home');
       setQuery('');
     }
+    setRunningAgent(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetToken]);
 
-  const handleSend = (q, m) => {
+  const handleSend = (q, m, agent) => {
     const sentMode = m ?? mode;
     setQuery(q);
+    setRunningAgent(agent || null);
     setView(sentMode === 'build' ? 'build' : 'chat');
   };
 
-  const toggleHistory = () => setHistoryOpen(o => !o);
+  const toggleHistory = () => { setAgentsOpen(false); setHistoryOpen(o => !o); };
 
-  const goHome = () => { setView('home'); setQuery(''); };
+  const goHome = () => { setView('home'); setQuery(''); setRunningAgent(null); };
+
+  const goCreateAgent = () => { setAgentsOpen(false); setView('agent-builder'); };
+
+  const openAgentsList = () => { setHistoryOpen(false); setAgentsOpen(true); };
+
+  const handleAgentCreated = (agentData) => {
+    const agent = { id: `agent-${Date.now()}-${++agentIdSeq.current}`, createdAt: Date.now(), ...agentData };
+    setAgents(prev => [agent, ...prev]);
+  };
+
+  const handleDeleteAgent = (id) => setAgents(prev => prev.filter(a => a.id !== id));
+
+  const handleRunAgent = (agent) => {
+    setAgentsOpen(false);
+    setMode('ask');
+    setQuery(agent.instructions);
+    setRunningAgent(agent);
+    setView('chat');
+  };
 
   const handleSelectChat = (label) => {
     setHistoryOpen(false);
@@ -1336,16 +1967,32 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   return (
     <div className="nav-page-content-only">
       {view === 'home' && (
-        <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} />
+        <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} onOpenAgents={openAgentsList} agents={agents} />
       )}
       {view === 'chat' && (
-        <ChatView query={activeQuery} mode={mode} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
+        <ChatView query={activeQuery} mode={mode} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
       )}
       {view === 'build' && (
         <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
       )}
+      {view === 'agent-builder' && (
+        <AgentBuilderView onGoHome={goHome} onAgentCreated={handleAgentCreated} />
+      )}
       {historyOpen && (
-        <HistoryPanel onClose={() => setHistoryOpen(false)} onSelect={handleSelectChat} />
+        <HistoryPage
+          activeLabel={view === 'chat' ? activeQuery : null}
+          onBack={() => setHistoryOpen(false)}
+          onSelect={handleSelectChat}
+        />
+      )}
+      {agentsOpen && (
+        <AgentsListPage
+          agents={agents}
+          onBack={() => setAgentsOpen(false)}
+          onRun={handleRunAgent}
+          onCreateNew={goCreateAgent}
+          onDelete={handleDeleteAgent}
+        />
       )}
     </div>
   );

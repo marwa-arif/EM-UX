@@ -24,6 +24,8 @@ import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 import SplashScreen           from './components/SplashScreen.jsx'
+import PasswordGate           from './components/PasswordGate.jsx'
+import { useAuthGate }        from './authGate.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
 // so pushState-based routing and window.location.pathname parsing work the
@@ -506,6 +508,7 @@ function App() {
   const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
+  const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
@@ -530,6 +533,7 @@ function App() {
   const BUILDER_SURFACES = {
     assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
     dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
+    dataConfig: { matchRoute: c => c === 'workspace/configure-screen', api: null },
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
   const [visitedTabs, setVisitedTabs] = useState([]);
@@ -724,14 +728,19 @@ function App() {
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
         <WorkspacePage
           onNav={handleNav}
           initialRoute={current}
           theme={theme}
           onToggleTheme={toggleTheme}
           onBuilderApiReady={setDashboardBuilderApi}
-          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: 'dashboard', ...ctx })}
+          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
           rightPanelSlot={sharedRightPanel}
           rightPanelOpen={rightPanel !== null}
           navigatorActive={rightPanel === 'navigator'}
@@ -744,7 +753,12 @@ function App() {
   if (current === 'ux3' || current.startsWith('ux3/')) {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
         <UX3Page onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
@@ -753,7 +767,12 @@ function App() {
   if (current === 'admin') {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
         <AdminPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
@@ -852,7 +871,12 @@ function App() {
 
   return (
     <div className="app-shell">
-      {showSplash && <SplashScreen onDone={onSplashDone} />}
+      {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+      {!showSplash && locked && (
+        <div className="pw-lock-overlay">
+          <PasswordGate onUnlock={unlock} />
+        </div>
+      )}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
