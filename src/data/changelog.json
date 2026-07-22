@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.11.2",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "UX 3.0 Client Servers trend charts: switched to a stacked bar + line combo chart, with a per-period \"Average\" (mean of Critical/High/Medium) plotted as a dotted line against its own right-side y-axis.",
+        "Client Servers demo data (`serversData.js`) is now fully synthetic — fictional HOD names, hostnames, and IP ranges, no longer sourced from a real client report."
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.11.1",
     "date": "2026-07-22",
     "changes": {
