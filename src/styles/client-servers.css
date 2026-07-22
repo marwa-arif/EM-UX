@@ -1,0 +1,86 @@
+/* ── Client Specific — Servers (UX 3.0) ──────────────────────────── */
+
+.csv-page { padding-right: 12px; min-width: 0; }
+
+/* ── Section card ─────────────────────────────────────────────────── */
+/* min-width:0 at every flex level below is required — otherwise a wide
+   table's min-content bubbles up through the flex chain and forces the
+   whole page (including the left nav) to scroll horizontally instead of
+   the table scrolling within its own box. */
+.csv-card { padding: 20px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+.csv-card-hdr { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.csv-card-hdr-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.csv-card-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+
+.csv-tabbar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.csv-card-body { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ── Layout grids ─────────────────────────────────────────────────── */
+.csv-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  align-items: start;
+  min-width: 0;
+}
+
+.csv-subcard { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.csv-subhead { font-size: 12px; font-weight: 600; color: var(--shell-text-2); }
+
+/* ── Tables ───────────────────────────────────────────────────────── */
+/* Horizontal scrollbars are disabled on this page — .ds-table-wrap normally
+   adds overflow-x:auto, but here the table wraps its content (table-layout:
+   fixed + wrapping cells below) to fit the container width instead. */
+.ds-table-wrap.csv-table-wrap { border: 1px solid var(--table-border); border-radius: 4px; min-width: 0; overflow-x: hidden; }
+.csv-table-wrap .ds-table { margin: 0; }
+.csv-table-scroll { max-height: 420px; overflow-y: auto; overflow-x: hidden; border-radius: 4px; min-width: 0; }
+.csv-table-scroll .csv-table-wrap { border-radius: 0; }
+
+.csv-table { table-layout: fixed; }
+.csv-table .ds-th,
+.csv-table .ds-td { white-space: normal; word-break: break-word; }
+
+.csv-table .csv-right { text-align: center; }
+
+.csv-num--critical { color: var(--pai-crit-fg); font-weight: 600; }
+.csv-num--high      { color: var(--pai-high-fg); font-weight: 600; }
+.csv-num--medium    { color: var(--pai-med-fg); font-weight: 600; }
+
+.csv-tr-total td { font-weight: 700; background: var(--shell-raised); color: var(--shell-text); }
+.csv-tr-total td.csv-num--critical { color: var(--pai-crit-fg); }
+.csv-tr-total td.csv-num--high      { color: var(--pai-high-fg); }
+.csv-tr-total td.csv-num--medium    { color: var(--pai-med-fg); }
+
+/* ── Ageing heat map ─────────────────────────────────────────────────
+   4 rank-based intensity levels per severity column, tinted from the same
+   --pai-*-fg tokens used for severity text elsewhere — level 1 = lowest
+   value in that column, level 4 = highest. */
+.csv-heatmap td { transition: background-color 0.15s ease; }
+
+.csv-heat--critical-1 { background: color-mix(in srgb, var(--pai-crit-fg) 8%, var(--card-bg)); }
+.csv-heat--critical-2 { background: color-mix(in srgb, var(--pai-crit-fg) 18%, var(--card-bg)); }
+.csv-heat--critical-3 { background: color-mix(in srgb, var(--pai-crit-fg) 28%, var(--card-bg)); }
+.csv-heat--critical-4 { background: color-mix(in srgb, var(--pai-crit-fg) 42%, var(--card-bg)); }
+
+.csv-heat--high-1 { background: color-mix(in srgb, var(--pai-high-fg) 8%, var(--card-bg)); }
+.csv-heat--high-2 { background: color-mix(in srgb, var(--pai-high-fg) 18%, var(--card-bg)); }
+.csv-heat--high-3 { background: color-mix(in srgb, var(--pai-high-fg) 28%, var(--card-bg)); }
+.csv-heat--high-4 { background: color-mix(in srgb, var(--pai-high-fg) 42%, var(--card-bg)); }
+
+.csv-heat--medium-1 { background: color-mix(in srgb, var(--pai-med-fg) 8%, var(--card-bg)); }
+.csv-heat--medium-2 { background: color-mix(in srgb, var(--pai-med-fg) 18%, var(--card-bg)); }
+.csv-heat--medium-3 { background: color-mix(in srgb, var(--pai-med-fg) 28%, var(--card-bg)); }
+.csv-heat--medium-4 { background: color-mix(in srgb, var(--pai-med-fg) 42%, var(--card-bg)); }
+
+/* ── Chart ────────────────────────────────────────────────────────── */
+.csv-chart-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+.csv-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.csv-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--shell-text-2); }
+.csv-chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--csv-dot); }
+.csv-chart-legend-line {
+  width: 16px; height: 0; flex-shrink: 0;
+  border-top: 2px dotted var(--shell-accent);
+}

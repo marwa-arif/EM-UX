@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Ic } from '../ui.jsx'
-import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
+import { DSPillSearch, LibraryIcon, SavedIcon, LibraryImportBar, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 
 // Workspace › Saved tab
@@ -77,6 +77,9 @@ function SavedPage() {
 
   return (
     <div className="lib-shell">
+
+      <LibraryImportBar />
+
       <div className="lib-card">
 
         {/* Tab bar */}
@@ -94,18 +97,18 @@ function SavedPage() {
           <div className="lib-tabbar-right">
             <DSPillSearch value={savedSearch} onChange={setSavedSearch} placeholder="Search Saved" width={200} />
             <button className="lib-action-btn">
-              <img src="/assets/icons/new-report.svg" width={13} height={13} alt="" />
-              New Template
+              <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
+              New Report
             </button>
             <button className="lib-action-btn" onClick={() => onNav('workspace/dashboard/new')}>
-              <img src="/assets/icons/template-add.svg" width={13} height={13} alt="" />
+              <img src="assets/icons/template-add.svg" width={13} height={13} alt="" />
               New Dashboard
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="lib-content--saved">
+        <div className="lib-content">
 
           {/* Sub-filter bar */}
           <div className="lib-toolbar">

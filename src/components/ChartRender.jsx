@@ -1146,7 +1146,7 @@ export function ChartRender({
               {pagedRows.map((r, i) => (
                 <tr key={i}>
                   <td className="ds-td cr-kg-td--icon">
-                    <img src="/assets/icons/explore.svg" width={12} height={12} alt="" />
+                    <img src="assets/icons/explore.svg" width={12} height={12} alt="" />
                   </td>
                   {tableCols.map(col => (
                     <td key={col} className={`ds-td${col === 'Display Label' ? ' cr-kg-td--label' : ''}`}>

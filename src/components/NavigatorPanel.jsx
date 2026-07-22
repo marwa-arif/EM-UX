@@ -49,12 +49,6 @@ const DEMO_SOURCES = [
   { num: 3, label: 'Azure Security Center'             },
 ]
 
-const QUERY_MODES = [
-  { id: 'quick',  label: 'Quick',  desc: 'Fast answer from your connected graph' },
-  { id: 'deep',   label: 'Deep',   desc: 'Multi-step reasoning across all data'  },
-  { id: 'report', label: 'Report', desc: 'Formatted export-ready summary'        },
-]
-
 const RESPONSE_TEXT = `vm-prod-42 has 14 open findings, of which 3 are critical severity and 6 are high severity. Critical findings include an unpatched Log4Shell vulnerability, an exposed admin credential in environment variables, and a misconfigured NSG allowing unrestricted inbound traffic.`
 
 // ── Icons ─────────────────────────────────────────────────────────────
@@ -77,6 +71,7 @@ const IcClock     = () => <Ic size={13} path={<><circle cx="12" cy="12" r="10"/>
 const IcChat      = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />
 const IcAgents    = () => <Ic size={14} path={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />
 const IcViewAll   = () => <Ic size={13} path={<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>} />
+const IcStar      = () => <Ic size={14} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />
 const IcFile      = () => <Ic size={13} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></>} />
 const IcGraph     = () => <Ic size={13} path={<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></>} />
 const IcSearch    = () => <Ic size={13} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
@@ -112,7 +107,7 @@ function AgentIcon({ color }) {
 function NavIcon({ size = 18 }) {
   return (
     <span className="np-nav-icon-mask" style={{ '--np-icon-size': `${size}px` }}>
-      <img src="/assets/icons/Navigator icon.svg" width={size} height={size} alt="" />
+      <img src="assets/icons/Navigator icon.svg" width={size} height={size} alt="" />
     </span>
   )
 }
@@ -143,6 +138,8 @@ function Dropdown({ children, onClose, className }) {
 
 // ── History overlay ───────────────────────────────────────────────────
 function HistoryOverlay({ open, onClose, onNewChat, onSelectChat, firstFocusRef }) {
+  const [menuOpenId, setMenuOpenId] = useState(null)
+
   useEffect(() => {
     if (open && firstFocusRef?.current) firstFocusRef.current.focus()
   }, [open, firstFocusRef])
@@ -188,17 +185,42 @@ function HistoryOverlay({ open, onClose, onNewChat, onSelectChat, firstFocusRef 
             </button>
           </div>
           {CHAT_HISTORY.map(c => (
-            <button
+            <div
               key={c.id}
-              className={`np-history-chat-row${c.active ? ' active' : ''}`}
-              onClick={() => { onSelectChat(c.label); onClose() }}
+              className={`np-history-chat-row${c.active ? ' active' : ''}${menuOpenId === c.id ? ' menu-open' : ''}`}
             >
-              <span className="np-history-chat-icon"><IcChat /></span>
-              <span className="np-history-chat-body">
-                <span className="np-history-chat-label">{c.label}</span>
-                <span className="np-history-chat-time">{c.time}</span>
-              </span>
-            </button>
+              <button className="np-history-chat-main" onClick={() => { onSelectChat(c.label); onClose() }}>
+                <span className="np-history-chat-icon"><IcChat /></span>
+                <span className="np-history-chat-body">
+                  <span className="np-history-chat-label">{c.label}</span>
+                  <span className="np-history-chat-time">{c.time}</span>
+                </span>
+              </button>
+              <div className="np-rel">
+                <button
+                  className="np-history-chat-menu-btn"
+                  title="Chat options"
+                  aria-label="Chat options"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpenId(o => o === c.id ? null : c.id) }}
+                >
+                  <IcDots />
+                </button>
+                {menuOpenId === c.id && (
+                  <Dropdown onClose={() => setMenuOpenId(null)} className="np-dropdown--history-menu">
+                    <button className="np-dropdown-item" onClick={() => setMenuOpenId(null)}>
+                      <IcStar /> Star
+                    </button>
+                    <button className="np-dropdown-item" onClick={() => setMenuOpenId(null)}>
+                      <IcRename /> Rename
+                    </button>
+                    <div className="np-dropdown-sep" />
+                    <button className="np-dropdown-item danger" onClick={() => setMenuOpenId(null)}>
+                      <IcTrash /> Delete
+                    </button>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
           ))}
           <button className="np-history-viewall"><IcViewAll /> View all conversations</button>
         </div>
@@ -398,25 +420,6 @@ function ErrorCard({ onRetry }) {
   )
 }
 
-// ── Mode selector ─────────────────────────────────────────────────────
-function ModeSelector({ mode, onChange }) {
-  return (
-    <div className="np-mode-row" role="group" aria-label="Query mode">
-      {QUERY_MODES.map(m => (
-        <button
-          key={m.id}
-          className={`np-mode-chip${mode === m.id ? ' active' : ''}`}
-          onClick={() => onChange(m.id)}
-          title={m.desc}
-          aria-pressed={mode === m.id}
-        >
-          {m.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 // ── Copy friction toast ───────────────────────────────────────────────
 function CopyToast({ message, onDismiss }) {
   if (!message) return null
@@ -464,9 +467,11 @@ function ResizeHandle({ onResizeStart, onDrag }) {
 }
 
 // ── Composer ──────────────────────────────────────────────────────────
-function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, focusRef }) {
+function Composer({ value, onChange, onSend, placeholder, focusRef }) {
   const internalRef = useRef(null)
   const taRef       = focusRef || internalRef
+  const [showAgentMenu, setAgentMenu] = useState(false)
+  const [agent, setAgent]             = useState(null)
 
   const grow = useCallback(() => {
     const el = taRef.current
@@ -474,6 +479,12 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [taRef])
+
+  const pickAgent = (a) => {
+    setAgent(a)
+    setAgentMenu(false)
+    taRef.current?.focus()
+  }
 
   return (
     <div className="np-composer" role="form" aria-label="Message input">
@@ -491,10 +502,28 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
         />
         <div className="np-composer-mode-row">
           <div className="np-composer-row-left">
-            <button className="np-composer-add" aria-label="Add context" tabIndex={-1}>
+            <button
+              className={`np-composer-add${showAgentMenu ? ' active' : ''}`}
+              onClick={() => setAgentMenu(o => !o)}
+              aria-label="Select agent"
+              aria-haspopup="menu"
+              aria-expanded={showAgentMenu}
+            >
               <IcPlus />
             </button>
-            <ModeSelector mode={mode} onChange={onModeChange} />
+            {agent && (
+              <span className="np-ctx-chip active">
+                <span className="np-ctx-dot" style={{ background: agent.color }} aria-hidden="true" />
+                {agent.name}
+                <button
+                  className="np-ctx-chip-remove"
+                  onClick={() => setAgent(null)}
+                  aria-label={`Remove ${agent.name}`}
+                >
+                  <IcX />
+                </button>
+              </span>
+            )}
           </div>
           <button
             className="np-composer-send"
@@ -506,6 +535,23 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
           </button>
         </div>
       </div>
+      {showAgentMenu && (
+        <Dropdown onClose={() => setAgentMenu(false)} className="np-dropdown--agent-menu">
+          <div className="np-dropdown-label">Agents</div>
+          {AGENTS.map(a => (
+            <button
+              key={a.id}
+              className={`np-dropdown-item${agent?.id === a.id ? ' selected' : ''}`}
+              onClick={() => pickAgent(a)}
+              role="menuitem"
+            >
+              <span className="np-dropdown-agent-dot" style={{ background: a.color }} aria-hidden="true" />
+              {a.name}
+              {agent?.id === a.id && <span className="np-dropdown-check" aria-hidden="true"><IcCheck /></span>}
+            </button>
+          ))}
+        </Dropdown>
+      )}
     </div>
   )
 }
@@ -568,7 +614,6 @@ function FirstRunHero({ onSend }) {
 function PanelHome({ onSend, isFirstRun }) {
   const [query, setQuery]   = useState('')
   const [activeCtx, setCtx] = useState(new Set())
-  const [mode, setMode]     = useState('quick')
   const taRef               = useRef(null)
 
   const toggleCtx = (id) => setCtx(prev => {
@@ -658,8 +703,6 @@ function PanelHome({ onSend, isFirstRun }) {
         onChange={e => setQuery(e.target.value)}
         onSend={() => handleSend()}
         placeholder={placeholder}
-        mode={mode}
-        onModeChange={setMode}
         focusRef={taRef}
       />
     </div>
@@ -715,7 +758,6 @@ function ChatQuickBar({ onSend }) {
 // ── Chat view ─────────────────────────────────────────────────────────
 function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, onExplore }) {
   const [followUp, setFollowUp] = useState('')
-  const [mode, setMode]         = useState('quick')
   const messagesRef             = useRef(null)
 
   useEffect(() => {
@@ -748,10 +790,284 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
       <Composer
         value={followUp}
         onChange={e => setFollowUp(e.target.value)}
-        onSend={() => setFollowUp('')}
+        onSend={() => {
+          const text = followUp.trim();
+          if (!text) return;
+          onSend(text);
+          setFollowUp('');
+        }}
         placeholder="Ask a follow-up…"
-        mode={mode}
-        onModeChange={setMode}
+      />
+    </div>
+  )
+}
+
+// ── Builder guided chats ────────────────────────────────────────────────
+// Scripted demo flows (not real NLU) — each stage's `action` drives the live
+// canvas for the active surface (Assessment Builder, Dashboard, ...) via its
+// imperative `builderApi` ref, and its `ai` message is generated from a
+// post-action snapshot of that real state. Which stage list runs is picked
+// by `builderKind`, so each surface gets its own scoped vocabulary/context.
+const ASSESSMENT_BUILDER_STAGES = [
+  {
+    ai: "Hi! Let's build an assessment together — what should we check?",
+    suggestions: ['Storage volumes must be encrypted at rest'],
+  },
+  {
+    action: (api) => { api.pickPrimary?.('storage'); api.addPrimaryFilter?.('Type', '=', 'Volume') },
+    ai: (snap) => `Got it — I've scoped this to ${snap.scopeSummary || 'Storage · 1 filter'}. Look right?`,
+    suggestions: ['Looks good'],
+  },
+  {
+    action: (api) => api.setSharedCondition?.('Encrypted at rest', '=', 'true'),
+    ai: (snap) => `Condition set: ${snap.conditionSummary || 'should have encrypted at rest'}. Ready to validate?`,
+    suggestions: ['Run validation'],
+  },
+  {
+    action: (api) => { api.goToStep?.(2); api.runValidation?.() },
+    ai: () => 'Running a dry-run…',
+    suggestions: [],
+    settleMs: 1100,
+  },
+  {
+    ai: (snap) => `Validation complete — ${(snap.estScopeTotal ?? 0).toLocaleString()} items in scope, ${snap.passPct ?? 0}% passing today. Move on to contribution?`,
+    suggestions: ['Continue to contribution'],
+  },
+  {
+    action: (api) => { api.goToStep?.(3); api.setContribution?.(true, false) },
+    ai: () => 'This now contributes to Compliance (CCM). Want me to auto-map frameworks?',
+    suggestions: ['Map to SCF'],
+  },
+  {
+    action: (api) => api.applyFrameworkMapping?.('scf'),
+    ai: (snap) => `Mapped to ${(snap.automapped || []).map(r => r.frameworkName).join(', ') || 'SCF'}. Ready to review and deploy?`,
+    suggestions: ['Review & deploy'],
+  },
+  {
+    action: (api) => { api.goToStep?.(4); api.openPreview?.() },
+    ai: () => "I've opened the deploy confirmation — it'll run in the background until it's live.",
+    suggestions: [],
+  },
+]
+
+// ── Dashboard-builder guided chat ────────────────────────────────────────
+// Same scripted-demo shape as the assessment builder, driving DashboardCanvas's
+// addWidget/configureWidget/removeWidget via its builderApi ref.
+const DASHBOARD_BUILDER_STAGES = [
+  {
+    ai: "Hi! Let's add something to your dashboard — what would you like to see?",
+    suggestions: ['Show me open findings by severity'],
+  },
+  {
+    action: (api) => api.addWidget?.({ chartId: 'vert-bar', label: 'Findings by Severity', sizeId: 'medium', heightId: 'medium' }),
+    ai: (snap) => `Added "${snap.widgets?.at(-1)?.label || 'the widget'}" to your dashboard (${snap.widgetCount} widget${snap.widgetCount === 1 ? '' : 's'} total). Want to adjust its size or colors?`,
+    suggestions: ['Make it larger', 'Looks good'],
+  },
+  {
+    action: (api) => { const last = api.getSnapshot?.().widgets?.at(-1); if (last) api.configureWidget?.(last.id, { sizeId: 'large', heightId: 'large' }) },
+    ai: (snap) => `Resized "${snap.widgets?.at(-1)?.label || 'the widget'}". Anything else you'd like on this dashboard?`,
+    suggestions: ['That’s all for now'],
+  },
+]
+
+// Triggered from a widget's "Edit with Copilot" hover action — scoped to that
+// one widget instead of the generic add-new-widget flow above.
+function buildDashboardEditStages(ctx) {
+  return [
+    {
+      ai: `Let's edit "${ctx.widgetLabel}" — what would you like to change?`,
+      suggestions: ['Make it larger', 'Change chart type'],
+    },
+    {
+      action: (api) => api.configureWidget?.(ctx.widgetId, { sizeId: 'large', heightId: 'large' }),
+      ai: (snap) => `Resized "${snap.widgets?.find(w => w.id === ctx.widgetId)?.label || ctx.widgetLabel}". Anything else you'd like to change?`,
+      suggestions: ['Looks good'],
+    },
+  ]
+}
+
+// ── Configure-screen guided chat ──────────────────────────────────────────
+// DataConfigPage has no live widget canvas yet (just a name/description/data
+// source form), so unlike the assessment/dashboard flows above this one has
+// no `action`/builderApi calls — it's a lightweight assist over the form.
+const DATA_CONFIG_BUILDER_STAGES = [
+  {
+    ai: "Hi! I can help you finish setting up this screen — want help naming it, picking a data source, or describing what it shows?",
+    suggestions: ['Suggest a name', 'Pick a data source'],
+  },
+  {
+    ai: "Once the details on the right look good, hit Save to add this screen to your Library.",
+    suggestions: ['Got it'],
+  },
+]
+
+const BUILDER_STAGES_BY_KIND = {
+  assessment: ASSESSMENT_BUILDER_STAGES,
+  dashboard: DASHBOARD_BUILDER_STAGES,
+  dataConfig: DATA_CONFIG_BUILDER_STAGES,
+}
+
+const BUILDER_CAPTION_BY_KIND = {
+  assessment: 'Guided assessment builder',
+  dashboard: 'Guided dashboard builder',
+  dataConfig: 'Guided screen setup',
+}
+
+// ── Canvas → Copilot sync ────────────────────────────────────────────────
+// The chat drives the canvas via `action(api)` (see stage defs above), but the
+// canvas can also change directly (user clicks in the builder itself). These
+// derive the scripted stage a live snapshot already corresponds to, so the
+// chat can catch its narration up to state the user reached by hand, instead
+// of only reacting to its own actions.
+function deriveAssessmentStageIdx(snap) {
+  if (!snap) return 0
+  let idx = 0
+  if (snap.scopeSummary) idx = 1
+  if (snap.conditionSummary) idx = 2
+  if (snap.step >= 2) idx = 3
+  if (snap.validated) idx = 4
+  if (snap.step >= 3) idx = 5
+  if (snap.automapped?.length) idx = 6
+  if (snap.step >= 4) idx = 7
+  return idx
+}
+
+function deriveDashboardAddStageIdx(snap, baseWidgetCount) {
+  if (!snap) return 0
+  let idx = 0
+  if (snap.widgetCount > baseWidgetCount) idx = 1
+  const last = snap.widgets?.at(-1)
+  if (idx === 1 && last?.sizeId === 'large' && last?.heightId === 'large') idx = 2
+  return idx
+}
+
+function deriveDashboardEditStageIdx(snap, widgetId) {
+  if (!snap) return 0
+  const w = snap.widgets?.find(w => w.id === widgetId)
+  return (w?.sizeId === 'large' && w?.heightId === 'large') ? 1 : 0
+}
+
+function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = null }) {
+  const editingWidget = builderKind === 'dashboard' && builderContext?.widgetId
+  const stages = editingWidget
+    ? buildDashboardEditStages(builderContext)
+    : (BUILDER_STAGES_BY_KIND[builderKind] || ASSESSMENT_BUILDER_STAGES)
+  const caption = editingWidget
+    ? `Editing "${builderContext.widgetLabel}"`
+    : (BUILDER_CAPTION_BY_KIND[builderKind] || BUILDER_CAPTION_BY_KIND.assessment)
+  const [messages, setMessages]   = useState(() => [{ role: 'ai', text: stages[0].ai }])
+  const [stageIdx, setStageIdx]   = useState(0)
+  const [inputValue, setInputVal] = useState('')
+  const [busy, setBusy]           = useState(false)
+  const stageIdxRef  = useRef(0)
+  const busyRef      = useRef(false)
+  const messagesRef  = useRef(null)
+  // Baseline widget count captured once, before any chat- or canvas-driven
+  // add, so the dashboard-add flow can tell "a widget appeared" from widgets
+  // the template already shipped with.
+  const baseWidgetCountRef = useRef(null)
+  if (builderKind === 'dashboard' && !editingWidget && baseWidgetCountRef.current === null) {
+    baseWidgetCountRef.current = builderApi?.current?.getSnapshot?.()?.widgetCount ?? 0
+  }
+
+  useEffect(() => {
+    if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+  }, [messages, busy])
+
+  const setBusyBoth = (v) => { busyRef.current = v; setBusy(v) }
+
+  const advance = (userText) => {
+    if (busyRef.current) return
+    const nextIdx   = stageIdxRef.current + 1
+    const nextStage = stages[nextIdx]
+    if (!nextStage) return
+    if (userText) setMessages(m => [...m, { role: 'user', text: userText }])
+    setInputVal('')
+    setBusyBoth(true)
+    if (nextStage.action) nextStage.action(builderApi?.current || {})
+    setTimeout(() => {
+      const snap   = builderApi?.current?.getSnapshot?.() || {}
+      const aiText = typeof nextStage.ai === 'function' ? nextStage.ai(snap) : nextStage.ai
+      setMessages(m => [...m, { role: 'ai', text: aiText }])
+      stageIdxRef.current = nextIdx
+      setStageIdx(nextIdx)
+      setBusyBoth(false)
+      if (!nextStage.suggestions?.length && stages[nextIdx + 1]) {
+        setTimeout(() => advance(''), 300)
+      }
+    }, nextStage.settleMs || 450)
+  }
+
+  // Catches the chat's narration up to a stage the canvas already reached on
+  // its own — same shape as `advance`, but never re-runs `action`, since the
+  // canvas state it would produce is already there.
+  const catchUp = (targetIdx) => {
+    if (busyRef.current) return
+    const nextIdx   = stageIdxRef.current + 1
+    const nextStage = stages[nextIdx]
+    if (!nextStage || nextIdx > targetIdx) return
+    setBusyBoth(true)
+    setTimeout(() => {
+      const snap   = builderApi?.current?.getSnapshot?.() || {}
+      const aiText = typeof nextStage.ai === 'function' ? nextStage.ai(snap) : nextStage.ai
+      setMessages(m => [...m, { role: 'ai', text: aiText }])
+      stageIdxRef.current = nextIdx
+      setStageIdx(nextIdx)
+      setBusyBoth(false)
+      if (nextIdx < targetIdx) setTimeout(() => catchUp(targetIdx), 300)
+    }, nextStage.settleMs || 450)
+  }
+
+  useEffect(() => {
+    const deriveIdx = (snap) => {
+      if (editingWidget) return deriveDashboardEditStageIdx(snap, builderContext.widgetId)
+      if (builderKind === 'dashboard') return deriveDashboardAddStageIdx(snap, baseWidgetCountRef.current ?? 0)
+      return deriveAssessmentStageIdx(snap)
+    }
+    const id = setInterval(() => {
+      if (busyRef.current) return
+      const snap = builderApi?.current?.getSnapshot?.()
+      if (!snap) return
+      const target = deriveIdx(snap)
+      if (target > stageIdxRef.current) catchUp(target)
+    }, 600)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const currentStage = stages[stageIdx]
+
+  return (
+    <div className="np-builder-chat">
+      <div className="np-builder-caption">{caption}</div>
+      <div className="np-builder-messages" ref={messagesRef} role="log" aria-live="polite" aria-label={caption}>
+        {messages.map((m, i) => (
+          <div key={i} className={`np-builder-msg ${m.role}`}>
+            {m.role === 'ai' && <span className="np-builder-msg-badge" aria-hidden="true"><NavIcon size={13} /></span>}
+            <div className="np-builder-msg-bubble">{m.text}</div>
+          </div>
+        ))}
+        {busy && (
+          <div className="np-builder-msg ai">
+            <span className="np-builder-msg-badge" aria-hidden="true"><NavIcon size={13} /></span>
+            <div className="np-builder-msg-bubble np-builder-typing"><span /><span /><span /></div>
+          </div>
+        )}
+      </div>
+
+      {!busy && currentStage?.suggestions?.length > 0 && (
+        <div className="np-builder-suggestions">
+          {currentStage.suggestions.map(s => (
+            <button key={s} className="np-builder-suggestion" onClick={() => advance(s)}>{s}</button>
+          ))}
+        </div>
+      )}
+
+      <Composer
+        value={inputValue}
+        onChange={e => setInputVal(e.target.value)}
+        onSend={() => inputValue.trim() && advance(inputValue.trim())}
+        placeholder="Type anything to continue…"
       />
     </div>
   )
@@ -765,8 +1081,11 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null }) {
   const [view, setView]             = useState('home')
+
+  // Enter the scripted assessment-builder chat when triggered externally
+  useEffect(() => { if (builderMode) setView('builder') }, [builderMode])
   const [activeQuery, setQ]         = useState('')
   const [responseState, setRespSt]  = useState('done')
   const [historyOpen, setHistory]   = useState(false)
@@ -774,7 +1093,9 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [showViewMenu, setViewMenu] = useState(false)
   const [showMoreMenu, setMoreMenu] = useState(false)
   const [panelWidth, setPanelWidth] = useState(400)
-  const [floatPos, setFloatPos]     = useState({ x: 0, y: 0 })
+  const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
+    ? { x: window.innerWidth - 400 - 16, y: 60 }
+    : { x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [copyToast, setCopyToast]   = useState(null)
   const [isFirstRun, setFirstRun]   = useState(true)
@@ -858,7 +1179,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
     setViewMenu(false)
     if (id === 'fullscreen') {
       onClose?.()
-      onNav?.('navigator')
+      onNav?.('navigator-page', activeQuery)
       return
     }
     if (id === 'floating' && viewMode !== 'floating') {
@@ -1144,7 +1465,9 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
 
         {/* ── Body ── */}
         <div className="np-panel-body">
-          {view === 'home'
+          {view === 'builder'
+            ? <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />
+            : view === 'home'
             ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} />
             : <PanelChat
                 query={activeQuery}
