@@ -133,4 +133,136 @@ function useWorkspace() {
   return ctx;
 }
 
-export { DSPillSearch, LibraryIcon, SavedIcon, WorkspaceProvider, useWorkspace };
+// ── Import banner — shared by Library & Saved so it never appears/disappears
+// between the two tabs (that mismatch caused a layout jump on tab switch) ──
+const ImportSparkleIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3 L13.5 8.5 L19 10 L13.5 11.5 L12 17 L10.5 11.5 L5 10 L10.5 8.5 Z"/>
+    <path d="M5 3 L5.75 5.25 L8 6 L5.75 6.75 L5 9 L4.25 6.75 L2 6 L4.25 5.25 Z" opacity="0.6"/>
+    <path d="M19 15 L19.5 16.5 L21 17 L19.5 17.5 L19 19 L18.5 17.5 L17 17 L18.5 16.5 Z" opacity="0.6"/>
+  </svg>
+);
+
+const ImportCodeIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6"/>
+    <polyline points="8 6 2 12 8 18"/>
+  </svg>
+);
+
+const ImportUploadIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="17 8 12 3 7 8"/>
+    <line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+);
+
+const ImportFigmaIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3h4a3 3 0 0 1 0 6H8z"/>
+    <path d="M8 9h4a3 3 0 0 1 0 6H8z"/>
+    <path d="M8 15h3a3 3 0 1 1-3 3z"/>
+    <circle cx="15" cy="12" r="3"/>
+  </svg>
+);
+
+function LibraryImportBar() {
+  const { onNav, setUploadedFile, setUploadSource } = useWorkspace();
+  const fileRef = React.useRef(null);
+  const [connectModalOpen, setConnectModalOpen] = React.useState(false);
+  const [connectSource, setConnectSource] = React.useState(null); // 'claude' | 'figma'
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadedFile(file);
+    setUploadSource('html');
+    onNav('workspace/configure-screen');
+    e.target.value = '';   // reset so same file can be re-selected
+  };
+
+  const closeConnectModal = () => { setConnectModalOpen(false); setConnectSource(null); };
+
+  const handleConnectContinue = () => {
+    if (!connectSource) return;
+    setUploadSource('design');
+    closeConnectModal();
+    onNav('workspace/configure-screen');
+  };
+
+  // Close connect-source modal on Escape
+  React.useEffect(() => {
+    if (!connectModalOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') closeConnectModal(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [connectModalOpen]);
+
+  return (
+    <>
+      <div className="lib-import">
+        <div className="lib-import-icon">
+          <ImportSparkleIcon />
+        </div>
+        <div className="lib-import-text">
+          <span className="lib-import-title">Import a Screen</span>
+          <span className="lib-import-desc">Upload an HTML file or connect a design — AI wires your data automatically.</span>
+        </div>
+        <div className="lib-import-btns">
+          <button className="ds-btn sz-sm t-outline" onClick={() => setConnectModalOpen(true)}>
+            <ImportCodeIcon /> Connect Design
+          </button>
+          <button className="ds-btn sz-sm t-primary" onClick={() => fileRef.current?.click()}>
+            <ImportUploadIcon /> Upload HTML
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".html,.htm"
+            className="lib-file-input"
+            onChange={handleFileChange}
+          />
+        </div>
+      </div>
+
+      {connectModalOpen && (
+        <div className="ds-modal-overlay" onClick={closeConnectModal}>
+          <div className="ds-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="ds-modal-header">
+              <span className="ds-modal-title">Connect a Design</span>
+              <button className="ds-modal-close" onClick={closeConnectModal} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">
+              <p className="ds-modal-desc">Choose where to pull your design from. AI detects widgets and wires your data automatically.</p>
+              <div className="dcp-source-row">
+                <button
+                  className={`dcp-source-btn${connectSource === 'claude' ? ' active' : ''}`}
+                  onClick={() => setConnectSource('claude')}
+                >
+                  <span className="dcp-source-btn-icon"><ImportSparkleIcon /></span>
+                  <span className="dcp-source-btn-label">Claude Code</span>
+                  <span className="dcp-source-btn-sub">AI-generated design</span>
+                </button>
+                <button
+                  className={`dcp-source-btn${connectSource === 'figma' ? ' active' : ''}`}
+                  onClick={() => setConnectSource('figma')}
+                >
+                  <span className="dcp-source-btn-icon"><ImportFigmaIcon /></span>
+                  <span className="dcp-source-btn-label">Figma</span>
+                  <span className="dcp-source-btn-sub">Import from a file</span>
+                </button>
+              </div>
+            </div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={closeConnectModal}>Cancel</button>
+              <button className="ds-btn sz-md t-primary" disabled={!connectSource} onClick={handleConnectContinue}>Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export { DSPillSearch, LibraryIcon, SavedIcon, LibraryImportBar, WorkspaceProvider, useWorkspace };

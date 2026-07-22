@@ -24,6 +24,8 @@ import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 import SplashScreen           from './components/SplashScreen.jsx'
+import PasswordGate           from './components/PasswordGate.jsx'
+import { useAuthGate }        from './authGate.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
 // so pushState-based routing and window.location.pathname parsing work the
@@ -493,19 +495,104 @@ const _UNUSED = {
   },
 };
 
+// Static per-route breadcrumb/title metadata for the classic (non-UX3) shell.
+// Kept at module scope rather than inside App() — several routes (workspace,
+// ux3, admin) return early before a function-scoped version would ever be
+// initialized, so any closure capturing it (e.g. handleNav) would hit a TDZ
+// ReferenceError the moment it's called from one of those routes.
+const PAGE_META = {
+  'exposure/overview': {
+    title: 'Overview',
+    breadcrumb: ['Home', 'Exposure', 'Overview'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'exposure/findings': {
+    title: 'Findings',
+    breadcrumb: ['Home', 'Exposure', 'Findings'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/device': {
+    title: 'Device',
+    breadcrumb: ['Home', 'Discover', 'Device'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/cloud': {
+    title: 'Cloud',
+    breadcrumb: ['Home', 'Discover', 'Cloud'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/identity': {
+    title: 'Identity',
+    breadcrumb: ['Home', 'Discover', 'Identity'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance': {
+    title: 'Compliance',
+    breadcrumb: ['Home', 'Report', 'Compliance'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/assessments': {
+    title: 'Assessments',
+    breadcrumb: ['Home', 'Report', 'Assessments'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance-matrix': {
+    title: 'Compliance Matrix',
+    breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance-findings': {
+    title: 'Compliance Findings',
+    breadcrumb: ['Home', 'Report', 'Compliance Findings'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'data-quality/overview': {
+    title: 'Overview',
+    breadcrumb: ['Home', 'Data Quality', 'Overview'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'data-quality/in-depth': {
+    title: 'In-Depth',
+    breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'remediation/queue': {
+    title: 'Queue',
+    breadcrumb: ['Home', 'Remediation', 'Queue'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'remediation/closed': {
+    title: 'Closed',
+    breadcrumb: ['Home', 'Remediation', 'Closed'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  kg: {
+    title: 'Knowledge Graph',
+    breadcrumb: ['Home', 'Knowledge Graph'],
+    breadcrumbHrefs: ['/knowledge-graph', null],
+    onAdd: () => {},
+  },
+  navigator: {
+    title: 'Navigator',
+    breadcrumb: ['Home', 'Navigator'],
+    breadcrumbHrefs: [null, null],
+  },
+};
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = stripBase(window.location.pathname);
     if (path === '/workspace') return 'workspace';
     if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
-    if (path === '/') return 'exposure/overview';
-    return path.slice(1) || 'exposure/overview';
+    if (path === '/') return 'navigator';
+    return path.slice(1) || 'navigator';
   });
   const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
   const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
+  const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [findingsCategoryFilter, setFindingsCategoryFilter] = useState(null);
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
@@ -531,6 +618,7 @@ function App() {
   const BUILDER_SURFACES = {
     assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
     dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
+    dataConfig: { matchRoute: c => c === 'workspace/configure-screen', api: null },
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
   const [visitedTabs, setVisitedTabs] = useState([]);
@@ -572,8 +660,8 @@ function App() {
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
-      else if (path === '/') setCurrent('exposure/overview');
-      else setCurrent(path.slice(1) || 'exposure/overview');
+      else if (path === '/') setCurrent('navigator');
+      else setCurrent(path.slice(1) || 'navigator');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -647,13 +735,21 @@ function App() {
     }
     if (id === 'ux3-page') {
       setRightPanel(null);
-      setCurrent('ux3');
-      history.pushState(null, '', navPath('/ux3'));
+      setCurrent('ux3/client/servers');
+      history.pushState(null, '', navPath('/ux3/client/servers'));
       return;
     }
     if (id === 'ux3-exit') {
-      setCurrent('exposure/overview');
-      history.pushState(null, '', navPath('/exposure/overview'));
+      // `data` carries the UX3 sub-route the user was viewing so "Explore in
+      // Current UX" lands on its classic equivalent — but only routes the
+      // classic shell actually knows (PAGE_META entries, plus 'workspace'
+      // which is handled outside PAGE_META). Anything else (e.g.
+      // 'client/networks', which has no classic build) falls back to the
+      // default landing page instead of hitting the 404 ErrorPage.
+      const validTargets = new Set([...Object.keys(PAGE_META), 'workspace']);
+      const target = data && validTargets.has(data) ? data : 'exposure/overview';
+      setCurrent(target);
+      history.pushState(null, '', navPath(`/${target}`));
       return;
     }
     if (id === 'admin-page') {
@@ -734,14 +830,19 @@ function App() {
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
         <WorkspacePage
           onNav={handleNav}
           initialRoute={current}
           theme={theme}
           onToggleTheme={toggleTheme}
           onBuilderApiReady={setDashboardBuilderApi}
-          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: 'dashboard', ...ctx })}
+          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
           rightPanelSlot={sharedRightPanel}
           rightPanelOpen={rightPanel !== null}
           navigatorActive={rightPanel === 'navigator'}
@@ -754,8 +855,13 @@ function App() {
   if (current === 'ux3' || current.startsWith('ux3/')) {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
-        <UX3Page onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
+        <UX3Page onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
   }
@@ -763,93 +869,19 @@ function App() {
   if (current === 'admin') {
     return (
       <>
-        {showSplash && <SplashScreen onDone={onSplashDone} />}
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
         <AdminPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
   }
 
-  const PAGE_META = {
-    'exposure/overview': {
-      title: 'Overview',
-      breadcrumb: ['Home', 'Exposure', 'Overview'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'exposure/findings': {
-      title: 'Findings',
-      breadcrumb: ['Home', 'Exposure', 'Findings'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/device': {
-      title: 'Device',
-      breadcrumb: ['Home', 'Discover', 'Device'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/cloud': {
-      title: 'Cloud',
-      breadcrumb: ['Home', 'Discover', 'Cloud'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/identity': {
-      title: 'Identity',
-      breadcrumb: ['Home', 'Discover', 'Identity'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance': {
-      title: 'Compliance',
-      breadcrumb: ['Home', 'Report', 'Compliance'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/assessments': {
-      title: 'Assessments',
-      breadcrumb: ['Home', 'Report', 'Assessments'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance-matrix': {
-      title: 'Compliance Matrix',
-      breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance-findings': {
-      title: 'Compliance Findings',
-      breadcrumb: ['Home', 'Report', 'Compliance Findings'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'data-quality/overview': {
-      title: 'Overview',
-      breadcrumb: ['Home', 'Data Quality', 'Overview'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'data-quality/in-depth': {
-      title: 'In-Depth',
-      breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'remediation/queue': {
-      title: 'Queue',
-      breadcrumb: ['Home', 'Remediation', 'Queue'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'remediation/closed': {
-      title: 'Closed',
-      breadcrumb: ['Home', 'Remediation', 'Closed'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    kg: {
-      title: 'Knowledge Graph',
-      breadcrumb: ['Home', 'Knowledge Graph'],
-      breadcrumbHrefs: ['/knowledge-graph', null],
-      onAdd: () => {},
-    },
-    navigator: {
-      title: 'Navigator',
-      breadcrumb: ['Home', 'Navigator'],
-      breadcrumbHrefs: [null, null],
-    },
-  };
-
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
-    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', navPath('/exposure/overview')); }} />;
+    return <ErrorPage type="notFound" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
 
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
@@ -862,7 +894,12 @@ function App() {
 
   return (
     <div className="app-shell">
-      {showSplash && <SplashScreen onDone={onSplashDone} />}
+      {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+      {!showSplash && locked && (
+        <div className="pw-lock-overlay">
+          <PasswordGate onUnlock={unlock} />
+        </div>
+      )}
       <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">

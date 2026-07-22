@@ -49,12 +49,6 @@ const DEMO_SOURCES = [
   { num: 3, label: 'Azure Security Center'             },
 ]
 
-const QUERY_MODES = [
-  { id: 'quick',  label: 'Quick',  desc: 'Fast answer from your connected graph' },
-  { id: 'deep',   label: 'Deep',   desc: 'Multi-step reasoning across all data'  },
-  { id: 'report', label: 'Report', desc: 'Formatted export-ready summary'        },
-]
-
 const RESPONSE_TEXT = `vm-prod-42 has 14 open findings, of which 3 are critical severity and 6 are high severity. Critical findings include an unpatched Log4Shell vulnerability, an exposed admin credential in environment variables, and a misconfigured NSG allowing unrestricted inbound traffic.`
 
 // ── Icons ─────────────────────────────────────────────────────────────
@@ -426,25 +420,6 @@ function ErrorCard({ onRetry }) {
   )
 }
 
-// ── Mode selector ─────────────────────────────────────────────────────
-function ModeSelector({ mode, onChange }) {
-  return (
-    <div className="np-mode-row" role="group" aria-label="Query mode">
-      {QUERY_MODES.map(m => (
-        <button
-          key={m.id}
-          className={`np-mode-chip${mode === m.id ? ' active' : ''}`}
-          onClick={() => onChange(m.id)}
-          title={m.desc}
-          aria-pressed={mode === m.id}
-        >
-          {m.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 // ── Copy friction toast ───────────────────────────────────────────────
 function CopyToast({ message, onDismiss }) {
   if (!message) return null
@@ -492,9 +467,11 @@ function ResizeHandle({ onResizeStart, onDrag }) {
 }
 
 // ── Composer ──────────────────────────────────────────────────────────
-function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, focusRef }) {
+function Composer({ value, onChange, onSend, placeholder, focusRef }) {
   const internalRef = useRef(null)
   const taRef       = focusRef || internalRef
+  const [showAgentMenu, setAgentMenu] = useState(false)
+  const [agent, setAgent]             = useState(null)
 
   const grow = useCallback(() => {
     const el = taRef.current
@@ -502,6 +479,12 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [taRef])
+
+  const pickAgent = (a) => {
+    setAgent(a)
+    setAgentMenu(false)
+    taRef.current?.focus()
+  }
 
   return (
     <div className="np-composer" role="form" aria-label="Message input">
@@ -519,10 +502,28 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
         />
         <div className="np-composer-mode-row">
           <div className="np-composer-row-left">
-            <button className="np-composer-add" aria-label="Add context" tabIndex={-1}>
+            <button
+              className={`np-composer-add${showAgentMenu ? ' active' : ''}`}
+              onClick={() => setAgentMenu(o => !o)}
+              aria-label="Select agent"
+              aria-haspopup="menu"
+              aria-expanded={showAgentMenu}
+            >
               <IcPlus />
             </button>
-            <ModeSelector mode={mode} onChange={onModeChange} />
+            {agent && (
+              <span className="np-ctx-chip active">
+                <span className="np-ctx-dot" style={{ background: agent.color }} aria-hidden="true" />
+                {agent.name}
+                <button
+                  className="np-ctx-chip-remove"
+                  onClick={() => setAgent(null)}
+                  aria-label={`Remove ${agent.name}`}
+                >
+                  <IcX />
+                </button>
+              </span>
+            )}
           </div>
           <button
             className="np-composer-send"
@@ -534,6 +535,23 @@ function Composer({ value, onChange, onSend, placeholder, mode, onModeChange, fo
           </button>
         </div>
       </div>
+      {showAgentMenu && (
+        <Dropdown onClose={() => setAgentMenu(false)} className="np-dropdown--agent-menu">
+          <div className="np-dropdown-label">Agents</div>
+          {AGENTS.map(a => (
+            <button
+              key={a.id}
+              className={`np-dropdown-item${agent?.id === a.id ? ' selected' : ''}`}
+              onClick={() => pickAgent(a)}
+              role="menuitem"
+            >
+              <span className="np-dropdown-agent-dot" style={{ background: a.color }} aria-hidden="true" />
+              {a.name}
+              {agent?.id === a.id && <span className="np-dropdown-check" aria-hidden="true"><IcCheck /></span>}
+            </button>
+          ))}
+        </Dropdown>
+      )}
     </div>
   )
 }
@@ -596,7 +614,6 @@ function FirstRunHero({ onSend }) {
 function PanelHome({ onSend, isFirstRun }) {
   const [query, setQuery]   = useState('')
   const [activeCtx, setCtx] = useState(new Set())
-  const [mode, setMode]     = useState('quick')
   const taRef               = useRef(null)
 
   const toggleCtx = (id) => setCtx(prev => {
@@ -686,8 +703,6 @@ function PanelHome({ onSend, isFirstRun }) {
         onChange={e => setQuery(e.target.value)}
         onSend={() => handleSend()}
         placeholder={placeholder}
-        mode={mode}
-        onModeChange={setMode}
         focusRef={taRef}
       />
     </div>
@@ -743,7 +758,6 @@ function ChatQuickBar({ onSend }) {
 // ── Chat view ─────────────────────────────────────────────────────────
 function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, onExplore }) {
   const [followUp, setFollowUp] = useState('')
-  const [mode, setMode]         = useState('quick')
   const messagesRef             = useRef(null)
 
   useEffect(() => {
@@ -783,8 +797,6 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
           setFollowUp('');
         }}
         placeholder="Ask a follow-up…"
-        mode={mode}
-        onModeChange={setMode}
       />
     </div>
   )
@@ -874,14 +886,31 @@ function buildDashboardEditStages(ctx) {
   ]
 }
 
+// ── Configure-screen guided chat ──────────────────────────────────────────
+// DataConfigPage has no live widget canvas yet (just a name/description/data
+// source form), so unlike the assessment/dashboard flows above this one has
+// no `action`/builderApi calls — it's a lightweight assist over the form.
+const DATA_CONFIG_BUILDER_STAGES = [
+  {
+    ai: "Hi! I can help you finish setting up this screen — want help naming it, picking a data source, or describing what it shows?",
+    suggestions: ['Suggest a name', 'Pick a data source'],
+  },
+  {
+    ai: "Once the details on the right look good, hit Save to add this screen to your Library.",
+    suggestions: ['Got it'],
+  },
+]
+
 const BUILDER_STAGES_BY_KIND = {
   assessment: ASSESSMENT_BUILDER_STAGES,
   dashboard: DASHBOARD_BUILDER_STAGES,
+  dataConfig: DATA_CONFIG_BUILDER_STAGES,
 }
 
 const BUILDER_CAPTION_BY_KIND = {
   assessment: 'Guided assessment builder',
   dashboard: 'Guided dashboard builder',
+  dataConfig: 'Guided screen setup',
 }
 
 // ── Canvas → Copilot sync ────────────────────────────────────────────────
@@ -930,7 +959,6 @@ function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = 
   const [stageIdx, setStageIdx]   = useState(0)
   const [inputValue, setInputVal] = useState('')
   const [busy, setBusy]           = useState(false)
-  const [mode, setMode]           = useState('quick')
   const stageIdxRef  = useRef(0)
   const busyRef      = useRef(false)
   const messagesRef  = useRef(null)
@@ -1040,8 +1068,6 @@ function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = 
         onChange={e => setInputVal(e.target.value)}
         onSend={() => inputValue.trim() && advance(inputValue.trim())}
         placeholder="Type anything to continue…"
-        mode={mode}
-        onModeChange={setMode}
       />
     </div>
   )

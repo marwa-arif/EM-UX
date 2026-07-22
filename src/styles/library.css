@@ -17,152 +17,75 @@
   min-height: 100%; overflow: hidden;
 }
 
-/* ─── Import banner — AI-native design ──────────────────────────── */
+/* ─── Import banner — slim single row ────────────────────────────── */
 .lib-import {
-  position: relative;
-  padding: 20px 24px;
+  padding: 8px 12px;
   border: 1px solid var(--shell-border);
   border-radius: 12px;
   margin-bottom: 8px;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0; gap: 24px;
-  overflow: hidden;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
   background: var(--card-bg);
 }
-
-/* Animated ambient blob layer */
-.lib-import-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-
-.lib-import-blob-a {
-  position: absolute; width: 320px; height: 240px;
-  top: -120px; left: -60px;
-  background: radial-gradient(ellipse, rgba(99,96,216,0.13) 0%, transparent 60%);
-  filter: blur(22px);
-  animation: lib-blob-a 9s ease-in-out infinite;
-}
-.lib-import-blob-b {
-  position: absolute; width: 260px; height: 200px;
-  top: -80px; left: 35%;
-  background: radial-gradient(ellipse, rgba(71,173,203,0.09) 0%, transparent 60%);
-  filter: blur(26px);
-  animation: lib-blob-b 11s ease-in-out infinite;
-}
-.lib-import-blob-c {
-  position: absolute; width: 200px; height: 160px;
-  bottom: -60px; right: 180px;
-  background: radial-gradient(ellipse, rgba(99,96,216,0.08) 0%, transparent 60%);
-  filter: blur(20px);
-  animation: lib-blob-c 13s ease-in-out infinite;
-}
-
-@keyframes lib-blob-a {
-  0%,100% { transform: translate(0, 0) scale(1); }
-  40%     { transform: translate(24px, 14px) scale(1.06); }
-  70%     { transform: translate(-12px, 18px) scale(0.96); }
-}
-@keyframes lib-blob-b {
-  0%,100% { transform: translate(0, 0) scale(1); }
-  35%     { transform: translate(-18px, 10px) scale(1.08); }
-  65%     { transform: translate(14px, -12px) scale(1.04); }
-}
-@keyframes lib-blob-c {
-  0%,100% { transform: translate(0, 0) scale(1); }
-  50%     { transform: translate(-10px, -14px) scale(1.10); }
-}
-
-/* Gradient shimmer line — top edge */
-.lib-import-shimmer {
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    var(--pai-indigo) 28%,
-    var(--pai-nav-teal) 62%,
-    transparent 100%);
-  animation: lib-shimmer 5s ease-in-out infinite;
-}
-@keyframes lib-shimmer {
-  0%   { opacity: 0;   transform: scaleX(0.4) translateX(-40%); }
-  25%  { opacity: 1; }
-  75%  { opacity: 1; }
-  100% { opacity: 0.2; transform: scaleX(1)   translateX(0); }
-}
-
-/* Content layer sits above the blobs */
-.lib-import-content {
-  position: relative; z-index: 1;
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; gap: 24px;
-}
-
-/* Left: icon + text */
-.lib-import-info { display: flex; align-items: center; gap: 16px; }
 
 .lib-import-icon {
-  width: 48px; height: 48px; border-radius: 14px;
-  background: linear-gradient(135deg, rgba(99,96,216,0.16) 0%, rgba(71,173,203,0.12) 100%);
-  border: 1px solid rgba(99,96,216,0.24);
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(99,96,216,0.10);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; color: var(--pai-indigo);
-  box-shadow: 0 0 0 5px rgba(99,96,216,0.07), 0 2px 10px rgba(99,96,216,0.16);
 }
 
-.lib-import-text  { display: flex; flex-direction: column; gap: 4px; }
+.lib-import-text { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
 .lib-import-title {
-  font-size: 13px; font-weight: 700;
-  color: var(--shell-text); letter-spacing: -0.02em; line-height: 1.2;
+  font-size: 12px; font-weight: 700;
+  color: var(--shell-text); letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
-.lib-import-desc  {
-  font-size: 12px; color: var(--shell-text-muted);
-  line-height: 1.45; max-width: 400px;
+.lib-import-desc {
+  font-size: 11px; color: var(--shell-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* Right: two action card buttons */
 .lib-import-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-.lib-import-btn {
-  height: 54px; padding: 0 16px;
-  background: var(--card-bg);
-  border: 1px solid var(--shell-border);
-  border-radius: 12px;
-  font-family: inherit; cursor: pointer;
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-  gap: 2px; min-width: 150px; text-align: left;
-  transition: border-color 200ms, box-shadow 200ms, transform 150ms, background 200ms;
-}
-.lib-import-btn:hover {
-  border-color: rgba(99,96,216,0.45);
-  box-shadow: 0 2px 14px rgba(99,96,216,0.10), 0 0 0 3px rgba(99,96,216,0.06);
-  transform: translateY(-1px);
-  background: rgba(99,96,216,0.02);
-}
-.lib-import-btn:active { transform: translateY(0); transition-duration: 80ms; }
-
-.lib-import-btn-row   { display: flex; align-items: center; gap: 8px; }
-.lib-import-btn-icon  { color: var(--pai-indigo); flex-shrink: 0; line-height: 0; }
-.lib-import-btn-label { font-size: 12px; font-weight: 600; color: var(--shell-text); }
-.lib-import-btn-sub   { font-size: 10px; color: var(--shell-text-muted); padding-left: 20px; line-height: 1.3; }
-
-/* Primary variant — Upload HTML */
-.lib-import-btn--primary {
-  background: var(--pai-indigo);
-  border-color: var(--pai-indigo);
-  box-shadow: 0 2px 10px rgba(99,96,216,0.30);
-}
-.lib-import-btn--primary .lib-import-btn-label { color: #fff; }
-.lib-import-btn--primary .lib-import-btn-sub   { color: rgba(255,255,255,0.58); }
-.lib-import-btn--primary .lib-import-btn-icon  { color: rgba(255,255,255,0.88); }
-.lib-import-btn--primary:hover {
-  background: var(--pai-indigo-hover);
-  border-color: var(--pai-indigo-hover);
-  box-shadow: 0 4px 20px rgba(99,96,216,0.42), 0 0 0 3px rgba(99,96,216,0.12);
-}
 
 .lib-file-input { display: none; }
 
-/* ─── Mock canvas preview ────────────────────────────────────────── */
-.mock-wrap  { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--shell-raised); }
-.mock-inner { position: absolute; top: 0; left: 0; width: 1100px; transform-origin: top left; }
-.mock-svg   { display: block; }
+/* ─── Sample screen preview — real DS components, not an SVG mockup ──
+   Background matches the real dashboard canvas's dotted grid (.dc-canvas-body
+   in dashboard.css) so this placeholder reads as the same canvas surface. */
+.mock-preview {
+  width: 100%; height: 100%; overflow-y: auto;
+  padding: 16px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 16px;
+  background-color: var(--card-bg);
+  background-image: radial-gradient(circle, var(--pai-border-strong) 1px, transparent 1px);
+  background-size: 24px 24px;
+  transform-origin: top center;
+  transition: transform 120ms;
+}
+
+.mock-chart-row { display: flex; gap: 16px; }
+
+.mock-chart-card {
+  flex: 1; min-width: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.mock-chart-hdr   { display: flex; flex-direction: column; gap: 4px; }
+.mock-chart-title { font-size: 13px; font-weight: 600; color: var(--shell-text); }
+.mock-chart-sub   { font-size: 11px; color: var(--shell-text-muted); }
+.mock-chart-body  { height: 200px; }
+
+/* ─── Horizontal bar chart — CSS-only per DS chart-hbar-css spec ──── */
+.css-hbar-chart { display: flex; flex-direction: column; gap: 8px; }
+.css-hbar-row   { display: flex; align-items: center; gap: 10px; }
+.css-hbar-label { width: 72px; font-size: 11px; color: var(--shell-text-muted); text-align: right; flex-shrink: 0; }
+.css-hbar       { height: 22px; border-radius: 0 3px 3px 0; background: var(--shell-accent, var(--pai-indigo)); transition: opacity 150ms; }
+.css-hbar-row:hover .css-hbar { opacity: 0.78; }
+.css-hbar-val   { font-size: 11px; color: var(--shell-text-muted); margin-left: 4px; flex-shrink: 0; }
 
 /* "Sample Preview" chip overlay */
 .dcp-canvas-sample-tag {
@@ -203,38 +126,9 @@
 /* ─── Content areas ──────────────────────────────────────────────── */
 .lib-content {
   flex: 1; overflow-y: auto;
-  padding: 16px; padding-top: 24px;
-  display: flex; flex-direction: column; gap: 24px;
-}
-.lib-content--saved {
-  flex: 1; overflow-y: auto;
   padding: 16px;
   display: flex; flex-direction: column; gap: 16px;
 }
-
-/* ─── Section headers ────────────────────────────────────────────── */
-.lib-section-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.lib-section-lbl { font-size: 13px; font-weight: 400; color: var(--shell-text); }
-
-/* ─── Get Started row ────────────────────────────────────────────── */
-.lib-start-row  { display: flex; gap: 12px; }
-
-.lib-start-card {
-  flex: 1 1 0; min-width: 0;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 16px 12px;
-  display: flex; flex-direction: column; gap: 8px;
-  transition: box-shadow 150ms;
-}
-.lib-start-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-.lib-start-card--hi   { border-color: var(--pai-indigo-light); }
-
-.lib-start-icon         { width: 36px; height: 36px; border-radius: 6px; background: #ECF8FD; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.lib-start-icon--report { background: rgba(217,139,29,0.10); }
-.lib-start-title        { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.3; }
-.lib-start-desc         { font-size: 11px; color: var(--shell-text-muted); line-height: 1.5; flex: 1; }
 
 /* ─── Quick cards ────────────────────────────────────────────────── */
 .lib-quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -269,7 +163,8 @@
 .lib-pills   { display: flex; align-items: center; gap: 8px; }
 
 .lib-pill {
-  padding: 4px 14px; border-radius: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 28px; padding: 0 14px; border-radius: 44px;
   font-size: 12px; font-weight: 400;
   cursor: pointer;
   border: 1px solid var(--ctrl-border);
@@ -285,10 +180,11 @@
   color: var(--card-bg);
 }
 
-/* Saved visibility pills — tighter padding, indigo outline style */
+/* Saved visibility pills — same size as .lib-pill, indigo outline style */
 .lib-vis-pill {
-  padding: 4px 12px; border-radius: 44px;
-  font-size: 11px; font-weight: 400;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 28px; padding: 0 14px; border-radius: 44px;
+  font-size: 12px; font-weight: 400;
   cursor: pointer;
   border: 1px solid var(--shell-border);
   background: transparent;
@@ -346,6 +242,42 @@
   color: var(--shell-text-muted); font-size: 13px;
   background: var(--card-bg);
   border-radius: 4px; border: 1px solid var(--card-border);
+}
+
+/* ─── Connect Design modal ────────────────────────────────────────── */
+.ds-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+}
+.ds-modal {
+  width: 100%; max-width: 440px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ds-modal-header {
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--shell-border);
+}
+.ds-modal-title { font-size: 13px; font-weight: 700; color: var(--shell-text); }
+.ds-modal-close {
+  width: 24px; height: 24px; border-radius: 6px;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; line-height: 1; color: var(--shell-text-muted);
+  transition: background 150ms;
+}
+.ds-modal-close:hover { background: var(--shell-raised); }
+.ds-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.ds-modal-desc { font-size: 12px; color: var(--shell-text-muted); line-height: 1.5; }
+.ds-modal-footer {
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  border-top: 1px solid var(--shell-border);
 }
 
 /* ─── Saved page — table wrapper ─────────────────────────────────── */

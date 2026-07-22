@@ -1,216 +1,154 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useWorkspace } from '../context/WorkspaceCtx.jsx'
+import { ChartRender } from '../components/ChartRender.jsx'
+import '../styles/dashboard.css'
 
 // ─────────────────────────────────────────────────────────────────────
-// MockDashboardPreview — SVG illustration of a PAI security dashboard.
-// Rendered at 1100 × 720; the wrapper scales it to fit the canvas.
-// Uses SVG presentation attributes (not CSS props) so no style={} needed.
+// SamplePreview — illustrative "what a configured screen looks like"
+// preview, built entirely from real DS components (ds-kpi-row, the
+// shared ChartRender line chart, the DS css-hbar pattern, and ds-table)
+// instead of a hand-drawn SVG mockup.
 // ─────────────────────────────────────────────────────────────────────
-function MockDashboardPreview() {
-  const wrapRef  = useRef(null)
-  const innerRef = useRef(null)
+const KPI_DATA = [
+  { label: 'Total Devices', value: '12,382', delta: '↑ 3.9% from last month', trend: 'up-good'   },
+  { label: 'Critical',      value: '953',    delta: '↑ 1.2% from last month', trend: 'up-bad'     },
+  { label: 'High',          value: '12,353', delta: '↓ 0.8% from last month', trend: 'down-good'  },
+  { label: 'Low',           value: '5,244',  delta: '↑ 5.1% from last month', trend: 'up-good'    },
+]
 
-  // Scale the 1100-wide SVG to fit the container width
-  useEffect(() => {
-    const wrap  = wrapRef.current
-    const inner = innerRef.current
-    if (!wrap || !inner) return
-    const update = () => {
-      const scale = wrap.offsetWidth / 1100
-      inner.style.transform = `scale(${scale})`
-    }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(wrap)
-    return () => ro.disconnect()
-  }, [])
+const SOURCE_BARS = [
+  { label: 'AWS',      pct: 100, count: 97 },
+  { label: 'Azure',    pct: 88,  count: 85 },
+  { label: 'Qualys',   pct: 58,  count: 56 },
+  { label: 'Tenable',  pct: 42,  count: 41 },
+  { label: 'Defender', pct: 28,  count: 27 },
+]
 
-  // ── Area chart paths (fits 464px-wide chart area) ────────────────
-  const linePoints = [
-    [0,110],[58,90],[116,104],[174,68],[232,82],[290,50],[348,64],[406,38],[464,54],
-  ]
-  const linePath = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ')
-  const areaPath = `${linePath} L464,140 L0,140 Z`
-  const line2Pts = [
-    [0,128],[58,118],[116,122],[174,110],[232,116],[290,104],[348,112],[406,106],[464,110],
-  ]
-  const line2Path = line2Pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ')
+const ASSET_ROWS = [
+  { name: 'DESKTOP-7A3F',  type: 'Server',      sev: 'Critical', sevClass: 'danger',  cves: 14, os: 'Win 11',  status: 'Active',     statusClass: 'danger'  },
+  { name: 'WS-CORP-022',   type: 'Workstation', sev: 'High',     sevClass: 'warning', cves: 7,  os: 'Win 10',  status: 'In Review',  statusClass: 'warning' },
+  { name: 'SRV-PROD-09',   type: 'Server',      sev: 'High',     sevClass: 'warning', cves: 11, os: 'RHEL 9',  status: 'In Review',  statusClass: 'warning' },
+  { name: 'LAPTOP-DEV-14', type: 'Workstation', sev: 'Medium',   sevClass: 'info',    cves: 3,  os: 'Win 11',  status: 'Resolved',   statusClass: 'success' },
+  { name: 'IOT-SENSOR-3',  type: 'IoT',         sev: 'Low',      sevClass: 'success', cves: 1,  os: 'Ubuntu',  status: 'Resolved',   statusClass: 'success' },
+]
 
-  // ── Bar chart data ────────────────────────────────────────────────
-  const bars = [
-    { label: 'AWS',      pct: 100, count: '97', color: '#6360D8' },
-    { label: 'Azure',    pct: 88,  count: '85', color: '#47ADCB' },
-    { label: 'Qualys',   pct: 58,  count: '56', color: '#6360D8' },
-    { label: 'Tenable',  pct: 42,  count: '41', color: '#47ADCB' },
-    { label: 'Defender', pct: 28,  count: '27', color: '#6360D8' },
-  ]
-
-  // ── Table rows ────────────────────────────────────────────────────
-  const rows = [
-    { name: 'DESKTOP-7A3F',  type: 'Server',      sev: 'Critical', sevColor: '#D12329', sevBg: '#FCE8E8' },
-    { name: 'WS-CORP-022',   type: 'Workstation',  sev: 'High',    sevColor: '#D98B1D', sevBg: '#FEF3C7' },
-    { name: 'SRV-PROD-09',   type: 'Server',      sev: 'High',    sevColor: '#D98B1D', sevBg: '#FEF3C7' },
-    { name: 'LAPTOP-DEV-14', type: 'Workstation',  sev: 'Medium',  sevColor: '#6360D8', sevBg: '#F0F0FC' },
-    { name: 'IOT-SENSOR-3',  type: 'IoT',         sev: 'Low',     sevColor: '#1A7549', sevBg: '#EFF7ED' },
-  ]
-
-  // Layout constants (no chrome / nav — full 1100×720 content view)
-  const PAD = 16          // side padding
-  const CW  = 1100 - PAD * 2   // 1068 usable width
-  const CARD_W = (CW - 30) / 4 // ≈ 259.5 → KPI card width
-
-  // KPI x positions
-  const kpiX = [PAD, PAD + CARD_W + 10, PAD + (CARD_W + 10) * 2, PAD + (CARD_W + 10) * 3]
-
-  // Chart card positions
-  const CHART_Y  = 118
-  const CHART_H  = 210
-  const CHART_LW = Math.floor((CW - 10) / 2)    // left chart width  ≈ 529
-  const CHART_RX = PAD + CHART_LW + 10           // right chart x
-
-  // Table position
-  const TBL_Y  = CHART_Y + CHART_H + 12          // 384
-  const TBL_H  = 720 - TBL_Y                     // fills to bottom
-  const TBL_RH = 34                               // header row height
-  const ROW_H  = Math.floor((TBL_H - TBL_RH) / rows.length) // row height
-
-  // Table column x positions (absolute)
-  const COL = [PAD + 16, PAD + 220, PAD + 390, PAD + 520, PAD + 640, PAD + 756, PAD + 880]
-
+function SamplePreview({ zoom = 1 }) {
   return (
-    <div className="mock-wrap" ref={wrapRef}>
-      <div className="mock-inner" ref={innerRef}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="1100" height="720"
-          viewBox="0 0 1100 720"
-          className="mock-svg"
-        >
-          {/* ── Page background ────────────────────────────── */}
-          <rect width="1100" height="720" fill="#F7F9FC" />
+    <div className="mock-preview" style={{ transform: `scale(${zoom})` }}>
 
-
-          {/* ── KPI cards ──────────────────────────────────── */}
-          {[
-            { label: 'Total Devices', value: '12,382', trend: '+3.9%', up: true,  accent: '#47ADCB', bg: '#EEF9FC' },
-            { label: 'Critical',      value: '953',    trend: '+1.2%', up: false, accent: '#D12329', bg: '#FCE8E8' },
-            { label: 'High',          value: '12,353', trend: '-0.8%', up: false, accent: '#D98B1D', bg: '#FEF3C7' },
-            { label: 'Low',           value: '5,244',  trend: '+5.1%', up: true,  accent: '#1A7549', bg: '#EFF7ED' },
-          ].map((card, i) => {
-            const cx = kpiX[i]
-            return (
-              <g key={card.label}>
-                <rect x={cx} y="12" width={CARD_W} height="90" rx="8" fill="#fff" stroke="#E6E6E6" strokeWidth="1" />
-                {/* Icon chip */}
-                <rect x={cx + 12} y="22" width="26" height="26" rx="7" fill={card.bg} />
-                <circle cx={cx + 25} cy="35" r="6.5" fill={card.accent} opacity="0.75" />
-                {/* Value */}
-                <text x={cx + 12} y="72" fontFamily="Inter,sans-serif" fontSize="24" fontWeight="700" fill="#101010">{card.value}</text>
-                {/* Label */}
-                <text x={cx + 12} y="88" fontFamily="Inter,sans-serif" fontSize="10" fill="#6E6E6E">{card.label}</text>
-                {/* Trend pill */}
-                <rect x={cx + CARD_W - 52} y="76" width="44" height="15" rx="7.5" fill={card.up ? '#EFF7ED' : '#FCE8E8'} />
-                <text x={cx + CARD_W - 30} y="87" fontFamily="Inter,sans-serif" fontSize="9" fontWeight="600" fill={card.up ? '#1A7549' : '#D12329'} textAnchor="middle">{card.trend}</text>
-              </g>
-            )
-          })}
-
-          {/* ── Chart cards ────────────────────────────────── */}
-
-          {/* LEFT — area chart */}
-          <rect x={PAD} y={CHART_Y} width={CHART_LW} height={CHART_H} rx="8" fill="#fff" stroke="#E6E6E6" strokeWidth="1" />
-          <text x={PAD + 14} y={CHART_Y + 20} fontFamily="Inter,sans-serif" fontSize="12" fontWeight="600" fill="#101010">Vulnerability Trend</text>
-          <text x={PAD + 14} y={CHART_Y + 35} fontFamily="Inter,sans-serif" fontSize="10" fill="#6E6E6E">Last 30 days · All severity</text>
-          {/* Legend */}
-          <rect x={PAD + 14} y={CHART_Y + 44} width="8" height="8" rx="2" fill="#6360D8" />
-          <text x={PAD + 26} y={CHART_Y + 52} fontFamily="Inter,sans-serif" fontSize="9" fill="#6E6E6E">Active</text>
-          <rect x={PAD + 76} y={CHART_Y + 44} width="8" height="8" rx="2" fill="#47ADCB" />
-          <text x={PAD + 88} y={CHART_Y + 52} fontFamily="Inter,sans-serif" fontSize="9" fill="#6E6E6E">Resolved</text>
-          {/* Y-axis labels */}
-          {['120','80','40'].map((v, i) => (
-            <text key={v} x={PAD + 6} y={CHART_Y + 78 + i * 40} fontFamily="Inter,sans-serif" fontSize="8" fill="#ADADAD" textAnchor="middle">{v}</text>
-          ))}
-          {/* Grid lines */}
-          {[0, 1, 2].map(i => (
-            <line key={i} x1={PAD + 28} y1={CHART_Y + 70 + i * 40} x2={PAD + CHART_LW - 10} y2={CHART_Y + 70 + i * 40} stroke="#F0F0F0" strokeWidth="1" />
-          ))}
-          {/* Chart area (translated) */}
-          <g transform={`translate(${PAD + 32}, ${CHART_Y + 60})`}>
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor="#6360D8" stopOpacity="0.20" />
-                <stop offset="100%" stopColor="#6360D8" stopOpacity="0.01" />
-              </linearGradient>
-            </defs>
-            <path d={areaPath} fill="url(#areaGrad)" />
-            <path d={linePath}  fill="none" stroke="#6360D8" strokeWidth="2"   strokeLinecap="round" strokeLinejoin="round" />
-            <path d={line2Path} fill="none" stroke="#47ADCB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 3" />
-          </g>
-          {/* X-axis labels */}
-          {['May 1','May 8','May 15','May 22','May 29'].map((l, i) => (
-            <text key={l} x={PAD + 32 + i * 116} y={CHART_Y + CHART_H - 8} fontFamily="Inter,sans-serif" fontSize="8" fill="#ADADAD">{l}</text>
-          ))}
-
-          {/* RIGHT — horizontal bar chart */}
-          <rect x={CHART_RX} y={CHART_Y} width={CHART_LW} height={CHART_H} rx="8" fill="#fff" stroke="#E6E6E6" strokeWidth="1" />
-          <text x={CHART_RX + 14} y={CHART_Y + 20} fontFamily="Inter,sans-serif" fontSize="12" fontWeight="600" fill="#101010">Data Sources</text>
-          <text x={CHART_RX + 14} y={CHART_Y + 35} fontFamily="Inter,sans-serif" fontSize="10" fill="#6E6E6E">Asset origin by connector</text>
-          <g transform={`translate(${CHART_RX + 14}, ${CHART_Y + 52})`}>
-            {bars.map((bar, i) => {
-              const barW = Math.round((bar.pct / 100) * 360)
-              const y = i * 28
-              return (
-                <g key={bar.label}>
-                  <text x="0" y={y + 13} fontFamily="Inter,sans-serif" fontSize="10" fill="#6E6E6E">{bar.label}</text>
-                  <rect x="68" y={y + 4} width="360" height="13" rx="3.5" fill="#F5F5F5" />
-                  <rect x="68" y={y + 4} width={barW} height="13" rx="3.5" fill={bar.color} opacity="0.72" />
-                  <text x={68 + barW + 7} y={y + 14} fontFamily="Inter,sans-serif" fontSize="9" fill="#9A9A9A">{bar.count}</text>
-                </g>
-              )
-            })}
-          </g>
-
-          {/* ── Data table ─────────────────────────────────── */}
-          <rect x={PAD} y={TBL_Y} width={CW} height={TBL_H} rx="8" fill="#fff" stroke="#E6E6E6" strokeWidth="1" />
-          {/* TH background */}
-          <rect x={PAD} y={TBL_Y} width={CW} height={TBL_RH} rx="8" fill="#F5F5F5" />
-          <rect x={PAD} y={TBL_Y + TBL_RH - 16} width={CW} height="16" fill="#F5F5F5" />
-          <rect x={PAD} y={TBL_Y + TBL_RH - 1} width={CW} height="1" fill="#E6E6E6" />
-          {/* TH labels */}
-          {['Asset Name','Type','Severity','CVEs','Last Seen','OS','Status'].map((h, i) => (
-            <text key={h} x={COL[i]} y={TBL_Y + 21} fontFamily="Inter,sans-serif" fontSize="9" fontWeight="700" fill="#9A9A9A" letterSpacing="0.04em">{h.toUpperCase()}</text>
-          ))}
-          {/* Rows */}
-          {rows.map((row, i) => {
-            const ry = TBL_Y + TBL_RH + i * ROW_H
-            const mid = ry + ROW_H / 2 + 4
-            const cveCount = [14, 7, 11, 3, 1][i]
-            return (
-              <g key={row.name}>
-                <rect x={PAD} y={ry} width={CW} height={ROW_H} fill={i % 2 === 0 ? '#fff' : '#FAFAFA'} />
-                <rect x={PAD} y={ry + ROW_H - 1} width={CW} height="1" fill="#F0F0F0" />
-                {/* Name */}
-                <rect x={COL[0]} y={mid - 8} width="13" height="13" rx="3" fill="#EBEBEB" />
-                <text x={COL[0] + 18} y={mid} fontFamily="Inter,sans-serif" fontSize="11" fontWeight="500" fill="#101010">{row.name}</text>
-                {/* Type */}
-                <text x={COL[1]} y={mid} fontFamily="Inter,sans-serif" fontSize="11" fill="#6E6E6E">{row.type}</text>
-                {/* Severity */}
-                <rect x={COL[2]} y={mid - 10} width="56" height="16" rx="4" fill={row.sevBg} />
-                <text x={COL[2] + 28} y={mid} fontFamily="Inter,sans-serif" fontSize="9.5" fontWeight="700" fill={row.sevColor} textAnchor="middle">{row.sev}</text>
-                {/* CVEs */}
-                <text x={COL[3]} y={mid} fontFamily="Inter,sans-serif" fontSize="11" fill="#282828">{cveCount}</text>
-                {/* Last Seen */}
-                <text x={COL[4]} y={mid} fontFamily="Inter,sans-serif" fontSize="11" fill="#6E6E6E">2h ago</text>
-                {/* OS */}
-                <text x={COL[5]} y={mid} fontFamily="Inter,sans-serif" fontSize="11" fill="#6E6E6E">{['Win 11','Win 10','RHEL 9','Win 11','Ubuntu'][i]}</text>
-                {/* Status */}
-                <circle cx={COL[6]} cy={mid - 3} r="4" fill={i === 0 ? '#D12329' : i < 3 ? '#D98B1D' : '#1A7549'} />
-                <text x={COL[6] + 12} y={mid} fontFamily="Inter,sans-serif" fontSize="10" fill="#6E6E6E">{i === 0 ? 'Active' : i < 3 ? 'In Review' : 'Resolved'}</text>
-              </g>
-            )
-          })}
-        </svg>
+      {/* ── KPI row ──────────────────────────────────────────── */}
+      <div className="ds-kpi-row">
+        {KPI_DATA.map(kpi => (
+          <div className="ds-kpi-card" key={kpi.label}>
+            <div>
+              <div className="ds-kpi-value">{kpi.value}</div>
+              <div className="ds-kpi-label">{kpi.label}</div>
+            </div>
+            <span className={`ds-kpi-delta ${kpi.trend}`}>{kpi.delta}</span>
+          </div>
+        ))}
       </div>
+
+      {/* ── Chart row ────────────────────────────────────────── */}
+      <div className="mock-chart-row">
+        <div className="mock-chart-card">
+          <div className="mock-chart-hdr">
+            <span className="mock-chart-title">Vulnerability Trend</span>
+            <span className="mock-chart-sub">Last 30 days · All severity</span>
+          </div>
+          <div className="mock-chart-body">
+            <ChartRender
+              chartId="line"
+              series={[
+                { label: 'Active',   color: 'var(--pai-indigo)', data: [42, 58, 68, 78, 86] },
+                { label: 'Resolved', color: 'var(--pai-teal)',   data: [25, 30, 35, 38, 40] },
+              ]}
+              xLabels={['May 1', 'May 8', 'May 15', 'May 22', 'May 29']}
+            />
+          </div>
+        </div>
+
+        <div className="mock-chart-card">
+          <div className="mock-chart-hdr">
+            <span className="mock-chart-title">Data Sources</span>
+            <span className="mock-chart-sub">Asset origin by connector</span>
+          </div>
+          <div className="css-hbar-chart">
+            {SOURCE_BARS.map(bar => (
+              <div className="css-hbar-row" key={bar.label}>
+                <span className="css-hbar-label">{bar.label}</span>
+                <div className="css-hbar" style={{ width: `${bar.pct}%` }} />
+                <span className="css-hbar-val">{bar.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Asset table ──────────────────────────────────────── */}
+      <div className="lib-tbl-wrap">
+       <div className="ds-table-wrap">
+        <table className="ds-table sz-sm">
+          <thead>
+            <tr>
+              {['Asset Name', 'Type', 'Severity', 'CVEs', 'Last Seen', 'OS', 'Status'].map(h => (
+                <th key={h} className="ds-th">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ASSET_ROWS.map(row => (
+              <tr key={row.name}>
+                <td className="ds-td">{row.name}</td>
+                <td className="ds-td">{row.type}</td>
+                <td className="ds-td"><span className={`ds-badge ${row.sevClass} dot`}>{row.sev}</span></td>
+                <td className="ds-td">{row.cves}</td>
+                <td className="ds-td">2h ago</td>
+                <td className="ds-td">{row.os}</td>
+                <td className="ds-td"><span className={`ds-badge ${row.statusClass} dot`}>{row.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+       </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Floating preview toolbar — same dc-float-toolbar markup as the real
+// dashboard canvas (DashboardCanvas.jsx's DashboardFloatingToolbar).
+// Undo/Redo stay disabled — this is a static sample preview with no
+// edit history yet — but zoom is real, scaling the preview content.
+// ─────────────────────────────────────────────────────────────────────
+function PreviewFloatingToolbar({ zoom, onZoomIn, onZoomOut, onZoomReset }) {
+  return (
+    <div className="dc-float-toolbar">
+      <button className="ds-icon-btn" title="Undo" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 14 4 9 9 4"/>
+          <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+        </svg>
+      </button>
+      <button className="ds-icon-btn" title="Redo" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 14 20 9 15 4"/>
+          <path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
+        </svg>
+      </button>
+      <div className="dc-float-toolbar-divider" />
+      <button className="ds-icon-btn" title="Zoom out" disabled={zoom <= 0.5} onClick={onZoomOut}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </button>
+      <button className="dc-float-toolbar-zoom-label" title="Reset zoom" onClick={onZoomReset}>{Math.round(zoom * 100)}%</button>
+      <button className="ds-icon-btn" title="Zoom in" disabled={zoom >= 1.5} onClick={onZoomIn}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </button>
     </div>
   )
 }
@@ -334,7 +272,7 @@ const SOURCE_OPTIONS = [
 ]
 
 // ── Main component ─────────────────────────────────────────────────
-function DataConfigPage() {
+function DataConfigPage({ onOpenCopilotBuilder }) {
   const { onNav, uploadedFile, uploadSource, setUploadedFile } = useWorkspace()
 
   const [screenName,   setScreenName]   = useState('')
@@ -345,6 +283,7 @@ function DataConfigPage() {
   const [isDetecting,  setIsDetecting]  = useState(false)
   const [detected,     setDetected]     = useState([])
   const [configOpen,   setConfigOpen]   = useState(false)
+  const [zoom,         setZoom]         = useState(1)
 
   // Create blob URL for iframe preview when an HTML file is uploaded
   useEffect(() => {
@@ -367,6 +306,10 @@ function DataConfigPage() {
   const handleBack = () => { setUploadedFile(null); onNav('workspace/library') }
   const handleReset = () => { setScreenName(''); setDescription('') }
   const handleSave = () => { setUploadedFile(null); onNav('workspace/library') }
+
+  const handleZoomIn    = () => setZoom(z => Math.min(1.5, Math.round((z + 0.1) * 10) / 10))
+  const handleZoomOut   = () => setZoom(z => Math.max(0.5, Math.round((z - 0.1) * 10) / 10))
+  const handleZoomReset = () => setZoom(1)
 
   const fileName = uploadedFile?.name ?? (uploadSource === 'design' ? 'Claude Code Design' : null)
 
@@ -397,6 +340,15 @@ function DataConfigPage() {
           </span>
 
           <div className="dcp-hdr-spacer" />
+
+          {/* Edit with Copilot — same entry point as DashboardCanvas */}
+          <button
+            className="ds-btn sz-md t-outline"
+            onClick={() => onOpenCopilotBuilder?.({ kind: 'dataConfig', screenName })}
+          >
+            <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+            Edit with Copilot
+          </button>
 
           {/* Configure pill — like "Dashboard Scope" */}
           <button
@@ -440,7 +392,7 @@ function DataConfigPage() {
                 sandbox="allow-scripts allow-same-origin"
               />
             ) : (
-              <MockDashboardPreview />
+              <SamplePreview zoom={zoom} />
             )}
 
             {!previewUrl && (
@@ -448,6 +400,15 @@ function DataConfigPage() {
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 Sample Preview
               </div>
+            )}
+
+            {!previewUrl && (
+              <PreviewFloatingToolbar
+                zoom={zoom}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onZoomReset={handleZoomReset}
+              />
             )}
 
             {fileName && (

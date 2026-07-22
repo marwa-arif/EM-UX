@@ -42,7 +42,7 @@
 .csv-table .ds-th,
 .csv-table .ds-td { white-space: normal; word-break: break-word; }
 
-.csv-right { text-align: right; }
+.csv-table .csv-right { text-align: center; }
 
 .csv-num--critical { color: var(--pai-crit-fg); font-weight: 600; }
 .csv-num--high      { color: var(--pai-high-fg); font-weight: 600; }
@@ -80,3 +80,7 @@
 .csv-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .csv-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--shell-text-2); }
 .csv-chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--csv-dot); }
+.csv-chart-legend-line {
+  width: 16px; height: 0; flex-shrink: 0;
+  border-top: 2px dotted var(--shell-accent);
+}

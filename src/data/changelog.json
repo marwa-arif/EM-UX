@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.11.0",
+    "version": "0.11.5",
     "date": "2026-07-22",
     "changes": {
       "Added": [
@@ -20,6 +20,70 @@
         "Trend Explore chart Y-axis label no longer overlaps the tick values.",
         "Attack Surface bubble hover \"Explore\" button no longer gets clipped by the page's scroll boundary."
       ]
+    }
+  },
+  {
+    "version": "0.11.4",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "UX 3.0: Exposure Overview now shows the \"Coming Soon\" placeholder like every other unbuilt page, instead of its built-out content — Client Servers remains the only page with real content, and no longer needs an \"Explore in Current UX\" button since it has no classic-shell equivalent to link to.",
+        "UX 3.0: Client Servers is now the default page on entry (was Exposure Overview).",
+        "UX 3.0: the URL now tracks the active sub-page (`/ux3/exposure/findings`, `/ux3/client/servers`, etc.) instead of staying at `/ux3` regardless of navigation, and deep-linking directly to any `/ux3/<page>` URL now lands on that page."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.11.3",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [
+        "UX 3.0: \"Explore in Current UX\" button on every unbuilt placeholder page, linking to its classic-shell equivalent (falls back safely when no classic page exists yet)."
+      ],
+      "Changed": [],
+      "Fixed": [
+        "Fixed `ReferenceError: Cannot access 'PAGE_META' before initialization` that broke both \"Back to Classic Dashboard\" and the new \"Explore in Current UX\" button — `PAGE_META` was declared inside `App()` after several early `return`s (workspace/ux3/admin routes), so routes reaching those returns never initialized it before `handleNav` closures referenced it. Moved to module scope."
+      ]
+    }
+  },
+  {
+    "version": "0.11.2",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "UX 3.0 Client Servers trend charts: switched to a stacked bar + line combo chart, with a per-period \"Average\" (mean of Critical/High/Medium) plotted as a dotted line against its own right-side y-axis.",
+        "Client Servers demo data (`serversData.js`) is now fully synthetic — fictional HOD names, hostnames, and IP ranges, no longer sourced from a real client report."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.11.1",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Default landing route switched from Exposure Overview to Navigator."
+      ],
+      "Fixed": [
+        "UX 3.0 Client Servers table: numeric column headers/values now center-align consistently instead of drifting to right/left across header vs body cells."
+      ]
+    }
+  },
+  {
+    "version": "0.11.0",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [
+        "Password gate (authGate.js, PasswordGate.jsx) for app-level access control."
+      ],
+      "Changed": [
+        "Follow-on Navigator/Workspace/Library refinements from the Build/Ask/Research unification work."
+      ],
+      "Fixed": []
     }
   },
   {
