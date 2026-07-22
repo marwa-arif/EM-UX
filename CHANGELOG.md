@@ -26,6 +26,13 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.11.2] — 2026-07-22
+### Changed
+- UX 3.0 Client Servers trend charts: switched to a stacked bar + line combo chart, with a per-period "Average" (mean of Critical/High/Medium) plotted as a dotted line against its own right-side y-axis.
+- Client Servers demo data (`serversData.js`) is now fully synthetic — fictional HOD names, hostnames, and IP ranges, no longer sourced from a real client report.
+
+---
+
 ## [0.11.1] — 2026-07-22
 ### Changed
 - Default landing route switched from Exposure Overview to Navigator.

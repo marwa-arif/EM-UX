@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import '../../styles/client-servers.css'
 import * as D from './serversData'
 
@@ -56,16 +56,24 @@ function ChartLegend() {
       <span className="csv-chart-legend-item"><span className="csv-chart-legend-dot" style={{ '--csv-dot': SEV_COLOR.Critical }} />Critical</span>
       <span className="csv-chart-legend-item"><span className="csv-chart-legend-dot" style={{ '--csv-dot': SEV_COLOR.High }} />High</span>
       <span className="csv-chart-legend-item"><span className="csv-chart-legend-dot" style={{ '--csv-dot': SEV_COLOR.Medium }} />Medium</span>
+      <span className="csv-chart-legend-item"><span className="csv-chart-legend-line" />Average</span>
     </div>
   )
 }
 
-// ── Stacked severity trend chart (Critical/High/Medium over time) ──
+// ── Stacked severity trend chart (Critical/High/Medium over time),
+// plus a dashed average-total line read off its own right-side axis ──
 function TrendChart({ data, height = 260 }) {
+  const dataWithAverage = data.map(r => ({
+    ...r,
+    Average: ((r.Critical || 0) + (r.High || 0) + (r.Medium || 0)) / 3,
+  }))
+  const fmtTick = v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
+
   return (
     <div className="csv-chart-wrap">
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }} barSize={26}>
+        <ComposedChart data={dataWithAverage} margin={{ top: 8, right: 16, bottom: 8, left: 0 }} barSize={26}>
           <CartesianGrid vertical={false} stroke="var(--shell-border)" />
           <XAxis
             dataKey="name"
@@ -74,15 +82,36 @@ function TrendChart({ data, height = 260 }) {
             interval={0} angle={0} textAnchor="middle" dy={8}
           />
           <YAxis
+            yAxisId="left"
             tick={{ fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}
             axisLine={false} tickLine={false}
-            tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
+            tickFormatter={fmtTick}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fontSize: 11, fill: 'var(--shell-accent)', fontFamily: 'Inter,system-ui' }}
+            axisLine={false} tickLine={false}
+            tickFormatter={fmtTick}
           />
           <Tooltip {...TOOLTIP_STYLE} formatter={v => Number(v).toLocaleString()} />
-          <Bar dataKey="Critical" name="Critical" stackId="sev" fill={SEV_COLOR.Critical} isAnimationActive={false} />
-          <Bar dataKey="High" name="High" stackId="sev" fill={SEV_COLOR.High} isAnimationActive={false} />
-          <Bar dataKey="Medium" name="Medium" stackId="sev" fill={SEV_COLOR.Medium} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-        </BarChart>
+          <Bar yAxisId="left" dataKey="Critical" name="Critical" stackId="sev" fill={SEV_COLOR.Critical} isAnimationActive={false} />
+          <Bar yAxisId="left" dataKey="High" name="High" stackId="sev" fill={SEV_COLOR.High} isAnimationActive={false} />
+          <Bar yAxisId="left" dataKey="Medium" name="Medium" stackId="sev" fill={SEV_COLOR.Medium} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="Average"
+            name="Average"
+            stroke="var(--shell-accent)"
+            strokeWidth={2}
+            strokeDasharray="1 4"
+            strokeLinecap="round"
+            dot={{ r: 3, fill: 'var(--shell-accent)', strokeWidth: 0 }}
+            activeDot={{ r: 4 }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
       <ChartLegend />
     </div>
@@ -232,14 +261,14 @@ function ServerCategorySection() {
               <TrendChart data={D.WIN_TREND.rows} height={280} />
             </div>
             <div className="csv-grid-2">
-              <TableBlock title="By Head Of Department" table={D.WIN_HOD_TABLE} scroll />
+              <TableBlock title="By Head Of Department" table={D.WIN_HOD_TABLE} />
               <AgeingHeatmap title="By Ageing" table={D.WIN_AGEING_TABLE} />
             </div>
             <div className="csv-grid-2">
-              <TableBlock title="Top 10 Critical CVE" table={D.WIN_TOP_CRITICAL_CVE} scroll />
-              <TableBlock title="Top 10 High CVE" table={D.WIN_TOP_HIGH_CVE} scroll />
+              <TableBlock title="Top 10 Critical CVE" table={D.WIN_TOP_CRITICAL_CVE} />
+              <TableBlock title="Top 10 High CVE" table={D.WIN_TOP_HIGH_CVE} />
             </div>
-            <TableBlock title="Top 20 Affected Hosts (Windows)" table={D.WIN_TOP_HOSTS} scroll />
+            <TableBlock title="Top 20 Affected Hosts (Windows)" table={D.WIN_TOP_HOSTS} />
           </>
         )}
 
@@ -250,12 +279,12 @@ function ServerCategorySection() {
               <TrendChart data={D.LINUX_TREND.rows} height={280} />
             </div>
             <div className="csv-grid-2">
-              <TableBlock title="By Asset Owner" table={D.LINUX_ASSET_OWNER_TABLE} scroll />
+              <TableBlock title="By Asset Owner" table={D.LINUX_ASSET_OWNER_TABLE} />
               <AgeingHeatmap title="By Ageing" table={D.LINUX_AGEING_TABLE} />
             </div>
             <div className="csv-grid-2">
-              <TableBlock title="Top 10 Critical CVE (Linux)" table={D.LINUX_TOP_CRITICAL_CVE} scroll />
-              <TableBlock title="Top 20 Affected Hosts (Linux)" table={D.LINUX_TOP_HOSTS} scroll />
+              <TableBlock title="Top 10 Critical CVE (Linux)" table={D.LINUX_TOP_CRITICAL_CVE} />
+              <TableBlock title="Top 20 Affected Hosts (Linux)" table={D.LINUX_TOP_HOSTS} />
             </div>
           </>
         )}

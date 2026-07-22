@@ -1,6 +1,7 @@
-// Data sourced from "Servers-Summary-Jun'26.pptx" (client report, June 2026 snapshot).
+// Synthetic demo data — illustrative server/vulnerability figures for UI development.
+// Not tied to any real client engagement, asset, or individual.
 
-// ── Slide 8 — Open Vulnerabilities Trend (All Servers) ─────────────
+// ── Open Vulnerabilities Trend (All Servers) ────────────────────────
 export const ALL_SERVERS_TREND = {
   categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
   rows: [
@@ -13,7 +14,7 @@ export const ALL_SERVERS_TREND = {
   ],
 };
 
-// ── Slide 1 — Crown Jewels Servers ──────────────────────────────────
+// ── Crown Jewels Servers ─────────────────────────────────────────────
 export const CJ_HEADER = { windows: 473, linux: 29, asOf: '6 June 2026' };
 
 export const CJ_BASELINE_TABLE = {
@@ -28,12 +29,12 @@ export const CJ_BASELINE_TABLE = {
     { key: 'total', label: 'Total', align: 'right' },
   ],
   rows: [
-    { hod: 'GAURAV DEMIWAL', sysType: 'Domain Controller, Voice Servers', assetCount: 415, critical: 138, high: 1742, medium: 1263, total: 3143 },
-    { hod: 'RAJESH JHA', sysType: 'Application, Database', assetCount: 151, critical: 116, high: 963, medium: 967, total: 2046 },
-    { hod: 'VIRAL GALA', sysType: 'PIM, Cyber Ark', assetCount: 11, critical: 10, high: 51, medium: 34, total: 95 },
-    { hod: 'SEEMA GOPALANI', sysType: 'Application', assetCount: 1, critical: 0, high: 74, medium: 11, total: 85 },
-    { hod: 'IOANNIS', sysType: 'Domain Controller', assetCount: 8, critical: 0, high: 24, medium: 13, total: 37 },
-    { hod: 'RAJESH PUNJABI', sysType: 'Application', assetCount: 5, critical: 0, high: 8, medium: 6, total: 14 },
+    { hod: 'J. MERCER', sysType: 'Domain Controller, Voice Servers', assetCount: 415, critical: 138, high: 1742, medium: 1263, total: 3143 },
+    { hod: 'A. HARRISON', sysType: 'Application, Database', assetCount: 151, critical: 116, high: 963, medium: 967, total: 2046 },
+    { hod: 'D. WHITFIELD', sysType: 'PIM, Vault', assetCount: 11, critical: 10, high: 51, medium: 34, total: 95 },
+    { hod: 'P. ASHFORD', sysType: 'Application', assetCount: 1, critical: 0, high: 74, medium: 11, total: 85 },
+    { hod: 'T. WHITMORE', sysType: 'Domain Controller', assetCount: 8, critical: 0, high: 24, medium: 13, total: 37 },
+    { hod: 'S. PEMBERTON', sysType: 'Application', assetCount: 5, critical: 0, high: 8, medium: 6, total: 14 },
     { hod: 'Grand Total', sysType: '', assetCount: 591, critical: 264, high: 2862, medium: 2294, total: 5420, _total: true },
   ],
 };
@@ -42,11 +43,11 @@ export const CJ_CURRENT_TABLE = {
   title: 'Current Status (March–June Vulnerabilities)',
   columns: CJ_BASELINE_TABLE.columns,
   rows: [
-    { hod: 'GAURAV DEMIWAL', sysType: 'Domain controller, Voice servers', assetCount: 346, critical: 476, high: 18141, medium: 5377, total: 23994 },
-    { hod: 'RAJESH JHA', sysType: 'Application, Database', assetCount: 142, critical: 141, high: 4079, medium: 1330, total: 5550 },
-    { hod: 'IOANNIS', sysType: 'APAC — Domain controller', assetCount: 6, critical: 40, high: 860, medium: 430, total: 1330 },
-    { hod: 'BALVINDER RANA', sysType: 'Application', assetCount: 2, critical: 8, high: 176, medium: 107, total: 291 },
-    { hod: 'VIRAL GALA', sysType: 'PIM CyberArk', assetCount: 6, critical: 10, high: 201, medium: 49, total: 260 },
+    { hod: 'J. MERCER', sysType: 'Domain controller, Voice servers', assetCount: 346, critical: 476, high: 18141, medium: 5377, total: 23994 },
+    { hod: 'A. HARRISON', sysType: 'Application, Database', assetCount: 142, critical: 141, high: 4079, medium: 1330, total: 5550 },
+    { hod: 'T. WHITMORE', sysType: 'APAC — Domain controller', assetCount: 6, critical: 40, high: 860, medium: 430, total: 1330 },
+    { hod: 'K. SHELDON', sysType: 'Application', assetCount: 2, critical: 8, high: 176, medium: 107, total: 291 },
+    { hod: 'D. WHITFIELD', sysType: 'PIM Vault', assetCount: 6, critical: 10, high: 201, medium: 49, total: 260 },
     { hod: 'Grand Total', sysType: '', assetCount: 502, critical: 675, high: 23457, medium: 7293, total: 31425, _total: true },
   ],
 };
@@ -69,13 +70,13 @@ export const CJ_WEEKLY_TREND = {
 };
 
 export const CJ_NOTES = [
-  'Digitization team has fixed EOL MS Office for 8 of 12 servers. 4 servers are in progress.',
-  'Voice team — EOL Genesys dependency, timeline awaited (~2k).',
+  'Digitization team has fixed EOL Office suite for 8 of 12 servers. 4 servers are in progress.',
+  'Voice team — EOL telephony dependency, timeline awaited (~2k).',
   'CJ status 29th Apr — 85K open vulnerabilities reduced to 31.5K currently.',
-  'Servers — 591, no Critical/High/Medium vuln or TSE error — 57, Decommissioned — 32.',
+  'Servers — 591, no Critical/High/Medium vuln or scan error — 57, Decommissioned — 32.',
 ];
 
-// ── Slide 2 — Server Inventory and Vulnerabilities Details ─────────
+// ── Server Inventory and Vulnerabilities Details ────────────────────
 export const INVENTORY_TABLE = {
   columns: [
     { key: 'serverType', label: 'Server Type' },
@@ -97,7 +98,7 @@ export const INVENTORY_TABLE = {
 export const INVENTORY_NOTES = {
   windows: [
     'Continuously sharing non-reachability reminders with stakeholders.',
-    'Servers with no Critical/High/Medium vulnerability, a scanning issue, or a corrupted Tanium agent — 128.',
+    'Servers with no Critical/High/Medium vulnerability, a scanning issue, or a corrupted agent — 128.',
   ],
   linux: [
     'Continuously sharing non-reachability reminders with stakeholders and rectifying the Linux inventory.',
@@ -105,7 +106,7 @@ export const INVENTORY_NOTES = {
   ],
 };
 
-// ── Slide 3 — Windows Servers ───────────────────────────────────────
+// ── Windows Servers ───────────────────────────────────────────────
 export const WIN_AGEING_TABLE = {
   columns: [
     { key: 'ageing', label: 'Ageing' },
@@ -131,14 +132,14 @@ export const WIN_HOD_TABLE = {
     { key: 'total', label: 'Total', align: 'right' },
   ],
   rows: [
-    { hod: 'GAURAV DEMIWAL', assetCount: 757, critical: 2070, high: 65566, medium: 22838, total: 90474 },
-    { hod: 'RAJESH JHA', assetCount: 138, critical: 368, high: 8645, medium: 3731, total: 12744 },
+    { hod: 'J. MERCER', assetCount: 757, critical: 2070, high: 65566, medium: 22838, total: 90474 },
+    { hod: 'A. HARRISON', assetCount: 138, critical: 368, high: 8645, medium: 3731, total: 12744 },
     { hod: 'TO-BE-IDENTIFIED', assetCount: 4, critical: 84, high: 2763, medium: 1202, total: 4049 },
-    { hod: 'LAURENCE RAJ', assetCount: 2, critical: 70, high: 2648, medium: 976, total: 3694 },
-    { hod: 'MOHAMMAD AFZAL KHAN', assetCount: 29, critical: 50, high: 2210, medium: 831, total: 3091 },
-    { hod: 'IOANNIS', assetCount: 9, critical: 58, high: 1379, medium: 643, total: 2080 },
-    { hod: 'VIRAL GALA', assetCount: 11, critical: 54, high: 591, medium: 249, total: 894 },
-    { hod: 'BALVINDER RANA', assetCount: 3, critical: 24, high: 565, medium: 235, total: 824 },
+    { hod: 'M. FENWICK', assetCount: 2, critical: 70, high: 2648, medium: 976, total: 3694 },
+    { hod: 'R. COLLIER', assetCount: 29, critical: 50, high: 2210, medium: 831, total: 3091 },
+    { hod: 'T. WHITMORE', assetCount: 9, critical: 58, high: 1379, medium: 643, total: 2080 },
+    { hod: 'D. WHITFIELD', assetCount: 11, critical: 54, high: 591, medium: 249, total: 894 },
+    { hod: 'K. SHELDON', assetCount: 3, critical: 24, high: 565, medium: 235, total: 824 },
     { hod: 'Total', assetCount: 953, critical: 2778, high: 84367, medium: 30705, total: 117850, _total: true },
   ],
 };
@@ -154,9 +155,9 @@ export const WIN_TREND = {
   ],
 };
 
-export const WIN_TOP_CONTRIB_NOTE = "Top finding’s contributors are browsers, .NET related.";
+export const WIN_TOP_CONTRIB_NOTE = "Top finding's contributors are browsers, .NET related.";
 
-// ── Slide 4 — Top Vulnerable Hosts & CVE-wise (Windows) ─────────────
+// ── Top Vulnerable Hosts & CVE-wise (Windows) ────────────────────────
 export const WIN_TOP_CRITICAL_CVE = {
   columns: [
     { key: 'cve', label: 'CVE-ID' },
@@ -200,30 +201,30 @@ export const WIN_TOP_HOSTS = {
     { key: 'high', label: 'High', align: 'right', sev: 'high' },
   ],
   rows: [
-    { asset: 'TPTAFE19-0-2', critical: 149, high: 637 },
-    { asset: 'JPLICSSCCM02', critical: 124, high: 2456 },
-    { asset: 'TPGBSKOLDC01', critical: 90, high: 1120 },
-    { asset: 'MOH-JAMF-02', critical: 69, high: 2138 },
-    { asset: 'EJtestBot1', critical: 61, high: 2119 },
-    { asset: 'DC1CTXTLSMI', critical: 55, high: 573 },
-    { asset: 'MDTAMBDBU02', critical: 50, high: 1749 },
-    { asset: 'TPAZCTXNPS02', critical: 37, high: 1191 },
-    { asset: 'TPAZCTXNPS01', critical: 37, high: 1130 },
-    { asset: 'TPGBSKOLDC02', critical: 32, high: 1318 },
-    { asset: 'SBIVADCDB02', critical: 31, high: 1316 },
-    { asset: 'SBIVADCDB01', critical: 31, high: 1315 },
-    { asset: 'WIN-2LCSGK35BB1', critical: 22, high: 684 },
-    { asset: 'WIN-1UCHBISA6EM', critical: 22, high: 684 },
-    { asset: 'WIN-B8U125RHTS0', critical: 20, high: 704 },
-    { asset: 'WIN-RL12CFEA9KJ', critical: 20, high: 691 },
-    { asset: 'SBIVADINAP1', critical: 19, high: 968 },
-    { asset: 'DC1CTXCORPHSMI', critical: 19, high: 747 },
-    { asset: 'IGSTUFTP02', critical: 19, high: 598 },
-    { asset: 'AZTPSCALE01', critical: 12, high: 737 },
+    { asset: 'FILE-SRV-01', critical: 149, high: 637 },
+    { asset: 'SCCM-SRV-01', critical: 124, high: 2456 },
+    { asset: 'DC-SRV-01', critical: 90, high: 1120 },
+    { asset: 'MDM-SRV-01', critical: 69, high: 2138 },
+    { asset: 'TEST-SRV-01', critical: 61, high: 2119 },
+    { asset: 'CTX-TLS-SRV-01', critical: 55, high: 573 },
+    { asset: 'DB-SRV-01', critical: 50, high: 1749 },
+    { asset: 'CTX-NPS-SRV-02', critical: 37, high: 1191 },
+    { asset: 'CTX-NPS-SRV-01', critical: 37, high: 1130 },
+    { asset: 'DC-SRV-02', critical: 32, high: 1318 },
+    { asset: 'DB-SRV-02', critical: 31, high: 1316 },
+    { asset: 'DB-SRV-03', critical: 31, high: 1315 },
+    { asset: 'WEB-SRV-13', critical: 22, high: 684 },
+    { asset: 'WEB-SRV-14', critical: 22, high: 684 },
+    { asset: 'WEB-SRV-15', critical: 20, high: 704 },
+    { asset: 'WEB-SRV-16', critical: 20, high: 691 },
+    { asset: 'APP-SRV-01', critical: 19, high: 968 },
+    { asset: 'CTX-CORP-SRV-01', critical: 19, high: 747 },
+    { asset: 'FTP-SRV-01', critical: 19, high: 598 },
+    { asset: 'SCALE-SRV-01', critical: 12, high: 737 },
   ],
 };
 
-// ── Slide 5 — Linux Servers ──────────────────────────────────────────
+// ── Linux Servers ─────────────────────────────────────────────────
 export const LINUX_AGEING_TABLE = {
   columns: WIN_AGEING_TABLE.columns,
   rows: [
@@ -244,9 +245,9 @@ export const LINUX_ASSET_OWNER_TABLE = {
     { key: 'total', label: 'Total', align: 'right' },
   ],
   rows: [
-    { owner: 'RAJESH JHA', serverCount: 105, critical: 321, high: 2346, medium: 1570, total: 4237 },
-    { owner: 'VIRAL GALA', serverCount: 96, critical: 173, high: 2830, medium: 1847, total: 4850 },
-    { owner: 'GAURAV DEMIWAL', serverCount: 68, critical: 118, high: 2859, medium: 2700, total: 5677 },
+    { owner: 'A. HARRISON', serverCount: 105, critical: 321, high: 2346, medium: 1570, total: 4237 },
+    { owner: 'D. WHITFIELD', serverCount: 96, critical: 173, high: 2830, medium: 1847, total: 4850 },
+    { owner: 'J. MERCER', serverCount: 68, critical: 118, high: 2859, medium: 2700, total: 5677 },
     { owner: 'Total', serverCount: 269, critical: 612, high: 8035, medium: 6117, total: 14764, _total: true },
   ],
 };
@@ -269,7 +270,7 @@ export const LINUX_EOL_NOTES = [
   'Obsolete version of HP-UX',
 ];
 
-// ── Slide 6 — Top Vulnerable Hosts & VA Title-wise (Linux) ───────────
+// ── Top Vulnerable Hosts & VA Title-wise (Linux) ─────────────────────
 export const LINUX_TOP_CRITICAL_CVE = {
   columns: [
     { key: 'checkId', label: 'Check ID' },
@@ -298,30 +299,30 @@ export const LINUX_TOP_HOSTS = {
     { key: 'high', label: 'High', align: 'right', sev: 'high' },
   ],
   rows: [
-    { ip: '10.82.12.147', process: 'SBI', critical: 18, high: 750 },
-    { ip: '10.77.2.5', process: 'SIEM / Cribl', critical: 40, high: 631 },
-    { ip: '10.48.12.238', process: 'SBI', critical: 6, high: 250 },
-    { ip: '10.48.12.239', process: 'SBI', critical: 6, high: 250 },
-    { ip: '10.48.12.247', process: 'SBI', critical: 6, high: 250 },
-    { ip: '10.48.12.248', process: 'SBI', critical: 6, high: 250 },
-    { ip: '10.82.12.77', process: 'SBI', critical: 49, high: 189 },
-    { ip: '10.82.12.154', process: 'SBI', critical: 8, high: 202 },
-    { ip: '10.48.70.25', process: 'SBI', critical: 2, high: 185 },
-    { ip: '10.82.12.88', process: 'SBI', critical: 37, high: 131 },
-    { ip: '10.200.147.180', process: 'SIEM / Cribl', critical: 3, high: 161 },
-    { ip: '10.141.150.134', process: 'GBS Process', critical: 1, high: 156 },
-    { ip: '10.82.12.78', process: 'SBI', critical: 44, high: 97 },
-    { ip: '172.29.34.16', process: 'EBIMS', critical: 42, high: 95 },
-    { ip: '10.82.12.86', process: 'SBI', critical: 22, high: 97 },
-    { ip: '10.82.12.87', process: 'SBI', critical: 22, high: 97 },
-    { ip: '10.48.70.11', process: 'SBI', critical: 2, high: 108 },
-    { ip: '10.48.70.17', process: 'SBI', critical: 2, high: 108 },
-    { ip: '10.48.70.13', process: 'SBI', critical: 2, high: 106 },
-    { ip: '10.48.70.15', process: 'SBI', critical: 2, high: 106 },
+    { ip: '10.20.40.10', process: 'Core-App', critical: 18, high: 750 },
+    { ip: '10.30.5.5', process: 'SIEM / Cribl', critical: 40, high: 631 },
+    { ip: '10.40.15.30', process: 'Core-App', critical: 6, high: 250 },
+    { ip: '10.40.15.31', process: 'Core-App', critical: 6, high: 250 },
+    { ip: '10.40.15.39', process: 'Core-App', critical: 6, high: 250 },
+    { ip: '10.40.15.40', process: 'Core-App', critical: 6, high: 250 },
+    { ip: '10.20.40.55', process: 'Core-App', critical: 49, high: 189 },
+    { ip: '10.20.40.90', process: 'Core-App', critical: 8, high: 202 },
+    { ip: '10.40.70.12', process: 'Core-App', critical: 2, high: 185 },
+    { ip: '10.20.40.66', process: 'Core-App', critical: 37, high: 131 },
+    { ip: '10.50.100.30', process: 'SIEM / Cribl', critical: 3, high: 161 },
+    { ip: '10.60.90.44', process: 'Shared Services', critical: 1, high: 156 },
+    { ip: '10.20.40.67', process: 'Core-App', critical: 44, high: 97 },
+    { ip: '172.31.34.16', process: 'Billing', critical: 42, high: 95 },
+    { ip: '10.20.40.75', process: 'Core-App', critical: 22, high: 97 },
+    { ip: '10.20.40.76', process: 'Core-App', critical: 22, high: 97 },
+    { ip: '10.40.70.20', process: 'Core-App', critical: 2, high: 108 },
+    { ip: '10.40.70.26', process: 'Core-App', critical: 2, high: 108 },
+    { ip: '10.40.70.22', process: 'Core-App', critical: 2, high: 106 },
+    { ip: '10.40.70.24', process: 'Core-App', critical: 2, high: 106 },
   ],
 };
 
-// ── Slide 7 — Azure Servers ──────────────────────────────────────────
+// ── Cloud Servers ─────────────────────────────────────────────────
 export const AZURE_WIN_HOD_TABLE = {
   columns: [
     { key: 'hod', label: 'Head Of Department' },
@@ -331,8 +332,8 @@ export const AZURE_WIN_HOD_TABLE = {
     { key: 'total', label: 'Total', align: 'right' },
   ],
   rows: [
-    { hod: 'GAURAV DEMIWAL', critical: 265, high: 15901, medium: 3352, total: 19518 },
-    { hod: 'RAJESH JHA', critical: 36, high: 1047, medium: 307, total: 1390 },
+    { hod: 'J. MERCER', critical: 265, high: 15901, medium: 3352, total: 19518 },
+    { hod: 'A. HARRISON', critical: 36, high: 1047, medium: 307, total: 1390 },
     { hod: 'Grand Total', critical: 301, high: 16948, medium: 3659, total: 20908, _total: true },
   ],
 };
@@ -340,9 +341,9 @@ export const AZURE_WIN_HOD_TABLE = {
 export const AZURE_LINUX_HOD_TABLE = {
   columns: AZURE_WIN_HOD_TABLE.columns,
   rows: [
-    { hod: 'VIRAL GALA', critical: 2, high: 11, medium: 3, total: 16 },
-    { hod: 'RAJESH JHA', critical: 0, high: 9, medium: 0, total: 9 },
-    { hod: 'GAURAV DEMIWAL', critical: 0, high: 1, medium: 0, total: 1 },
+    { hod: 'D. WHITFIELD', critical: 2, high: 11, medium: 3, total: 16 },
+    { hod: 'A. HARRISON', critical: 0, high: 9, medium: 0, total: 9 },
+    { hod: 'J. MERCER', critical: 0, high: 1, medium: 0, total: 1 },
     { hod: 'Grand Total', critical: 2, high: 21, medium: 3, total: 26, _total: true },
   ],
 };
@@ -355,16 +356,16 @@ export const AZURE_TOP_WIN_HOSTS = {
     { key: 'high', label: 'High', align: 'right', sev: 'high' },
   ],
   rows: [
-    { host: 'TPAZCTXNPS02', role: 'Citrix', critical: 37, high: 1191 },
-    { host: 'TPAZCTXNPS01', role: 'Citrix', critical: 37, high: 1130 },
-    { host: 'AZTPSCALE01', role: '—', critical: 12, high: 737 },
-    { host: 'TPAZNAVDB01', role: 'Database', critical: 13, high: 435 },
-    { host: 'TPAZCTXATHRNWMI', role: 'Citrix', critical: 16, high: 429 },
-    { host: 'TPAZFUJITSU03', role: 'Citrix', critical: 9, high: 387 },
-    { host: 'TPAZFUJITSU02', role: 'Citrix', critical: 9, high: 387 },
-    { host: 'TPAZFUJITSU01', role: 'Citrix', critical: 9, high: 387 },
-    { host: 'TPAZFUJITSU04', role: 'Citrix', critical: 9, high: 387 },
-    { host: 'TPAZCTXINCREDMI', role: 'Citrix', critical: 8, high: 355 },
+    { host: 'CTX-NPS-SRV-02', role: 'Citrix', critical: 37, high: 1191 },
+    { host: 'CTX-NPS-SRV-01', role: 'Citrix', critical: 37, high: 1130 },
+    { host: 'SCALE-SRV-01', role: '—', critical: 12, high: 737 },
+    { host: 'NAV-DB-SRV-01', role: 'Database', critical: 13, high: 435 },
+    { host: 'CTX-ATHR-NW-MI', role: 'Citrix', critical: 16, high: 429 },
+    { host: 'CTX-EDGE-03', role: 'Citrix', critical: 9, high: 387 },
+    { host: 'CTX-EDGE-02', role: 'Citrix', critical: 9, high: 387 },
+    { host: 'CTX-EDGE-01', role: 'Citrix', critical: 9, high: 387 },
+    { host: 'CTX-EDGE-04', role: 'Citrix', critical: 9, high: 387 },
+    { host: 'CTX-INCRED-MI', role: 'Citrix', critical: 8, high: 355 },
   ],
 };
 
@@ -376,16 +377,16 @@ export const AZURE_TOP_LINUX_HOSTS = {
     { key: 'high', label: 'High', align: 'right', sev: 'high' },
   ],
   rows: [
-    { host: '10.82.12.77', role: 'Azure-Cloud', critical: 49, high: 189 },
-    { host: '10.82.12.78', role: 'Azure-Cloud', critical: 44, high: 97 },
-    { host: '172.29.34.16', role: 'Azure-Cloud', critical: 42, high: 95 },
-    { host: '10.77.2.5', role: 'Azure-Cloud', critical: 40, high: 631 },
-    { host: '10.82.12.88', role: 'Azure-Cloud', critical: 37, high: 131 },
-    { host: '10.82.12.87', role: 'Azure-Cloud', critical: 22, high: 97 },
-    { host: '10.82.12.86', role: 'Azure-Cloud', critical: 22, high: 97 },
-    { host: '172.29.34.15', role: 'Azure-Cloud', critical: 20, high: 35 },
-    { host: '10.82.12.147', role: 'Azure-Cloud', critical: 18, high: 750 },
-    { host: '10.68.38.21', role: 'Azure-Cloud', critical: 10, high: 85 },
+    { host: '10.20.40.55', role: 'Cloud', critical: 49, high: 189 },
+    { host: '10.20.40.67', role: 'Cloud', critical: 44, high: 97 },
+    { host: '172.31.34.16', role: 'Cloud', critical: 42, high: 95 },
+    { host: '10.30.5.5', role: 'Cloud', critical: 40, high: 631 },
+    { host: '10.20.40.66', role: 'Cloud', critical: 37, high: 131 },
+    { host: '10.20.40.76', role: 'Cloud', critical: 22, high: 97 },
+    { host: '10.20.40.75', role: 'Cloud', critical: 22, high: 97 },
+    { host: '172.31.34.15', role: 'Cloud', critical: 20, high: 35 },
+    { host: '10.20.40.10', role: 'Cloud', critical: 18, high: 750 },
+    { host: '10.70.68.21', role: 'Cloud', critical: 10, high: 85 },
   ],
 };
 
