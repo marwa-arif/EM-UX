@@ -501,8 +501,8 @@ function App() {
     if (path === '/workspace') return 'workspace';
     if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
-    if (path === '/') return 'exposure/overview';
-    return path.slice(1) || 'exposure/overview';
+    if (path === '/') return 'navigator';
+    return path.slice(1) || 'navigator';
   });
   const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
   const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
@@ -576,8 +576,8 @@ function App() {
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
-      else if (path === '/') setCurrent('exposure/overview');
-      else setCurrent(path.slice(1) || 'exposure/overview');
+      else if (path === '/') setCurrent('navigator');
+      else setCurrent(path.slice(1) || 'navigator');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -858,7 +858,7 @@ function App() {
   };
 
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
-    return <ErrorPage type="notFound" onHome={() => { setCurrent('exposure/overview'); history.pushState(null, '', navPath('/exposure/overview')); }} />;
+    return <ErrorPage type="notFound" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
 
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
