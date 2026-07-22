@@ -28,6 +28,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.12.0] — 2026-07-22
+### Added
+- Saved page: delete confirmation modal (names the dashboard/report, states the action can't be undone) and a success toast on confirm.
+### Changed
+- Subheader filter pill group restyled — pill wrapper now transparent/borderless, individual filter pills carry the card background and border instead.
+
+---
+
 ## [0.11.5] — 2026-07-22
 ### Added
 - Hover tooltips on every info icon across Exposure Overview (header, column labels, Trend Explore drawer cards), matching the app's white-card tooltip style.
