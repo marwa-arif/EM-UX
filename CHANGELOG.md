@@ -26,6 +26,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.11.1] — 2026-07-22
+### Changed
+- Default landing route switched from Exposure Overview to Navigator.
+### Fixed
+- UX 3.0 Client Servers table: numeric column headers/values now center-align consistently instead of drifting to right/left across header vs body cells.
+
+---
+
 ## [0.11.0] — 2026-07-22
 ### Added
 - Password gate (authGate.js, PasswordGate.jsx) for app-level access control.

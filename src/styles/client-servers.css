@@ -42,7 +42,7 @@
 .csv-table .ds-th,
 .csv-table .ds-td { white-space: normal; word-break: break-word; }
 
-.csv-right { text-align: right; }
+.csv-table .csv-right { text-align: center; }
 
 .csv-num--critical { color: var(--pai-crit-fg); font-weight: 600; }
 .csv-num--high      { color: var(--pai-high-fg); font-weight: 600; }
