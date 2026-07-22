@@ -18,6 +18,7 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
 <!-- pull: 2026-06-09 09:44 | branch: feature/ui-updates | 8d7c413 chore: bump to v0.6.4 -->
 <!-- pull: 2026-06-23 11:03 | branch: develop | 3a6e66c Merge feature/ui-updates into develop (v0.6.6 — DS token pass and font scale audit) -->
+<!-- pull: 2026-07-22 17:30 | branch: develop | daa8ebc Merge remote-tracking branch 'origin/develop' into develop -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
