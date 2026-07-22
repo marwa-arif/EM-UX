@@ -495,6 +495,90 @@ const _UNUSED = {
   },
 };
 
+// Static per-route breadcrumb/title metadata for the classic (non-UX3) shell.
+// Kept at module scope rather than inside App() — several routes (workspace,
+// ux3, admin) return early before a function-scoped version would ever be
+// initialized, so any closure capturing it (e.g. handleNav) would hit a TDZ
+// ReferenceError the moment it's called from one of those routes.
+const PAGE_META = {
+  'exposure/overview': {
+    title: 'Overview',
+    breadcrumb: ['Home', 'Exposure', 'Overview'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'exposure/findings': {
+    title: 'Findings',
+    breadcrumb: ['Home', 'Exposure', 'Findings'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/device': {
+    title: 'Device',
+    breadcrumb: ['Home', 'Discover', 'Device'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/cloud': {
+    title: 'Cloud',
+    breadcrumb: ['Home', 'Discover', 'Cloud'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'discover/identity': {
+    title: 'Identity',
+    breadcrumb: ['Home', 'Discover', 'Identity'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance': {
+    title: 'Compliance',
+    breadcrumb: ['Home', 'Report', 'Compliance'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/assessments': {
+    title: 'Assessments',
+    breadcrumb: ['Home', 'Report', 'Assessments'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance-matrix': {
+    title: 'Compliance Matrix',
+    breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'report/compliance-findings': {
+    title: 'Compliance Findings',
+    breadcrumb: ['Home', 'Report', 'Compliance Findings'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'data-quality/overview': {
+    title: 'Overview',
+    breadcrumb: ['Home', 'Data Quality', 'Overview'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'data-quality/in-depth': {
+    title: 'In-Depth',
+    breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'remediation/queue': {
+    title: 'Queue',
+    breadcrumb: ['Home', 'Remediation', 'Queue'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'remediation/closed': {
+    title: 'Closed',
+    breadcrumb: ['Home', 'Remediation', 'Closed'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  kg: {
+    title: 'Knowledge Graph',
+    breadcrumb: ['Home', 'Knowledge Graph'],
+    breadcrumbHrefs: ['/knowledge-graph', null],
+    onAdd: () => {},
+  },
+  navigator: {
+    title: 'Navigator',
+    breadcrumb: ['Home', 'Navigator'],
+    breadcrumbHrefs: [null, null],
+  },
+};
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = stripBase(window.location.pathname);
@@ -656,8 +740,16 @@ function App() {
       return;
     }
     if (id === 'ux3-exit') {
-      setCurrent('exposure/overview');
-      history.pushState(null, '', navPath('/exposure/overview'));
+      // `data` carries the UX3 sub-route the user was viewing so "Explore in
+      // Current UX" lands on its classic equivalent — but only routes the
+      // classic shell actually knows (PAGE_META entries, plus 'workspace'
+      // which is handled outside PAGE_META). Anything else (e.g.
+      // 'client/networks', which has no classic build) falls back to the
+      // default landing page instead of hitting the 404 ErrorPage.
+      const validTargets = new Set([...Object.keys(PAGE_META), 'workspace']);
+      const target = data && validTargets.has(data) ? data : 'exposure/overview';
+      setCurrent(target);
+      history.pushState(null, '', navPath(`/${target}`));
       return;
     }
     if (id === 'admin-page') {
@@ -777,85 +869,6 @@ function App() {
       </>
     );
   }
-
-  const PAGE_META = {
-    'exposure/overview': {
-      title: 'Overview',
-      breadcrumb: ['Home', 'Exposure', 'Overview'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'exposure/findings': {
-      title: 'Findings',
-      breadcrumb: ['Home', 'Exposure', 'Findings'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/device': {
-      title: 'Device',
-      breadcrumb: ['Home', 'Discover', 'Device'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/cloud': {
-      title: 'Cloud',
-      breadcrumb: ['Home', 'Discover', 'Cloud'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'discover/identity': {
-      title: 'Identity',
-      breadcrumb: ['Home', 'Discover', 'Identity'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance': {
-      title: 'Compliance',
-      breadcrumb: ['Home', 'Report', 'Compliance'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/assessments': {
-      title: 'Assessments',
-      breadcrumb: ['Home', 'Report', 'Assessments'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance-matrix': {
-      title: 'Compliance Matrix',
-      breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'report/compliance-findings': {
-      title: 'Compliance Findings',
-      breadcrumb: ['Home', 'Report', 'Compliance Findings'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'data-quality/overview': {
-      title: 'Overview',
-      breadcrumb: ['Home', 'Data Quality', 'Overview'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'data-quality/in-depth': {
-      title: 'In-Depth',
-      breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'remediation/queue': {
-      title: 'Queue',
-      breadcrumb: ['Home', 'Remediation', 'Queue'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    'remediation/closed': {
-      title: 'Closed',
-      breadcrumb: ['Home', 'Remediation', 'Closed'],
-      breadcrumbHrefs: [null, null, null],
-    },
-    kg: {
-      title: 'Knowledge Graph',
-      breadcrumb: ['Home', 'Knowledge Graph'],
-      breadcrumbHrefs: ['/knowledge-graph', null],
-      onAdd: () => {},
-    },
-    navigator: {
-      title: 'Navigator',
-      breadcrumb: ['Home', 'Navigator'],
-      breadcrumbHrefs: [null, null],
-    },
-  };
 
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
     return <ErrorPage type="notFound" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;

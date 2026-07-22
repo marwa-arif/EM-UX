@@ -25,7 +25,7 @@ const PAGE_LABELS = {
   'client/networks': 'Client Specific · Networks',
 };
 
-function UX3Placeholder({ pageLabel }) {
+function UX3Placeholder({ pageLabel, onExploreCurrent }) {
   return (
     <div className="coming-soon">
       <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -47,6 +47,9 @@ function UX3Placeholder({ pageLabel }) {
         <div className="coming-soon__desc">
           {pageLabel} hasn't been redesigned yet. Updated pages will land here one at a time as the UX 3.0 refresh ships.
         </div>
+        <button className="ds-btn sz-md t-primary coming-soon__cta" onClick={onExploreCurrent}>
+          Explore in Current UX
+        </button>
       </div>
     </div>
   );
@@ -55,9 +58,9 @@ function UX3Placeholder({ pageLabel }) {
 function UX3Page({ onNav, theme, onToggleTheme }) {
   const [subRoute, setSubRoute] = useState('exposure/overview');
 
-  const handleSubNav = (id) => {
+  const handleSubNav = (id, data) => {
     if (id === 'navigator-page' || id === 'navigator' || id === 'navigator-floating' || id === 'ux3-exit') {
-      onNav(id);
+      onNav(id, data);
       return;
     }
     setSubRoute(id);
@@ -83,7 +86,7 @@ function UX3Page({ onNav, theme, onToggleTheme }) {
             <div className="page-scroll">
               {subRoute === 'exposure/overview' ? <ExposureOverviewV3 onNav={handleSubNav} />
                 : subRoute === 'client/servers' ? <ClientServersV3 />
-                : <UX3Placeholder pageLabel={label} />}
+                : <UX3Placeholder pageLabel={label} onExploreCurrent={() => handleSubNav('ux3-exit', subRoute)} />}
             </div>
           </div>
         </main>
