@@ -26,6 +26,22 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.11.4] — 2026-07-22
+### Changed
+- UX 3.0: Exposure Overview now shows the "Coming Soon" placeholder like every other unbuilt page, instead of its built-out content — Client Servers remains the only page with real content, and no longer needs an "Explore in Current UX" button since it has no classic-shell equivalent to link to.
+- UX 3.0: Client Servers is now the default page on entry (was Exposure Overview).
+- UX 3.0: the URL now tracks the active sub-page (`/ux3/exposure/findings`, `/ux3/client/servers`, etc.) instead of staying at `/ux3` regardless of navigation, and deep-linking directly to any `/ux3/<page>` URL now lands on that page.
+
+---
+
+## [0.11.3] — 2026-07-22
+### Added
+- UX 3.0: "Explore in Current UX" button on every unbuilt placeholder page, linking to its classic-shell equivalent (falls back safely when no classic page exists yet).
+### Fixed
+- Fixed `ReferenceError: Cannot access 'PAGE_META' before initialization` that broke both "Back to Classic Dashboard" and the new "Explore in Current UX" button — `PAGE_META` was declared inside `App()` after several early `return`s (workspace/ux3/admin routes), so routes reaching those returns never initialized it before `handleNav` closures referenced it. Moved to module scope.
+
+---
+
 ## [0.11.2] — 2026-07-22
 ### Changed
 - UX 3.0 Client Servers trend charts: switched to a stacked bar + line combo chart, with a per-period "Average" (mean of Critical/High/Medium) plotted as a dotted line against its own right-side y-axis.

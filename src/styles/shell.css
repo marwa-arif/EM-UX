@@ -808,9 +808,10 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
   gap: 24px;
   padding: 48px 0 48px 48px;
 }
-.coming-soon__text { text-align: center; max-width: 360px; }
+.coming-soon__text { text-align: center; max-width: 360px; display: flex; flex-direction: column; align-items: center; }
 .coming-soon__title { font-size: 14px; font-weight: 600; color: var(--shell-text); margin-bottom: 8px; }
 .coming-soon__desc { font-size: 13px; color: var(--shell-text-muted); line-height: 1.65; }
+.coming-soon__cta { margin-top: 24px; }
 
 /* ── Workspace page shell layout ──────────────────────────────────── */
 .wp-root {
