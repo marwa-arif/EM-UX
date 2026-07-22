@@ -735,8 +735,8 @@ function App() {
     }
     if (id === 'ux3-page') {
       setRightPanel(null);
-      setCurrent('ux3');
-      history.pushState(null, '', navPath('/ux3'));
+      setCurrent('ux3/client/servers');
+      history.pushState(null, '', navPath('/ux3/client/servers'));
       return;
     }
     if (id === 'ux3-exit') {
@@ -851,7 +851,7 @@ function App() {
             <PasswordGate onUnlock={unlock} />
           </div>
         )}
-        <UX3Page onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
+        <UX3Page onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
       </>
     );
   }

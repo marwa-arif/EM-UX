@@ -22,6 +22,9 @@ All notable UI changes are tracked here.
 
 ### Added
 ### Changed
+- UX 3.0: Exposure Overview now shows the "Coming Soon" placeholder like every other unbuilt page, instead of its built-out content — Client Servers remains the only page with real content, and no longer needs an "Explore in Current UX" button since it has no classic-shell equivalent to link to.
+- UX 3.0: Client Servers is now the default page on entry (was Exposure Overview).
+- UX 3.0: the URL now tracks the active sub-page (`/ux3/exposure/findings`, `/ux3/client/servers`, etc.) instead of staying at `/ux3` regardless of navigation, and deep-linking directly to any `/ux3/<page>` URL now lands on that page.
 ### Fixed
 
 ---

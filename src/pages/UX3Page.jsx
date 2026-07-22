@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import UX3LeftNav from './ux3/UX3LeftNav.jsx'
 import Topbar from '../components/Topbar.jsx'
 import SubHeader from '../components/SubHeader.jsx'
-import ExposureOverviewV3 from './ux3/ExposureOverviewV3.jsx'
 import ClientServersV3 from './ux3/ClientServersV3.jsx'
 
 const PAGE_LABELS = {
@@ -55,8 +54,10 @@ function UX3Placeholder({ pageLabel, onExploreCurrent }) {
   );
 }
 
-function UX3Page({ onNav, theme, onToggleTheme }) {
-  const [subRoute, setSubRoute] = useState('exposure/overview');
+function UX3Page({ onNav, initialRoute, theme, onToggleTheme }) {
+  const [subRoute, setSubRoute] = useState(() => (
+    initialRoute && initialRoute.startsWith('ux3/') ? initialRoute.slice(4) : 'client/servers'
+  ));
 
   const handleSubNav = (id, data) => {
     if (id === 'navigator-page' || id === 'navigator' || id === 'navigator-floating' || id === 'ux3-exit') {
@@ -64,6 +65,7 @@ function UX3Page({ onNav, theme, onToggleTheme }) {
       return;
     }
     setSubRoute(id);
+    onNav(`ux3/${id}`);
   };
 
   const label = PAGE_LABELS[subRoute] || 'This page';
@@ -84,8 +86,7 @@ function UX3Page({ onNav, theme, onToggleTheme }) {
               actions={null}
             />
             <div className="page-scroll">
-              {subRoute === 'exposure/overview' ? <ExposureOverviewV3 onNav={handleSubNav} />
-                : subRoute === 'client/servers' ? <ClientServersV3 />
+              {subRoute === 'client/servers' ? <ClientServersV3 />
                 : <UX3Placeholder pageLabel={label} onExploreCurrent={() => handleSubNav('ux3-exit', subRoute)} />}
             </div>
           </div>
