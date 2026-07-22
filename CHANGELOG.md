@@ -26,6 +26,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.11.0] — 2026-07-22
+### Added
+- Password gate (authGate.js, PasswordGate.jsx) for app-level access control.
+### Changed
+- Follow-on Navigator/Workspace/Library refinements from the Build/Ask/Research unification work.
+
+---
+
 ## [0.10.0] — 2026-07-20
 ### Added
 - Navigator Build mode's chat now runs on the same reasoning engine as Ask/Research (streamed step traces, tool narration) instead of a separate scripted chat, via a new `build` reasoning tier.

@@ -135,7 +135,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                 {current === 'workspace/saved'
                   ? <SavedPage />
                   : isConfigPage
-                    ? <DataConfigPage />
+                    ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} />
                     : isDashboard
                       ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} />
                       : isReport

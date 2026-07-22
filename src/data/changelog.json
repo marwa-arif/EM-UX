@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.11.0",
+    "date": "2026-07-22",
+    "changes": {
+      "Added": [
+        "Password gate (authGate.js, PasswordGate.jsx) for app-level access control."
+      ],
+      "Changed": [
+        "Follow-on Navigator/Workspace/Library refinements from the Build/Ask/Research unification work."
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.10.0",
     "date": "2026-07-20",
     "changes": {

@@ -208,54 +208,57 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
 
   return (
     <aside className="leftnav" style={{ width }}>
-      {!collapsed && (
-        <div ref={headerRef} className="leftnav__header">
-          <button
-            className={`leftnav__switcher${dropdownOpen ? ' leftnav__switcher--open' : ''}`}
-            onClick={() => setDropdownOpen(o => !o)}
-            aria-haspopup="menu"
-            aria-expanded={dropdownOpen}
-          >
-            <span className="leftnav__switcher-icon">
-              {isStudio ? <IcBuildingBlock /> : <IcEMDashboard />}
-            </span>
-            <span className="leftnav__switcher-text">
-              <span className="leftnav__switcher-name">
-                {isStudio ? 'Studio' : 'EM Dashboard'}
+      <div ref={headerRef} className="leftnav__header">
+        <button
+          className={`leftnav__switcher${collapsed ? ' leftnav__switcher--collapsed' : ''}${dropdownOpen ? ' leftnav__switcher--open' : ''}`}
+          onClick={() => setDropdownOpen(o => !o)}
+          aria-haspopup="menu"
+          aria-expanded={dropdownOpen}
+          title={collapsed ? (isStudio ? 'Studio' : 'EM Dashboard') : undefined}
+        >
+          <span className="leftnav__switcher-icon">
+            {isStudio ? <IcBuildingBlock /> : <IcEMDashboard />}
+          </span>
+          {!collapsed && (
+            <>
+              <span className="leftnav__switcher-text">
+                <span className="leftnav__switcher-name">
+                  {isStudio ? 'Studio' : 'EM Dashboard'}
+                </span>
+                <span className="leftnav__switcher-sub">
+                  {isStudio ? 'Data Fabric' : 'Exposure Management'}
+                </span>
               </span>
-              <span className="leftnav__switcher-sub">
-                {isStudio ? 'Data Fabric' : 'Exposure Management'}
+              <span className="leftnav__switcher-caret">
+                <IcSortCaret />
               </span>
-            </span>
-            <span className="leftnav__switcher-caret">
-              <IcSortCaret />
-            </span>
-          </button>
-
-          {dropdownOpen && (
-            <div className="leftnav__mode-dropdown">
-              {isStudio ? (
-                <button
-                  className="leftnav__mode-option"
-                  onClick={() => handleOption('em')}
-                >
-                  <IcEMDashboard />
-                  <span className="leftnav__mode-option-label">EM Dashboard</span>
-                </button>
-              ) : (
-                <button
-                  className="leftnav__mode-option"
-                  onClick={() => handleOption('studio')}
-                >
-                  <IcBuildingBlock />
-                  <span className="leftnav__mode-option-label">Studio</span>
-                  <span className="leftnav__mode-option-soon">Soon</span>
-                </button>
-              )}
-            </div>
+            </>
           )}
-        </div>
-      )}
+        </button>
+
+        {dropdownOpen && (
+          <div className="leftnav__mode-dropdown">
+            {isStudio ? (
+              <button
+                className="leftnav__mode-option"
+                onClick={() => handleOption('em')}
+              >
+                <IcEMDashboard />
+                <span className="leftnav__mode-option-label">EM Dashboard</span>
+              </button>
+            ) : (
+              <button
+                className="leftnav__mode-option"
+                onClick={() => handleOption('studio')}
+              >
+                <IcBuildingBlock />
+                <span className="leftnav__mode-option-label">Studio</span>
+                <span className="leftnav__mode-option-soon">Soon</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="leftnav__body">
         {(isStudio ? STUDIO_MODEL : model).map(item => (

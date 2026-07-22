@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/splash-screen.css';
+import PasswordGate from './PasswordGate.jsx';
 
 // Prevalent AI wordmark — paths in left-to-right order with staggered trace delays
 const SPLASH_PATHS = [
@@ -20,9 +21,13 @@ const SPLASH_PATHS = [
   { d: 'M574.413 40.4667C574.763 40.51 575.114 40.4146 575.39 40.2024C575.585 39.9156 575.672 39.5722 575.635 39.2308V37.8316C575.672 37.4895 575.585 37.1458 575.39 36.8583C575.114 36.6466 574.763 36.5513 574.413 36.594H562.953C562.605 36.5513 562.253 36.6466 561.979 36.8583C561.784 37.1462 561.697 37.4895 561.734 37.8316V39.2308C561.697 39.5721 561.784 39.9152 561.979 40.2024C562.253 40.4146 562.605 40.51 562.953 40.4667H566.24V74.6933H562.953C562.605 74.6506 562.253 74.7458 561.979 74.9576C561.784 75.2456 561.698 75.5889 561.734 75.9308V77.3394C561.697 77.6807 561.784 78.0238 561.979 78.311C562.252 78.5242 562.605 78.6196 562.953 78.5754H574.413C574.763 78.6191 575.115 78.5237 575.39 78.311C575.586 78.0244 575.672 77.6808 575.635 77.3394V75.9308C575.672 75.5889 575.585 75.2452 575.39 74.9576C575.114 74.7458 574.763 74.6504 574.413 74.6933H571.131V40.4667H574.413Z', delay: 1160 },
 ];
 
-export default function SplashScreen({ onDone }) {
+export default function SplashScreen({ onDone, authRequired, onUnlock }) {
   const isDark = (localStorage.getItem('pai-theme') || 'light') === 'dark';
-  const [phase, setPhase] = useState('idle'); // idle | draw | fill | float | out
+  const [phase, setPhase] = useState('idle'); // idle | draw | fill | float | locked | out
+  const [unlocked, setUnlocked] = useState(false);
+  // Freeze the auth requirement as it was at mount — a later prop change (once the
+  // user unlocks) must not restart this one-shot intro timeline.
+  const authRequiredRef = useRef(authRequired);
 
   const after = (...phases) => phases.includes(phase);
 
@@ -30,10 +35,26 @@ export default function SplashScreen({ onDone }) {
     const t0 = setTimeout(() => setPhase('draw'),  200);
     const t1 = setTimeout(() => setPhase('fill'),  1900);
     const t2 = setTimeout(() => setPhase('float'), 2500);
-    const t3 = setTimeout(() => setPhase('out'),   3200);
-    const t4 = setTimeout(() => onDone(),           3750);
-    return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
-  }, [onDone]);
+    const t3 = setTimeout(() => setPhase(authRequiredRef.current ? 'locked' : 'out'), 3200);
+    return () => [t0, t1, t2, t3].forEach(clearTimeout);
+  }, []);
+
+  // Once unlocked, fall through to the same fade-out the no-auth path uses.
+  useEffect(() => {
+    if (phase === 'locked' && unlocked) setPhase('out');
+  }, [phase, unlocked]);
+
+  useEffect(() => {
+    if (phase !== 'out') return;
+    const t = setTimeout(onDone, 550);
+    return () => clearTimeout(t);
+  }, [phase, onDone]);
+
+  const handleUnlock = (password) => {
+    const ok = onUnlock(password);
+    if (ok) setUnlocked(true);
+    return ok;
+  };
 
   const rootCls = [
     'splash-root',
@@ -43,17 +64,17 @@ export default function SplashScreen({ onDone }) {
 
   const logoCls = [
     'splash-logo',
-    after('idle')        ? 'splash-logo--hidden' : '',
-    after('float', 'out') ? 'splash-logo--float'  : '',
+    after('idle')                   ? 'splash-logo--hidden' : '',
+    after('float', 'locked', 'out') ? 'splash-logo--float'  : '',
   ].filter(Boolean).join(' ');
 
-  const pathCls = after('fill', 'float', 'out')
+  const pathCls = after('fill', 'float', 'locked', 'out')
     ? 'splash-path splash-path--fill'
     : after('draw')
       ? 'splash-path splash-path--draw'
       : 'splash-path';
 
-  const barFillCls = after('draw', 'fill', 'float', 'out')
+  const barFillCls = after('draw', 'fill', 'float', 'locked', 'out')
     ? 'splash-bar-fill splash-bar-fill--active'
     : 'splash-bar-fill';
 
@@ -84,6 +105,12 @@ export default function SplashScreen({ onDone }) {
       <div className="splash-bar-track">
         <div className={barFillCls} />
       </div>
+
+      {authRequired && after('locked', 'out') && (
+        <div className="splash-password">
+          <PasswordGate onUnlock={handleUnlock} />
+        </div>
+      )}
     </div>
   );
 }
