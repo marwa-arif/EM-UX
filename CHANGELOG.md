@@ -21,9 +21,14 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
-- UX 3.0: "Explore in Current UX" button on every unbuilt placeholder page, linking to its classic-shell equivalent (falls back safely when no classic page exists yet).
-
 ### Changed
+### Fixed
+
+---
+
+## [0.11.3] — 2026-07-22
+### Added
+- UX 3.0: "Explore in Current UX" button on every unbuilt placeholder page, linking to its classic-shell equivalent (falls back safely when no classic page exists yet).
 ### Fixed
 - Fixed `ReferenceError: Cannot access 'PAGE_META' before initialization` that broke both "Back to Classic Dashboard" and the new "Explore in Current UX" button — `PAGE_META` was declared inside `App()` after several early `return`s (workspace/ux3/admin routes), so routes reaching those returns never initialized it before `handleNav` closures referenced it. Moved to module scope.
 
