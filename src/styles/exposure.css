@@ -58,16 +58,18 @@
 
 /* ── Exposure Overview section ──────────────────────────────────── */
 .exp-ov-hdr { position: relative; display: flex; align-items: center; justify-content: space-between; }
-.exp-ov-hdr--open { margin-bottom: 16px; }
+.exp-ov-hdr--open { margin-bottom: 32px; }
 
 .exp-ov-hdr-left { display: flex; align-items: center; gap: 8px; }
 .exp-ov-hdr-title { font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); }
 
 /* Trend pill — centered absolute */
-.exp-trend-pill { position: absolute; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 60px; height: 40px; padding: 0 16px; background: transparent; cursor: pointer; font-size: 14px; color: var(--shell-text, #101010); font-family: inherit; }
-.exp-trend-pct { display: inline-flex; align-items: center; gap: 4px; }
-.exp-trend-pct-val { font-weight: 600; color: var(--pai-teal); }
-.exp-trend-from { font-size: 12px; color: var(--shell-text-muted); }
+.exp-trend-pill { position: absolute; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 16px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 60px; height: 40px; padding: 0 16px; background: transparent; cursor: pointer; font-size: 14px; color: var(--shell-text, #101010); font-family: inherit; }
+.exp-trend-label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.exp-trend-label-text { font-weight: 500; }
+.exp-trend-pct { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; background: var(--shell-bg); border-radius: 15px; padding: 3px 9px; }
+.exp-trend-pct-val { font-size: 12px; font-weight: 600; color: var(--pai-teal); }
+.exp-trend-from { font-size: 11px; color: var(--shell-text-muted); }
 
 /* Collapse button */
 .exp-collapse-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 44px; padding: 6px 12px; background: var(--pai-indigo-tint); cursor: pointer; font-size: 12px; color: var(--shell-text-muted); font-family: inherit; }
@@ -84,8 +86,25 @@
 /* Column label (below gauge / bubbles) */
 .exp-col-label { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--shell-text-muted); margin-top: 12px; }
 
+/* Info icon hover tooltip — white card, wraps rich/multi-paragraph copy */
+.exp-info-tip { position: relative; display: inline-flex; align-items: center; cursor: default; }
+.exp-info-tip-card {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--card-bg); color: var(--shell-text, #101010);
+  border-radius: 8px; padding: 12px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-size: 12px; font-weight: 400; line-height: 1.6; text-align: left;
+  width: max-content; max-width: 280px; white-space: normal;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 120ms;
+  z-index: 100;
+}
+.exp-info-tip-card--right { left: auto; right: 0; }
+.exp-info-tip-card p { margin: 0 0 8px; }
+.exp-info-tip-card p:last-child { margin-bottom: 0; }
+.exp-info-tip:hover .exp-info-tip-card { opacity: 1; visibility: visible; }
+
 /* ── Bubble component ────────────────────────────────────────────── */
-.exp-bubble-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.exp-bubble-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .exp-bubble-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 2px 13px 20px 0 var(--shell-raised); }
 .exp-bubble-inner { position: absolute; inset: 7%; border-radius: 50%; background: var(--card-bg); box-shadow: 0 0 3px rgba(0,0,0,0.15), inset 2px 6px 4px var(--card-border); }
 .exp-bubble-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
@@ -94,13 +113,47 @@
 .exp-bubble-icon-pin { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; background: var(--card-bg); box-shadow: 0 3px 2.5px var(--card-border); display: flex; align-items: center; justify-content: center; }
 .exp-bubble-label { border: 1px solid var(--card-border); border-radius: 30px; padding: 6px 12px; font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
 
+/* Hover tooltip — sits above the bubble, explore button + stat card.
+   padding-bottom (not a margin/offset) closes the gap to the ring so the
+   hoverable box is contiguous — otherwise the mouse crosses a dead zone
+   moving from the ring into the tooltip and it closes before it can be
+   reached. */
+.exp-bubble-tooltip {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding-bottom: 12px;
+  z-index: 20;
+}
+/* Below-variant — used by the main gauge, where there's no ring-top pin to clear */
+.exp-bubble-tooltip--below {
+  bottom: auto; top: 100%; padding-bottom: 0; padding-top: 12px;
+}
+.exp-bubble-explore-btn {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  border: 1px solid; border-radius: 44px; padding: 6px 14px;
+  background: var(--card-bg); font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.exp-bubble-tooltip-card {
+  display: flex; align-items: stretch; gap: 12px; background: var(--card-bg);
+  border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  white-space: nowrap;
+}
+.exp-bubble-tooltip-stat { display: flex; align-items: stretch; gap: 8px; }
+.exp-bubble-tooltip-accent { width: 2px; border-radius: 2px; align-self: stretch; }
+.exp-bubble-tooltip-accent--indigo { background: var(--pai-indigo); }
+.exp-bubble-tooltip-accent--amber { background: #D8A435; }
+.exp-bubble-tooltip-text { display: flex; flex-direction: column; gap: 2px; }
+.exp-bubble-tooltip-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); }
+.exp-bubble-tooltip-value { font-size: 14px; font-weight: 600; color: var(--shell-text, #101010); }
+
 /* Bubble triangle layout */
 .exp-bubble-tri { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 28px 12px 0; }
 .exp-bubble-tri-top { display: flex; gap: 24px; justify-content: center; }
 
 /* ── Enterprise Score gauge ─────────────────────────────────────── */
 .exp-gauge-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
-.exp-gauge { position: relative; display: flex; align-items: center; justify-content: center; }
+.exp-gauge { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; }
 .exp-gauge-outer { position: absolute; inset: 0; border-radius: 50%; border: 0.5px solid var(--card-border); background: var(--card-bg); box-shadow: 0 0 40px -5px rgba(225,82,82,0.18); }
 .exp-gauge-ticks { position: absolute; inset: 0; opacity: 0.35; }
 .exp-gauge-inner { position: relative; border-radius: 50%; background: var(--card-bg); box-shadow: 0 0 15px rgba(202,56,56,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
@@ -118,10 +171,10 @@
 .exp-contrib-card { padding: 16px 0; display: flex; flex-direction: column; gap: 0; }
 
 /* Card header */
-.exp-contrib-hdr { padding-left: 16px; margin-bottom: 16px; }
+.exp-contrib-hdr { padding-left: 16px; padding-right: 16px; margin-bottom: 16px; }
 .exp-contrib-hdr-left { display: flex; align-items: center; gap: 12px; }
 .exp-contrib-title { font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
-.exp-groupby-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 54px; padding: 6px 12px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--shell-text, #101010); font-family: inherit; }
+.exp-contrib-hdr-left .comp-sort-btn { height: 32px; color: var(--shell-text, #101010); font-size: 12px; }
 .exp-contrib-hdr-right { display: flex; align-items: center; gap: 16px; }
 
 /* Search box */
@@ -129,8 +182,8 @@
 .exp-search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--shell-text, #101010); font-family: inherit; }
 .exp-search-icon-wrap { width: 24px; height: 24px; border-radius: 50%; background: rgba(99,96,216,0.15); display: flex; align-items: center; justify-content: center; color: var(--pai-indigo); flex-shrink: 0; }
 
-/* Explore button */
-.exp-explore-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--pai-indigo-tint); border-radius: 44px; padding: 4px 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--pai-indigo); font-family: inherit; }
+/* Per-row explore button */
+.exp-row-explore-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--pai-indigo-tint); border-radius: 44px; padding: 0; border: none; cursor: pointer; color: var(--pai-indigo); }
 
 /* Table wrapper */
 .exp-table { min-width: 900px; }
@@ -143,19 +196,70 @@
 /* Table body rows & cells */
 .exp-td { padding: var(--table-td-padding); }
 .exp-td-name { font-size: 12px; color: var(--shell-text, #101010); text-align: left; white-space: nowrap; vertical-align: middle; }
+.exp-td-name-link { background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.exp-td-name-link:hover { color: var(--pai-indigo); text-decoration: underline; }
 .exp-td-score { font-size: 12px; font-weight: 600; vertical-align: middle; color: var(--exp-score-color, var(--shell-text)); }
 .exp-td-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--exp-trend-color, var(--shell-text)); }
 
 /* ── MiniBar component ──────────────────────────────────────────── */
-.exp-minibar-wrap { display: flex; align-items: center; gap: 8px; }
-.exp-minibar-track { position: relative; width: 100px; height: 5px; border-radius: 4px; background: var(--shell-raised); flex-shrink: 0; }
+.exp-minibar-wrap { display: flex; align-items: center; gap: 8px; width: 100%; }
+.exp-minibar-track { position: relative; flex: 1; min-width: 32px; height: 5px; border-radius: 4px; background: var(--shell-raised); }
 .exp-minibar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; width: var(--exp-fill-w); background: var(--exp-fill-bg); }
 .exp-icon-muted { color: var(--shell-text-muted); }
 .ds-th--right { text-align: right; }
 .ds-th--center { text-align: center; }
+.exp-col-explore { width: 72px; text-align: center; }
+
+/* Fixed layout so the three % columns split the remaining space equally —
+   Category/Score/Explore get explicit widths, leaving the % columns unset
+   so table-layout:fixed divides what's left evenly between them. */
+.exp-contrib-table { table-layout: fixed; }
+.exp-contrib-table th:nth-child(1),
+.exp-contrib-table td:nth-child(1) { width: 200px; }
+.exp-contrib-table th:nth-child(2),
+.exp-contrib-table td:nth-child(2) { width: 150px; }
 .exp-search-clear {
   width: 16px; height: 16px; padding: 0; border: none; background: transparent;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--shell-text-muted); border-radius: 50%; flex-shrink: 0; margin-right: 4px;
 }
-.exp-minibar-pct { font-size: 12px; font-weight: 600; color: var(--shell-text, #101010); min-width: 28px; }
+.exp-minibar-pct { font-size: 12px; font-weight: 600; color: var(--shell-text, #101010); min-width: 28px; flex-shrink: 0; }
+
+/* ── Trend Explore drawer ─────────────────────────────────────────── */
+.exp-trend-drawer-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0;
+}
+.exp-trend-drawer-title { font-size: 14px; font-weight: 600; color: var(--shell-text); white-space: nowrap; }
+.exp-trend-drawer-by { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
+.exp-trend-drawer-by .comp-sort-menu { left: auto; right: 0; }
+.exp-trend-drawer-by .comp-sort-btn { width: 155px; justify-content: space-between; }
+.exp-trend-drawer-by .comp-sort-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.exp-trend-drawer-body { flex: 1; overflow-y: auto; min-height: 0; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.exp-trend-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.exp-trend-card { border: 1px solid var(--card-border, #E6E6E6); border-radius: 4px; padding: 16px; }
+.exp-trend-card-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.exp-trend-card-title { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
+.exp-trend-card-badge { font-size: 13px; font-weight: 700; padding: 2px 12px; border-radius: 44px; }
+.exp-trend-card-badge--red { color: var(--pai-crit-fg); background: var(--pai-crit-bg); }
+.exp-trend-card-badge--muted { color: var(--shell-text-muted); background: var(--shell-raised); }
+.exp-trend-card-spacer { flex: 1; }
+.exp-trend-card-chart { height: 220px; }
+.exp-trend-card-chart--lg { height: 260px; }
+
+/* Metric toggle — "Sum of Exposure" / "Exposure Score" */
+.exp-metric-toggle { display: flex; align-items: center; gap: 8px; }
+.exp-metric-toggle-label { font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
+.exp-metric-toggle-label--active { color: var(--shell-text, #101010); font-weight: 600; }
+.exp-toggle-track {
+  width: 36px; height: 20px; border-radius: 12px; border: none; cursor: pointer; flex-shrink: 0;
+  background: var(--pai-border-strong, #C7C7C7); position: relative; padding: 0; transition: background 150ms;
+}
+.exp-toggle-track--on { background: var(--pai-indigo); }
+.exp-toggle-thumb {
+  position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--card-bg); transition: left 150ms; display: block;
+}
+.exp-toggle-track--on .exp-toggle-thumb { left: 18px; }

@@ -311,16 +311,17 @@ function StackedBarChart({ title, rows, xLabel }) {
 }
 
 // ── Page root ─────────────────────────────────────────────────────
-export default function FindingsPage({ onNav }) {
+export default function FindingsPage({ onNav, categoryFilter }) {
   const [search, setSearch]           = useState('');
   const [page, setPage]               = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [groupBy, setGroupBy]         = useState('Type');
 
   const filteredRows = TABLE_ROWS.filter(r =>
-    !search ||
-    r.title.toLowerCase().includes(search.toLowerCase()) ||
-    r.asset.toLowerCase().includes(search.toLowerCase())
+    (!categoryFilter || r.cat === categoryFilter) &&
+    (!search ||
+      r.title.toLowerCase().includes(search.toLowerCase()) ||
+      r.asset.toLowerCase().includes(search.toLowerCase()))
   );
   const clampedPage = Math.min(page, Math.max(1, Math.ceil(filteredRows.length / rowsPerPage)));
   const start       = (clampedPage - 1) * rowsPerPage;
