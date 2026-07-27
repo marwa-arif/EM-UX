@@ -28,6 +28,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.13.1] — 2026-07-27
+### Changed
+- Merged `develop` into `feature/studio-workspace` to bring in the Saved-page delete-confirmation/toast, subheader pill restyle, and Exposure Overview refinements (already versioned as v0.12.0/v0.11.5 on `develop`) after the two branches' independent version bumps had diverged.
+
+---
+
 ## [0.13.0] — 2026-07-27
 ### Added
 - Navigator: default seeded agents (Critical Vuln Triage, Cloud Misconfig Hunter, Identity Risk Reviewer, Device Patch Compliance, App Exposure Monitor, Compliance Gap Auditor) so the Home agent picker and Agents list aren't empty on first use.
