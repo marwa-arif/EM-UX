@@ -103,7 +103,7 @@ function LibraryPage() {
           <div className="lib-tabbar-left">
             <button className="ds-tab active has-icon">
               <LibraryIcon size={14} />
-              Library
+              Templates
             </button>
             <button className="ds-tab has-icon" onClick={() => onNav('workspace/saved')}>
               <SavedIcon size={14} />
@@ -111,7 +111,7 @@ function LibraryPage() {
             </button>
           </div>
           <div className="lib-tabbar-right">
-            <DSPillSearch value={librarySearch} onChange={setLibrarySearch} placeholder="Search Library" width={200} />
+            <DSPillSearch value={librarySearch} onChange={setLibrarySearch} placeholder="Search Templates" width={200} />
             <button className="lib-action-btn" onClick={() => {}}>
               <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
               New Report

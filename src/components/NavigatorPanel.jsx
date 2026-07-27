@@ -896,7 +896,7 @@ const DATA_CONFIG_BUILDER_STAGES = [
     suggestions: ['Suggest a name', 'Pick a data source'],
   },
   {
-    ai: "Once the details on the right look good, hit Save to add this screen to your Library.",
+    ai: "Once the details on the right look good, hit Save to add this screen to your Templates.",
     suggestions: ['Got it'],
   },
 ]
