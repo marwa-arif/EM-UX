@@ -26,7 +26,7 @@ All notable UI changes are tracked here.
 
 ---
 
-## [0.12.0] — 2026-07-27
+## [0.13.0] — 2026-07-27
 ### Added
 - Navigator: default seeded agents (Critical Vuln Triage, Cloud Misconfig Hunter, Identity Risk Reviewer, Device Patch Compliance, App Exposure Monitor, Compliance Gap Auditor) so the Home agent picker and Agents list aren't empty on first use.
 - Navigator: edit-in-place for existing agents in AgentBuilderView (was create-only).
