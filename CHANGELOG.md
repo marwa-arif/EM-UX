@@ -26,6 +26,15 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.12.0] — 2026-07-27
+### Added
+- Navigator: default seeded agents (Critical Vuln Triage, Cloud Misconfig Hunter, Identity Risk Reviewer, Device Patch Compliance, App Exposure Monitor, Compliance Gap Auditor) so the Home agent picker and Agents list aren't empty on first use.
+- Navigator: edit-in-place for existing agents in AgentBuilderView (was create-only).
+### Changed
+- Navigator: saved-agent dropdown menu now renders via a portal so it isn't clipped by ancestor overflow.
+
+---
+
 ## [0.11.4] — 2026-07-22
 ### Changed
 - UX 3.0: Exposure Overview now shows the "Coming Soon" placeholder like every other unbuilt page, instead of its built-out content — Client Servers remains the only page with real content, and no longer needs an "Explore in Current UX" button since it has no classic-shell equivalent to link to.
