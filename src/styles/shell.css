@@ -499,17 +499,26 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 .subheader__explore-item:hover { background: var(--pai-indigo-tint); }
 
 .subheader__spacer { flex: 1; }
+.subheader__filter-group {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
 .subheader__save-btn {
   width: 28px; height: 28px; padding: 0;
   background: var(--pai-indigo); border: none;
   border-radius: 50%; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.subheader__save-btn:disabled {
+  opacity: 0.35; cursor: not-allowed;
 }
 .subheader__filter-pill-wrap { position: relative; flex-shrink: 0; }
 .subheader__filter-pill {
   display: inline-flex; align-items: center; gap: 8px;
   height: 28px; padding: 0 12px;
+  box-sizing: border-box;
   background: var(--card-bg); color: var(--pai-indigo-secondary-fg);
   border: 1px solid var(--pai-border-strong);
   border-radius: 44px; font-size: 12px; font-weight: 500;

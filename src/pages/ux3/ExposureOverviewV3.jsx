@@ -95,10 +95,9 @@ const IcIdentity = () => (
   </svg>
 );
 const IcExposure = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor">
-    <circle cx="8" cy="8" r="5.5" strokeWidth="1.5"/>
-    <path d="M5.5 9.5 Q8 5.5 10.5 9.5" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-    <line x1="8" y1="4" x2="8" y2="6" strokeWidth="1.5" strokeLinecap="round"/>
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+    <path d="M7.40519 9.69937C7.57355 9.86809 7.7897 9.94484 8.05364 9.92964C8.31759 9.91479 8.51021 9.81993 8.6315 9.64506L10.6148 6.88022C10.7792 6.65098 10.4973 6.36741 10.2671 6.53052L7.48665 8.50075C7.3049 8.62168 7.2037 8.80959 7.18306 9.06449C7.16242 9.31938 7.23647 9.53064 7.40519 9.69937Z" fill="currentColor" stroke="none"/>
+    <path d="M3.28962 12.1326C2.77996 11.3087 2.48633 10.3406 2.48633 9.30481C2.48633 6.30169 4.95488 3.86719 8 3.86719C11.0451 3.86719 13.5137 6.30169 13.5137 9.30481C13.5137 10.3406 13.22 11.3087 12.7104 12.1326" strokeLinecap="round"/>
   </svg>
 );
 

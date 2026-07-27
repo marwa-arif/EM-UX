@@ -2,6 +2,16 @@ import React, { useState } from 'react'
 import { Ic } from '../ui.jsx'
 import { DSPillSearch, LibraryIcon, SavedIcon, LibraryImportBar, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
+import '../styles/admin.css'
+import '../styles/navigator.css'
+import '../styles/library.css'
+
+const IcWarningTriangle = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+)
 
 // Workspace › Saved tab
 
@@ -56,14 +66,25 @@ function SavedPage() {
     savedFilter, setSavedFilter,
     savedVisibility, setSavedVisibility,
     savedSearch, setSavedSearch,
-    openDeleteModal,
+    deleteTarget, openDeleteModal, closeDeleteModal,
     savedReports,
   } = useWorkspace()
 
-  const allRows = [...savedReports, ...SAVED_ROWS]
+  const [deletedIds, setDeletedIds] = useState(new Set())
+  const [toast, setToast] = useState(null)
+
+  const allRows = [...savedReports, ...SAVED_ROWS].filter(row => !deletedIds.has(row.id))
 
   const [page, setPage]               = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return
+    setDeletedIds(prev => new Set(prev).add(deleteTarget.id))
+    setToast(`"${deleteTarget.name}" has been deleted.`)
+    closeDeleteModal()
+    setTimeout(() => setToast(null), 3000)
+  }
 
   const filtered = allRows.filter(row => {
     const matchType   = savedFilter     === 'all' || (savedFilter     === 'dashboards' && row.type       === 'DASHBOARD') || (savedFilter     === 'reports' && row.type       === 'REPORT')
@@ -230,6 +251,36 @@ function SavedPage() {
 
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title lib-delete-modal-title">
+                <IcWarningTriangle />
+                Delete {(allRows.find(r => r.id === deleteTarget.id)?.type === 'REPORT') ? 'Report' : 'Dashboard'}
+              </span>
+              <button className="ds-modal-close" onClick={closeDeleteModal} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">
+              Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This action cannot be undone.
+            </div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={closeDeleteModal}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={handleConfirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="ds-toast-container">
+          <div className="ds-toast success">
+            <span>{toast}</span>
+            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

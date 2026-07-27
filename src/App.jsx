@@ -5,7 +5,7 @@ import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import { PageKG } from './pages/PageKG.jsx'
-import { FilterPanel, GraphFilterDrawer } from './components/FilterPanel.jsx'
+import { FilterPanel } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
@@ -594,6 +594,7 @@ function App() {
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
+  const [findingsCategoryFilter, setFindingsCategoryFilter] = useState(null);
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -621,7 +622,6 @@ function App() {
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
   const [visitedTabs, setVisitedTabs] = useState([]);
-  const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [filtersByPage, setFiltersByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
@@ -765,6 +765,16 @@ function App() {
       handleNav(adminPrevPage);
       return;
     }
+    if (id === 'exposure/findings') {
+      const category = data?.category || null;
+      setFindingsCategoryFilter(category);
+      setFiltersByPage(prev => ({
+        ...prev,
+        'exposure/findings': category
+          ? { count: 1, chips: [{ attrId: 'exposure-category', key: 'Exposure Category', value: category }] }
+          : { count: 0, chips: [] },
+      }));
+    }
     setCurrent(id);
     let url;
     if (id === 'workspace') url = '/workspace';
@@ -805,7 +815,7 @@ function App() {
         } else {
           setPageFilters(current, c, chips || []);
         }
-      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      }}}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
@@ -948,8 +958,12 @@ function App() {
                       const updated = cur.chips.filter((_, i) => i !== idx);
                       return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
+                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
                   }}
-                  onClearFilters={() => setPageFilters(current, 0, [])}
+                  onClearFilters={() => {
+                    setPageFilters(current, 0, []);
+                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
+                  }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}
                   onAdd={showingAssessmentBuilder ? undefined : pageMeta.onAdd}
@@ -962,8 +976,8 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
-                {current === 'exposure/overview'   && <ExposureOverviewPage />}
-                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
+                {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
+                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} categoryFilter={findingsCategoryFilter} />}
                 {current === 'discover/device'     && <DiscoverDevicePage />}
                 {current === 'discover/cloud'      && <DiscoverCloudPage />}
                 {current === 'discover/identity'   && <DiscoverIdentityPage />}
@@ -979,15 +993,6 @@ function App() {
           </main>
         )}
       </div>
-
-      {isKG && appMode !== 'studio' && GraphFilterDrawer && (
-        <GraphFilterDrawer
-          open={graphFilterOpen}
-          onClose={() => setGraphFilterOpen(false)}
-          onApply={(count) => { setPageFilters(current, count, activeFilters); setGraphFilterOpen(false); }}
-          top={canvasTop}
-        />
-      )}
 
       {isKG && appMode !== 'studio' && (
         <TweaksPanel title="Tweaks">
