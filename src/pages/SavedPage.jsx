@@ -108,7 +108,7 @@ function SavedPage() {
           <div className="lib-tabbar-left">
             <button className="ds-tab has-icon" onClick={() => onNav('workspace/library')}>
               <LibraryIcon size={14} />
-              Library
+              Templates
             </button>
             <button className="ds-tab active has-icon">
               <SavedIcon size={14} />

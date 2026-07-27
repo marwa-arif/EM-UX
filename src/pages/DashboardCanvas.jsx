@@ -79,11 +79,12 @@ const HEADING_WIDGET_HEIGHTS = [
   { id: 'xlarge',  label: 'Extra Large', px: 560 },
 ]
 const PERF_LEVELS = [
-  { max: 4,        label: 'Optimal',           bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)', dot: 'var(--pai-green)' },
-  { max: 7,        label: 'Approaching Limit', bg: 'rgba(217,119,6,0.10)', color: 'var(--pai-high-fg)', dot: 'var(--pai-high-fg)' },
-  { max: Infinity, label: 'Limit Reached',     bg: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', dot: 'var(--pai-crit-fg)' },
+  { max: 4,        label: 'Optimal',           range: '≤4 widgets',  desc: 'loads and refreshes quickly',                      bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)', dot: 'var(--pai-green)' },
+  { max: 7,        label: 'Approaching Limit', range: '5–7 widgets', desc: 'may start to feel slower',                         bg: 'rgba(217,119,6,0.10)', color: 'var(--pai-high-fg)', dot: 'var(--pai-high-fg)' },
+  { max: Infinity, label: 'Limit Reached',     range: '8+ widgets',  desc: 'may load slowly — consider trimming widgets',      bg: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', dot: 'var(--pai-crit-fg)' },
 ]
 const perfLevel = count => PERF_LEVELS.find(l => count <= l.max)
+const PERF_TOOLTIP = PERF_LEVELS.map(l => `${l.label} (${l.range}) — ${l.desc}`).join('. ') + '.'
 
 const KG_COLUMNS = [
   'AAD Created', 'AAD Deleted Date', 'AAD Device Category', 'AAD Device ID',
@@ -2934,19 +2935,23 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               )}
 
               {perf && !reportMode && (
-                <span
-                  className="dc-perf-badge"
-                  style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
-                >
-                  <span className="dc-perf-dot" />
-                  {perf.label}
+                <span className="dc-tip dc-tip--wrap" data-tip={PERF_TOOLTIP}>
+                  <span
+                    className="dc-perf-badge"
+                    style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
+                  >
+                    <span className="dc-perf-dot" />
+                    {perf.label}
+                  </span>
                 </span>
               )}
             </div>
 
             <div className={`dc-toolbar-row dc-toolbar-row--actions${toolbarCompact ? ' dc-toolbar-row--compact' : ''}`} ref={toolbarActionsRowRef}>
               {!reportMode && (
-                <button className="ds-btn sz-md t-outline" onClick={() => onOpenCopilotBuilder?.()}>Build with Copilot</button>
+                <button className="ds-btn sz-md t-nav-gradient" onClick={() => onOpenCopilotBuilder?.()}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
+                </button>
               )}
 
               <div className="dc-toolbar-divider" />

@@ -1212,8 +1212,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
               <div className="asb-section-row">
                 <div className="asb-section-title">{scope.primary ? 'Scope & Condition' : 'Select an Entity'}</div>
                 {onUseNavigator && (
-                  <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                  <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                   </button>
                 )}
               </div>
@@ -1380,8 +1380,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Validation</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>
@@ -1548,8 +1548,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Contribution</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>
@@ -1634,8 +1634,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Deploy</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>

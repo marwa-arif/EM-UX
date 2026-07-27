@@ -698,13 +698,15 @@ function App() {
 
   const handleNav = (id, data) => {
     if (id === 'navigator') {
-      setNavigatorViewMode('sidebar');
+      setNavigatorViewMode('floating');
+      setNavigatorFloating(true);
       setNavigatorBuilderMode(false);
       openRightTab('navigator');
       return;
     }
     if (id === 'navigator-builder') {
       setNavigatorViewMode('sidebar');
+      setNavigatorFloating(false);
       setNavigatorBuilderMode(true);
       setNavigatorBuilderKind(data?.kind || 'assessment');
       setNavigatorBuilderContext(data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel } : null);
@@ -844,7 +846,7 @@ function App() {
           onBuilderApiReady={setDashboardBuilderApi}
           onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
           rightPanelSlot={sharedRightPanel}
-          rightPanelOpen={rightPanel !== null}
+          rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
           navigatorActive={rightPanel === 'navigator'}
           seedDashboard={dashboardSeed}
         />
@@ -887,9 +889,11 @@ function App() {
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
   const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
-  // Auto-collapse while a right panel (navigator/filter) is open, but never
-  // let that override the user's manual preference once the panel closes.
-  const collapsed = navCollapsed || rightPanel !== null;
+  // Auto-collapse while a docked right panel (navigator/filter) is open, to
+  // reclaim width for it — but never let that override the user's manual
+  // preference once the panel closes. A floating Navigator doesn't dock into
+  // that width, so it shouldn't force the collapse.
+  const collapsed = navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating));
   const isNavigatorRoute = current === 'navigator';
 
   return (
