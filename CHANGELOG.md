@@ -29,6 +29,18 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.14.0] — 2026-07-28
+### Added
+- AssetDetailDrawer + EntityRelSummaryGraph for the Assets by Criticality Score widget (Discover Device/Cloud/Identity), including a View/Hide Exposure Factors button, tooltip, and score-ring panel matching the Findings page's entity drawer.
+### Changed
+- Centered action-column icon buttons under their headers across Assessments, Compliance Findings, Compliance drawers, and Discover pages.
+### Fixed
+- CSS specificity bugs that silently prevented action-column header centering from applying.
+- FindingsPage/DiscoverIdentityPage pagination totals now reflect actual row counts instead of decorative/mismatched constants.
+- ActiveFilterPanel: duplicate and toggle-leaking implicit-filter chips; insight-row filters now merge with existing Filter-panel chips instead of overwriting them.
+
+---
+
 ## [0.13.1] — 2026-07-27
 ### Changed
 - Merged `develop` into `feature/studio-workspace` to bring in the Saved-page delete-confirmation/toast, subheader pill restyle, and Exposure Overview refinements (already versioned as v0.12.0/v0.11.5 on `develop`) after the two branches' independent version bumps had diverged.
