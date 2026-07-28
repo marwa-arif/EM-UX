@@ -182,9 +182,6 @@
 .exp-search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--shell-text, #101010); font-family: inherit; }
 .exp-search-icon-wrap { width: 24px; height: 24px; border-radius: 50%; background: rgba(99,96,216,0.15); display: flex; align-items: center; justify-content: center; color: var(--pai-indigo); flex-shrink: 0; }
 
-/* Per-row explore button */
-.exp-row-explore-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--pai-indigo-tint); border-radius: 44px; padding: 0; border: none; cursor: pointer; color: var(--pai-indigo); }
-
 /* Table wrapper */
 .exp-table { min-width: 900px; }
 
@@ -196,8 +193,6 @@
 /* Table body rows & cells */
 .exp-td { padding: var(--table-td-padding); }
 .exp-td-name { font-size: 12px; color: var(--shell-text, #101010); text-align: left; white-space: nowrap; vertical-align: middle; }
-.exp-td-name-link { background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
-.exp-td-name-link:hover { color: var(--pai-indigo); text-decoration: underline; }
 .exp-td-score { font-size: 12px; font-weight: 600; vertical-align: middle; color: var(--exp-score-color, var(--shell-text)); }
 .exp-td-change { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--exp-trend-color, var(--shell-text)); }
 
@@ -231,9 +226,9 @@
   padding: 16px 20px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0;
 }
 .exp-trend-drawer-title { font-size: 14px; font-weight: 600; color: var(--shell-text); white-space: nowrap; }
-.exp-trend-drawer-by { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
+.exp-trend-drawer-by { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--shell-text); white-space: nowrap; }
 .exp-trend-drawer-by .comp-sort-menu { left: auto; right: 0; }
-.exp-trend-drawer-by .comp-sort-btn { width: 155px; justify-content: space-between; }
+.exp-trend-drawer-by .comp-sort-btn { width: 155px; height: 32px; justify-content: space-between; font-size: 12px; color: var(--shell-text); }
 .exp-trend-drawer-by .comp-sort-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .exp-trend-drawer-body { flex: 1; overflow-y: auto; min-height: 0; padding: 20px; display: flex; flex-direction: column; gap: 16px; }

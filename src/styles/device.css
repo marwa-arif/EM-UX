@@ -343,12 +343,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Only rows wired to a drawer (kg-tr--clickable) get the click affordance on their text */
+.kg-tr--clickable:hover .dev-td-name { color: var(--pai-indigo); }
 
 /* ── Insights table cells ────────────────────────────────────────── */
 
 .dev-td-findings {
   white-space: nowrap;
 }
+
+/* Key Security Insights and Assets by Criticality Score both size their columns
+   to fit the card already — the inherited .ds-table-wrap overflow-x:auto was
+   only ever surfacing a scrollbar from sub-pixel rounding, not real clipped
+   content, so it's turned off for these two tables specifically. */
+.dev-no-hscroll { overflow-x: hidden; }
+
+/* Fixed column widths so the Action buttons never get clipped by horizontal scroll.
+   box-sizing: border-box so these widths are the final column width, not
+   content-width-plus-padding (this codebase has no global border-box reset). */
+.dev-insights-table { table-layout: fixed; }
+.dev-insights-table th, .dev-insights-table td { box-sizing: border-box; }
+.dev-insights-table .ds-th { white-space: normal; }
+.dev-insights-table th:nth-child(1), .dev-insights-table td:nth-child(1) { width: 40px; }
+.dev-insights-table th:nth-child(2), .dev-insights-table td:nth-child(2) { width: auto; }
+.dev-insights-table th:nth-child(3), .dev-insights-table td:nth-child(3) { width: 130px; }
+.dev-insights-table th:nth-child(4), .dev-insights-table td:nth-child(4) { width: 110px; }
+.dev-insights-table th:nth-child(5), .dev-insights-table td:nth-child(5) { width: 80px; }
+.dev-insights-table .dev-td-name { max-width: none; white-space: normal; }
 
 .dev-trend-cell {
   display: inline-flex;
@@ -381,10 +402,10 @@
 /* ── Criticality card ────────────────────────────────────────────── */
 
 .dev-insights-card { display: flex; flex-direction: column; }
-.dev-insights-card .dev-table-wrap { flex: 1; overflow-y: auto; }
+.dev-insights-card .ds-table-wrap { flex: 1; overflow-y: auto; }
 
 .dev-crit-card { display: flex; flex-direction: column; }
-.dev-crit-card .dev-table-wrap { flex: 1; overflow-y: auto; }
+.dev-crit-card .ds-table-wrap { flex: 1; overflow-y: auto; }
 
 .dev-crit-bar-section { margin-bottom: 16px; }
 

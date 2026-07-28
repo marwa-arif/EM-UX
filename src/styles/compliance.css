@@ -1124,6 +1124,7 @@ html.theme-dark .comp-fw-card--selected {
   background: var(--card-bg);
   border-left: 1px solid var(--shell-border);
   border-radius: 12px 0 0 12px;
+  overflow: hidden;
   z-index: 201;
   display: flex;
   flex-direction: column;
@@ -1428,6 +1429,12 @@ html.theme-dark .comp-fw-card--selected {
   white-space: nowrap;
 }
 
+/* `.comp-drawer-table th` (class+element) outranks a lone class selector —
+   qualify with the table's own class so centering actually wins. */
+.comp-drawer-table th.comp-drawer-th-actions {
+  text-align: center;
+}
+
 .comp-drawer-table td {
   padding: 8px 16px;
   color: var(--shell-text);
@@ -1534,12 +1541,14 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-action-btns {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .comp-drawer-action-icon {
   width: 24px;
   height: 24px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1550,8 +1559,12 @@ html.theme-dark .comp-fw-card--selected {
   color: var(--shell-text-muted);
   transition: background 100ms;
 }
+.comp-drawer-action-icon svg { flex-shrink: 0; }
+.comp-drawer-action-icon--filter { color: var(--fg-1, #101010); }
 
 .comp-drawer-action-icon:hover { background: var(--shell-hover); }
+.comp-drawer-action-icon--active { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
+.comp-drawer-action-icon--active:hover { background: var(--pai-indigo-tint); }
 
 .comp-drawer-download-btn {
   display: inline-flex;
@@ -3042,13 +3055,21 @@ html.theme-dark .comp-fw-card--selected {
   overflow-y: auto;
 }
 
-.cfp-th-actions { width: 72px; }
+/* `.ds-th` (navigator.css) is a single class, same specificity as `.cfp-th-actions`
+   alone — cascade order between the two stylesheets isn't guaranteed, so combine
+   both classes on the selector to win unambiguously regardless of import order. */
+.cfp-th-actions { width: 44px; }
+.ds-th.cfp-th-actions { text-align: center; }
 
 .cfp-td-title {
   font-weight: 500;
   color: var(--shell-text);
   white-space: nowrap;
 }
+
+.cfp-tr--clickable { cursor: pointer; }
+.cfp-tr--clickable:hover td { background: rgba(0, 0, 0, 0.02); }
+.cfp-tr--clickable:hover .cfp-td-title { color: var(--pai-indigo); }
 
 .cfp-entity-cell {
   display: flex;
@@ -3068,6 +3089,7 @@ html.theme-dark .comp-fw-card--selected {
 .cfp-td-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 }
 

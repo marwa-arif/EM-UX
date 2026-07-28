@@ -222,6 +222,12 @@ function MaskIcon({ icon, color = 'currentColor', size = 14 }) {
   );
 }
 const IcExplore = ({ color = 'currentColor', size = 12 }) => <MaskIcon icon="icon-explore" color={color} size={size} />;
+const IcExploreAction = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3.72222 13.5C3.39807 13.5 3.08719 13.3712 2.85798 13.142C2.62877 12.9128 2.5 12.6019 2.5 12.2778V8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5H3.72222Z"/>
+    <path d="M13.5 9.34636V12.2778C13.5 12.6019 13.3712 12.9128 13.142 13.142C12.9128 13.3712 12.6019 13.5 12.2778 13.5H8M6.69508 2.5H3.72222C3.39807 2.5 3.08719 2.62877 2.85798 2.85798C2.62877 3.08719 2.5 3.39807 2.5 3.72222V8M13.5 2.5L9.36629 6.63371M13.5 6.62568V2.5H9.36629M2.5 8V12.2778C2.5 12.6019 2.62877 12.9128 2.85798 13.142C3.08719 13.3712 3.39807 13.5 3.72222 13.5H8M2.5 8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5"/>
+  </svg>
+);
 
 const Sparkline = () => (
   <svg width="80" height="20" viewBox="0 0 80 20" fill="none">
@@ -233,6 +239,7 @@ const Sparkline = () => (
 function Bubble({
   score, severity, icon, navIcon, size = 105, label, index = 0,
   sumExposure, secondaryLabel, secondaryValue, secondaryIcon, exploreTarget, onNav,
+  tooltipBelow = false,
 }) {
   const isHigh = severity === 'H';
   const color = isHigh ? 'var(--pai-crit-fg)' : 'var(--pai-med-fg)';
@@ -261,7 +268,7 @@ function Bubble({
       {label && <div className="exp-bubble-label">{label}</div>}
 
       {showTooltip && (
-        <div className="exp-bubble-tooltip">
+        <div className={`exp-bubble-tooltip${tooltipBelow ? ' exp-bubble-tooltip--below' : ''}`}>
           {exploreTarget && (
             <button className="exp-bubble-explore-btn" style={{ borderColor: color, color }} onClick={() => onNav && onNav(exploreTarget)}>
               <IcExplore /> Explore
@@ -405,8 +412,8 @@ function ExposureOverviewSection({ onNav }) {
   const BubbleTriangle = ({ items, indexOffset = 0 }) => (
     <div className="exp-bubble-tri">
       <div className="exp-bubble-tri-top">
-        <Bubble {...items[0]} index={indexOffset} onNav={onNav} />
-        <Bubble {...items[1]} index={indexOffset + 1} onNav={onNav} />
+        <Bubble {...items[0]} index={indexOffset} onNav={onNav} tooltipBelow />
+        <Bubble {...items[1]} index={indexOffset + 1} onNav={onNav} tooltipBelow />
       </div>
       <Bubble {...items[2]} index={indexOffset + 2} onNav={onNav} />
     </div>
@@ -423,7 +430,7 @@ function ExposureOverviewSection({ onNav }) {
 
         <button className="ds-btn exp-trend-pill" onClick={() => setTrendDrawerOpen(true)}>
           <span className="exp-trend-label">
-            <IcExposure size={20} />
+            <IcExposure size={20} color="var(--pai-fg1)" />
             <span className="exp-trend-label-text">Exposure Trend</span>
             <InfoTooltip>Click to explore the trend of exposure score</InfoTooltip>
           </span>
@@ -821,12 +828,7 @@ export default function ExposureOverviewPage({ onNav }) {
               {visibleRows.map((row, i) => (
                 <tr key={i}>
                   <td className="ds-td exp-td-name">
-                    <button
-                      className="exp-td-name-link"
-                      onClick={() => onNav && onNav('exposure/findings', groupBy === 'Exposure Category' ? { category: row.name } : undefined)}
-                    >
-                      {row.name}
-                    </button>
+                    {row.name}
                   </td>
                   <td className="ds-td">
                     <span className="exp-td-score" style={{ '--exp-score-color': scoreColor(row.score) }}>{row.score}</span>
@@ -836,11 +838,11 @@ export default function ExposureOverviewPage({ onNav }) {
                   <td className="ds-td"><MiniBar pct={row.assetsPct} /></td>
                   <td className="ds-td exp-col-explore">
                     <button
-                      className="exp-row-explore-btn"
+                      className="comp-drawer-action-icon cfp-action-explore"
                       title="Explore"
                       onClick={() => onNav && onNav('exposure/findings', groupBy === 'Exposure Category' ? { category: row.name } : undefined)}
                     >
-                      <IcExplore />
+                      <IcExploreAction />
                     </button>
                   </td>
                 </tr>
