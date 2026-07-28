@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Ic } from '../ui.jsx'
 import { WidgetCard } from './DashboardCanvas.jsx'
 import ReasoningEngine, { createExchange, useReasoningEngine } from '../components/ReasoningEngine.jsx'
@@ -85,6 +86,66 @@ const ENTITY_PILLS = [
   { id: 'ident',  label: 'Identity',      count: '10,234', Icon: IcIdentity },
 ];
 
+// Starter agents so the Home agent picker and the Agents list aren't empty on
+// first use — same shape as agents created via AgentBuilderView, seeded once
+// into AGENTS_STORAGE_KEY (see NavigatorPage) rather than re-injected every load.
+const DEFAULT_AGENTS = [
+  {
+    id: 'agent-seed-1', createdAt: 1700000006000,
+    name: 'Critical Vuln Triage',
+    description: 'Surfaces new critical/high vulnerabilities on exposed assets',
+    instructions: 'Every run, find critical and high-severity vulnerabilities discovered in the last 24 hours on internet-facing devices. Rank by exploitability and flag any without an assigned owner.',
+    dataAccess: [ENTITY_PILLS[0], ENTITY_PILLS[1]],
+    autonomy: 'interactive', depth: 1,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '08:00',
+  },
+  {
+    id: 'agent-seed-2', createdAt: 1700000005000,
+    name: 'Cloud Misconfig Hunter',
+    description: 'Scans cloud accounts for risky public exposure and IAM drift',
+    instructions: 'Scan all cloud accounts for newly public storage, overly permissive IAM policies, and untagged resources. Summarize findings by account and severity.',
+    dataAccess: [ENTITY_PILLS[2]],
+    autonomy: 'agentic', depth: 1,
+    triggerType: 'manual',
+  },
+  {
+    id: 'agent-seed-3', createdAt: 1700000004000,
+    name: 'Identity Risk Reviewer',
+    description: 'Flags stale, over-privileged, or MFA-less identities',
+    instructions: 'Review privileged identities for accounts without MFA, access unused for 90+ days, and permissions beyond role. List the top offenders each run.',
+    dataAccess: [ENTITY_PILLS[4]],
+    autonomy: 'agentic', depth: 0,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '07:00',
+  },
+  {
+    id: 'agent-seed-4', createdAt: 1700000003000,
+    name: 'Device Patch Compliance',
+    description: 'Tracks endpoints past their patch SLA',
+    instructions: 'Check endpoint patch status against policy SLAs, flag devices past due, and group results by business unit.',
+    dataAccess: [ENTITY_PILLS[1]],
+    autonomy: 'agentic', depth: 0,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '06:30',
+  },
+  {
+    id: 'agent-seed-5', createdAt: 1700000002000,
+    name: 'App Exposure Monitor',
+    description: 'Watches applications for new internet-facing exposure',
+    instructions: 'Track exposure changes across applications and flag any newly internet-exposed service or new critical finding tied to a production app.',
+    dataAccess: [ENTITY_PILLS[3]],
+    autonomy: 'interactive', depth: 1,
+    triggerType: 'scheduled', scheduleFreq: 'weekly', scheduleTime: '09:00',
+  },
+  {
+    id: 'agent-seed-6', createdAt: 1700000001000,
+    name: 'Compliance Gap Auditor',
+    description: 'Checks control coverage across apps and identities',
+    instructions: 'Check control coverage across applications and identities against the current compliance framework. List any gaps opened in the last 7 days and who owns remediation.',
+    dataAccess: [ENTITY_PILLS[3], ENTITY_PILLS[4]],
+    autonomy: 'interactive', depth: 2,
+    triggerType: 'scheduled', scheduleFreq: 'weekly', scheduleTime: '09:00',
+  },
+];
+
 // Colored dots for the saved-agents dropdown/list — cycled by index rather than
 // stored per-agent, since custom agents don't carry their own brand color.
 const AGENT_DOT_VARS = ['var(--pai-indigo)', 'var(--pai-nav-teal)', 'var(--pai-green)', 'var(--pai-high-fg)', 'var(--shell-accent)'];
@@ -96,7 +157,7 @@ const VIEW_MODES = [
 ];
 
 // ── Click-outside-aware dropdown ─────────────────────────────────────
-function Dropdown({ children, onClose, className }) {
+function Dropdown({ children, onClose, className, style }) {
   const ref = useRef(null);
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -104,7 +165,7 @@ function Dropdown({ children, onClose, className }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
   return (
-    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} role="menu">
+    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} style={style} role="menu">
       {children}
     </div>
   );
@@ -348,6 +409,8 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
   const [contextFilters, setContextFilters] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  const [agentMenuPos, setAgentMenuPos] = useState({ bottom: 0, left: 0 });
+  const agentBtnRef = useRef(null);
 
   const toggleFilter = (pill) => {
     setContextFilters(prev =>
@@ -425,8 +488,15 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
             <div className="hv-composer-bar-left">
               <div className="np-rel">
                 <button
+                  ref={agentBtnRef}
                   className={`np-composer-add${agentMenuOpen ? ' active' : ''}`}
-                  onClick={() => setAgentMenuOpen(o => !o)}
+                  onClick={() => {
+                    if (!agentMenuOpen && agentBtnRef.current) {
+                      const r = agentBtnRef.current.getBoundingClientRect();
+                      setAgentMenuPos({ bottom: window.innerHeight - r.top + 6, left: r.left });
+                    }
+                    setAgentMenuOpen(o => !o);
+                  }}
                   aria-label="Use a saved agent"
                   aria-haspopup="menu"
                   aria-expanded={agentMenuOpen}
@@ -434,8 +504,12 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
                 >
                   <IcPlus />
                 </button>
-                {agentMenuOpen && (
-                  <Dropdown onClose={() => setAgentMenuOpen(false)} className="np-dropdown--agent-menu">
+                {agentMenuOpen && createPortal(
+                  <Dropdown
+                    onClose={() => setAgentMenuOpen(false)}
+                    className="np-dropdown--agent-menu"
+                    style={{ '--np-agent-menu-bottom': `${agentMenuPos.bottom}px`, '--np-agent-menu-left': `${agentMenuPos.left}px` }}
+                  >
                     <div className="np-dropdown-label">Agents</div>
                     {agents.length === 0 ? (
                       <button className="np-dropdown-item" onClick={() => { setAgentMenuOpen(false); onOpenAgents(); }}>
@@ -456,7 +530,8 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
                         </button>
                       ))
                     )}
-                  </Dropdown>
+                  </Dropdown>,
+                  document.body
                 )}
               </div>
               {selectedAgent && (
@@ -1518,16 +1593,17 @@ const SCHEDULE_FREQUENCIES = [
   { id: 'monthly', label: 'Monthly' },
 ];
 
-function AgentBuilderView({ onGoHome, onAgentCreated }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [dataAccess, setDataAccess] = useState([]);
-  const [autonomy, setAutonomy] = useState('interactive');
-  const [depth, setDepth] = useState(1);
-  const [triggerType, setTriggerType] = useState('manual');
-  const [scheduleFreq, setScheduleFreq] = useState('daily');
-  const [scheduleTime, setScheduleTime] = useState('09:00');
+function AgentBuilderView({ onGoHome, onAgentCreated, onAgentUpdated, editingAgent }) {
+  const isEditing = !!editingAgent;
+  const [name, setName] = useState(editingAgent?.name || '');
+  const [description, setDescription] = useState(editingAgent?.description || '');
+  const [instructions, setInstructions] = useState(editingAgent?.instructions || '');
+  const [dataAccess, setDataAccess] = useState(editingAgent?.dataAccess || []);
+  const [autonomy, setAutonomy] = useState(editingAgent?.autonomy || 'interactive');
+  const [depth, setDepth] = useState(editingAgent?.depth ?? 1);
+  const [triggerType, setTriggerType] = useState(editingAgent?.triggerType || 'manual');
+  const [scheduleFreq, setScheduleFreq] = useState(editingAgent?.scheduleFreq || 'daily');
+  const [scheduleTime, setScheduleTime] = useState(editingAgent?.scheduleTime || '09:00');
   const [nameTouched, setNameTouched] = useState(false);
   const [instructionsTouched, setInstructionsTouched] = useState(false);
   const [created, setCreated] = useState(false);
@@ -1544,7 +1620,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
     setNameTouched(true);
     setInstructionsTouched(true);
     if (!name.trim() || !instructions.trim()) return;
-    onAgentCreated?.({
+    const agentData = {
       name: name.trim(),
       description: description.trim(),
       instructions: instructions.trim(),
@@ -1554,8 +1630,14 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
       triggerType,
       scheduleFreq,
       scheduleTime,
-    });
-    setCreated(true);
+    };
+    if (isEditing) {
+      onAgentUpdated?.(editingAgent.id, agentData);
+      onGoHome();
+    } else {
+      onAgentCreated?.(agentData);
+      setCreated(true);
+    }
   };
 
   const resetForm = () => {
@@ -1570,7 +1652,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
       <button className="nav-history-back-btn" onClick={onGoHome}>
         <IcArrowLeft /> Back
       </button>
-      <h2 className="nav-history-page-title">Create Agent</h2>
+      <h2 className="nav-history-page-title">{isEditing ? 'Edit Agent' : 'Create Agent'}</h2>
     </div>
   );
 
@@ -1622,7 +1704,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
         <div className="agb-intro">
           <span className="agb-intro-icon"><IcBot /></span>
           <div>
-            <p className="agb-intro-title">Build a custom agent</p>
+            <p className="agb-intro-title">{isEditing ? `Edit "${editingAgent.name}"` : 'Build a custom agent'}</p>
             <p className="agb-intro-sub">Give it a name, tell it what to do, and choose what it can access — then run it on demand or on a schedule.</p>
           </div>
         </div>
@@ -1766,7 +1848,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
 
       <div className="agb-footer">
         <button className="ds-btn sz-md t-outline" onClick={onGoHome}>Cancel</button>
-        <button className="ds-btn sz-md t-primary" onClick={handleCreate}>Create Agent</button>
+        <button className="ds-btn sz-md t-primary" onClick={handleCreate}>{isEditing ? 'Save Changes' : 'Create Agent'}</button>
       </div>
     </div>
   );
@@ -1776,7 +1858,85 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
 // overlay page (same pattern as HistoryPage), rendered as a real data table
 // (ds-table-wrap/ds-table/TablePagination) rather than plain cards — list
 // data belongs in a table per the design system, not a card list. ────────
-function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
+function AgentRow({ agent: a, dotColor, onRun, onRename, onEdit, onRequestDelete }) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(a.name);
+
+  const commitRename = () => {
+    setRenaming(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== a.name) onRename(a.id, trimmed);
+    else setDraft(a.name);
+  };
+
+  const freqLabel = a.scheduleFreq ? (SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || a.scheduleFreq) : null;
+
+  return (
+    <tr>
+      <td className="ds-td">
+        <div className="agp-name-cell">
+          <span className="agp-dot" style={{ background: dotColor }} aria-hidden="true" />
+          {renaming ? (
+            <input
+              className="nav-history-rename-input"
+              value={draft}
+              autoFocus
+              onChange={e => setDraft(e.target.value)}
+              onFocus={e => e.target.select()}
+              onBlur={commitRename}
+              onKeyDown={e => {
+                if (e.key === 'Enter') commitRename();
+                if (e.key === 'Escape') { setDraft(a.name); setRenaming(false); }
+              }}
+            />
+          ) : (
+            <span className="agp-name-body">
+              <span className="agp-td-name">{a.name}</span>
+              {(a.description || a.instructions) && (
+                <span className="agp-td-desc" title={a.description || a.instructions}>{a.description || a.instructions}</span>
+              )}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="ds-td">
+        <span className={`ds-badge ${a.autonomy === 'agentic' ? 'info' : 'neutral'}`}>
+          {a.autonomy === 'agentic' ? 'Agentic' : 'Interactive'}
+        </span>
+      </td>
+      <td className="ds-td">
+        {a.triggerType === 'manual'
+          ? <span className="ds-badge neutral">Manual</span>
+          : <span className="ds-badge success dot">{freqLabel ? `Scheduled · ${freqLabel}${a.scheduleTime ? ` at ${a.scheduleTime}` : ''}` : 'Scheduled'}</span>
+        }
+      </td>
+      <td className="ds-td lib-td-muted">
+        {a.dataAccess?.length
+          ? <span className="agp-td-access" title={a.dataAccess.map(d => d.label).join(', ')}>{a.dataAccess.map(d => d.label).join(', ')}</span>
+          : '—'
+        }
+      </td>
+      <td className="ds-td">
+        <div className="row-actions">
+          <button className="ds-icon-btn" title={`Run "${a.name}"`} onClick={() => onRun(a)}>
+            <IcPlay />
+          </button>
+          <button className="ds-icon-btn" title={`Rename "${a.name}"`} onClick={() => { setDraft(a.name); setRenaming(true); }}>
+            <IcRename />
+          </button>
+          <button className="ds-icon-btn" title={`Edit "${a.name}"`} onClick={() => onEdit(a)}>
+            <IcEdit />
+          </button>
+          <button className="ds-icon-btn agp-td-delete" title={`Delete "${a.name}"`} onClick={() => onRequestDelete(a)}>
+            <IcTrash />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename, onEdit }) {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -1806,46 +1966,20 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
                 <th className="ds-th">Autonomy</th>
                 <th className="ds-th">Trigger</th>
                 <th className="ds-th">Data access</th>
-                <th className="ds-th" style={{ width: 96 }}>Actions</th>
+                <th className="ds-th" style={{ width: 152 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {pageRows.length > 0 ? pageRows.map((a, i) => (
-                <tr key={a.id}>
-                  <td className="ds-td">
-                    <div className="agp-name-cell">
-                      <span className="agp-dot" style={{ background: AGENT_DOT_VARS[(start + i) % AGENT_DOT_VARS.length] }} aria-hidden="true" />
-                      <span className="agp-name-body">
-                        <span className="agp-td-name">{a.name}</span>
-                        <span className="agp-td-desc">{a.description || a.instructions}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td className="ds-td">
-                    <span className={`ds-badge ${a.autonomy === 'agentic' ? 'info' : 'neutral'}`}>
-                      {a.autonomy === 'agentic' ? 'Agentic' : 'Interactive'}
-                    </span>
-                  </td>
-                  <td className="ds-td">
-                    {a.triggerType === 'manual'
-                      ? <span className="ds-badge neutral">Manual</span>
-                      : <span className="ds-badge success dot">Scheduled · {a.scheduleFreq}</span>
-                    }
-                  </td>
-                  <td className="ds-td lib-td-muted">
-                    {a.dataAccess?.length ? a.dataAccess.map(d => d.label).join(', ') : '—'}
-                  </td>
-                  <td className="ds-td">
-                    <div className="row-actions">
-                      <button className="ds-icon-btn" title={`Run "${a.name}"`} onClick={() => onRun(a)}>
-                        <IcPlay />
-                      </button>
-                      <button className="ds-icon-btn agp-td-delete" title={`Delete "${a.name}"`} onClick={() => setConfirmDelete(a)}>
-                        <IcTrash />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <AgentRow
+                  key={a.id}
+                  agent={a}
+                  dotColor={AGENT_DOT_VARS[(start + i) % AGENT_DOT_VARS.length]}
+                  onRun={onRun}
+                  onRename={onRename}
+                  onEdit={onEdit}
+                  onRequestDelete={setConfirmDelete}
+                />
               )) : (
                 <tr>
                   <td colSpan={5} className="lib-no-results">
@@ -1903,8 +2037,12 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   const [historyOpen, setHistoryOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [runningAgent, setRunningAgent] = useState(null);
+  const [editingAgent, setEditingAgent] = useState(null);
   const [agents, setAgents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(AGENTS_STORAGE_KEY)) || []; } catch { return []; }
+    try {
+      const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
+      return raw !== null ? (JSON.parse(raw) || []) : DEFAULT_AGENTS;
+    } catch { return DEFAULT_AGENTS; }
   });
   const agentIdSeq = useRef(0);
   const mounted = useRef(false);
@@ -1939,13 +2077,25 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
 
   const goHome = () => { setView('home'); setQuery(''); setRunningAgent(null); };
 
-  const goCreateAgent = () => { setAgentsOpen(false); setView('agent-builder'); };
+  const goCreateAgent = () => { setAgentsOpen(false); setEditingAgent(null); setView('agent-builder'); };
+
+  const goEditAgent = (agent) => { setAgentsOpen(false); setEditingAgent(agent); setView('agent-builder'); };
+
+  const backToAgents = () => { setEditingAgent(null); setView('home'); setAgentsOpen(true); };
 
   const openAgentsList = () => { setHistoryOpen(false); setAgentsOpen(true); };
 
   const handleAgentCreated = (agentData) => {
     const agent = { id: `agent-${Date.now()}-${++agentIdSeq.current}`, createdAt: Date.now(), ...agentData };
     setAgents(prev => [agent, ...prev]);
+  };
+
+  const handleAgentUpdated = (id, agentData) => {
+    setAgents(prev => prev.map(a => a.id === id ? { ...a, ...agentData } : a));
+  };
+
+  const handleRenameAgent = (id, name) => {
+    setAgents(prev => prev.map(a => a.id === id ? { ...a, name } : a));
   };
 
   const handleDeleteAgent = (id) => setAgents(prev => prev.filter(a => a.id !== id));
@@ -1976,7 +2126,12 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
         <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
       )}
       {view === 'agent-builder' && (
-        <AgentBuilderView onGoHome={goHome} onAgentCreated={handleAgentCreated} />
+        <AgentBuilderView
+          onGoHome={editingAgent ? backToAgents : goHome}
+          onAgentCreated={handleAgentCreated}
+          onAgentUpdated={handleAgentUpdated}
+          editingAgent={editingAgent}
+        />
       )}
       {historyOpen && (
         <HistoryPage
@@ -1992,6 +2147,8 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
           onRun={handleRunAgent}
           onCreateNew={goCreateAgent}
           onDelete={handleDeleteAgent}
+          onRename={handleRenameAgent}
+          onEdit={goEditAgent}
         />
       )}
     </div>

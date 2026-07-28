@@ -1,5 +1,30 @@
 [
   {
+    "version": "0.13.1",
+    "date": "2026-07-27",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Merged `develop` into `feature/studio-workspace` to bring in the Saved-page delete-confirmation/toast, subheader pill restyle, and Exposure Overview refinements (already versioned as v0.12.0/v0.11.5 on `develop`) after the two branches' independent version bumps had diverged."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.13.0",
+    "date": "2026-07-27",
+    "changes": {
+      "Added": [
+        "Navigator: default seeded agents (Critical Vuln Triage, Cloud Misconfig Hunter, Identity Risk Reviewer, Device Patch Compliance, App Exposure Monitor, Compliance Gap Auditor) so the Home agent picker and Agents list aren't empty on first use.",
+        "Navigator: edit-in-place for existing agents in AgentBuilderView (was create-only)."
+      ],
+      "Changed": [
+        "Navigator: saved-agent dropdown menu now renders via a portal so it isn't clipped by ancestor overflow."
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.12.0",
     "date": "2026-07-22",
     "changes": {

@@ -764,16 +764,11 @@
   align-items: center;
   padding: 0 12px;
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: thin;
   min-width: 0;
 }
 .dc-toolbar-row > * { flex-shrink: 0; }
 .dc-toolbar-row--actions {
   flex-grow: 1;
-  /* The kebab dropdown is taller than this row and must escape it, so this
-     row can't clip overflow the way --top safely can (it has no dropdowns). */
-  overflow: visible;
 }
 .dc-toolbar--stacked .dc-toolbar-row--top { border-bottom: 1px solid var(--shell-border); }
 .dc-toolbar-row--compact .dc-btn-label { display: none; }
@@ -2598,6 +2593,19 @@
 }
 .dc-tip:hover::after {
   opacity: 1;
+}
+.dc-tip--wrap::after {
+  white-space: normal;
+  max-width: 240px;
+  width: max-content;
+  text-align: left;
+  /* Right-align instead of centering: this variant is used on the last
+     item in a scrollable toolbar row, and a centered bubble extends past
+     the row's right edge — even hidden (opacity:0) that phantom overflow
+     inflates the row's scrollWidth and pins a permanent scrollbar. */
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 /* Trigger sits at the far right of its container (e.g. a table's last column) —
