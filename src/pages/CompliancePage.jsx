@@ -57,6 +57,10 @@ const ENTITY_ICON_SRCS = {
   multi:    'assets/icons/entities/assessment.svg',
 }
 
+// Maps this app's entity-badge vocabulary (device/cloud/identity/storage) to
+// the Knowledge Graph page's node-type keys, for "Explore in Knowledge Graph".
+const KG_ENTITY_TYPE = { device: 'host', cloud: 'cloudAccount', identity: 'identity', storage: 'storage' }
+
 function EntityBadge({ type }) {
   const src = ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.multi
   return (
@@ -782,7 +786,7 @@ function FindingsKpi({ closed, open, pct }) {
 // ── Assessment drawer ─────────────────────────────────────────────
 const TREND_METRICS = ['Compliance Score', 'Findings Trend']
 
-function AssessmentDrawer({ node, onClose }) {
+function AssessmentDrawer({ node, onClose, onNav }) {
   const [tRange, setTRange] = useState('3M')
   const [inclClosed, setInclClosed] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -902,8 +906,8 @@ function AssessmentDrawer({ node, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Scope</span>
                 <span className="comp-drawer-ov-value">
-                  <EntityBadge type="device" />
-                  Host
+                  <EntityBadge type={node.scopeType || node.entity || 'device'} />
+                  {node.scopeLabel || node.entityLabel || 'Host'}
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1108,7 +1112,10 @@ function AssessmentDrawer({ node, onClose }) {
                 <span className="comp-drawer-findings-title">
                   Findings Details ({(inclClosed ? total : node.open).toLocaleString()})
                 </span>
-                <button className="comp-drawer-kg-btn">
+                <button
+                  className="comp-drawer-kg-btn"
+                  onClick={() => onNav && onNav('kg', { type: KG_ENTITY_TYPE[node.scopeType || node.entity] || 'host', label: node.scopeLabel || node.entityLabel || node.name })}
+                >
                   <span className="comp-kg-btn-icon"><IcExploreAction /></span>
                   Explore Asset in Knowledge Graph
                 </button>
@@ -1157,7 +1164,7 @@ function AssessmentDrawer({ node, onClose }) {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="9" y2="18"/></svg>
                       </span>
                     </th>
-                    <th>Action</th>
+                    <th className="comp-drawer-th-actions">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1173,7 +1180,11 @@ function AssessmentDrawer({ node, onClose }) {
                       <td><span className="comp-drawer-status-open">{row.status}</span></td>
                       <td>
                         <div className="comp-drawer-action-btns">
-                          <button className="comp-drawer-action-icon comp-drawer-action-icon--indigo" title="Explore">
+                          <button
+                            className="comp-drawer-action-icon comp-drawer-action-icon--indigo"
+                            title="Explore"
+                            onClick={() => onNav && onNav('kg', { type: 'host', label: row.entity })}
+                          >
                             <IcExploreAction />
                           </button>
                           <button
@@ -1679,7 +1690,7 @@ function FunctionDrawer({ node, level, onClose }) {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="9" y2="18"/></svg>
                       </span>
                     </th>
-                    <th>Action</th>
+                    <th className="comp-drawer-th-actions">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2120,7 +2131,7 @@ function DownloadButton() {
 }
 
 // ── Main page ─────────────────────────────────────────────────────
-export default function CompliancePage({ expanded: expandedProp, onExpandChange }) {
+export default function CompliancePage({ expanded: expandedProp, onExpandChange, onNav }) {
   const [selectedFw, setSelectedFw] = useState('nist_csf')
   const [timeRange, setTimeRange]   = useState('1W')
   const [showTrend, setShowTrend]   = useState(true)
@@ -2428,7 +2439,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange 
       </div>
 
       {drawerNode && (
-        <AssessmentDrawer node={drawerNode} onClose={() => setDrawerNode(null)} />
+        <AssessmentDrawer node={drawerNode} onClose={() => setDrawerNode(null)} onNav={onNav} />
       )}
       {funcDrawerNode && (
         <FunctionDrawer node={funcDrawerNode.node} level={funcDrawerNode.level} onClose={() => setFuncDrawerNode(null)} />

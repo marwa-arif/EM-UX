@@ -1,5 +1,19 @@
 /* ── Findings page layout ───────────────────────────────────────── */
 .fin-page { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* Finding Details panel — kg-dp-* extensions specific to this drawer's density */
+.kg-dp-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(even) { border-right: 1px solid var(--shell-raised, #F5F5F5); }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(4n) { border-right: none; }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-last-child(-n+2) { border-bottom: 1px solid var(--shell-raised, #F5F5F5); }
+.kg-dp-rel-header--flex { display: flex; align-items: center; justify-content: space-between; }
+
+/* Related-node tabs (Cloud Account / Finding / Vulnerability) — ring + legend blocks */
+.fin-ring-summary { display: flex; gap: 32px; padding: 14px; flex-wrap: wrap; }
+.fin-ring-block { display: flex; flex-direction: column; gap: 10px; min-width: 160px; }
+.fin-ring-block-title { font-size: 11px; font-weight: 600; color: var(--fg-1, #101010); }
+.fin-ring-row { display: flex; align-items: center; gap: 14px; }
+.fin-ring-legend { display: flex; flex-direction: column; gap: 4px; }
 .fin-intel-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-top-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-left-col { display: flex; flex-direction: column; flex: 1; gap: 12px; min-width: 0; }
@@ -22,7 +36,9 @@
 
 /* ── Security Posture card ──────────────────────────────────────── */
 .fin-posture-card { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
-.fin-posture-groupby { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--shell-text-muted); }
+.fin-posture-groupby { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--shell-text); }
+.fin-posture-groupby .comp-sort-btn { height: 32px; width: 200px; justify-content: space-between; font-size: 12px; color: var(--shell-text); }
+.fin-posture-groupby .comp-sort-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fin-groupby-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border: 1px solid var(--shell-border); border-radius: 44px; background: var(--ctrl-bg); font-size: 11px; font-family: inherit; color: var(--shell-text); cursor: pointer; transition: border-color 0.12s; }
 .fin-groupby-btn:hover { border-color: var(--shell-accent); }
 .fin-posture-body { display: flex; gap: 0; flex: 1; min-height: 0; }
@@ -55,6 +71,8 @@
 .fin-table-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
 .fin-table-count { font-weight: 400; color: var(--shell-text-muted); font-size: 13px; }
 .fin-table-actions { display: flex; align-items: center; gap: 8px; }
+.fin-table-section .kg-tr:hover td { background: var(--shell-hover); }
+.fin-td-title-link:hover { color: var(--pai-indigo); }
 
 .fin-btn { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 16px; border-radius: 44px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.12s; }
 .fin-btn-outline { border: 1px solid var(--shell-border); background: var(--ctrl-bg); color: var(--shell-text-2); }
@@ -67,19 +85,39 @@ html.theme-dark .fin-th { background: var(--ctrl-bg); }
 .fin-tr:hover .fin-td { background: var(--shell-hover); }
 .fin-td { padding: var(--table-td-padding); border-bottom: 1px solid var(--table-border, #E6E6E6); white-space: nowrap; }
 html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
-.fin-td-flex { display: flex; align-items: center; gap: 8px; }
+.fin-td-flex { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* Fixed column widths so the Action buttons never get clipped by horizontal scroll */
+.fin-findings-table { table-layout: fixed; }
+.fin-findings-table .ds-th { white-space: normal; }
+.fin-findings-table th:nth-child(1), .fin-findings-table td:nth-child(1) { width: 11%; }
+.fin-findings-table th:nth-child(2), .fin-findings-table td:nth-child(2) { width: 13%; }
+.fin-findings-table th:nth-child(3), .fin-findings-table td:nth-child(3) { width: 13%; }
+.fin-findings-table th:nth-child(4), .fin-findings-table td:nth-child(4) { width: 15%; }
+.fin-findings-table th:nth-child(5), .fin-findings-table td:nth-child(5) { width: 9%; }
+.fin-findings-table th:nth-child(6), .fin-findings-table td:nth-child(6) { width: 9%; }
+.fin-findings-table th:nth-child(7), .fin-findings-table td:nth-child(7) { width: 9%; }
+.fin-findings-table th:nth-child(8), .fin-findings-table td:nth-child(8) { width: 10%; }
+.fin-findings-table th:nth-child(9), .fin-findings-table td:nth-child(9) { width: 11%; }
+.fin-findings-table th:nth-child(9) { text-align: center; }
 .fin-td-icon { display: flex; align-items: center; justify-content: center; color: var(--shell-text-muted); flex-shrink: 0; }
 .fin-td-icon--indigo { color: var(--pai-indigo); }
-.fin-score { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fin-score-color, var(--shell-text)); }
+.fin-td-icon--badge { width: 24px; height: 24px; border-radius: 50%; background: var(--shell-raised); }
+.ds-td.fin-score { font-family: 'Inter', sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fin-score-color, var(--shell-text)); }
 .fin-td-cat { color: var(--shell-text-muted); }
-.fin-td-actions { display: flex; align-items: center; gap: 4px; }
-.fin-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--shell-border); background: transparent; cursor: pointer; color: var(--shell-text-muted); transition: all 0.12s; }
-.fin-action-btn:hover { border-color: var(--shell-accent); color: var(--shell-accent); background: var(--shell-active); }
+.fin-td-evidence { color: var(--shell-text-muted); }
+.fin-td-entity { color: var(--shell-text); }
+.fin-td-clickable { cursor: pointer; }
+.fin-td-clickable:hover .fin-td-entity { color: var(--pai-indigo); }
+.fin-sev-badge { display: inline-block; padding: 2px 10px; border-radius: 44px; border: 1px solid var(--fin-sev-fg); background: var(--fin-sev-bg); color: var(--fin-sev-fg); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.fin-td-actions { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.fin-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); transition: background 100ms; }
+.fin-action-btn:hover { background: var(--shell-hover); }
 
 /* ── Operational Intelligence row ────────────────────────────────── */
 /* shared intel card header */
 .fin-intel-hdr { padding: 11px 16px 10px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; }
-.fin-intel-title { display: flex; align-items: center; gap: 8px; }
+.fin-intel-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--shell-text); }
 .fin-intel-badge { font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 4px; }
 .fin-intel-badge-crit { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
 .fin-intel-badge-neutral { background: var(--shell-border); color: var(--shell-text-muted); letter-spacing: 0.03em; }
@@ -142,3 +180,69 @@ html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-sbc-tooltip__row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
 .fin-sbc-tooltip__row:last-child { margin-bottom: 0; }
 .fin-sbc-tooltip__val { font-weight: 600; color: var(--fin-tip-color, var(--pai-fg1)); }
+
+/* ── Exposure Factors panel (Entity Details drawer) ──────────────── */
+.fin-ef-ring-row { display: flex; align-items: center; justify-content: center; gap: 0; padding: 32px 14% 24px; }
+
+.fin-ef-ring-circle {
+  width: 168px; height: 168px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 3px solid var(--ef-ring-color);
+  box-shadow: 0 10px 15px -3px rgba(156,163,175,0.3), 0 4px 6px -4px rgba(156,163,175,0.3);
+  background: var(--card-bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 16px; box-sizing: border-box;
+}
+.fin-ef-ring-icon { display: inline-flex; margin-bottom: 4px; }
+.fin-ef-ring-value { font-family: 'Urbanist', sans-serif; font-size: 36px; font-weight: 700; line-height: 1; }
+.fin-ef-ring-denom { font-family: 'Urbanist', sans-serif; font-size: 14px; font-weight: 400; color: var(--fg-1, #101010); margin-left: 1px; }
+.fin-ef-ring-label { font-size: 12px; font-weight: 500; color: var(--fg-1, #101010); text-align: center; width: 80%; margin-top: 4px; }
+
+.fin-ef-connector {
+  flex: 1 1 auto; min-width: 50px; height: 4px;
+  background-image: repeating-linear-gradient(to right, var(--ef-connector-color) 0 6px, transparent 6px 12px);
+  -webkit-mask-image: linear-gradient(to right, black, transparent);
+  mask-image: linear-gradient(to right, black, transparent);
+}
+.fin-ef-connector--flip { transform: scaleX(-1); }
+
+.fin-ef-ring-gauge {
+  position: relative; flex-shrink: 0;
+  width: 230px; height: 230px; border-radius: 50%;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border, #E6E6E6);
+  box-shadow: 0 10px 15px -3px rgba(156,163,175,0.3), 0 4px 6px -4px rgba(156,163,175,0.3);
+}
+.fin-ef-ring-gauge-inner {
+  position: absolute; inset: 27px; border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) inset;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.fin-ef-ring-value-row { display: flex; align-items: baseline; justify-content: center; }
+
+.fin-ef-body { display: flex; justify-content: space-between; gap: 24px; padding: 0 20px 24px; }
+.fin-ef-chips-group { width: 40%; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 12px; }
+.fin-ef-chip {
+  min-width: 149px; width: fit-content;
+  border-radius: 4px; border-left: 3px solid var(--ef-chip-accent, var(--ctrl-border, #9CA3AF));
+  background: var(--shell-raised, #F3F4F6);
+  padding: 4px 12px;
+}
+.fin-ef-chip-label { font-size: 12px; color: var(--shell-text-muted); }
+.fin-ef-chip-value { font-size: 14px; font-weight: 700; color: var(--fg-1, #101010); }
+
+/* Explanatory hover tooltip on the View/Hide Exposure Factors button — same
+   light-card treatment as ExposureOverviewPage's .exp-info-tip-card. */
+.fin-ef-tip { position: relative; display: inline-flex; }
+.fin-ef-tip-card {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--card-bg); color: var(--shell-text, #101010);
+  border-radius: 8px; padding: 12px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-size: 12px; font-weight: 400; line-height: 1.6; text-align: left;
+  width: max-content; max-width: 280px; white-space: normal;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 120ms;
+  z-index: 210;
+}
+.fin-ef-tip:hover .fin-ef-tip-card { opacity: 1; visibility: visible; }

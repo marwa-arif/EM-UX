@@ -361,7 +361,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
       {!collapsed && hasChildren && (
         <div
           className="nav-item__children"
-          style={{ maxHeight: isOpen ? item.children.length * 30 : 0 }}
+          style={{ maxHeight: isOpen ? item.children.length * 32 : 0 }}
         >
           {item.children.map(c => {
             const active = activeChild === c.id;
