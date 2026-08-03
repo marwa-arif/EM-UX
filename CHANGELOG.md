@@ -29,6 +29,15 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.15.0] — 2026-08-03
+### Added
+- DataQualityOverviewPage and DataQualityInDepthPage
+- NotificationPanel component
+- DownloadsContext for tracking downloadable exports
+- Shared `crossFilter` utils and `useChartFilters` hook, wired into chart drill-down and Navigator draft/dock state
+
+---
+
 ## [0.14.0] — 2026-07-28
 ### Added
 - AssetDetailDrawer + EntityRelSummaryGraph for the Assets by Criticality Score widget (Discover Device/Cloud/Identity), including a View/Hide Exposure Factors button, tooltip, and score-ring panel matching the Findings page's entity drawer.
