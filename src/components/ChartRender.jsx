@@ -526,7 +526,9 @@ export function ChartRender({
   cardHeight = 260,
   printMode = false,
   reportTotal = 0,
+  fontSize = 'medium',
 }) {
+  const kpiFontScale = fontSize === 'small' ? 0.8 : fontSize === 'large' ? 1.25 : 1
   // ── SVG tooltip state ──────────────────────────────────────────
   const [svgTip, setSvgTip] = useState(null)
   const onSvgMove = (e) => {
@@ -539,9 +541,9 @@ export function ChartRender({
   // ── KPI ─────────────────────────────────────────────────────────
   if (chartId === 'kpi' && data) {
     const accent      = chartColors?.['Accent'] || 'var(--pai-indigo)'
-    const valSize     = Math.max(18, Math.min(36, cardHeight * 0.138))
-    const labelSize   = Math.max(9,  Math.min(11, cardHeight * 0.042))
-    const simValSize  = Math.max(20, Math.min(44, cardHeight * 0.169))
+    const valSize     = Math.max(18, Math.min(36, cardHeight * 0.138)) * kpiFontScale
+    const labelSize   = Math.max(9,  Math.min(11, cardHeight * 0.042)) * kpiFontScale
+    const simValSize  = Math.max(20, Math.min(44, cardHeight * 0.169)) * kpiFontScale
     const gapSize     = Math.max(4,  Math.min(10, cardHeight * 0.04))
     const trendColor = data.trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
     const trendBg    = data.trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'

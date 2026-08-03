@@ -53,7 +53,7 @@ const SavedIcon = ({ size = 14 }) => (
 
 const WorkspaceContext = React.createContext(null);
 
-function WorkspaceProvider({ children, onNav }) {
+function WorkspaceProvider({ children, onNav, editDashboardSeed, setEditDashboardSeed }) {
   const [dashboardName, setDashboardName] = React.useState('');
   const [isPrivate, setIsPrivate] = React.useState(true);
   const [widgets, setWidgets] = React.useState([]);
@@ -67,9 +67,15 @@ function WorkspaceProvider({ children, onNav }) {
   const [savedSearch, setSavedSearch] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [savedReports, setSavedReports] = React.useState([]);
+  const [savedDashboards, setSavedDashboards] = React.useState([]);
+  const [justSavedName, setJustSavedName] = React.useState(null);
 
   const addSavedReport = React.useCallback((entry) => {
     setSavedReports(prev => [entry, ...prev.filter(r => r.name !== entry.name)]);
+  }, []);
+
+  const addSavedDashboard = React.useCallback((entry) => {
+    setSavedDashboards(prev => [entry, ...prev.filter(d => d.id !== entry.id && d.name !== entry.name)]);
   }, []);
   const [uploadedFile, setUploadedFile] = React.useState(null);   // File object
   const [uploadSource, setUploadSource] = React.useState('html'); // 'html' | 'design'
@@ -107,6 +113,7 @@ function WorkspaceProvider({ children, onNav }) {
   return (
     <WorkspaceContext.Provider value={{
       onNav,
+      editDashboardSeed, setEditDashboardSeed,
       dashboardName, setDashboardName,
       isPrivate, setIsPrivate,
       widgets, addWidget, removeWidget,
@@ -119,6 +126,8 @@ function WorkspaceProvider({ children, onNav }) {
       savedSearch, setSavedSearch,
       deleteTarget, openDeleteModal, closeDeleteModal,
       savedReports, addSavedReport,
+      savedDashboards, addSavedDashboard,
+      justSavedName, setJustSavedName,
       uploadedFile, setUploadedFile,
       uploadSource, setUploadSource,
     }}>

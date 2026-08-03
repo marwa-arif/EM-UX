@@ -39,6 +39,7 @@ const IcChevsRight = () => (
 
 export default function TablePagination({ total, page, rowsPerPage, onPageChange, onRowsPerPageChange }) {
   const totalPages  = Math.max(1, Math.ceil(total / rowsPerPage));
+  if (totalPages <= 1) return null;
   const safePage    = Math.min(Math.max(1, page), totalPages);
   const startItem   = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
   const endItem     = Math.min(safePage * rowsPerPage, total);

@@ -116,9 +116,9 @@ const CRITICALITY = [
 ];
 
 const ASSETS = [
-  { name: 'VM-TSR39727.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 1000 },
+  { name: 'VM-TSR39727.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 1000, isNew: true },
   { name: 'VM-TSR19224.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
-  { name: 'VM-TSR27829.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
+  { name: 'VM-TSR27829.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998, isNew: true },
   { name: 'VM-TSR17132.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
   { name: 'VM-TSR37484.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 996  },
 ];
@@ -341,6 +341,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
+  const [newOnly,       setNewOnly]       = useState(false);
   const [insightPage,   setInsightPage]   = useState(1);
   const [assetPage,     setAssetPage]     = useState(1);
   const [rowsPer,       setRowsPer]       = useState(10);
@@ -355,6 +356,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
     setDrawerClosing(true);
     setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 240);
   }, []);
+  const assetsSectionRef = useRef(null);
   const hoveredBarRef    = useRef(null);
   const hoveredTypeRef   = useRef(null);
   const typeRangeDataRef = useRef(null);
@@ -425,8 +427,9 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
     r.text.toLowerCase().includes(insightSearch.toLowerCase())
   );
   const filteredAssets = ASSETS.filter(r =>
-    r.name.toLowerCase().includes(assetSearch.toLowerCase())
+    r.name.toLowerCase().includes(assetSearch.toLowerCase()) && (!newOnly || r.isNew)
   );
+  const newAssetCount = ASSETS.filter(r => r.isNew).length;
 
   const TH = ({ children }) => (
     <th className="ds-th">
@@ -452,10 +455,19 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
-                <span className="dev-newly-added">
+                <button
+                  type="button"
+                  className={`dev-newly-added${newOnly ? ' dev-newly-added--active' : ''}`}
+                  title="Show only newly added devices"
+                  onClick={() => {
+                    setNewOnly(v => !v)
+                    setAssetPage(1)
+                    assetsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                >
                   <IcNewlyAdded />
                   <span>15 Newly added</span>
-                </span>
+                </button>
               </div>
               <div className="dev-stat-header-controls">
                 <div className="dev-time-pills">
@@ -758,6 +770,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
 
             {/* Nested: Assets by Criticality Score */}
             <div
+              ref={assetsSectionRef}
               className="ddb-nested-wrap"
               onMouseEnter={() => dashboardMode && setCritSection('assets')}
               onMouseLeave={() => dashboardMode && setCritSection('outer')}
@@ -766,6 +779,12 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
             <div className="dev-asset-hdr">
               <div className="dev-asset-hdr-left">
                 <span className="dev-card-title">Assets by Criticality Score</span>
+                {newOnly && (
+                  <span className="dev-asset-filter-note">
+                    Showing {newAssetCount} newly added device{newAssetCount === 1 ? '' : 's'}
+                    <button type="button" className="dev-asset-filter-clear" onClick={() => setNewOnly(false)}>Clear</button>
+                  </span>
+                )}
               </div>
               <DSPillSearch
                 value={assetSearch}
@@ -789,7 +808,10 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
                     <tr key={i}>
-                      <td className="ds-td dev-td-name">{a.name}</td>
+                      <td className="ds-td dev-td-name">
+                        {a.name}
+                        {a.isNew && <span className="dev-td-new-badge">New</span>}
+                      </td>
                       <td className="ds-td">{a.type}</td>
                       <td className="ds-td">{a.deploy}</td>
                       <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>

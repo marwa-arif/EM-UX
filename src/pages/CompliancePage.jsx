@@ -1294,8 +1294,11 @@ function AssessmentDrawer({ node, onClose }) {
         <div className="ct-overlay" onClick={closeCreateTicket}>
           <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Create Ticket</div>
+                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              </div>
+              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="ct-field">
@@ -1807,8 +1810,11 @@ function FunctionDrawer({ node, level, onClose }) {
         <div className="ct-overlay" onClick={closeCreateTicket}>
           <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Create Ticket</div>
+                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              </div>
+              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="ct-field">

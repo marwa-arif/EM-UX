@@ -367,8 +367,11 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
         <div className="ct-overlay" onClick={closeTicket}>
           <div className="ct-modal" onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">A ticket is being added to your board to track finding</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Create Ticket</div>
+                <div className="ct-modal__subtitle">A ticket is being added to your board to track finding</div>
+              </div>
+              <button className="ct-modal__close" onClick={closeTicket} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="ct-field">

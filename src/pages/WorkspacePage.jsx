@@ -23,15 +23,26 @@ const REPORT_TITLES = {
 
 export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null }) {
   const [current, setCurrent] = useState(
-    initialRoute === 'workspace' ? 'workspace/library' : initialRoute
+    initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
+  )
+  // Remembers whichever workspace list tab (Saved or Templates) the user was
+  // last on, so "back"/"cancel"/"leave" out of the dashboard/report builder
+  // returns to where they came from instead of always landing on Saved.
+  const [listOrigin, setListOrigin] = useState(
+    current === 'workspace/library' ? 'workspace/library' : 'workspace/saved'
   )
   const dashboardBuilderRef = useRef(null)
   useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
   const [collapsed, setCollapsed] = useState(false)
+  const [navExpandOverride, setNavExpandOverride] = useState(false)
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
   const [reportFilterCount, setReportFilterCount] = useState(0)
   const [customReportTitles, setCustomReportTitles] = useState({})
+  // Set by SavedPage's "Edit" action on a saved dashboard row (see the
+  // 'workspace/dashboard/edit-<id>' route below) so DashboardCanvas can seed
+  // itself with that dashboard's widgets/scope instead of starting blank.
+  const [editDashboardSeed, setEditDashboardSeed] = useState(null)
 
   const handleNav = (id) => {
     if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
@@ -41,10 +52,15 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     if (id.startsWith('workspace/report/') && !id.startsWith('workspace/report-preview/')) {
       localStorage.removeItem('pai-excel-warn-dismissed')
     }
-    setCurrent(id)
-    onNav(id)
+    const resolved = id === 'workspace' ? 'workspace/saved' : id
+    if (resolved === 'workspace/saved' || resolved === 'workspace/library') {
+      setListOrigin(resolved)
+    }
+    setCurrent(resolved)
+    onNav(resolved)
   }
 
+  const isEditDashboard   = current.startsWith('workspace/dashboard/edit-')
   const isSeededDashboard = current.startsWith('workspace/dashboard/new-')
   const isDashboard     = current.startsWith('workspace/dashboard')
   const isReport        = current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/')
@@ -52,7 +68,15 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const isConfigPage    = current === 'workspace/configure-screen'
   const isReportPage    = isReport || isReportPreview
 
-  const dashTitle   = DASHBOARD_TITLES[current] ?? 'New Dashboard'
+  // Once the user navigates away from the edit-* route, drop the seed so it
+  // isn't mistakenly picked up by the next dashboard opened (e.g. "New
+  // Dashboard"). Keyed off the route rather than DashboardCanvas's own mount
+  // so it can't race the title/seed read above.
+  useEffect(() => {
+    if (!isEditDashboard && editDashboardSeed) setEditDashboardSeed(null)
+  }, [current])
+
+  const dashTitle   = isEditDashboard && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')
   const reportTitle = isReport
     ? (customReportTitles[current] ?? REPORT_TITLES[current] ?? 'Report Template')
     : isReportPreview
@@ -100,19 +124,20 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
 
   const pageBreadcrumbClicks =
     isDashboard || isReportPage || isConfigPage
-      ? [() => handleNav('exposure/overview'), () => handleNav('workspace/library')]
+      ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
       : [() => handleNav('exposure/overview')]
 
   return (
-    <WorkspaceProvider onNav={handleNav}>
+    <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
         <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton />
         <div className="wp-body">
           <LeftNav
             current={current}
             onNav={handleNav}
-            collapsed={collapsed || rightPanelOpen}
-            onToggleCollapse={() => setCollapsed(c => !c)}
+            collapsed={(collapsed || rightPanelOpen) && !navExpandOverride}
+            onToggleCollapse={() => { setNavExpandOverride(false); setCollapsed(c => !c) }}
+            onExpand={() => setNavExpandOverride(true)}
           />
           <main className="wp-main">
             <SubHeader
@@ -135,11 +160,11 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                 {current === 'workspace/saved'
                   ? <SavedPage />
                   : isConfigPage
-                    ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} />
+                    ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                     : isDashboard
-                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} />
                       : isReport
-                        ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} />
+                        ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                         : isReportPreview
                           ? <ReportPreviewPage
                               reportTitle={reportTitle}

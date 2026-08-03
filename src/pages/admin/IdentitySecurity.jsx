@@ -129,7 +129,7 @@ export function ApiKeysSection({ onConfirm }) {
 
   const requestRevoke = (key) => onConfirm({
     title: `Revoke "${key.name}"?`,
-    body: `Any integration using this key will immediately lose API access. This action cannot be undone.`,
+    body: `Integrations using this key immediately lose access. Can't be undone.`,
     confirmLabel: 'Revoke',
     onConfirm: () => setKeys(prev => prev.filter(k => k.id !== key.id)),
   });
@@ -188,7 +188,7 @@ export function ApiKeysSection({ onConfirm }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">API key created</span>
+              <span className="ds-modal-title success">API key created</span>
             </div>
             <div className="ds-modal-body admin-form-body">
               <div className="admin-field-desc">Copy <strong>{revealKey.name}</strong> now — for security, you won't be able to view the full key again.</div>

@@ -321,24 +321,22 @@ function InterruptCard({ interrupt, onChoose }) {
   );
 }
 
-function StepRow({ step, idx, isLast, onToggle, tier, entity }) {
+function StepRow({ step, idx, onToggle, tier, entity }) {
   if (step._phaseName) return null;
   const status = step.status;
   const showFilterTree = step.expandable && ['graph', 'risk', 'deep'].includes(tier);
+  const hasBody = step.thoughts.length > 0 || !!step.toolCallText || !!step.branching || showFilterTree;
   return (
-    <div className={`sr-row ${status}${step.expanded ? ' sr-expanded' : ''}${isLast ? ' sr-row-last' : ''}`}>
-      <div className="sr-step-track">
+    <div className={`sr-row ${status}${step.expanded ? ' sr-expanded' : ''}`}>
+      <div className="sr-header" onClick={() => hasBody && onToggle(idx)}>
         <span className="sr-status">
           {status === 'active' && <span className="nr-step-spinner" />}
           {status === 'done' && <Ic size={13} path={<><polyline points="20 6 9 17 4 12" /></>} />}
         </span>
-        {!isLast && <div className="sr-step-line" />}
+        <span className="sr-label">{step.label}</span>
+        {hasBody && <span className="sr-chev"><IcChevD /></span>}
       </div>
-      <div className="sr-content">
-        <div className="sr-header" onClick={() => onToggle(idx)}>
-          <span className="sr-label">{step.label}</span>
-          <span className="sr-chev"><IcChevD /></span>
-        </div>
+      {hasBody && (
         <div className="sr-body">
           {step.thoughts.length > 0 && (
             <div className="sr-thoughts">
@@ -366,7 +364,7 @@ function StepRow({ step, idx, isLast, onToggle, tier, entity }) {
             <FilterTree tier={tier} entity={entity || FILTER_TREE_ENTITY_DEFAULT[tier]} />
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -387,7 +385,7 @@ function groupByPhase(steps) {
   return groups;
 }
 
-function PhaseGroup({ phase, items, collapsed, onToggleCollapse, onToggleStep, totalSteps, tier, entity }) {
+function PhaseGroup({ phase, items, collapsed, onToggleCollapse, onToggleStep, tier, entity }) {
   return (
     <div>
       <div className="phase-sep">
@@ -397,7 +395,7 @@ function PhaseGroup({ phase, items, collapsed, onToggleCollapse, onToggleStep, t
       </div>
       <div className={`phase-group${collapsed ? ' collapsed' : ''}`}>
         {items.map(({ step, idx }) => (
-          <StepRow key={idx} step={step} idx={idx} isLast={idx === totalSteps - 1} onToggle={onToggleStep} tier={tier} entity={entity} />
+          <StepRow key={idx} step={step} idx={idx} onToggle={onToggleStep} tier={tier} entity={entity} />
         ))}
       </div>
     </div>
@@ -412,7 +410,6 @@ export default function ReasoningEngine({ exchange, live, engine, phaseCollapsed
   const title = exchange.done
     ? (TITLE_COMPLETION_LABELS[exchange.tier] || 'Analysis complete')
     : (active ? active.label : 'Preparing…');
-  const doneCount = exchange.steps.filter(s => !s._phaseName && s.status === 'done').length;
   const totalCount = exchange.steps.filter(s => !s._phaseName).length;
   const isPhased = exchange.steps.some(s => s._phaseName);
   const groups = isPhased ? groupByPhase(exchange.steps) : null;
@@ -433,13 +430,7 @@ export default function ReasoningEngine({ exchange, live, engine, phaseCollapsed
       {!exchange.awaitingApproval && (
         <div className="cv-reasoning">
           <div className="nr-bar" onClick={engine.toggleReasoningCollapsed} style={{ cursor: 'pointer' }}>
-            <span className={`nr-step-spinner${exchange.done ? ' hidden' : ''}`} />
-            <span className={`nr-active-label${!exchange.done ? ' nr-shimmer' : ''}`}>{title}</span>
-            <span className="nr-dot-row">
-              {Array.from({ length: totalCount }).map((_, i) => (
-                <span key={i} className={`nr-dot${i < doneCount ? ' done' : ''}${i === doneCount && !exchange.done ? ' active' : ''}`} />
-              ))}
-            </span>
+            <span className="nr-steps-label">{exchange.done ? title : `${totalCount} step${totalCount === 1 ? '' : 's'}`}</span>
             <span className="nr-elapsed">{formatElapsed(exchange.elapsedMs)}</span>
             <span className={`nr-collapse-btn${sectionCollapsed ? '' : ' open'}`}><IcChevD /></span>
           </div>
@@ -454,11 +445,11 @@ export default function ReasoningEngine({ exchange, live, engine, phaseCollapsed
 
           {!sectionCollapsed && (isPhased
             ? groups.map((g, i) => g.phase
-              ? <PhaseGroup key={i} phase={g.phase} items={g.items} totalSteps={exchange.steps.length}
+              ? <PhaseGroup key={i} phase={g.phase} items={g.items}
                   collapsed={!!phaseCollapsed[g.phase]} onToggleCollapse={() => onTogglePhase(g.phase)} onToggleStep={engine.toggleStepExpand}
                   tier={exchange.tier} entity={entity} />
-              : g.items.map(({ step, idx }) => <StepRow key={idx} step={step} idx={idx} isLast={idx === exchange.steps.length - 1} onToggle={engine.toggleStepExpand} tier={exchange.tier} entity={entity} />))
-            : exchange.steps.map((step, idx) => <StepRow key={idx} step={step} idx={idx} isLast={idx === exchange.steps.length - 1} onToggle={engine.toggleStepExpand} tier={exchange.tier} entity={entity} />))}
+              : g.items.map(({ step, idx }) => <StepRow key={idx} step={step} idx={idx} onToggle={engine.toggleStepExpand} tier={exchange.tier} entity={entity} />))
+            : exchange.steps.map((step, idx) => <StepRow key={idx} step={step} idx={idx} onToggle={engine.toggleStepExpand} tier={exchange.tier} entity={entity} />))}
         </div>
       )}
 

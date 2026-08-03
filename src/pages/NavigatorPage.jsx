@@ -8,13 +8,13 @@ import TablePagination from '../components/TablePagination.jsx'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
 const RECENT_CHATS = [
-  { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today' },
-  { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today' },
-  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday' },
-  { id: 'c4', label: 'Compliance gaps in AWS environment',          time: 'Yesterday, 9:03 AM', bucket: 'Yesterday' },
-  { id: 'c5', label: 'Top exposed cloud storage buckets',           time: '3 days ago',         bucket: 'Earlier' },
-  { id: 'c6', label: 'Identity risk overview for privileged accounts', time: '5 days ago',       bucket: 'Earlier' },
-  { id: 'c7', label: 'Findings trend over the last quarter',        time: '2 weeks ago',        bucket: 'Earlier' },
+  { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today',     starred: true  },
+  { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today',     starred: false },
+  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday', starred: false },
+  { id: 'c4', label: 'Compliance gaps in AWS environment',          time: 'Yesterday, 9:03 AM', bucket: 'Yesterday', starred: false },
+  { id: 'c5', label: 'Top exposed cloud storage buckets',           time: '3 days ago',         bucket: 'Earlier',   starred: false },
+  { id: 'c6', label: 'Identity risk overview for privileged accounts', time: '5 days ago',       bucket: 'Earlier',  starred: false },
+  { id: 'c7', label: 'Findings trend over the last quarter',        time: '2 weeks ago',        bucket: 'Earlier',   starred: false },
 ];
 
 const HISTORY_BUCKETS = ['Today', 'Yesterday', 'Earlier'];
@@ -77,6 +77,12 @@ const IcPlay          = () => <Ic size={16} path={<><polygon points="6 3 20 12 6
 const IcClock         = () => <Ic size={16} path={<><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></>} />;
 const IcCheckCircle   = () => <Ic size={28} path={<><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></>} />;
 const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />;
+const IcStar           = () => <Ic size={13} path={<><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+const IcSidebarCollapse = ({ flip = false }) => (
+  <span style={{ display: 'flex', transform: flip ? 'scaleX(-1)' : 'none' }}>
+    <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M13.5 9l2.5 3-2.5 3"/></>} />
+  </span>
+);
 
 const ENTITY_PILLS = [
   { id: 'vuln',   label: 'Vulnerability', count: '13,456', Icon: IcVulnerability },
@@ -171,10 +177,6 @@ function Dropdown({ children, onClose, className, style }) {
   );
 }
 
-// ── History control — single trigger + panel reused across all views ──
-// (Home/Chat/Build each render a <HistoryButton/> in the same top-right
-// spot; the panel itself is rendered once by the page root so it always
-// appears in one consistent place regardless of which view is active.)
 function IcHome() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -196,21 +198,13 @@ function HomeButton({ onClick }) {
   );
 }
 
-function HistoryButton({ onClick }) {
-  return (
-    <button className="nav-history-btn" onClick={onClick} title="History" aria-haspopup="true">
-      <IcHistory />
-      <span className="nav-history-btn-label">History</span>
-    </button>
-  );
-}
 
 // ── History page — replaces the old click-outside dropdown with a full-width
 // view so a growing chat list has room for search + per-item actions. It's an
 // overlay absolutely positioned over .nav-page-content-only (not a `view`
 // state) so Home/Chat/Build stay mounted underneath — "Back" just closes it,
 // landing exactly where the user was, with no lost chat/build state.
-function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
+function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete, onToggleStar, showIcon = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(chat.label);
@@ -238,7 +232,7 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
         />
       ) : (
         <button className="np-history-chat-main" onClick={() => onSelect(chat.label)}>
-          <span className="np-history-chat-icon"><IcChat /></span>
+          {showIcon && <span className="np-history-chat-icon"><IcChat /></span>}
           <span className="np-history-chat-body">
             <span className="np-history-chat-label">{chat.label}</span>
             <span className="np-history-chat-time">{chat.time}</span>
@@ -256,6 +250,9 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
         </button>
         {menuOpen && (
           <Dropdown onClose={() => setMenuOpen(false)} className="np-dropdown--history-menu">
+            <button className="np-dropdown-item" onClick={() => { setMenuOpen(false); onToggleStar(chat.id); }}>
+              <IcStar /><span>{chat.starred ? 'Unstar' : 'Star'}</span>
+            </button>
             <button className="np-dropdown-item" onClick={() => { setMenuOpen(false); setDraft(chat.label); setRenaming(true); }}>
               <IcRename /><span>Rename</span>
             </button>
@@ -270,9 +267,8 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
   );
 }
 
-function HistoryPage({ activeLabel, onBack, onSelect }) {
+function HistoryPage({ activeLabel, onBack, onSelect, chats, onRename, onDelete, onToggleStar }) {
   const [query, setQuery] = useState('');
-  const [chats, setChats] = useState(RECENT_CHATS);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const q = query.trim().toLowerCase();
@@ -281,8 +277,7 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
     .map(bucket => ({ bucket, items: filtered.filter(c => c.bucket === bucket) }))
     .filter(g => g.items.length > 0);
 
-  const handleRename = (id, label) => setChats(prev => prev.map(c => c.id === id ? { ...c, label } : c));
-  const handleDelete = (id) => { setChats(prev => prev.filter(c => c.id !== id)); setConfirmDelete(null); };
+  const handleDelete = (id) => { onDelete(id); setConfirmDelete(null); };
 
   return (
     <div className="nav-history-page">
@@ -323,8 +318,9 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
                   chat={c}
                   active={c.label === activeLabel}
                   onSelect={onSelect}
-                  onRename={handleRename}
+                  onRename={onRename}
                   onRequestDelete={setConfirmDelete}
+                  onToggleStar={onToggleStar}
                 />
               ))}
             </div>
@@ -336,7 +332,7 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.label}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDelete.label}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
@@ -395,16 +391,159 @@ const BUILD_SUGGESTIONS = [
   { id: 'bs5', label: 'Findings over time',        chartId: 'line'    },
 ];
 
-function AgentsButton({ onClick }) {
-  return (
-    <button className="nav-history-btn" onClick={onClick} title="Agents">
-      <IcBot />
-      <span className="nav-history-btn-label">Agents</span>
+// ── Persistent left sidebar — History (Starred + recent) and Agents live
+// here at all times, next to the (auto-collapsed) app LeftNav, instead of
+// behind the old per-view "History"/"Agents" buttons and their full-page
+// detours. Collapses to a slim icon rail rather than disappearing, so it
+// never has to cover Home/Chat/Build to be reached.
+function NavSidebar({
+  collapsed, onToggleCollapse, onNewChat,
+  chats, activeLabel, onSelectChat, onToggleStar, onRename, onDelete, onViewAllChats,
+  agents, onRunAgent, onCreateAgent, onViewAllAgents,
+}) {
+  const starred = chats.filter(c => c.starred);
+  const recent = chats.filter(c => !c.starred).slice(0, 6);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const agentMeta = (a) => {
+    if (a.triggerType === 'manual') return 'Manual';
+    const freq = SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || 'Scheduled';
+    return a.scheduleTime ? `${freq} · ${a.scheduleTime}` : freq;
+  };
+
+  const renderChatRow = (c) => collapsed ? (
+    <button
+      key={c.id}
+      className="np-hist-chat-row-collapsed"
+      title={c.label}
+      aria-label={c.label}
+      onClick={() => onSelectChat(c.label)}
+    >
+      <IcChat />
     </button>
+  ) : (
+    <HistoryRow
+      key={c.id}
+      chat={c}
+      active={c.label === activeLabel}
+      onSelect={onSelectChat}
+      onRename={onRename}
+      onRequestDelete={setConfirmDelete}
+      onToggleStar={onToggleStar}
+      showIcon={false}
+    />
+  );
+
+  return (
+    <div className={`np-hist-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Chat history and agents">
+      <div className="np-hist-sidebar-body">
+        {collapsed ? (
+          <div className="np-history-hdr np-history-hdr--collapsed">
+            <button className="np-hist-newchat-collapsed" onClick={onNewChat} title="New chat" aria-label="New chat">
+              <IcEdit />
+            </button>
+          </div>
+        ) : (
+          <div className="np-history-hdr">
+            <button className="np-history-new-btn" onClick={onNewChat}>
+              <IcEdit /> New chat
+            </button>
+          </div>
+        )}
+
+        {starred.length > 0 && (
+          <>
+            <div className="np-history-section">
+              <div className="np-history-section-hdr">
+                {collapsed
+                  ? <span className="np-history-section-title" title="Starred"><IcStar /></span>
+                  : <span className="np-history-section-title"><IcStar /> Starred</span>}
+              </div>
+              {starred.map(renderChatRow)}
+            </div>
+            <div className="np-history-divider" />
+          </>
+        )}
+
+        <div className="np-history-section">
+          <div className="np-history-section-hdr">
+            {collapsed
+              ? <span className="np-history-section-title" title="History"><IcHistory /></span>
+              : <span className="np-history-section-title"><IcHistory /> History</span>}
+          </div>
+          {recent.map(renderChatRow)}
+          {!collapsed && (
+            <button className="np-history-viewall" onClick={onViewAllChats}>
+              <IcHistory /> View all conversations
+            </button>
+          )}
+        </div>
+
+        <div className="np-history-divider" />
+
+        <div className="np-history-section">
+          <div className="np-history-section-hdr">
+            {collapsed
+              ? <span className="np-history-section-title" title="Agents"><IcBot /></span>
+              : <span className="np-history-section-title"><IcBot /> Agents</span>}
+            {!collapsed && (
+              <button className="np-history-add-btn" onClick={onCreateAgent} aria-label="Create agent">
+                <IcPlus />
+              </button>
+            )}
+          </div>
+          {agents.slice(0, 5).map((a) => collapsed ? (
+            <button key={a.id} className="np-hist-agent-row-collapsed" title={a.name} aria-label={a.name} onClick={() => onRunAgent(a)}>
+              <IcBot />
+            </button>
+          ) : (
+            <button key={a.id} className="np-history-agent-row" onClick={() => onRunAgent(a)}>
+              <span className="np-history-agent-body">
+                <span className="np-history-agent-name">{a.name}</span>
+                <span className="np-history-agent-meta">{agentMeta(a)}</span>
+              </span>
+            </button>
+          ))}
+          {!collapsed && (
+            <button className="np-history-viewall" onClick={onViewAllAgents}>
+              <IcBot /> View all agents
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="np-collapse-row">
+        <button
+          className={`np-collapse-btn${collapsed ? ' np-collapse-btn--collapsed' : ''}`}
+          onClick={onToggleCollapse}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <span className="np-collapse-btn-icon"><IcSidebarCollapse flip={!collapsed} /></span>
+          {!collapsed && <span className="np-collapse-btn-label">Collapse</span>}
+        </button>
+      </div>
+
+      {confirmDelete && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title danger">Delete "{confirmDelete.label}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, agents }) {
+function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
   const [query, setQuery] = useState('');
   const [contextFilters, setContextFilters] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -437,11 +576,6 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
 
   return (
     <div className="hv-shell">
-      <div className="hv-top-actions">
-        <AgentsButton onClick={onOpenAgents} />
-        <HistoryButton onClick={onToggleHistory} />
-      </div>
-
       <div className="hv-bg">
         <div className="hv-bg-blob hv-bg-blob-1" />
         <div className="hv-bg-blob hv-bg-blob-2" />
@@ -858,7 +992,7 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runningAgent }) {
+function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
   const [followUp, setFollowUp] = useState('');
   const [exchanges, setExchanges] = useState(() => [createExchange(query, { mode })]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
@@ -957,7 +1091,6 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
       {runningAgent && <span className="ds-badge info" title={runningAgent.description || runningAgent.instructions}>Agent: {runningAgent.name}</span>}
       <div className="chat-space-title-actions">
         <HomeButton onClick={onGoHome} />
-        <HistoryButton onClick={onToggleHistory} />
         <button className="np-thread-menu-btn" title="Thread options" onClick={(e) => { e.stopPropagation(); setThreadMenuOpen(o => !o); }}>
           <IcDots />
         </button>
@@ -981,7 +1114,7 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{threadTitle}"?</span>
+              <span className="ds-modal-title danger">Delete "{threadTitle}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteThread(false)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This thread and its conversation will be removed. This can't be undone.</div>
@@ -1040,9 +1173,8 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
             {appliedMode === 'agentic' ? 'Agentic' : 'Interactive'} · {DEPTH_LEVELS[appliedDepth].label}
           </button>
           {canStop ? (
-            <button className="ds-btn sz-sm t-outline" onClick={handleStop} title="Stop generating">
-              <span style={{ width: 10, height: 10, background: 'currentColor', borderRadius: 2, display: 'inline-block' }} />
-              Stop
+            <button className="nav-send-btn" onClick={handleStop} title="Stop generating">
+              <span className="nav-stop-icon" />
             </button>
           ) : (
             <button className="nav-send-btn" disabled={!followUp.trim()} onClick={handleSend}>
@@ -1144,7 +1276,7 @@ function buildMockWidgetData(chartId, label) {
   return undefined; // 'line' renders ChartRender's own placeholder series, same as Workspace
 }
 
-function detectChartId(text) {
+export function detectChartId(text) {
   const t = (text || '').toLowerCase();
   if (/\bkpi\b|^how many\b|count\b|total\b|\bnumber of\b/.test(t)) return 'kpi';
   if (/pie|donut|breakdown|proportion|percent|split/.test(t))       return 'pie';
@@ -1155,7 +1287,7 @@ function detectChartId(text) {
 
 const BUILD_WIDGET_SIZE_SPAN = { small: 1, medium: 2, large: 3, xlarge: 4 };
 
-function buildWidgetSpec(chartId, label, idSeq) {
+export function buildWidgetSpec(chartId, label, idSeq) {
   const sizeId = chartId === 'kpi' ? 'small' : 'medium';
   return {
     id: idSeq,
@@ -1173,7 +1305,7 @@ function buildWidgetSpec(chartId, label, idSeq) {
 // Strips the request-phrasing ("Add a pie chart for…") down to just the
 // subject, so the widget's title reads like a chart caption ("Severity
 // breakdown") instead of the literal sentence the user typed.
-function cleanWidgetTitle(text) {
+export function cleanWidgetTitle(text) {
   let t = text.trim();
   t = t.replace(/^(add|show|create|build|give me)\s+/i, '');
   t = t.replace(/^(a|an|the)\s+/i, '');
@@ -1184,7 +1316,7 @@ function cleanWidgetTitle(text) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function parseWidgetIntent(text) {
+export function parseWidgetIntent(text) {
   const t = text.toLowerCase();
   const addVerb   = /^(add|show|create|build|give me)\b/.test(t);
   const chartWord = /\b(chart|graph|trend|breakdown|distribution|over time)\b/.test(t);
@@ -1247,7 +1379,7 @@ const IcWidgetReady = () => <Ic size={13} path={<><path d="M9 11l3 3L22 4" /><pa
 // an inline text/canvas result. `onWidgetReady` fires exactly once per
 // exchange (guarded by a ref, mirroring ExchangeTurn's canvas-auto-open guard)
 // so the widget materializes the moment its trace finishes — no extra click.
-function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
+export function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
   const engine = useReasoningEngine(exchange, live, updateExchange);
   const readyFiredRef = useRef(false);
 
@@ -1320,7 +1452,7 @@ function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
 }
 
 // ── Build view ───────────────────────────────────────────────────────
-function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
+function BuildView({ initialQuery, onGoHome, onNav }) {
   const [dashName,    setDashName]    = useState('Untitled Dashboard');
   const [editingName, setEditingName] = useState(false);
   const [widgets,          setWidgets]          = useState([]);
@@ -1446,7 +1578,6 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
         <div className="build-topbar-spacer" />
 
         <HomeButton onClick={onGoHome} />
-        <HistoryButton onClick={onToggleHistory} />
       </div>
 
       {/* Chat + Canvas workspace */}
@@ -1562,7 +1693,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDeleteWidget.label}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDeleteWidget.label}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteWidget(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This widget will be removed from the dashboard. This can't be undone.</div>
@@ -2004,7 +2135,7 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.name}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDelete.name}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This agent will be permanently removed. This can't be undone.</div>
@@ -2038,6 +2169,8 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [runningAgent, setRunningAgent] = useState(null);
   const [editingAgent, setEditingAgent] = useState(null);
+  const [chats, setChats] = useState(RECENT_CHATS);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agents, setAgents] = useState(() => {
     try {
       const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
@@ -2073,9 +2206,13 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
     setView(sentMode === 'build' ? 'build' : 'chat');
   };
 
-  const toggleHistory = () => { setAgentsOpen(false); setHistoryOpen(o => !o); };
+  const openHistoryPage = () => { setAgentsOpen(false); setHistoryOpen(true); };
 
   const goHome = () => { setView('home'); setQuery(''); setRunningAgent(null); };
+
+  const handleRenameChat = (id, label) => setChats(prev => prev.map(c => c.id === id ? { ...c, label } : c));
+  const handleDeleteChat = (id) => setChats(prev => prev.filter(c => c.id !== id));
+  const handleToggleStarChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, starred: !c.starred } : c));
 
   const goCreateAgent = () => { setAgentsOpen(false); setEditingAgent(null); setView('agent-builder'); };
 
@@ -2115,42 +2252,64 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   };
 
   return (
-    <div className="nav-page-content-only">
-      {view === 'home' && (
-        <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} onOpenAgents={openAgentsList} agents={agents} />
-      )}
-      {view === 'chat' && (
-        <ChatView query={activeQuery} mode={mode} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
-      )}
-      {view === 'build' && (
-        <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
-      )}
-      {view === 'agent-builder' && (
-        <AgentBuilderView
-          onGoHome={editingAgent ? backToAgents : goHome}
-          onAgentCreated={handleAgentCreated}
-          onAgentUpdated={handleAgentUpdated}
-          editingAgent={editingAgent}
-        />
-      )}
-      {historyOpen && (
-        <HistoryPage
-          activeLabel={view === 'chat' ? activeQuery : null}
-          onBack={() => setHistoryOpen(false)}
-          onSelect={handleSelectChat}
-        />
-      )}
-      {agentsOpen && (
-        <AgentsListPage
-          agents={agents}
-          onBack={() => setAgentsOpen(false)}
-          onRun={handleRunAgent}
-          onCreateNew={goCreateAgent}
-          onDelete={handleDeleteAgent}
-          onRename={handleRenameAgent}
-          onEdit={goEditAgent}
-        />
-      )}
+    <div className="nav-page-shell">
+      <NavSidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        onNewChat={goHome}
+        chats={chats}
+        activeLabel={view === 'chat' ? activeQuery : null}
+        onSelectChat={handleSelectChat}
+        onToggleStar={handleToggleStarChat}
+        onRename={handleRenameChat}
+        onDelete={handleDeleteChat}
+        onViewAllChats={openHistoryPage}
+        agents={agents}
+        onRunAgent={handleRunAgent}
+        onCreateAgent={goCreateAgent}
+        onViewAllAgents={openAgentsList}
+      />
+      <div className="nav-page-content-only">
+        {view === 'home' && (
+          <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onOpenAgents={openAgentsList} agents={agents} />
+        )}
+        {view === 'chat' && (
+          <ChatView query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
+        )}
+        {view === 'build' && (
+          <BuildView initialQuery={activeQuery} onGoHome={goHome} onNav={onNav} />
+        )}
+        {view === 'agent-builder' && (
+          <AgentBuilderView
+            onGoHome={editingAgent ? backToAgents : goHome}
+            onAgentCreated={handleAgentCreated}
+            onAgentUpdated={handleAgentUpdated}
+            editingAgent={editingAgent}
+          />
+        )}
+        {historyOpen && (
+          <HistoryPage
+            activeLabel={view === 'chat' ? activeQuery : null}
+            onBack={() => setHistoryOpen(false)}
+            onSelect={handleSelectChat}
+            chats={chats}
+            onRename={handleRenameChat}
+            onDelete={handleDeleteChat}
+            onToggleStar={handleToggleStarChat}
+          />
+        )}
+        {agentsOpen && (
+          <AgentsListPage
+            agents={agents}
+            onBack={() => setAgentsOpen(false)}
+            onRun={handleRunAgent}
+            onCreateNew={goCreateAgent}
+            onDelete={handleDeleteAgent}
+            onRename={handleRenameAgent}
+            onEdit={goEditAgent}
+          />
+        )}
+      </div>
     </div>
   );
 }

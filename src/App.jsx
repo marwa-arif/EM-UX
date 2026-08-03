@@ -354,6 +354,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               builderApi={navigatorProps?.builderApi}
               builderKind={navigatorProps?.builderKind}
               builderContext={navigatorProps?.builderContext}
+              pageId={navigatorProps?.pageId}
+              pageLabel={navigatorProps?.pageLabel}
             />
           )}
         </div>
@@ -588,7 +590,10 @@ function App() {
     if (path === '/') return 'navigator';
     return path.slice(1) || 'navigator';
   });
-  const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
+  const [appMode, setAppMode] = useState(() => {
+    const path = stripBase(window.location.pathname);
+    return path.startsWith('/studio') ? 'studio' : 'em';
+  }); // 'em' | 'studio'
   const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
@@ -598,6 +603,10 @@ function App() {
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [navCollapsed, setNavCollapsed] = useState(false);
+  // Lets a click on a dropdown-capable LeftNav item force the sidebar open
+  // even while auto-collapsed (e.g. on the Navigator route) so its children
+  // become visible/clickable. Cleared on every navigation.
+  const [navExpandOverride, setNavExpandOverride] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
   const [navigatorQuery, setNavigatorQuery] = useState('');
   // Bumped on every LeftNav "Navigator" click so NavigatorPage resets to its
@@ -657,6 +666,7 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = stripBase(window.location.pathname);
+      setAppMode(path.startsWith('/studio') ? 'studio' : 'em');
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
@@ -697,6 +707,7 @@ function App() {
   };
 
   const handleNav = (id, data) => {
+    setNavExpandOverride(false);
     if (id === 'navigator') {
       setNavigatorViewMode('floating');
       setNavigatorFloating(true);
@@ -709,7 +720,11 @@ function App() {
       setNavigatorFloating(false);
       setNavigatorBuilderMode(true);
       setNavigatorBuilderKind(data?.kind || 'assessment');
-      setNavigatorBuilderContext(data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel } : null);
+      setNavigatorBuilderContext(
+        data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel }
+        : data?.initialPrompt ? { initialPrompt: data.initialPrompt }
+        : null
+      );
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       setRightPanel('navigator');
       return;
@@ -824,6 +839,8 @@ function App() {
         builderApi: activeBuilderSurface?.api ?? null,
         builderKind: navigatorBuilderKind,
         builderContext: navigatorBuilderContext,
+        pageId: current,
+        pageLabel: PAGE_META[current]?.title || null,
       }}
       navigatorFloating={navigatorFloating}
     />
@@ -889,12 +906,13 @@ function App() {
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
   const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
-  // Auto-collapse while a docked right panel (navigator/filter) is open, to
-  // reclaim width for it — but never let that override the user's manual
-  // preference once the panel closes. A floating Navigator doesn't dock into
-  // that width, so it shouldn't force the collapse.
-  const collapsed = navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating));
   const isNavigatorRoute = current === 'navigator';
+  // Auto-collapse whenever a docked right panel is open (Navigator in sidebar/
+  // builder mode, or the filter panel) or the full-page Navigator route is
+  // active, to reclaim width. Floating Navigator overlays content instead of
+  // consuming layout width, so it's exempt. Never overrides the user's manual
+  // preference once Navigator/the panel closes.
+  const collapsed = (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)) || isNavigatorRoute) && !navExpandOverride;
 
   return (
     <div className="app-shell">
@@ -911,7 +929,15 @@ function App() {
           current={current}
           onNav={handleNav}
           collapsed={collapsed}
-          onToggleCollapse={() => setNavCollapsed(!navCollapsed)}
+          onToggleCollapse={() => {
+            if (isNavigatorRoute) {
+              setNavExpandOverride((o) => !o);
+            } else {
+              setNavExpandOverride(false);
+              setNavCollapsed((c) => !c);
+            }
+          }}
+          onExpand={() => setNavExpandOverride(true)}
           mode={appMode}
           onModeChange={handleModeChange}
         />

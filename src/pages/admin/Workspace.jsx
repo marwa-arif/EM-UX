@@ -53,7 +53,7 @@ export function OrganizationSection({ userCount, onConfirm }) {
             className="ds-btn sz-md t-danger"
             onClick={() => onConfirm({
               title: 'Delete "Prevalent AI"?',
-              body: 'This will permanently delete this workspace, including all assets, findings, and user access. This action cannot be undone.',
+              body: "Permanently deletes this workspace — all assets, findings, and access. Can't be undone.",
               confirmLabel: 'Delete Workspace',
               onConfirm: () => {},
             })}

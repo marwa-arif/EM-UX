@@ -118,9 +118,9 @@ const CRITICALITY = [
 ];
 
 const ASSETS = [
-  { name: 'DATA-TRANSFORMATION-PL...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'DATA-TRANSFORMATION-PL...', type: 'Kubernetes Container', crit: 'Critical', score: 1000, isNew: true },
   { name: 'UI-COMPONENT-LIBRARY-V3',   type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-  { name: 'CONTENT-FILTERING-SERVIC...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
+  { name: 'CONTENT-FILTERING-SERVIC...', type: 'Kubernetes Container', crit: 'Critical', score: 1000, isNew: true },
   { name: 'ML-EXPERIMENT-TRACKING-V1',  type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
   { name: 'WEB-UI-DESIGN-SYSTEM-V1',    type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
 ];
@@ -313,6 +313,8 @@ export default function DiscoverCloudPage() {
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
   const [assetSearch,   setAssetSearch]   = useState('');
+  const [newOnly,       setNewOnly]       = useState(false);
+  const assetsSectionRef = useRef(null);
   const [insightPage,   setInsightPage]   = useState(1);
   const [assetPage,     setAssetPage]     = useState(1);
   const [rowsPer,       setRowsPer]       = useState(10);
@@ -368,8 +370,9 @@ export default function DiscoverCloudPage() {
     r.text.toLowerCase().includes(insightSearch.toLowerCase())
   );
   const filteredAssets = ASSETS.filter(r =>
-    r.name.toLowerCase().includes(assetSearch.toLowerCase())
+    r.name.toLowerCase().includes(assetSearch.toLowerCase()) && (!newOnly || r.isNew)
   );
+  const newAssetCount = ASSETS.filter(r => r.isNew).length;
 
   const TH = ({ children }) => (
     <th className="ds-th">
@@ -389,10 +392,19 @@ export default function DiscoverCloudPage() {
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
-                <span className="dev-newly-added">
+                <button
+                  type="button"
+                  className={`dev-newly-added${newOnly ? ' dev-newly-added--active' : ''}`}
+                  title="Show only newly added assets"
+                  onClick={() => {
+                    setNewOnly(v => !v)
+                    setAssetPage(1)
+                    assetsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                >
                   <IcNewlyAdded />
                   <span>2,492 Newly Added</span>
-                </span>
+                </button>
               </div>
               <div className="dev-stat-header-controls">
                 <div className="dev-time-pills">
@@ -649,9 +661,15 @@ export default function DiscoverCloudPage() {
               </div>
             </div>
 
-            <div className="dev-asset-hdr">
+            <div ref={assetsSectionRef} className="dev-asset-hdr">
               <div className="dev-asset-hdr-left">
                 <span className="dev-card-title">Assets by Criticality Score</span>
+                {newOnly && (
+                  <span className="dev-asset-filter-note">
+                    Showing {newAssetCount} newly added asset{newAssetCount === 1 ? '' : 's'}
+                    <button type="button" className="dev-asset-filter-clear" onClick={() => setNewOnly(false)}>Clear</button>
+                  </span>
+                )}
               </div>
               <DSPillSearch
                 value={assetSearch}
@@ -673,7 +691,10 @@ export default function DiscoverCloudPage() {
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
                     <tr key={i}>
-                      <td className="ds-td dev-td-name">{a.name}</td>
+                      <td className="ds-td dev-td-name">
+                        {a.name}
+                        {a.isNew && <span className="dev-td-new-badge">New</span>}
+                      </td>
                       <td className="ds-td">{a.type}</td>
                       <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
                       <td className="ds-td dev-td-score">{a.score.toLocaleString()}</td>

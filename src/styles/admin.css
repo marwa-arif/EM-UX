@@ -256,7 +256,7 @@
   max-width: 440px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 4px;
   box-shadow: var(--shadow-modal, 0 24px 48px rgba(16,16,16,0.16));
   display: flex;
   flex-direction: column;
@@ -267,6 +267,13 @@
   border-bottom: 1px solid var(--shell-border);
 }
 .ds-modal-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+/* Destructive confirmation modals — title matches the t-danger confirm button's red. */
+.ds-modal-title.danger { color: #e87c7c; }
+html.theme-light .ds-modal-title.danger { color: var(--pai-crit-fg); }
+/* Non-destructive negative actions (suspend, stop, discard) — amber heading, confirm button stays primary. */
+.ds-modal-title.warning { color: var(--pai-med-fg); }
+/* Success confirmations — green heading, confirm button stays primary. */
+.ds-modal-title.success { color: var(--pai-low-fg); }
 .ds-modal-close {
   width: 24px; height: 24px;
   border: none; background: transparent;

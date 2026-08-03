@@ -87,21 +87,22 @@ export function UsersSection({ users, setUsers, groups, onConfirm }) {
 
   const requestRemoveOne = (user) => onConfirm({
     title: `Remove "${user.name}"?`,
-    body: `This will immediately revoke ${user.name}'s access to this workspace. This action cannot be undone.`,
+    body: `Immediately revokes ${user.name}'s access to this workspace. Can't be undone.`,
     confirmLabel: 'Remove',
     onConfirm: () => removeUsers([user.id]),
   });
   const requestSuspend = (user) => onConfirm({
     title: `Suspend "${user.name}"?`,
-    body: `${user.name} will be immediately signed out and unable to sign back in until reinstated.`,
+    body: `${user.name} will be signed out until reinstated.`,
     confirmLabel: 'Suspend',
+    tier: 'warning',
     onConfirm: () => setUserStatus(user.id, 'Suspended'),
   });
   const requestRemoveBulk = () => {
     const ids = [...selected];
     onConfirm({
       title: `Remove ${ids.length} user${ids.length === 1 ? '' : 's'}?`,
-      body: `This will immediately revoke workspace access for the selected user${ids.length === 1 ? '' : 's'}. This action cannot be undone.`,
+      body: `Immediately revokes workspace access for the selected user${ids.length === 1 ? '' : 's'}. Can't be undone.`,
       confirmLabel: 'Remove',
       onConfirm: () => removeUsers(ids),
     });
@@ -226,7 +227,7 @@ export function GroupsSection({ groups, setGroups, users, onConfirm }) {
 
   const requestDelete = (g) => onConfirm({
     title: `Delete "${g.name}"?`,
-    body: `Members of this group will lose the ${g.role} permissions granted through it. This action cannot be undone.`,
+    body: `Members lose the ${g.role} permissions granted through it. Can't be undone.`,
     confirmLabel: 'Delete',
     onConfirm: () => setGroups(prev => prev.filter(x => x.id !== g.id)),
   });
@@ -289,7 +290,7 @@ export function RolesSection({ roles, setRoles, onConfirm }) {
 
   const requestDelete = (role) => onConfirm({
     title: `Delete "${role.name}"?`,
-    body: `Users assigned to this role will need to be reassigned. This action cannot be undone.`,
+    body: `Users assigned to this role will need reassigning. Can't be undone.`,
     confirmLabel: 'Delete',
     onConfirm: () => setRoles(prev => prev.filter(r => r.id !== role.id)),
   });

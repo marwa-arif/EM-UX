@@ -272,7 +272,7 @@ const SOURCE_OPTIONS = [
 ]
 
 // ── Main component ─────────────────────────────────────────────────
-function DataConfigPage({ onOpenCopilotBuilder }) {
+function DataConfigPage({ onOpenCopilotBuilder, backTarget = 'workspace/saved' }) {
   const { onNav, uploadedFile, uploadSource, setUploadedFile } = useWorkspace()
 
   const [screenName,   setScreenName]   = useState('')
@@ -303,9 +303,9 @@ function DataConfigPage({ onOpenCopilotBuilder }) {
     }
   }, [uploadedFile, uploadSource])
 
-  const handleBack = () => { setUploadedFile(null); onNav('workspace/library') }
+  const handleBack = () => { setUploadedFile(null); onNav(backTarget) }
   const handleReset = () => { setScreenName(''); setDescription('') }
-  const handleSave = () => { setUploadedFile(null); onNav('workspace/library') }
+  const handleSave = () => { setUploadedFile(null); onNav(backTarget) }
 
   const handleZoomIn    = () => setZoom(z => Math.min(1.5, Math.round((z + 0.1) * 10) / 10))
   const handleZoomOut   = () => setZoom(z => Math.max(0.5, Math.round((z - 0.1) * 10) / 10))

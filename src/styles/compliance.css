@@ -1671,7 +1671,9 @@ html.theme-dark .comp-fw-card--selected {
   position: fixed;
   inset: 0;
   z-index: 9100;
-  background: rgba(0,0,0,0.38);
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1683,7 +1685,7 @@ html.theme-dark .comp-fw-card--selected {
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
   border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: var(--shadow-modal, 0 24px 48px rgba(16,16,16,0.16));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1691,10 +1693,16 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .ct-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   padding: 16px 20px 12px;
   border-bottom: 1px solid var(--shell-border);
   flex-shrink: 0;
 }
+
+.ct-modal__header-text { min-width: 0; }
 
 .ct-modal__title {
   font-size: 14px;
@@ -1702,12 +1710,26 @@ html.theme-dark .comp-fw-card--selected {
   color: var(--shell-text);
   margin-bottom: 4px;
 }
+.ct-modal__title.warning { color: var(--pai-med-fg); }
+.ct-modal__title.danger { color: var(--pai-crit-fg); }
 
 .ct-modal__subtitle {
   font-size: 11px;
   color: var(--shell-text-muted);
   line-height: 1.5;
 }
+
+.ct-modal__close {
+  width: 24px; height: 24px;
+  border: none; background: transparent;
+  color: var(--shell-text-muted);
+  font-size: 14px; line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ct-modal__close:hover { background: var(--shell-hover); }
 
 .ct-modal__body {
   padding: 16px 20px;
@@ -1809,12 +1831,14 @@ html.theme-dark .comp-fw-card--selected {
 .ct-btn--create:disabled { opacity: 0.38; cursor: not-allowed; }
 
 .ct-btn--danger {
-  background: var(--danger-fg);
-  color: #fff;
-  border-color: var(--danger-fg);
+  background: rgba(105,31,31,0.25);
+  color: #e87c7c;
+  border-color: transparent;
 }
+html.theme-light .ct-btn--danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
 
-.ct-btn--danger:hover { background: var(--danger-fg-pressed); border-color: var(--danger-fg-pressed); }
+.ct-btn--danger:hover { background: rgba(105,31,31,0.35); }
+html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 
 /* warning notice */
 .ct-warning {
