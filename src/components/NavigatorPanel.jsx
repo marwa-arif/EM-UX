@@ -272,11 +272,20 @@ function ThinkingCard() {
 }
 
 // ── Response card ─────────────────────────────────────────────────────
-function ResponseCard({ onCopy, onExplore }) {
+// The rest of this response is a fixed demo scenario (vm-prod-42) — but a
+// date-scoped question ("What changed on 26 July 2024?") should at least
+// come back scoped to the date that was actually asked about, not read as
+// generic and disconnected from the question.
+function extractQueryDate(query) {
+  return query?.match(/\b\d{1,2} [A-Z][a-z]+ \d{4}\b/)?.[0] ?? null
+}
+
+function ResponseCard({ query, onCopy, onExplore }) {
   const [feedback, setFeedback]       = useState(null)
   const [showSources, setShowSources] = useState(false)
   const [feedbackNote, setNote]       = useState('')
   const [showNoteBox, setNoteBox]     = useState(false)
+  const queryDate = extractQueryDate(query)
 
   const handleFeedback = (val) => {
     const next = feedback === val ? null : val
@@ -307,6 +316,7 @@ function ResponseCard({ onCopy, onExplore }) {
         </div>
 
         {/* Findings list */}
+        {queryDate && <div className="np-findings-scope">Findings for {queryDate}</div>}
         <div className="np-findings">
           {DEMO_FINDINGS.map((f, i) => (
             <div key={i} className="np-finding-row">
@@ -482,6 +492,11 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [taRef])
 
+  // Growing only on the textarea's own onChange misses a prefilled value set
+  // programmatically (e.g. a chart-point "ask Navigator" question) — that
+  // still needs the box to expand, not just user keystrokes.
+  useEffect(() => { grow() }, [value, grow])
+
   const pickAgent = (a) => {
     setAgent(a)
     setAgentMenu(false)
@@ -497,7 +512,7 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
           rows={1}
           placeholder={placeholder}
           value={value}
-          onChange={e => { onChange(e); grow() }}
+          onChange={onChange}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend() } }}
           aria-label="Type your message. Press Enter to send, Shift+Enter for new line."
           aria-multiline="true"
@@ -742,11 +757,15 @@ function FirstRunHero({ onSend, suggestions = FIRSTRUN_SUGGESTIONS, pageLabel, c
 }
 
 // ── Home view ─────────────────────────────────────────────────────────
-function PanelHome({ onSend, isFirstRun, pageId, pageLabel }) {
-  const [query, setQuery]   = useState('')
+function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', draftToken = 0 }) {
+  const [query, setQuery]   = useState(draftQuery)
   const [activeCtx, setCtx] = useState(new Set())
   const taRef               = useRef(null)
   const pageCtx              = PAGE_CONTEXT[pageId]
+
+  // Re-seed the composer whenever a new draft arrives (e.g. clicking a
+  // different chart point), even if this view never unmounted.
+  useEffect(() => { if (draftToken) setQuery(draftQuery) }, [draftToken])
 
   const toggleCtx = (id) => setCtx(prev => {
     const next = new Set(prev)
@@ -914,7 +933,7 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
           <div className="np-msg-bubble user">{query}</div>
         </div>
         {responseState === 'thinking' && <ThinkingCard />}
-        {responseState === 'done'     && <ResponseCard onCopy={onCopy} onExplore={onExplore} />}
+        {responseState === 'done'     && <ResponseCard query={query} onCopy={onCopy} onExplore={onExplore} />}
         {responseState === 'error'    && <ErrorCard onRetry={onRetry} />}
       </div>
 
@@ -1283,7 +1302,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, dockSide = 'right', forceFloatToken = 0 }) {
   const [view, setView]             = useState('home')
 
   // Enter the scripted assessment-builder chat when triggered externally
@@ -1296,8 +1315,39 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [showMoreMenu, setMoreMenu] = useState(false)
   const [panelWidth, setPanelWidth] = useState(400)
   const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
-    ? { x: window.innerWidth - 400 - 16, y: 60 }
+    ? { x: dockSide === 'left' ? 16 : window.innerWidth - 400 - 16, y: 60 }
     : { x: 0, y: 0 })
+
+  // A fresh "ask about X" request (e.g. clicking a trend chart point) bumps
+  // draftToken — drop back to the composer with the new draft loaded, and
+  // re-anchor a floating panel to the requested side instead of wherever it
+  // was left, since the caller (e.g. a right-side drawer) may need the panel
+  // out of its way on the opposite edge.
+  const viewModeRef = useRef(viewMode)
+  useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
+  useEffect(() => {
+    if (!draftToken) return
+    setView('home')
+    setRespSt('done')
+    if (viewModeRef.current === 'floating') {
+      setFloatPos({ x: dockSide === 'left' ? 16 : window.innerWidth - panelWidth - 16, y: 60 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftToken])
+
+  // Something occupying the right side (e.g. the Trend Explore drawer) just
+  // opened while this panel is docked as a sidebar — switch it to floating
+  // and out of the way, without touching the conversation already in view
+  // (unlike the draftToken effect above, this must NOT reset `view`).
+  useEffect(() => {
+    if (!forceFloatToken) return
+    if (viewModeRef.current !== 'floating') {
+      setFloatPos({ x: dockSide === 'left' ? 16 : window.innerWidth - panelWidth - 16, y: 60 })
+      setViewMode('floating')
+      onViewModeChange?.('floating')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceFloatToken])
   const [isDragging, setIsDragging] = useState(false)
   const [copyToast, setCopyToast]   = useState(null)
   const [isFirstRun, setFirstRun]   = useState(true)
@@ -1672,7 +1722,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 ? <PromptDashboardBuilder key={`prompt:${builderContext.initialPrompt}`} builderApi={builderApi} initialPrompt={builderContext.initialPrompt} />
                 : <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />)
             : view === 'home'
-            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} />
+            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} draftQuery={draftQuery} draftToken={draftToken} />
             : <PanelChat
                 query={activeQuery}
                 onNewChat={handleNew}

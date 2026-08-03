@@ -3,6 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import '../styles/compliance.css'
+import '../styles/active-filter-panel.css'
+import { useDownloads } from '../DownloadsContext.jsx'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IcSearch = () => (
@@ -46,6 +48,18 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <polyline points="7 10 12 15 17 10"/>
     <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
   </svg>
 )
 
@@ -423,26 +437,26 @@ const FINDINGS_ROWS = [
 // ── Function tree data ────────────────────────────────────────────
 const TREE_DATA = [
   {
-    id: 'gv', name: 'GV: Govern', closed: 56163, open: 53185, pct: 51, rating: 'Moderate',
+    id: 'gv', name: 'GV: Govern', closed: 56163, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
     children: [
       {
-        id: 'gv_rr', name: 'GV.RR: Roles, Responsibilities, and Authorities', closed: 56162, open: 53185, pct: 51, rating: 'Moderate',
+        id: 'gv_rr', name: 'GV.RR: Roles, Responsibilities, and Authorities', closed: 56162, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
         children: [
           {
-            id: 'gv_rr_02', name: 'GV.RR-02: Roles, responsibilities, and authorities related to cybersecurity risk management', closed: 56162, open: 53185, pct: 51, rating: 'Moderate',
+            id: 'gv_rr_02', name: 'GV.RR-02: Roles, responsibilities, and authorities related to cybersecurity risk management', closed: 56162, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
             children: [
-              { id: 'gv_rr_02_a', name: 'Devices have a single assigned owner',   closed: 19991, open: 18740, pct: 51, rating: 'Moderate', isLeaf: true },
-              { id: 'gv_rr_02_b', name: 'Users have their role inventoried',       closed: 15910, open: 19,    pct: 99, rating: 'Strong',   isLeaf: true },
-              { id: 'gv_rr_02_c', name: 'Devices have an active owner',            closed: 20261, open: 34426, pct: 37, rating: 'Weak',     isLeaf: true },
+              { id: 'gv_rr_02_a', name: 'Devices have a single assigned owner',   closed: 19991, open: 18740, pct: 51, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
+              { id: 'gv_rr_02_b', name: 'Users have their role inventoried',       closed: 15910, open: 19,    pct: 99, rating: 'Strong',   criticality: 'Low',    isLeaf: true },
+              { id: 'gv_rr_02_c', name: 'Devices have an active owner',            closed: 20261, open: 34426, pct: 37, rating: 'Weak',     criticality: 'High',   isLeaf: true },
             ],
           },
         ],
       },
       {
-        id: 'gv_po', name: 'GV.PO: Policy', closed: 1, open: 0, pct: 100, rating: 'Compliant',
+        id: 'gv_po', name: 'GV.PO: Policy', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Medium',
         children: [
           {
-            id: 'gv_po_01', name: 'GV.PO-01: Policy for managing cybersecurity risks is established based on organizational requirements', closed: 1, open: 0, pct: 100, rating: 'Compliant',
+            id: 'gv_po_01', name: 'GV.PO-01: Policy for managing cybersecurity risks is established based on organizational requirements', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Medium',
             children: [],
           },
         ],
@@ -450,34 +464,34 @@ const TREE_DATA = [
     ],
   },
   {
-    id: 'id', name: 'ID: Identify', closed: 219945, open: 119600, pct: 64, rating: 'Moderate',
+    id: 'id', name: 'ID: Identify', closed: 219945, open: 119600, pct: 64, rating: 'Moderate', criticality: 'Critical',
     children: [
       {
-        id: 'id_am', name: 'ID.AM: Asset Management', closed: 189570, open: 102110, pct: 64, rating: 'Moderate',
+        id: 'id_am', name: 'ID.AM: Asset Management', closed: 189570, open: 102110, pct: 64, rating: 'Moderate', criticality: 'Critical',
         children: [
-          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', children: [] },
-          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', children: [] },
-          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', children: [] },
-          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     children: [] },
-          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', children: [] },
+          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', criticality: 'High',     children: [] },
+          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', criticality: 'Medium',   children: [] },
+          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', criticality: 'Low',    children: [] },
+          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     criticality: 'Critical', children: [] },
+          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', criticality: 'Medium',   children: [] },
         ],
       },
       {
-        id: 'id_ra', name: 'ID.RA: Risk Assessment', closed: 30375, open: 17490, pct: 63, rating: 'Moderate',
+        id: 'id_ra', name: 'ID.RA: Risk Assessment', closed: 30375, open: 17490, pct: 63, rating: 'Moderate', criticality: 'High',
         children: [],
       },
     ],
   },
   {
-    id: 'pr', name: 'PR: Protect', closed: 7123443, open: 393013, pct: 94, rating: 'Strong',
+    id: 'pr', name: 'PR: Protect', closed: 7123443, open: 393013, pct: 94, rating: 'Strong', criticality: 'Medium',
     children: [],
   },
   {
-    id: 'de', name: 'DE: Detect', closed: 284102, open: 198430, pct: 58, rating: 'Moderate',
+    id: 'de', name: 'DE: Detect', closed: 284102, open: 198430, pct: 58, rating: 'Moderate', criticality: 'High',
     children: [],
   },
   {
-    id: 'rs', name: 'RS: Respond', closed: 71245, open: 28910, pct: 71, rating: 'Moderate',
+    id: 'rs', name: 'RS: Respond', closed: 71245, open: 28910, pct: 71, rating: 'Moderate', criticality: 'Medium',
     children: [],
   },
 ]
@@ -489,6 +503,15 @@ function ratingClass(r) {
     Moderate:  'comp-rating-badge--moderate',
     Weak:      'comp-rating-badge--weak',
   }[r] || ''
+}
+
+function criticalityClass(c) {
+  return {
+    Low:      'comp-criticality-badge--low',
+    Medium:   'comp-criticality-badge--medium',
+    High:     'comp-criticality-badge--high',
+    Critical: 'comp-criticality-badge--critical',
+  }[c] || ''
 }
 
 function postureColor(pct) {
@@ -794,6 +817,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
   const [trendMenuOpen, setTrendMenuOpen] = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip] = useState(false)
+  const { addDownload } = useDownloads()
 
   const [findingsPage, setFindingsPage]       = useState(1)
   const [findingsPerPage, setFindingsPerPage] = useState(10)
@@ -937,7 +961,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
+                  <span className={`comp-rating-badge comp-rating-badge--small ${criticalityClass(node.criticality)}`}>{node.criticality}</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1138,8 +1162,8 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileCsv /> CSV</button>
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileExcel /> Excel</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.csv`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileCsv /> CSV</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.xlsx`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileExcel /> Excel</button>
                     </div>
                   )}
                 </div>
@@ -1302,18 +1326,18 @@ function AssessmentDrawer({ node, onClose, onNav }) {
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__header-text">
-                <div className="ct-modal__title">Create Ticket</div>
-                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-              </div>
-              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+<>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown
                   value={ctAssignee}
                   onChange={setCtAssignee}
@@ -1321,16 +1345,16 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                   fullWidth
                 />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="comp-ai-rec-list">
@@ -1344,12 +1368,12 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                 </div>
               </div>
             </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
+        </>
       )}
 
       {/* Toast notification */}
@@ -1374,6 +1398,7 @@ function FunctionDrawer({ node, level, onClose }) {
   const [trendMenuOpen, setTrendMenuOpen]       = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip]       = useState(false)
+  const { addDownload } = useDownloads()
   const [findingsPage, setFindingsPage]         = useState(1)
   const [findingsPerPage, setFindingsPerPage]   = useState(10)
   const [remediationRow, setRemediationRow]     = useState(null)
@@ -1508,7 +1533,7 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
+                  <span className={`comp-rating-badge comp-rating-badge--small ${criticalityClass(node.criticality)}`}>{node.criticality}</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1667,8 +1692,8 @@ function FunctionDrawer({ node, level, onClose }) {
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileCsv /> CSV</button>
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileExcel /> Excel</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.csv`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileCsv /> CSV</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.xlsx`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileExcel /> Excel</button>
                     </div>
                   )}
                 </div>
@@ -1818,30 +1843,30 @@ function FunctionDrawer({ node, level, onClose }) {
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__header-text">
-                <div className="ct-modal__title">Create Ticket</div>
-                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-              </div>
-              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+<>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown value={ctAssignee} onChange={setCtAssignee} options={['Patch Admin', 'Security Admin', 'IT Operations']} fullWidth />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="comp-ai-rec-list">
@@ -1855,12 +1880,12 @@ function FunctionDrawer({ node, level, onClose }) {
                 </div>
               </div>
             </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
+        </>
       )}
 
       {/* Toast */}
@@ -2112,6 +2137,7 @@ const DL_FORMATS = [
 function DownloadButton() {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { addDownload } = useDownloads()
   useEffect(() => {
     if (!open) return
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -2126,7 +2152,7 @@ function DownloadButton() {
       {open && (
         <div className="comp-dl-menu">
           {DL_FORMATS.map(({ id, label, Icon }) => (
-            <button key={id} className="comp-dl-item" onClick={() => setOpen(false)}>
+            <button key={id} className="comp-dl-item" onClick={(e) => { addDownload(`Compliance-Overview.${id}`, e.currentTarget); setOpen(false); }}>
               <Icon /> {label}
             </button>
           ))}

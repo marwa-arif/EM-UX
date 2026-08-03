@@ -1230,7 +1230,10 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--shell-raised);
 }
-.kg-rail-btn-abs:hover {
+.kg-rail-btn-abs:disabled {
+  opacity: 0.35; cursor: default;
+}
+.kg-rail-btn-abs:hover:not(:disabled) {
   background: var(--shell-hover);
 }
 
@@ -1632,6 +1635,34 @@
 }
 .kg-dp-close-ext:hover { background: var(--shell-raised, #E6E6E6); }
 
+/* Header icon stack — replaces the single kg-dp-icon-circle once a drawer has drilled into a
+   Relationship Summary row. Lives inside kg-dp-title-row, newest visit on top, oldest pushed
+   to the bottom; connecting lines carry a relationship tooltip. Navigating to an earlier node
+   only changes which one is active — nothing is ever removed until the whole drawer closes. */
+.kg-dp-icon-stack {
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+}
+.kg-dp-icon-stack-node {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid var(--shell-border, #E6E6E6);
+  background: var(--pai-bg-raised, #fff);
+  color: var(--shell-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 120ms;
+}
+.kg-dp-icon-stack-node:hover:not(:disabled) { background: var(--shell-raised, #E6E6E6); }
+.kg-dp-icon-stack-node:disabled { cursor: default; }
+.kg-dp-icon-stack-node--active {
+  border-color: var(--pai-indigo); color: var(--pai-indigo); background: var(--pai-indigo-tint);
+}
+/* Wider than the visible 1px line so the relationship tooltip is easy to hit on hover. */
+.kg-dp-icon-stack-line {
+  width: 16px; height: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: help;
+}
+.kg-dp-icon-stack-line::before { content: ''; width: 2px; height: 100%; background: var(--shell-border-2); }
+
 /* header */
 .kg-dp-header {
   padding: 16px 20px;
@@ -1640,12 +1671,12 @@
   background: var(--card-bg, #fff);
 }
 .kg-dp-title-row {
-  display: flex; align-items: flex-start; gap: 12; margin-bottom: 14px;
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
 }
 .kg-dp-icon-circle {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
   background: var(--dp-tint, var(--pai-bg-raised));
-  border: 2px solid var(--dp-stroke, var(--shell-border));
+  border: 1.5px solid var(--dp-stroke, var(--shell-border));
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .kg-dp-title-body { flex: 1; min-width: 0; }

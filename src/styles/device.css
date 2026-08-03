@@ -290,9 +290,13 @@
 }
 .dev-donut-wrap--fixed { height: 220px; flex: none; }
 
+/* Sized to the tallest possible content (7 rows, Device's max) so filtering down to fewer
+   types doesn't shrink this list — otherwise .dev-donut-wrap's flex:1 absorbs the freed
+   space and the ring itself visibly grows. */
 .dev-type-list {
   display: flex;
   flex-direction: column;
+  min-height: 200px;
 }
 
 .dev-type-row {
@@ -672,6 +676,10 @@
   gap: 8px;
 }
 
+.dev-stat-header-controls .ds-btn {
+  height: 32px;
+}
+
 /* ── Flex chart fill (source bar chart container) ────────────── */
 
 .dev-chart-fill { flex: 1; min-height: 0; }
@@ -770,6 +778,20 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.dev-drawer-controls .comp-sort-btn {
+  width: 145px;
+  height: 32px;
+  flex-shrink: 0;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--shell-text);
+}
+.dev-drawer-controls .comp-sort-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dev-drawer-stat { flex-shrink: 0; }

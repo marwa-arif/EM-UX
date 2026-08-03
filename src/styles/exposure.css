@@ -57,7 +57,7 @@
 .exp-card { padding: 16px; }
 
 /* ── Exposure Overview section ──────────────────────────────────── */
-.exp-ov-hdr { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.exp-ov-hdr { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
 .exp-ov-hdr--open { margin-bottom: 32px; }
 
 .exp-ov-hdr-left { display: flex; align-items: center; gap: 8px; }
@@ -76,6 +76,9 @@
 
 /* Body grid */
 .exp-ov-body { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; min-height: 380px; }
+
+/* Divider before the "ask Navigator" chips at the end of the card */
+.exp-ov-divider { height: 1px; background: var(--card-border, #E6E6E6); margin: 16px 0; }
 
 /* Curved separator wrapper */
 .exp-sep { position: absolute; top: -16px; bottom: -16px; width: 237px; transform: translateX(-80%); pointer-events: none; }
@@ -162,7 +165,7 @@
 .exp-gauge-label { font-size: 13px; color: var(--shell-text, #101010); }
 .exp-gauge-risk-badge { background: var(--pai-crit-bg); border-radius: 8px; padding: 4px 14px; }
 .exp-gauge-risk-text { font-size: 13px; color: var(--pai-crit-fg); }
-.exp-gauge-trend { display: flex; align-items: center; gap: 4px; background: var(--shell-bg); border-radius: 15px; padding: 3px 9px; margin-top: 2px; }
+.exp-gauge-trend { display: flex; align-items: center; gap: 4px; background: var(--shell-bg); border: none; border-radius: 15px; padding: 3px 9px; margin-top: 2px; cursor: pointer; font-family: inherit; }
 .exp-gauge-trend-pct { font-size: 12px; font-weight: 600; color: var(--pai-teal); }
 .exp-gauge-trend-from { font-size: 11px; color: var(--shell-text-muted); }
 .exp-gauge-score-row { display: flex; align-items: baseline; gap: 2px; }
@@ -203,6 +206,7 @@
 .exp-icon-muted { color: var(--shell-text-muted); }
 .ds-th--right { text-align: right; }
 .ds-th--center { text-align: center; }
+.ds-td--right { text-align: right; }
 .exp-col-explore { width: 72px; text-align: center; }
 
 /* Fixed layout so the three % columns split the remaining space equally —
@@ -226,7 +230,7 @@
   padding: 16px 20px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0;
 }
 .exp-trend-drawer-title { font-size: 14px; font-weight: 600; color: var(--shell-text); white-space: nowrap; }
-.exp-trend-drawer-by { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--shell-text); white-space: nowrap; }
+.exp-trend-drawer-by { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
 .exp-trend-drawer-by .comp-sort-menu { left: auto; right: 0; }
 .exp-trend-drawer-by .comp-sort-btn { width: 155px; height: 32px; justify-content: space-between; font-size: 12px; color: var(--shell-text); }
 .exp-trend-drawer-by .comp-sort-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -260,3 +264,71 @@
   background: var(--card-bg); transition: left 150ms; display: block;
 }
 .exp-toggle-track--on .exp-toggle-thumb { left: 18px; }
+
+/* ── Hover-tooltip: stacked stat rows (gauge "see what changed") ──── */
+.exp-bubble-tooltip-card--col { flex-direction: column; align-items: stretch; white-space: normal; }
+.exp-bubble-tooltip-card-row { display: flex; align-items: stretch; gap: 12px; }
+.exp-bubble-tooltip-divider { height: 1px; background: var(--card-border, #E6E6E6); margin: 4px 0; }
+.exp-bubble-explore-btn--full { justify-content: center; width: 100%; margin-top: 4px; }
+
+/* ── Trend chart: clickable points + hint ─────────────────────────── */
+.exp-trend-card-chart .recharts-surface { cursor: pointer; }
+.exp-tip-hint { margin-top: 8px; font-size: 11px; color: var(--shell-text-muted); }
+
+/* Surge/plunge legend chip — sits in the chart header, doesn't touch the plot */
+.exp-trend-legend {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  border: none; background: transparent; padding: 2px 0; font-size: 11px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+
+/* ── Ask Navigator: Figma node 55698:155001 ───────────────────────── */
+.exp-asknav { display: flex; flex-direction: column; gap: 12px; }
+.exp-asknav-title-row { display: flex; align-items: center; gap: 8px; }
+.exp-asknav-title-text { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; color: var(--shell-text, #101010); white-space: nowrap; }
+.exp-asknav-title-rule { flex: 1; height: 1px; background: var(--card-border, #E6E6E6); }
+.exp-asknav-chips { display: flex; flex-wrap: wrap; gap: 16px; padding: 0 32px; }
+.exp-asknav-chip {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  height: 32px; border: none; border-radius: 44px; padding: 0 12px;
+  cursor: pointer; font-family: inherit;
+  background: linear-gradient(90deg, rgba(71,173,203,0.05), rgba(70,127,205,0.05));
+  transition: background 150ms;
+}
+.exp-asknav-chip:hover { background: linear-gradient(90deg, rgba(71,173,203,0.1), rgba(70,127,205,0.1)); }
+/* Gradient ring at 30% opacity — drawn as its own masked layer (not a plain
+   border) since a solid `border` can't hold a gradient. Same brand gradient
+   (#467FCD/#47ADCB) as .topbar__navigator and the chip text below. */
+.exp-asknav-chip::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: linear-gradient(90deg, rgba(70,127,205,0.3), rgba(71,173,203,0.3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.exp-asknav-chip-text {
+  font-size: 12px; font-weight: 500;
+  background: linear-gradient(90deg, #467FCD, #47ADCB);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ── Custom date-range picker (Trend Explore header) ──────────────── */
+.exp-custom-range-wrap { position: relative; }
+.exp-custom-range-pop {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 50;
+  display: flex; align-items: flex-end; gap: 12px;
+  background: var(--card-bg); border: 1px solid var(--card-border, #E6E6E6); border-radius: 8px;
+  padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap;
+}
+.exp-custom-range-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--shell-text-muted); }
+.exp-custom-range-input {
+  border: 1px solid var(--card-border, #E6E6E6); border-radius: 4px; padding: 6px 8px;
+  font-size: 12px; color: var(--shell-text, #101010); font-family: inherit; background: var(--card-bg);
+}
+.exp-custom-range-apply {
+  border: none; border-radius: 44px; padding: 7px 16px; background: var(--pai-indigo);
+  color: #fff; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+}
+.exp-custom-range-apply:disabled { opacity: 0.4; cursor: not-allowed; }

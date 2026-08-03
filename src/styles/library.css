@@ -247,8 +247,7 @@
 /* ─── Connect Design modal ────────────────────────────────────────── */
 .ds-modal-overlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  background: rgba(0,0,0,0.25);
   display: flex; align-items: center; justify-content: center;
 }
 .ds-modal {
@@ -262,9 +261,10 @@
 .ds-modal-header {
   padding: 16px 20px;
   display: flex; align-items: center; justify-content: space-between;
+  background: var(--shell-raised);
   border-bottom: 1px solid var(--shell-border);
 }
-.ds-modal-title { font-size: 13px; font-weight: 700; color: var(--shell-text); }
+.ds-modal-title { font-size: 16px; font-weight: 500; color: var(--shell-text); }
 .ds-modal-close {
   width: 24px; height: 24px; border-radius: 4px;
   border: none; background: transparent; cursor: pointer;
@@ -274,7 +274,7 @@
 }
 .ds-modal-close:hover { background: var(--shell-raised); }
 .ds-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-.ds-modal-desc { font-size: 12px; color: var(--shell-text-muted); line-height: 1.5; }
+.ds-modal-desc { font-size: 14px; color: var(--shell-text-muted); line-height: 1.5; }
 .ds-modal-footer {
   padding: 16px 20px;
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;

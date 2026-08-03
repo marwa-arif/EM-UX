@@ -11,7 +11,7 @@
 
 /* ── Left panel (framework list) ─────────────────────────────────── */
 .comp-left {
-  width: 412px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -2605,20 +2605,32 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
   margin-left: -6px;
 }
 
-.comp-criticality-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 44px;
-  font-size: 10px;
-  font-weight: 600;
+/* Criticality badge shares the rating badge's shape (.comp-rating-badge
+   .comp-rating-badge--small) — only the color tier is defined here, so the
+   two never drift apart in size/padding again. Same 4-tier severity palette
+   used app-wide (FilterPanel/DiscoverDevicePage's Asset Criticality, etc). */
+.comp-criticality-badge--low {
+  background: var(--pai-low-bg);
+  color: var(--pai-low-fg);
+  border: 1px solid rgba(49,165,109,0.3);
 }
 
 .comp-criticality-badge--medium {
+  background: var(--pai-med-bg);
+  color: var(--pai-med-fg);
+  border: 1px solid rgba(217,139,29,0.3);
+}
+
+.comp-criticality-badge--high {
   background: var(--pai-high-bg);
   color: var(--pai-high-fg);
-  border: 1px solid rgba(217,139,29,0.3);
+  border: 1px solid rgba(225,82,82,0.3);
+}
+
+.comp-criticality-badge--critical {
+  background: var(--pai-crit-bg);
+  color: var(--pai-crit-fg);
+  border: 1px solid rgba(209,35,41,0.3);
 }
 
 /* ── Drawer score / finding details ── */
@@ -2638,7 +2650,10 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 
 .comp-rating-badge--small {
   cursor: default;
-  font-size: 11px;
+  height: 20px;
+  width: auto;
+  padding: 0 8px;
+  font-size: 10px;
 }
 
 .comp-rating-tooltip {

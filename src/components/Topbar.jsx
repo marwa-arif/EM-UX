@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Icons } from '../ui.jsx'
 import VersionBadge from './VersionBadge.jsx'
+import NotificationPanel, { initialNotifications } from './NotificationPanel.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
 
 const SunIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -45,6 +47,23 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifFilter, setNotifFilter] = useState('all');
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const { downloads, retryDownload, dismissDownload, bellTargetRef, bellPulse } = useDownloads();
+  const notifRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const [bellPulsing, setBellPulsing] = useState(false);
+  const prevBellPulse = useRef(bellPulse);
+  useEffect(() => {
+    if (bellPulse === prevBellPulse.current) return;
+    prevBellPulse.current = bellPulse;
+    setBellPulsing(true);
+    const t = setTimeout(() => setBellPulsing(false), 500);
+    return () => clearTimeout(t);
+  }, [bellPulse]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
@@ -52,11 +71,22 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onDown = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [notifOpen]);
+
   const handleMenuOption = (option) => {
     setMenuOpen(false);
     if (option === 'admin') onNav?.('admin-page');
     else if (option === 'logout') window.location.href = import.meta.env.BASE_URL;
   };
+
+  const handleMarkAllRead = () => setNotifications(ns => ns.map(n => ({ ...n, read: true })));
+  const handleMarkRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
+  const handleDismiss = (id) => setNotifications(ns => ns.filter(n => n.id !== id));
 
   return (
     <header className="topbar">
@@ -86,10 +116,34 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      <button title="Notifications" className="topbar__btn">
-        {Icons.bell}
-        <span className="topbar__notif-dot" />
-      </button>
+      <div ref={notifRef} className="topbar__notif">
+        <button
+          ref={bellTargetRef}
+          title="Notifications"
+          aria-label="Notifications"
+          aria-haspopup="menu"
+          aria-expanded={notifOpen}
+          className={`topbar__btn${bellPulsing ? ' topbar__btn--pulse' : ''}`}
+          onClick={() => setNotifOpen(o => !o)}
+        >
+          {Icons.bell}
+          {unreadCount > 0 && <span className="topbar__notif-dot" />}
+        </button>
+
+        {notifOpen && (
+          <NotificationPanel
+            notifications={notifications}
+            filter={notifFilter}
+            onFilterChange={setNotifFilter}
+            onMarkAllRead={handleMarkAllRead}
+            onMarkRead={handleMarkRead}
+            onDismiss={handleDismiss}
+            downloads={downloads}
+            onRetryDownload={retryDownload}
+            onDismissDownload={dismissDownload}
+          />
+        )}
+      </div>
 
       <div ref={menuRef} className="topbar__account">
         <button

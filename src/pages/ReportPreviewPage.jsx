@@ -4,6 +4,7 @@ import { ChartRender } from '../components/ChartRender.jsx'
 import { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE, WidgetCard } from './DashboardCanvas.jsx'
 import { USER_FULL_NAME } from '../currentUser.js'
 import { useWorkspace } from '../context/WorkspaceCtx.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 import '../styles/active-filter-panel.css'
@@ -54,6 +55,7 @@ function DownloadDropdown({ template }) {
   const [excelWarn, setExcelWarn] = useState(false)
   const [selected, setSelected]   = useState(() => new Set(REPORT_TABLES.map(t => t.id)))
   const ref = useRef(null)
+  const { addDownload } = useDownloads()
 
   useEffect(() => {
     if (!open) return
@@ -90,7 +92,7 @@ function DownloadDropdown({ template }) {
         </button>
         {open && (
           <div className="comp-dl-menu">
-            <button className="comp-dl-item" onClick={() => setOpen(false)}>
+            <button className="comp-dl-item" onClick={(e) => { addDownload(`${template.name}.pdf`, e.currentTarget); setOpen(false); }}>
               <IcFilePdf /> PDF
             </button>
             <button className="comp-dl-item" onClick={() => {
@@ -144,7 +146,8 @@ function DownloadDropdown({ template }) {
             </div>
             <div className="sfm-footer">
               <button className="sfm-cancel" onClick={() => setExcelWarn(false)}>Cancel</button>
-              <button className="sfm-create" disabled={!canDownload} onClick={() => {
+              <button className="sfm-create" disabled={!canDownload} onClick={(e) => {
+                REPORT_TABLES.filter(t => selected.has(t.id)).forEach(t => addDownload(`${t.label}.xlsx`, e.currentTarget))
                 setExcelWarn(false)
               }}>Download</button>
             </div>

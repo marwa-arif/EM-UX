@@ -1,0 +1,1117 @@
+/* ── Data Quality Overview ──────────────────────────────────────────── */
+/* dq- prefix for all Data Quality page classes                          */
+
+.dq-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 16px;
+  padding: 16px 0 16px 16px;
+  background: var(--ctrl-bg);
+}
+
+/* ── Sidebar: entity picker ───────────────────────────────────────── */
+/* Reuses CompliancePage's framework-panel pattern (comp-left/comp-fw-*
+   from compliance.css) — same card-panel layout and card visuals, just
+   listing KG entity types instead of frameworks. No collapse control here
+   (unlike Compliance's panel), so the sidebar is always at full width. */
+.dq-page .comp-left {
+  width: 360px;
+}
+
+/* This page stacks an Entity/Relationship tab row above the sort/search
+   row — both reuse .comp-left-header--padded, but the second one no
+   longer needs its own top padding since the tab row above it already
+   provides the gap. */
+.dq-page .comp-left-header.comp-left-header--padded {
+  padding-top: 0;
+}
+
+/* Entity icon — a colored circle badge matching the KG node exactly for
+   this glyph (tint background, icon-colored mask), not a flat neutral
+   glyph. --dq-badge-tint/--dq-badge-icon are set inline per entity type. */
+.dq-entity-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dq-badge-tint, var(--shell-raised));
+  border: 1px solid var(--dq-badge-stroke, var(--card-border));
+  box-sizing: border-box;
+  transition: opacity 120ms;
+}
+
+html.theme-dark .dq-entity-badge {
+  background: var(--dq-badge-tint-dark, var(--shell-raised));
+  border-color: var(--dq-badge-stroke-dark, var(--card-border));
+}
+
+.dq-entity-badge--muted {
+  opacity: 0.55;
+}
+
+.dq-entity-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-color: var(--dq-badge-icon, var(--shell-text));
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* ── Entity / Relationship view toggle ──────────────────────────────── */
+.dq-view-tabs {
+  margin-bottom: 12px;
+}
+
+/* ── Relationship dual-icon badge (overlapping from/to circles) ────── */
+.dq-rel-icons {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dq-rel-icon--to {
+  margin-left: -10px;
+}
+
+.dq-entity-empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+/* ── Main column ───────────────────────────────────────────────────── */
+.dq-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  scrollbar-gutter: stable;
+  background: var(--ctrl-bg);
+  padding: 0 12px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dq-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Generic widget card — matches ChartRender's documented wrapper spec.
+   Cards that host a ChartRender chart get an explicit height (see
+   modifiers below) — ChartRender's internal flex:1 wrappers need a
+   definite-height ancestor to size ResponsiveContainer against; an
+   auto-height flex column collapses a flex:1 child to 0. */
+.dq-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dq-card--gauge { height: 360px; flex-shrink: 0; }
+.dq-card--dims  { height: 360px; flex-shrink: 0; }
+.dq-card--wide  { height: 480px; flex-shrink: 0; }
+
+.dq-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dq-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--shell-text);
+  margin-bottom: 2px;
+}
+
+.dq-card__subtitle {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+.dq-card__body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ── Gauge card: Overall Score benchmark row ──────────────────────── */
+.dq-overall-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  justify-content: center;
+}
+
+.dq-overall-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--pai-caution-fg);
+}
+
+.dq-overall-label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.dq-overall-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--shell-text);
+}
+
+/* ── Gauge card: integrated trend footer row ──────────────────────── */
+.dq-gauge-trend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+}
+
+.dq-gauge-trend__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-text);
+  flex-shrink: 0;
+}
+
+.dq-gauge-trend__info {
+  display: inline-flex;
+  color: var(--shell-text-muted);
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.dq-gauge-trend__spark {
+  flex: 1;
+  min-width: 40px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dq-gauge-trend__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dq-gauge-trend__delta--up   { color: var(--pai-green); }
+.dq-gauge-trend__delta--down { color: var(--pai-crit-fg); }
+
+.dq-gauge-trend__from {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  flex-shrink: 0;
+}
+
+.dq-gauge-trend__empty {
+  flex: 1;
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+/* ── Wide card: two-column split (distribution chart | attributes) ── */
+.dq-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.dq-split__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dq-split__col--attrs {
+  border-left: 1px solid var(--card-border);
+  padding-left: 24px;
+}
+
+.dq-split__head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dq-split__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--shell-text);
+}
+
+.dq-split__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dq-split__label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.dq-split__controls .comp-sort-btn {
+  height: 32px;
+  font-size: 12px;
+  color: var(--shell-text);
+}
+
+.dq-split__body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dq-split__table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+
+.dq-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.dq-th-sort:hover { color: var(--shell-text); }
+
+.dq-th-sort__icon { display: inline-flex; opacity: 0.5; }
+.dq-th-sort--active .dq-th-sort__icon { opacity: 1; color: var(--shell-accent); }
+
+.dq-empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ── Category widget: dimension tab strip ─────────────────────────── */
+/* Reuses the app's shared SegmentedTabs visual (kg-seg-tabs/kg-seg-btn/
+   kg-seg-thumb from kg.css — see PageKG.jsx/DashboardCanvas.jsx) — a
+   single connected bar with a sliding white thumb, not separate pills. */
+.dq-tabstrip {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.dq-seg-btn--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.dq-attr-score-cell {
+  max-width: 160px;
+}
+
+@media (max-width: 1280px) {
+  .dq-row { grid-template-columns: 1fr; }
+}
+
+/* ── Data Quality In-Depth ──────────────────────────────────────────── */
+/* dqid- prefix — lineage/pipeline explorer, distinct from the dq- prefixed
+   Overview page classes above (both share this file since they're the same
+   feature area, but the two views don't otherwise overlap visually). */
+
+.dqid-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  gap: 16px;
+  padding: 16px;
+  background: var(--ctrl-bg);
+}
+
+/* ── Header row: entity picker · completeness tab · legend ──────────── */
+.dqid-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Dimension tab strip: Completeness/Accuracy/Integrity/Timeliness/
+   Validity/Uniqueness — plain text tabs + score badge, active tab gets an
+   indigo underline segment over the row's full-width divider. ──────── */
+.dqid-dim-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.dqid-dim-tab {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0 0 12px;
+  font-size: 13px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-dim-tab--active { color: var(--shell-text); font-weight: 600; }
+
+.dqid-dim-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--pai-indigo);
+}
+
+.dqid-dim-tab__pct {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 44px;
+  background: var(--shell-raised);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--shell-text-muted);
+}
+
+.dqid-dim-tab--active .dqid-dim-tab__pct {
+  color: var(--shell-text);
+}
+
+/* ── Entity picker ────────────────────────────────────────────────────── */
+.dqid-entity-picker { position: relative; }
+
+.dqid-entity-picker__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px 0 4px;
+  border-radius: 44px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: background 120ms, box-shadow 120ms;
+}
+
+.dqid-entity-picker__btn:hover,
+.dqid-entity-picker__btn--open {
+  background: var(--shell-hover);
+}
+
+.dqid-entity-picker__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--shell-text);
+  white-space: nowrap;
+}
+
+.dqid-entity-picker__sep { color: var(--card-border); }
+
+.dqid-entity-picker__score {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dqid-entity-picker__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+  padding: 8px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dqid-entity-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--shell-text);
+  text-align: left;
+}
+
+.dqid-entity-picker__item:hover { background: var(--shell-hover); }
+.dqid-entity-picker__item--active { background: var(--pai-indigo-tint); }
+
+.dqid-entity-picker__item span:nth-child(2) { flex: 1; }
+
+.dqid-entity-picker__item-score {
+  font-size: 11px;
+  font-weight: 700;
+  flex: none;
+}
+
+.dqid-entity-badge {
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dq-badge-tint, var(--shell-raised));
+  border: 1px solid var(--dq-badge-stroke, var(--card-border));
+  box-sizing: border-box;
+}
+
+html.theme-dark .dqid-entity-badge {
+  background: var(--dq-badge-tint-dark, var(--shell-raised));
+  border-color: var(--dq-badge-stroke-dark, var(--card-border));
+}
+
+/* ── Score legend popover ────────────────────────────────────────────── */
+.dqid-legend { position: relative; }
+
+.dqid-legend__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 44px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--shell-text-muted);
+  cursor: pointer;
+}
+
+.dqid-legend__trigger:hover { background: var(--shell-hover); }
+
+.dqid-legend__pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  white-space: nowrap;
+  z-index: 40;
+  font-size: 13px;
+  color: var(--shell-text);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms;
+}
+
+/* Hover shows it via pure CSS (no JS show/hide); the click-toggled
+   --open class keeps it pinned open on touch devices without hover. */
+.dqid-legend:hover .dqid-legend__pop,
+.dqid-legend__pop--open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.dqid-legend__row { display: flex; align-items: center; gap: 8px; }
+
+.dqid-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Lineage canvas ───────────────────────────────────────────────────── */
+/* One bordered widget — dimension tabs are its header, the pannable graph
+   is its body — instead of the tab strip floating above a separate card.
+   The body is clipped + drag-panned like PageKG's GraphCanvas (.kg-canvas):
+   content is fully contained inside this widget; the only way to see more
+   of the lineage is to drag-pan or zoom out, never a native scrollbar
+   escaping the widget's bounds. Same dotted background as the KG canvas. */
+.dqid-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dqid-canvas__header {
+  flex-shrink: 0;
+  padding: 12px 16px 0;
+}
+
+.dqid-canvas__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background-image: radial-gradient(var(--card-border) 1px, transparent 1px);
+  background-size: 14px 14px;
+  user-select: none;
+  cursor: grab;
+}
+
+.dqid-canvas__body--panning { cursor: grabbing; }
+
+/* Reuses PageKG's zoom-rail visuals (kg-zoom-rail-abs/kg-rail-btn-abs from
+   kg.css) so every pannable canvas in the app shares the same rail. */
+.dqid-zoom-rail { top: 16px; right: 16px; left: auto; bottom: auto; }
+
+/* ── Reset view button — highlights red once the view has drifted from
+   default (zoom/pan changed), signaling there's actually something to
+   reset. Icon is masked (not <img>) so it can pick up that color. ────── */
+.dqid-reset-icon {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.dqid-reset-btn--active {
+  background: var(--pai-crit-bg);
+  color: var(--pai-crit-fg);
+}
+
+.dqid-reset-btn--active:hover {
+  background: var(--pai-crit-bg-hover);
+}
+
+.dqid-pan-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.dqid-world {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 48px;
+  padding: 24px;
+  transform-origin: 0 0;
+  width: max-content;
+}
+
+.dqid-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.dqid-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* Merge columns (Publish/Enrichment/Entity Resolution) hold a single node —
+   the column stretches to the tallest column's height (.dqid-world's
+   align-items:stretch), and this centers that one node within it. */
+.dqid-column--center { justify-content: center; }
+
+/* Wraps a single Vendor or Entity Source Resolution node when several rows
+   in the next column fan into it — flexGrow (set inline, proportional to
+   the row span it represents) plus this centers the node against its slice
+   of the column's stretched height, approximating a fan-in merge point. */
+.dqid-fan-group {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Node cards ───────────────────────────────────────────────────────── */
+.dqid-node {
+  position: relative;
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: opacity 150ms, border-color 150ms;
+}
+
+.dqid-node--highlighted { border-color: var(--pai-indigo); }
+.dqid-node--dimmed { opacity: 0.55; }
+
+.dqid-node--vendor {
+  width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dqid-vendor-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--shell-text-muted);
+  flex-shrink: 0;
+}
+
+.dqid-vendor-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dqid-vendor-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 44px;
+  background: rgba(45,157,142,0.12);
+  color: #2D9D8E;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.dqid-node__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dqid-module-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dqid-module-color, var(--shell-text-muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dqid-module-chip__logo {
+  flex-shrink: 0;
+  border-radius: 2px;
+  object-fit: contain;
+}
+
+.dqid-module-chip--sm { font-size: 10px; }
+
+.dqid-module-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--dqid-module-color, var(--shell-text-muted));
+}
+
+/* Plain bars + bold percentage, no chip background — matches the real
+   product's score indicator (no pill container; only the bars carry the
+   tier color, the number itself stays neutral text). */
+.dqid-score-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--shell-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Small bars indicator inside every score pill — all bars the same height;
+   filled bar count scales with the score (see IcScoreBars). */
+.dqid-score-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 14px;
+}
+
+.dqid-score-bars__bar {
+  display: block;
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.dqid-node__table {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 12px;
+}
+
+.dqid-node__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 0 0;
+  border: none;
+  border-top: 1px solid var(--card-border);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-text);
+}
+
+.dqid-node__body {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dqid-attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.dqid-attr-empty {
+  padding: 12px 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-attr-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  padding: 4px 4px 4px 8px;
+}
+
+.dqid-attr-row--selected {
+  background: var(--pai-indigo-tint);
+  border: 1px solid var(--pai-indigo);
+}
+
+.dqid-attr-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.dqid-attr-row__name {
+  width: 96px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--shell-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dqid-attr-row__bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.dqid-attr-row__pct {
+  width: 32px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dqid-attr-row__detail {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: var(--shell-text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.dqid-attr-row__detail:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+/* ── Attribute detail drawer ──────────────────────────────────────────── */
+.dqid-drawer { width: 480px; max-width: 480px; }
+
+/* .comp-drawer-close-ext's shared position assumes the standard 80vw-wide
+   drawer (right: calc(80vw + 8px)) — this page's drawer is a fixed 480px, so
+   the close button needs its own offset instead of floating over the canvas. */
+.dqid-drawer-close-ext { right: calc(480px + 8px); }
+
+.dqid-drawer-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-drawer-sub-sep { color: var(--card-border); }
+
+/* Pipeline-stage badge, top-right of the header — mirrors the module color
+   used for that stage's chip everywhere else on this page. */
+.dqid-drawer-stage-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 44px;
+  background: color-mix(in srgb, var(--dqid-module-color, var(--shell-text-muted)) 14%, transparent);
+  color: var(--dqid-module-color, var(--shell-text));
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dqid-drawer-title-icon {
+  display: inline-flex;
+  margin-right: 6px;
+  vertical-align: -2px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-drawer-values-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dqid-drawer-values-head-cols {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px;
+  font-size: 11px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-values-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dqid-values-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dqid-values-row__label {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--shell-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dqid-values-row__count {
+  width: 56px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.dqid-logic-box {
+  position: relative;
+  padding: 12px;
+  padding-right: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--shell-raised);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--shell-text);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.dqid-logic-box--empty {
+  font-family: inherit;
+  color: var(--shell-text-muted);
+  white-space: normal;
+  padding-right: 12px;
+}
+
+.dqid-logic-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--shell-text-muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dqid-logic-copy-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+.dqid-sources-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dqid-source-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 108px;
+  padding: 16px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--shell-raised);
+}
+
+.dqid-source-tile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--shell-text-muted);
+}
+
+.dqid-source-tile__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}

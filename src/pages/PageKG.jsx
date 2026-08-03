@@ -7,6 +7,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { PAI, Icons, Ic } from '../ui.jsx';
 import TablePagination from '../components/TablePagination.jsx';
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx';
+import { useDownloads } from '../DownloadsContext.jsx';
 
 function useDark() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
@@ -1002,6 +1003,7 @@ function Th({ children }) {
 function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { addDownload } = useDownloads();
 
   const displayRows = rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
   return (
@@ -1016,7 +1018,7 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
         <button className="ds-btn sz-md t-outline kg-details-add-col-btn">
           Add Column <Ic size={12} path={<><path d="M12 5v14M5 12h14"/></>}/>
         </button>
-        <button className="ds-btn sz-md t-primary kg-details-download-btn">
+        <button className="ds-btn sz-md t-primary kg-details-download-btn" onClick={(e) => addDownload('Entity-Details.csv', e.currentTarget)}>
           {Icons.download} Download
           <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>}/>
         </button>
@@ -1734,6 +1736,7 @@ function EntityKpiGrid() {
 // PageKG — composes graph + table + selection state
 // ─────────────────────────────────────────────────────────────────────
 function PageKG({ focusEntity } = {}) {
+  const { addDownload } = useDownloads();
   const [summaryTab, setSummaryTab] = useState('Relationships');
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -2296,7 +2299,7 @@ function PageKG({ focusEntity } = {}) {
               <div className="kg-dp-header">
                 <div className="kg-dp-title-row">
                   <div className="kg-dp-icon-circle" style={{ '--dp-tint': ent.tint || 'var(--pai-bg-raised)', '--dp-stroke': ent.stroke || 'var(--shell-border)' }}>
-                    <EntityGlyph kind={meta.glyph} size={22} />
+                    <EntityGlyph kind={meta.glyph} size={16} />
                   </div>
                   <div className="kg-dp-title-body">
                     <div className="kg-dp-name-row">
@@ -2534,7 +2537,7 @@ function PageKG({ focusEntity } = {}) {
                     <div className="kg-dp-section">
                       <div className="kg-dp-section-header kg-dp-section-header--flex">
                         <span>Relationship Summary (1)</span>
-                        <button className="ds-btn sz-sm t-primary">
+                        <button className="ds-btn sz-sm t-primary" onClick={(e) => addDownload('Relationship-Summary.csv', e.currentTarget)}>
                           Download {Icons.chevron}
                         </button>
                       </div>

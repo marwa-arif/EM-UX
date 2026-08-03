@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.15.0",
+    "date": "2026-08-03",
+    "changes": {
+      "Added": [
+        "DataQualityOverviewPage and DataQualityInDepthPage",
+        "NotificationPanel component",
+        "DownloadsContext for tracking downloadable exports",
+        "Shared `crossFilter` utils and `useChartFilters` hook, wired into chart drill-down and Navigator draft/dock state"
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.14.0",
     "date": "2026-07-28",
     "changes": {

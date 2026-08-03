@@ -153,10 +153,6 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, onExpand, mode =
         { id: 'data-quality/overview', label: 'Overview',  icon: 'nav-overview' },
         { id: 'data-quality/in-depth', label: 'In-Depth',  icon: 'nav-dq-indepth' },
     ]},
-    { id: 'remediation',label: 'Remediation',     icon: 'navbar-remediation', children: [
-        { id: 'remediation/queue',  label: 'Queue',  icon: 'nav-remediation-queue' },
-        { id: 'remediation/closed', label: 'Closed', icon: 'nav-remediation-closed' },
-    ]},
   ];
 
   const activeParent = current?.split('/')[0];

@@ -106,7 +106,7 @@ const EXPOSURE_BY_OPTIONS = ['All', 'Cloud', 'Device', 'Identity', 'Control Gap'
 
 function buildTrend(labels, values) { return labels.map((name, i) => ({ name, value: values[i] })); }
 
-const TREND_UNIT = { '1W': 'Daily', '1M': 'Weekly', '3M': 'Weekly', '6M': 'Monthly', '1Y': 'Monthly' };
+const TREND_UNIT = { '1W': 'Daily', '1M': 'Weekly', '3M': 'Weekly', '6M': 'Monthly', '1Y': 'Monthly', CUSTOM: 'Range' };
 
 const TREND_LABELS = {
   '1W': ['2 Aug', '3 Aug', '4 Aug', '5 Aug', '6 Aug', '7 Aug', '8 Aug'],
@@ -183,6 +183,64 @@ function summarizePeriodDrivers(data, offset = 0, entity = 'All') {
   if (Math.abs(pct) < 0.05) return null;
   const drivers = deriveDrivers(data, data.length - 1, offset, entity);
   return { pct, isUp: pct > 0, drivers };
+}
+
+// What-changed breakdown behind the trend delta — surfaces the cause of the
+// number instead of leaving it as an unexplained %.
+const EXP_DELTA_BREAKDOWN = {
+  '1W': { newFindings: 8,   severityEscalations: 1,  newAssessments: 2 },
+  '1M': { newFindings: 42,  severityEscalations: 3,  newAssessments: 6 },
+  '3M': { newFindings: 156, severityEscalations: 9,  newAssessments: 14 },
+  '6M': { newFindings: 320, severityEscalations: 15, newAssessments: 27 },
+  '1Y': { newFindings: 610, severityEscalations: 28, newAssessments: 52 },
+};
+
+// Index of the point where the series moved the most from one period to the
+// next — the "something changed here" point a spike/drop draws the eye to.
+function biggestChangeIndex(data) {
+  let idx = 1, maxAbs = -Infinity;
+  for (let i = 1; i < data.length; i++) {
+    const delta = Math.abs(data[i].value - data[i - 1].value);
+    if (delta > maxAbs) { maxAbs = delta; idx = i; }
+  }
+  return idx;
+}
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// ── Custom date range (mock) ──────────────────────────────────────
+// Real per-day data isn't wired up yet, so a picked range gets its own small
+// deterministic series/labels the same way the preset ranges are mocked —
+// enough to drive the charts and change list without a data-layer change.
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtDateLabel(date) { return `${date.getDate()} ${MONTH_SHORT[date.getMonth()]}`; }
+
+function buildCustomLabels(fromISO, toISO, points = 6) {
+  if (!fromISO || !toISO) return null;
+  const from = new Date(`${fromISO}T00:00:00`);
+  const to = new Date(`${toISO}T00:00:00`);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) return null;
+  const span = to.getTime() - from.getTime();
+  return Array.from({ length: points }, (_, i) => fmtDateLabel(new Date(from.getTime() + (span * i) / (points - 1))));
+}
+
+const CUSTOM_SERIES_CONFIG = {
+  score:    { base: 560,       variance: 40,       drift: -2.5 },
+  sum:      { base: 845000000, variance: 15000000, drift: -1200000 },
+  risk:     { base: 4200,      variance: 900,      drift: 180 },
+  findings: { base: 650000,    variance: 120000,   drift: 45000 },
+};
+
+function buildCustomTrend(labels, cfg) {
+  return labels.map((name, i) => {
+    const h = hashStr(`${name}#${i}`);
+    const noise = (h % cfg.variance) - cfg.variance / 2;
+    return { name, value: Math.max(0, Math.round(cfg.base + cfg.drift * i + noise)) };
+  });
 }
 
 // ── Icons ─────────────────────────────────────────────────────────
@@ -379,7 +437,7 @@ const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
   return <polygon key={i} points={points} fill="var(--shell-border-2, #DCDCDC)" />;
 });
 
-function ExposureScoreGauge() {
+function EnterpriseScore({ onOpenTrend }) {
   const innerDia = (INNER_R - 6) * 2;
   const [hovered, setHovered] = useState(false);
   return (
@@ -401,37 +459,42 @@ function ExposureScoreGauge() {
           <div className="exp-gauge-risk-badge">
             <span className="exp-gauge-risk-text">High Risk</span>
           </div>
-          <div className="exp-gauge-trend">
+          <button className="exp-gauge-trend" onClick={() => onOpenTrend && onOpenTrend()}>
             <IcTrendDown color="#21929B" size={13} />
             <span className="exp-gauge-trend-pct">5%</span>
             <span className="exp-gauge-trend-from">From last month</span>
-          </div>
+          </button>
         </div>
 
         {hovered && (
           <div className="exp-bubble-tooltip exp-bubble-tooltip--below">
-            <div className="exp-bubble-tooltip-card">
-              <div className="exp-bubble-tooltip-stat">
-                <span className="exp-bubble-tooltip-accent" style={{ background: 'var(--pai-crit-fg)' }} />
-                <div className="exp-bubble-tooltip-text">
-                  <span className="exp-bubble-tooltip-label"><IcSumExposure /> Sum Of Exposure</span>
-                  <span className="exp-bubble-tooltip-value">835.1M</span>
-                </div>
-              </div>
+            <div className="exp-bubble-tooltip-card exp-bubble-tooltip-card--col">
+              <div className="exp-bubble-tooltip-card-row">
                 <div className="exp-bubble-tooltip-stat">
-                <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--amber" />
-                <div className="exp-bubble-tooltip-text">
-                  <span className="exp-bubble-tooltip-label"><IcTotalAssets /> Total Assets</span>
-                  <span className="exp-bubble-tooltip-value">132,605</span>
+                  <span className="exp-bubble-tooltip-accent" style={{ background: 'var(--pai-crit-fg)' }} />
+                  <div className="exp-bubble-tooltip-text">
+                    <span className="exp-bubble-tooltip-label"><IcSumExposure /> Sum Of Exposure</span>
+                    <span className="exp-bubble-tooltip-value">835.1M</span>
+                  </div>
                 </div>
-              </div>
                 <div className="exp-bubble-tooltip-stat">
-                <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--indigo" />
-                <div className="exp-bubble-tooltip-text">
-                  <span className="exp-bubble-tooltip-label"><IcTotalFindings /> Total Findings</span>
-                  <span className="exp-bubble-tooltip-value">1.6M</span>
+                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--amber" />
+                  <div className="exp-bubble-tooltip-text">
+                    <span className="exp-bubble-tooltip-label"><IcTotalAssets /> Total Assets</span>
+                    <span className="exp-bubble-tooltip-value">132,605</span>
+                  </div>
+                </div>
+                <div className="exp-bubble-tooltip-stat">
+                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--indigo" />
+                  <div className="exp-bubble-tooltip-text">
+                    <span className="exp-bubble-tooltip-label"><IcTotalFindings /> Total Findings</span>
+                    <span className="exp-bubble-tooltip-value">1.6M</span>
+                  </div>
                 </div>
               </div>
+              <button className="exp-bubble-explore-btn exp-bubble-explore-btn--full" style={{ borderColor: 'var(--pai-indigo)', color: 'var(--pai-indigo)' }} onClick={() => onOpenTrend && onOpenTrend()}>
+                <IcExplore /> See what changed
+              </button>
             </div>
           </div>
         )}
@@ -444,6 +507,16 @@ function ExposureScoreGauge() {
 function ExposureOverviewSection({ onNav }) {
   const [collapsed, setCollapsed] = useState(false);
   const [trendDrawerOpen, setTrendDrawerOpen] = useState(false);
+
+  // The drawer takes over the right side — if Navigator is already open
+  // there as a docked sidebar, switch it to floating so the two don't fight
+  // over the same space (no-op if Navigator's closed or already floating).
+  // Floating still defaults to the right like before; the user can drag it
+  // wherever they want (including left) themselves.
+  const openTrendDrawer = () => {
+    setTrendDrawerOpen(true);
+    onNav && onNav('navigator-ensure-floating', {});
+  };
 
   const attackSurface = [
     { score: 966, severity: 'H', navIcon: 'nav-discover-cloud',    label: 'Cloud',    size: 100,
@@ -486,11 +559,14 @@ function ExposureOverviewSection({ onNav }) {
           <InfoTooltip>The Exposure Overview provides a centralized, near-real-time view of an organization's security exposures across Attack Surface and Exposure Categories. Designed to support informed decision-making, the dashboard enables security teams and leadership to track progress, prioritize efforts, and reduce overall risk to the organization.</InfoTooltip>
         </div>
 
-        <button className="ds-btn exp-trend-pill" onClick={() => setTrendDrawerOpen(true)}>
+        <button className="ds-btn exp-trend-pill" onClick={openTrendDrawer}>
           <span className="exp-trend-label">
             <IcExposure size={20} color="var(--pai-fg1)" />
             <span className="exp-trend-label-text">Exposure Trend</span>
-            <InfoTooltip>Click to explore the trend of exposure score</InfoTooltip>
+            <InfoTooltip>
+              <p>Down 5% from last month: {EXP_DELTA_BREAKDOWN['1M'].newFindings} new findings, {EXP_DELTA_BREAKDOWN['1M'].severityEscalations} severity escalations, {EXP_DELTA_BREAKDOWN['1M'].newAssessments} newly-open assessments.</p>
+              <p>Click to explore what changed.</p>
+            </InfoTooltip>
           </span>
           <Sparkline />
           <span className="exp-trend-pct">
@@ -525,8 +601,8 @@ function ExposureOverviewSection({ onNav }) {
           ))}
 
           <div className="exp-ov-col">
-            <ExposureScoreGauge />
-            {colLabel('Exposure Score', 'The Exposure Score represents the overall exposure level of the organization, on a scale of 0-1000. It is calculated based on the scores of all findings across the organization, using a root mean square (RMS) method that gives more weight to higher-risk findings, so critical issues have a greater impact on the overall score.')}
+            <EnterpriseScore onOpenTrend={openTrendDrawer} />
+            {colLabel('Enterprise Score', 'The Enterprise Score represents the overall exposure level of the organization. It is calculated based on the scores of all findings across the organization. The calculation uses a root mean square (RMS) method, which gives more weight to higher-risk findings, ensuring that critical issues have a greater impact on the overall score.')}
           </div>
           <div className="exp-ov-col">
             <BubbleTriangle items={attackSurface} indexOffset={0} />
@@ -545,7 +621,7 @@ function ExposureOverviewSection({ onNav }) {
         </div>
       )}
     </div>
-    {trendDrawerOpen && <TrendExploreDrawer onClose={() => setTrendDrawerOpen(false)} />}
+    {trendDrawerOpen && <TrendExploreDrawer onClose={() => setTrendDrawerOpen(false)} onNav={onNav} />}
     </>
   );
 }
@@ -616,19 +692,189 @@ function makeExpTrendTooltip(data, { label, format, offset = 0, entity = 'All', 
             ))}
           </div>
         )}
+        <div className="exp-tip-hint">Click the point to ask Navigator what changed</div>
       </div>
     );
   };
 }
 
+// True if the point at peakIdx is a jump up (surge) rather than a drop (plunge).
+function isSurge(data, peakIdx) {
+  return peakIdx > 0 && data[peakIdx].value > data[peakIdx - 1].value;
+}
+
+// A dot click hands Navigator a natural, chart-specific question instead of
+// a generic "what changed on X" — phrased the way someone would actually type
+// it, built from the same prev/current values already shown on hover.
+function buildDotQuestion(chartKind, data, pointLabel, metricLabel) {
+  const idx = data.findIndex(d => d.name === pointLabel);
+  const cur = data[idx];
+  const prev = idx > 0 ? data[idx - 1] : null;
+
+  if (chartKind === 'score') {
+    if (!prev) return `Why did my ${metricLabel} change around ${pointLabel}?`;
+    const fmtVal = v => (metricLabel === 'Sum of Exposure' ? fmtCompact(v) : v);
+    return `Why did my ${metricLabel} move from ${fmtVal(prev.value)} to ${fmtVal(cur.value)} between ${prev.name} and ${cur.name}?`;
+  }
+  if (chartKind === 'risk') return `What caused the Risk/Asset density change on ${pointLabel}?`;
+  return `What drove the change in Total Findings around ${pointLabel}?`;
+}
+
+// ── Trend Explore: peak-annotated chart dot ───────────────────────
+// Purely visual — the point where the series moved the most is color-coded
+// (surge/plunge, see ChangeLegend above the chart) instead of an on-chart
+// label that used to cover the line. Click handling lives on the chart
+// itself (see AreaChart's onClick below): Recharts renders its own
+// hover/"active" dot on top of whatever we return here, and that overlay
+// has no click handler of its own, so a per-dot onClick silently loses the
+// race against it on the exact click that follows a hover. Reading
+// activeLabel from the chart's onClick sidesteps the whole z-order fight
+// and also gives a much bigger, more forgiving click target than a 4px dot.
+function makeExpTrendDot(color, peakIdx, peakColor) {
+  return function ExpTrendDot(props) {
+    const { cx, cy, index } = props;
+    if (cx == null || cy == null) return null;
+    const isPeak = index === peakIdx;
+    const dotColor = isPeak ? peakColor : color;
+    const r = isPeak ? 6 : 4;
+    return (
+      <g key={`dot-${index}`}>
+        {isPeak && <circle cx={cx} cy={cy} r={r + 4} fill="none" stroke={dotColor} strokeWidth={1} opacity={0.35} />}
+        <circle cx={cx} cy={cy} r={r} fill={dotColor} stroke={isPeak ? 'var(--card-bg)' : 'none'} strokeWidth={isPeak ? 2 : 0} />
+      </g>
+    );
+  };
+}
+
+// ── Trend Explore: surge/plunge legend ────────────────────────────
+// Replaces the old on-chart "Biggest change" label (it covered the line) with
+// a small legend chip in the card header. Clicking it selects the same point
+// a dot-click would.
+function ChangeLegend({ data, peakIdx, onSelect }) {
+  if (peakIdx <= 0) return null;
+  const surge = isSurge(data, peakIdx);
+  const color = surge ? 'var(--pai-crit-fg)' : 'var(--pai-teal)';
+  return (
+    <button className="exp-trend-legend" style={{ color }} onClick={() => onSelect(data[peakIdx].name)}>
+      {surge ? <IcTrendUp color={color} size={11} /> : <IcTrendDown color={color} size={11} />}
+      {surge ? 'Surge' : 'Plunge'} — biggest change
+    </button>
+  );
+}
+
+// ── "Ask Navigator" — Figma node 55698:155001 ─────────────────────
+// Hands the question to Navigator so the user gets a real conversational
+// answer — dates, findings, severity — with a path to Findings from there,
+// instead of a built-in "what changed" list.
+const ASK_NAVIGATOR_PROMPTS = [
+  'Why did Total Findings spike 4x since Aug 2?',
+  'Why is Risk/Asset density rising while my Exposure Score stays flat?',
+  'Summarize what changed this month',
+  'Is this trend normal for this time period?',
+];
+
+// "search ai" icon — designer's exported asset (search ai.svg), reproduced
+// inline with per-instance gradient ids so multiple chips don't collide.
+function IcSearchAi({ uid, size = 18 }) {
+  const g = (n) => `exp-asknav-search-${uid}-${n}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+      <path d="M5.12354 4.2102C5.35173 4.05496 5.66246 4.1139 5.81787 4.34204C5.97295 4.5702 5.91406 4.88099 5.68604 5.03637C4.73719 5.68276 4.11578 6.77057 4.11572 8.00317C4.11587 9.98401 5.72177 11.5901 7.70264 11.5901C9.68344 11.59 11.2894 9.98396 11.2896 8.00317C11.2896 7.7271 11.5135 7.50317 11.7896 7.50317C12.0655 7.50328 12.2895 7.72717 12.2896 8.00317C12.2895 9.08955 11.9101 10.0865 11.2788 10.8723L14.7378 14.3313C14.9329 14.5264 14.9326 14.843 14.7378 15.0383C14.5425 15.2336 14.226 15.2336 14.0308 15.0383L10.5718 11.5803C9.78603 12.2113 8.78877 12.5901 7.70264 12.5901C5.16948 12.5901 3.11587 10.5363 3.11572 8.00317C3.11578 6.42587 3.91297 5.03487 5.12354 4.2102Z" fill={`url(#${g(0)})`} />
+      <path d="M9.88689 2.93226C9.76496 2.85622 9.62416 2.81592 9.48047 2.81592C9.32013 2.81582 9.16377 2.86591 9.03333 2.95916C8.90289 3.05241 8.80491 3.18414 8.75312 3.33589L8.4843 4.12468L7.69628 4.3935L7.60565 4.43037C7.46906 4.49724 7.35539 4.60315 7.27906 4.73468C7.20272 4.86622 7.16715 5.01745 7.17686 5.16922C7.18657 5.32099 7.24111 5.46646 7.33358 5.5872C7.42605 5.70794 7.55228 5.79851 7.69628 5.84743L8.48507 6.11625L8.75389 6.90427L8.79075 6.99414C8.85755 7.13075 8.9634 7.24445 9.09489 7.32085C9.22638 7.39724 9.37758 7.43289 9.52935 7.42326C9.68111 7.41364 9.8266 7.35918 9.94739 7.26679C10.0682 7.1744 10.1588 7.04823 10.2078 6.90427L10.4766 6.11548L11.2647 5.84666L11.3553 5.80979C11.4919 5.74293 11.6055 5.63702 11.6819 5.50548C11.7582 5.37395 11.7938 5.22271 11.7841 5.07094C11.7744 4.91917 11.7198 4.7737 11.6274 4.65296C11.5349 4.53222 11.4087 4.44166 11.2647 4.39273L10.4759 4.12392L10.207 3.33589L10.1702 3.24603C10.107 3.117 10.0088 3.00829 9.88689 2.93226Z" fill={`url(#${g(1)})`} stroke={`url(#${g(2)})`} />
+      <defs>
+        <linearGradient id={g(0)} x1="3.11572" y1="9.65414" x2="14.8839" y2="9.65414" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#467FCD" /><stop offset="1" stopColor="#47ADCB" />
+        </linearGradient>
+        <linearGradient id={g(1)} x1="7.17529" y1="5.12036" x2="11.7856" y2="5.12036" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#467FCD" /><stop offset="1" stopColor="#47ADCB" />
+        </linearGradient>
+        <linearGradient id={g(2)} x1="7.17529" y1="5.12036" x2="11.7856" y2="5.12036" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#467FCD" /><stop offset="1" stopColor="#47ADCB" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+// Navigator Copilot badge icon — designer's exported asset (NavigatorCopilot.svg).
+function IcNavigatorCopilot({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <g filter="url(#exp-asknav-copilot-shadow)">
+        <rect x="4" y="4" width="24" height="24" rx="12" fill="white" fillOpacity="0.05" />
+        <path d="M21.6753 11.5681C22.3316 11.4279 22.8648 12.0989 22.5806 12.7068L17.9937 22.5115C18.3084 21.2591 18.7324 20.5314 18.8784 19.8015C18.9301 19.5431 18.9036 19.2763 18.8071 19.031C18.1799 17.4373 15.7378 14.398 13.606 14.2048C12.7935 14.1312 11.4856 13.9028 9.34131 14.2048L21.6753 11.5681ZM16.2466 13.9958C17.0048 14.5552 18.6514 15.9593 19.1714 17.1003L21.1216 12.989L16.2466 13.9958Z" fill="url(#exp-asknav-copilot-grad)" />
+      </g>
+      <defs>
+        <filter id="exp-asknav-copilot-shadow" x="0" y="0" width="32" height="32" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+          <feOffset />
+          <feGaussianBlur stdDeviation="2" />
+          <feComposite in2="hardAlpha" operator="out" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0.278431 0 0 0 0 0.631373 0 0 0 0 0.8 0 0 0 0.2 0" />
+          <feBlend mode="normal" in2="BackgroundImageFix" result="exp-asknav-copilot-blur" />
+          <feBlend mode="normal" in="SourceGraphic" in2="exp-asknav-copilot-blur" result="shape" />
+        </filter>
+        <linearGradient id="exp-asknav-copilot-grad" x1="9.34131" y1="17.0304" x2="22.6588" y2="17.0304" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#467FCD" /><stop offset="1" stopColor="#47ADCB" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function AskNavigatorSection({ onNav, dock = 'right', prompts = ASK_NAVIGATOR_PROMPTS }) {
+  const ask = (query) => onNav && onNav('navigator-ask', { query, dock });
+  return (
+    <div className="exp-asknav">
+      <div className="exp-asknav-title-row">
+        <IcNavigatorCopilot />
+        <span className="exp-asknav-title-text">
+          Ask Navigator
+          <InfoTooltip>Ask Navigator Copilot about recent findings, severity escalations, and assessments — it can pull dates and details, and take you straight to Findings.</InfoTooltip>
+        </span>
+        <span className="exp-asknav-title-rule" />
+      </div>
+      <div className="exp-asknav-chips">
+        {prompts.map((p, i) => (
+          <button key={i} className="exp-asknav-chip" onClick={() => ask(p)}>
+            <IcSearchAi uid={i} />
+            <span className="exp-asknav-chip-text">{p}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Trend Explore drawer ──────────────────────────────────────────
-function TrendExploreDrawer({ onClose }) {
+function TrendExploreDrawer({ onClose, onNav }) {
   const [tRange, setTRange] = useState('1M');
   const [exposureBy, setExposureBy] = useState('All');
   const [metric, setMetric] = useState('score'); // 'score' | 'sum'
   const [closing, setClosing] = useState(false);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const customPickerRef = useRef(null);
 
   const handleClose = () => { setClosing(true); setTimeout(onClose, 180); };
+  const changeRange = (t) => { setTRange(t); setCustomPickerOpen(false); };
+
+  const openCustomPicker = () => {
+    if (!customFrom || !customTo) {
+      const to = new Date();
+      const from = new Date(to.getTime() - 30 * 86400000);
+      const iso = d => d.toISOString().slice(0, 10);
+      setCustomFrom(iso(from));
+      setCustomTo(iso(to));
+    }
+    setCustomPickerOpen(o => !o);
+  };
+  const applyCustomRange = () => {
+    setTRange('CUSTOM');
+    setCustomPickerOpen(false);
+  };
 
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') handleClose(); };
@@ -636,12 +882,40 @@ function TrendExploreDrawer({ onClose }) {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  const scoreData       = metric === 'sum' ? EXP_SUM_TREND[tRange] : EXP_SCORE_TREND[tRange];
+  useEffect(() => {
+    if (!customPickerOpen) return;
+    const handler = e => { if (customPickerRef.current && !customPickerRef.current.contains(e.target)) setCustomPickerOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [customPickerOpen]);
+
+  const customLabels = tRange === 'CUSTOM' ? buildCustomLabels(customFrom, customTo) : null;
+
+  const scoreData       = customLabels
+    ? buildCustomTrend(customLabels, CUSTOM_SERIES_CONFIG[metric === 'sum' ? 'sum' : 'score'])
+    : (metric === 'sum' ? EXP_SUM_TREND[tRange] : EXP_SCORE_TREND[tRange]) || EXP_SCORE_TREND['1M'];
   const scoreCurrent    = scoreData[scoreData.length - 1].value;
-  const riskData        = EXP_RISK_ASSET_TREND[tRange];
-  const findingsData    = EXP_FINDINGS_TREND[tRange];
+  const riskData        = customLabels ? buildCustomTrend(customLabels, CUSTOM_SERIES_CONFIG.risk) : (EXP_RISK_ASSET_TREND[tRange] || EXP_RISK_ASSET_TREND['1M']);
+  const findingsData    = customLabels ? buildCustomTrend(customLabels, CUSTOM_SERIES_CONFIG.findings) : (EXP_FINDINGS_TREND[tRange] || EXP_FINDINGS_TREND['1M']);
   const findingsCurrent = findingsData[findingsData.length - 1].value;
   const axisTick = { fontSize: 10, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' };
+
+  const scorePeakIdx = biggestChangeIndex(scoreData);
+  const riskPeakIdx = biggestChangeIndex(riskData);
+  const findingsPeakIdx = biggestChangeIndex(findingsData);
+  const peakColor = (data, idx) => (isSurge(data, idx) ? 'var(--pai-crit-fg)' : 'var(--pai-teal)');
+
+  // A chart point (or its Surge/Plunge legend) hands Navigator a natural,
+  // chart-specific question instead of an inline widget. Floats on the right
+  // like any other Navigator open — the user can drag it left themselves if
+  // it's in the way of the drawer.
+  const scoreMetricLabel = metric === 'sum' ? 'Sum of Exposure' : 'Exposure Score';
+  const askAboutScorePoint = (pointLabel) =>
+    onNav && onNav('navigator-ask', { query: buildDotQuestion('score', scoreData, pointLabel, scoreMetricLabel) });
+  const askAboutRiskPoint = (pointLabel) =>
+    onNav && onNav('navigator-ask', { query: buildDotQuestion('risk', riskData, pointLabel) });
+  const askAboutFindingsPoint = (pointLabel) =>
+    onNav && onNav('navigator-ask', { query: buildDotQuestion('findings', findingsData, pointLabel) });
 
   return (
     <>
@@ -659,9 +933,30 @@ function TrendExploreDrawer({ onClose }) {
             {['1W', '1M', '3M', '6M', '1Y'].map(t => (
               <button key={t}
                 className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`}
-                onClick={() => setTRange(t)}
+                onClick={() => changeRange(t)}
               >{t}</button>
             ))}
+            <div className="exp-custom-range-wrap" ref={customPickerRef}>
+              <button
+                className={`comp-time-pill${tRange === 'CUSTOM' ? ' comp-time-pill--active' : ''}`}
+                onClick={openCustomPicker}
+              >Custom</button>
+              {customPickerOpen && (
+                <div className="exp-custom-range-pop">
+                  <label className="exp-custom-range-field">
+                    From
+                    <input type="date" className="exp-custom-range-input" value={customFrom}
+                      max={customTo || undefined} onChange={e => setCustomFrom(e.target.value)} />
+                  </label>
+                  <label className="exp-custom-range-field">
+                    To
+                    <input type="date" className="exp-custom-range-input" value={customTo}
+                      min={customFrom || undefined} onChange={e => setCustomTo(e.target.value)} />
+                  </label>
+                  <button className="exp-custom-range-apply" disabled={!customFrom || !customTo} onClick={applyCustomRange}>Apply</button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="exp-trend-drawer-by">
             Exposure by
@@ -683,13 +978,15 @@ function TrendExploreDrawer({ onClose }) {
               <span className="exp-trend-card-badge exp-trend-card-badge--red">
                 {metric === 'sum' ? fmtCompact(scoreCurrent) : Math.round(scoreCurrent)}
               </span>
+              <ChangeLegend data={scoreData} peakIdx={scorePeakIdx} onSelect={askAboutScorePoint} />
               <span className="exp-trend-card-spacer" />
               <ExpMetricToggle value={metric} onChange={setMetric} />
             </div>
             <TrendDriverSummary data={scoreData} offset={0} entity={exposureBy} />
             <div className="exp-trend-card-chart exp-trend-card-chart--lg">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={scoreData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
+                <AreaChart data={scoreData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}
+                  onClick={(e) => e?.activeLabel && askAboutScorePoint(e.activeLabel)}>
                   <defs>
                     <linearGradient id="expTrendScoreFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--pai-teal)" stopOpacity={0.18} />
@@ -712,7 +1009,8 @@ function TrendExploreDrawer({ onClose }) {
                     cursor={false}
                   />
                   <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
-                    fill="url(#expTrendScoreFill)" dot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
+                    fill="url(#expTrendScoreFill)"
+                    dot={makeExpTrendDot('var(--pai-teal)', scorePeakIdx, peakColor(scoreData, scorePeakIdx))}
                     activeDot={{ r: 5, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -723,11 +1021,13 @@ function TrendExploreDrawer({ onClose }) {
             <div className="exp-trend-card">
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Risk/Asset <InfoTooltip>This metric measures the average risk burden per device in your environment. It is derived by combining the total exposure score with the number of affected devices across all findings. A higher value suggests that risk is concentrated across fewer assets or that individual assets carry a disproportionate level of risk, helping you prioritise asset-level remediation.</InfoTooltip></span>
+                <ChangeLegend data={riskData} peakIdx={riskPeakIdx} onSelect={askAboutRiskPoint} />
               </div>
               <TrendDriverSummary data={riskData} offset={1} entity={exposureBy} />
               <div className="exp-trend-card-chart">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={riskData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
+                  <AreaChart data={riskData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}
+                    onClick={(e) => e?.activeLabel && askAboutRiskPoint(e.activeLabel)}>
                     <defs>
                       <linearGradient id="expTrendRiskFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--pai-teal)" stopOpacity={0.18} />
@@ -741,7 +1041,8 @@ function TrendExploreDrawer({ onClose }) {
                       label={<YAxisTitle value="Density" />} />
                     <Tooltip content={makeExpTrendTooltip(riskData, { label: 'Density', format: v => v.toLocaleString(), offset: 1, entity: exposureBy })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
-                      fill="url(#expTrendRiskFill)" dot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
+                      fill="url(#expTrendRiskFill)"
+                      dot={makeExpTrendDot('var(--pai-teal)', riskPeakIdx, peakColor(riskData, riskPeakIdx))}
                       activeDot={{ r: 5, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -752,11 +1053,13 @@ function TrendExploreDrawer({ onClose }) {
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Total Findings <InfoTooltip>This represents the total count of distinct findings identified across all finding categories (e.g., vulnerabilities, misconfigurations, compliance gaps). The trend reflects how your finding landscape is evolving over time — an upward trend may indicate newly discovered issues or expanded scan coverage, while a downward trend signals active remediation progress.</InfoTooltip></span>
                 <span className="exp-trend-card-badge exp-trend-card-badge--muted">{fmtCompact(findingsCurrent)}</span>
+                <ChangeLegend data={findingsData} peakIdx={findingsPeakIdx} onSelect={askAboutFindingsPoint} />
               </div>
               <TrendDriverSummary data={findingsData} offset={3} entity={exposureBy} />
               <div className="exp-trend-card-chart">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={findingsData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
+                  <AreaChart data={findingsData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}
+                    onClick={(e) => e?.activeLabel && askAboutFindingsPoint(e.activeLabel)}>
                     <defs>
                       <linearGradient id="expTrendFindingsFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--pai-teal)" stopOpacity={0.18} />
@@ -770,13 +1073,16 @@ function TrendExploreDrawer({ onClose }) {
                       label={<YAxisTitle value="Count" />} />
                     <Tooltip content={makeExpTrendTooltip(findingsData, { label: 'Count', format: v => v.toLocaleString(), offset: 3, entity: exposureBy })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
-                      fill="url(#expTrendFindingsFill)" dot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
+                      fill="url(#expTrendFindingsFill)"
+                      dot={makeExpTrendDot('var(--pai-teal)', findingsPeakIdx, peakColor(findingsData, findingsPeakIdx))}
                       activeDot={{ r: 5, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </div>
+
+          <AskNavigatorSection onNav={onNav} />
         </div>
       </div>
     </>
