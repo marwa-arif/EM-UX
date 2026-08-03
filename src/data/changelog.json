@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.15.1",
+    "date": "2026-08-03",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Trend Explore: removed the surge/plunge legend chip and redundant \"See what changed\" button on the Enterprise Score card (duplicated the chart-dot click affordance); fixed Attack Surface bubble tooltip label wrapping."
+      ]
+    }
+  },
+  {
     "version": "0.15.0",
     "date": "2026-08-03",
     "changes": {

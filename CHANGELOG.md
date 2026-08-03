@@ -32,6 +32,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.15.1] — 2026-08-03
+### Fixed
+- Trend Explore: removed the surge/plunge legend chip and redundant "See what changed" button on the Enterprise Score card (duplicated the chart-dot click affordance); fixed Attack Surface bubble tooltip label wrapping.
+
+---
+
 ## [0.15.0] — 2026-08-03
 ### Added
 - DataQualityOverviewPage and DataQualityInDepthPage
