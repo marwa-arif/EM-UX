@@ -492,9 +492,6 @@ function EnterpriseScore({ onOpenTrend }) {
                   </div>
                 </div>
               </div>
-              <button className="exp-bubble-explore-btn exp-bubble-explore-btn--full" style={{ borderColor: 'var(--pai-indigo)', color: 'var(--pai-indigo)' }} onClick={() => onOpenTrend && onOpenTrend()}>
-                <IcExplore /> See what changed
-              </button>
             </div>
           </div>
         )}
@@ -722,9 +719,9 @@ function buildDotQuestion(chartKind, data, pointLabel, metricLabel) {
 
 // ── Trend Explore: peak-annotated chart dot ───────────────────────
 // Purely visual — the point where the series moved the most is color-coded
-// (surge/plunge, see ChangeLegend above the chart) instead of an on-chart
-// label that used to cover the line. Click handling lives on the chart
-// itself (see AreaChart's onClick below): Recharts renders its own
+// (surge/plunge) instead of an on-chart label that used to cover the line.
+// Click handling lives on the chart itself (see AreaChart's onClick below):
+// Recharts renders its own
 // hover/"active" dot on top of whatever we return here, and that overlay
 // has no click handler of its own, so a per-dot onClick silently loses the
 // race against it on the exact click that follows a hover. Reading
@@ -744,22 +741,6 @@ function makeExpTrendDot(color, peakIdx, peakColor) {
       </g>
     );
   };
-}
-
-// ── Trend Explore: surge/plunge legend ────────────────────────────
-// Replaces the old on-chart "Biggest change" label (it covered the line) with
-// a small legend chip in the card header. Clicking it selects the same point
-// a dot-click would.
-function ChangeLegend({ data, peakIdx, onSelect }) {
-  if (peakIdx <= 0) return null;
-  const surge = isSurge(data, peakIdx);
-  const color = surge ? 'var(--pai-crit-fg)' : 'var(--pai-teal)';
-  return (
-    <button className="exp-trend-legend" style={{ color }} onClick={() => onSelect(data[peakIdx].name)}>
-      {surge ? <IcTrendUp color={color} size={11} /> : <IcTrendDown color={color} size={11} />}
-      {surge ? 'Surge' : 'Plunge'} — biggest change
-    </button>
-  );
 }
 
 // ── "Ask Navigator" — Figma node 55698:155001 ─────────────────────
@@ -978,7 +959,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
               <span className="exp-trend-card-badge exp-trend-card-badge--red">
                 {metric === 'sum' ? fmtCompact(scoreCurrent) : Math.round(scoreCurrent)}
               </span>
-              <ChangeLegend data={scoreData} peakIdx={scorePeakIdx} onSelect={askAboutScorePoint} />
               <span className="exp-trend-card-spacer" />
               <ExpMetricToggle value={metric} onChange={setMetric} />
             </div>
@@ -1021,7 +1001,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
             <div className="exp-trend-card">
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Risk/Asset <InfoTooltip>This metric measures the average risk burden per device in your environment. It is derived by combining the total exposure score with the number of affected devices across all findings. A higher value suggests that risk is concentrated across fewer assets or that individual assets carry a disproportionate level of risk, helping you prioritise asset-level remediation.</InfoTooltip></span>
-                <ChangeLegend data={riskData} peakIdx={riskPeakIdx} onSelect={askAboutRiskPoint} />
               </div>
               <TrendDriverSummary data={riskData} offset={1} entity={exposureBy} />
               <div className="exp-trend-card-chart">
@@ -1053,7 +1032,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Total Findings <InfoTooltip>This represents the total count of distinct findings identified across all finding categories (e.g., vulnerabilities, misconfigurations, compliance gaps). The trend reflects how your finding landscape is evolving over time — an upward trend may indicate newly discovered issues or expanded scan coverage, while a downward trend signals active remediation progress.</InfoTooltip></span>
                 <span className="exp-trend-card-badge exp-trend-card-badge--muted">{fmtCompact(findingsCurrent)}</span>
-                <ChangeLegend data={findingsData} peakIdx={findingsPeakIdx} onSelect={askAboutFindingsPoint} />
               </div>
               <TrendDriverSummary data={findingsData} offset={3} entity={exposureBy} />
               <div className="exp-trend-card-chart">

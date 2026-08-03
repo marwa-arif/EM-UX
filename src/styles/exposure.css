@@ -147,7 +147,7 @@
 .exp-bubble-tooltip-accent--indigo { background: var(--pai-indigo); }
 .exp-bubble-tooltip-accent--amber { background: #D8A435; }
 .exp-bubble-tooltip-text { display: flex; flex-direction: column; gap: 2px; }
-.exp-bubble-tooltip-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); }
+.exp-bubble-tooltip-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); white-space: nowrap; }
 .exp-bubble-tooltip-value { font-size: 14px; font-weight: 600; color: var(--shell-text, #101010); }
 
 /* Bubble triangle layout */
@@ -274,13 +274,6 @@
 /* ── Trend chart: clickable points + hint ─────────────────────────── */
 .exp-trend-card-chart .recharts-surface { cursor: pointer; }
 .exp-tip-hint { margin-top: 8px; font-size: 11px; color: var(--shell-text-muted); }
-
-/* Surge/plunge legend chip — sits in the chart header, doesn't touch the plot */
-.exp-trend-legend {
-  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
-  border: none; background: transparent; padding: 2px 0; font-size: 11px; font-weight: 600;
-  font-family: inherit; cursor: pointer;
-}
 
 /* ── Ask Navigator: Figma node 55698:155001 ───────────────────────── */
 .exp-asknav { display: flex; flex-direction: column; gap: 12px; }
