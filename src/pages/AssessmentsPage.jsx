@@ -128,7 +128,7 @@ function FwStack({ keys, onOverflow }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────
-export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiReady, builderOpen = false, onBuilderOpenChange = () => {} } = {}) {
+export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiReady, builderOpen = false, onBuilderOpenChange = () => {}, onNav } = {}) {
   const [assessments, setAssessments] = useState(ASSESSMENTS)
   const showBuilder = builderOpen
   const setShowBuilder = onBuilderOpenChange
@@ -304,7 +304,7 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
                   <td>
                     <span className="asmts-entity-pill">{a.entityLabel}</span>
                   </td>
-                  <td>
+                  <td className="asmts-td-actions">
                     <button className="asmts-action-btn" title="Create Ticket" onClick={e => openTicket(a, e)}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
@@ -331,6 +331,7 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
         <AssessmentDrawer
           node={drawerNode}
           onClose={() => setDrawerNode(null)}
+          onNav={onNav}
         />
       )}
 
@@ -367,8 +368,11 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
         <div className="ct-overlay" onClick={closeTicket}>
           <div className="ct-modal" onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">A ticket is being added to your board to track finding</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Create Ticket</div>
+                <div className="ct-modal__subtitle">A ticket is being added to your board to track finding</div>
+              </div>
+              <button className="ct-modal__close" onClick={closeTicket} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="ct-field">

@@ -12,8 +12,13 @@
 .ds-btn.t-tertiary { background: transparent; border: 1px solid rgba(99,96,216,0.45); color: var(--pai-indigo); }
 .ds-btn.t-tertiary:hover { background: rgba(99,96,216,0.06); border-color: var(--pai-indigo); }
 
+/* Navigator/Copilot-branded variant — any CTA that opens the Copilot builder shares this look */
+.ds-btn.t-nav-gradient { background: linear-gradient(90deg, var(--pai-brand-blue), var(--pai-nav-teal)); color: var(--pai-on-primary); }
+.ds-btn.t-nav-gradient:hover { filter: brightness(1.05); }
+.ds-btn.t-nav-gradient .ds-btn-nav-icon { filter: brightness(0) invert(1); }
+
 /* DS Badge */
-.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .ds-badge.success { background: rgba(49,165,109,0.12); color: var(--pai-low-fg); }
 .ds-badge.neutral { background: var(--shell-raised); color: var(--shell-text-muted); }
 

@@ -4,7 +4,7 @@ import { DSPillSearch } from '../../context/WorkspaceCtx.jsx'
 import { IcPlug, IcTicket, IcWebhook, STATUS_BADGE, SectionHead, RowMenu, FormModal } from './shared.jsx'
 
 /* ── Data Sources ────────────────────────────────────────────────── */
-const INITIAL_DATA_SOURCES = [
+export const INITIAL_DATA_SOURCES = [
   { id: 1, name: 'AWS',                 type: 'Cloud',         status: 'Connected', lastSync: '4 minutes ago', assets: '12,382', freq: 'Hourly'    },
   { id: 2, name: 'MS Azure',            type: 'Cloud',         status: 'Connected', lastSync: '9 minutes ago', assets: '8,940',  freq: 'Hourly'    },
   { id: 3, name: 'Qualys',              type: 'Vulnerability', status: 'Connected', lastSync: '1 hour ago',    assets: '5,204',  freq: 'Daily'     },
@@ -32,7 +32,7 @@ export function DataSourcesSection({ onConfirm }) {
 
   const requestDisconnect = (s) => onConfirm({
     title: `Disconnect "${s.name}"?`,
-    body: `This will stop new data from ${s.name} from syncing into your exposure data. Previously ingested assets will remain.`,
+    body: `Stops new data from ${s.name} syncing in. Previously ingested assets remain.`,
     confirmLabel: 'Disconnect',
     onConfirm: () => setSources(prev => prev.filter(x => x.id !== s.id)),
   });
@@ -158,7 +158,7 @@ export function WebhooksSection({ onConfirm }) {
 
   const requestDelete = (h) => onConfirm({
     title: 'Delete webhook?',
-    body: `Event delivery to ${h.url} will stop immediately. This action cannot be undone.`,
+    body: `Event delivery to ${h.url} stops immediately. Can't be undone.`,
     confirmLabel: 'Delete',
     onConfirm: () => setHooks(prev => prev.filter(x => x.id !== h.id)),
   });

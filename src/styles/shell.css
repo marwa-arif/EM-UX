@@ -194,8 +194,12 @@
 /* Nav icon filters — theme-aware */
 .nav-item__icon        { flex-shrink: 0; filter: grayscale(20%) opacity(0.72); }
 .nav-item__icon--active { filter: grayscale(20%) opacity(0.9); }
+.nav-item__icon--selected { filter: none; color: var(--shell-accent); }
 html.theme-dark .nav-item__icon        { filter: brightness(0) invert(1) opacity(0.60); }
 html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacity(0.9); }
+html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
+/* Masked variant for single-color icon assets that need a true accent tint (mirrors .nav-item__child-icon) */
+.nav-item__icon--masked { width: 16px; height: 16px; display: inline-block; background-color: var(--shell-accent); mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
 
 /* ── App root shell ──────────────────────────────────────────────── */
 .app-shell {
@@ -385,7 +389,8 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 }
 .nav-item__btn--collapsed { padding: 8px; }
 .nav-item__btn--active { background: var(--shell-raised); color: var(--shell-text); font-weight: 500; }
-.nav-item__btn:hover:not(.nav-item__btn--active) { background: var(--shell-hover); }
+.nav-item__btn--selected { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
+.nav-item__btn:hover:not(.nav-item__btn--active):not(.nav-item__btn--selected) { background: var(--shell-hover); }
 .nav-item__label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-item__chevron {
   display: inline-flex; color: var(--shell-text-muted);
@@ -404,7 +409,7 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 }
 .nav-item__child-icon { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; background-color: var(--shell-text); opacity: 0.55; }
 .nav-item__child--active { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
-.nav-item__child--active .nav-item__child-icon { background-color: #6360D8; opacity: 1; }
+.nav-item__child--active .nav-item__child-icon { background-color: var(--shell-accent); opacity: 1; }
 .nav-item__child:hover:not(.nav-item__child--active) { background: var(--shell-hover); }
 
 /* ── SubHeader ───────────────────────────────────────────────────── */
@@ -499,17 +504,26 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 .subheader__explore-item:hover { background: var(--pai-indigo-tint); }
 
 .subheader__spacer { flex: 1; }
+.subheader__filter-group {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
 .subheader__save-btn {
   width: 28px; height: 28px; padding: 0;
   background: var(--pai-indigo); border: none;
   border-radius: 50%; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.subheader__save-btn:disabled {
+  opacity: 0.35; cursor: not-allowed;
 }
 .subheader__filter-pill-wrap { position: relative; flex-shrink: 0; }
 .subheader__filter-pill {
   display: inline-flex; align-items: center; gap: 8px;
   height: 28px; padding: 0 12px;
+  box-sizing: border-box;
   background: var(--card-bg); color: var(--pai-indigo-secondary-fg);
   border: 1px solid var(--pai-border-strong);
   border-radius: 44px; font-size: 12px; font-weight: 500;
@@ -517,6 +531,13 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 }
 .subheader__filter-pill--active { cursor: pointer; }
 .subheader__filter-pill--open { background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); }
+.subheader__filter-pill--saved {
+  background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); color: var(--pai-indigo);
+}
+.subheader__filter-pill-saved-icon { flex-shrink: 0; }
+.subheader__filter-pill-saved-name {
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* ── Active Filter Preview Panel ─────────────────────────────────── */
 .afp-backdrop {
@@ -573,6 +594,17 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 /* Body */
 .afp-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 .afp-empty { font-size: 13px; color: var(--shell-text-muted); margin: 0; }
+
+/* Saved-filter-applied banner — shown above the entity tree so it's visible
+   the moment the panel opens, not just from the Filter > Saved Filters tab. */
+.afp-saved-filter-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--pai-indigo-tint); border: 1px solid rgba(99,96,216,0.25);
+  border-radius: 4px; padding: 8px 12px;
+}
+.afp-saved-filter-banner__icon { color: var(--pai-indigo); flex-shrink: 0; }
+.afp-saved-filter-banner__label { font-size: 12px; font-weight: 500; color: var(--shell-text-muted); }
+.afp-saved-filter-banner__name { font-size: 13px; font-weight: 600; color: var(--pai-indigo); flex: 1; }
 
 /* Entity tree block */
 .afp-entity-block { display: flex; flex-direction: column; gap: 8px; }
@@ -677,9 +709,12 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
 .afp-modal-title {
-  margin: 0 0 12px; font-size: 14px; font-weight: 600;
+  margin: -32px -32px 12px; padding: 16px 32px 12px;
+  font-size: 14px; font-weight: 600;
   color: var(--pai-text-primary, #131313);
+  border-bottom: 1px solid var(--pai-border, #ccc);
 }
+.afp-modal-title.danger { color: var(--pai-crit-fg); }
 .afp-modal-body {
   margin: 0 0 24px; font-size: 14px; line-height: 1.5;
   color: var(--pai-text-secondary, #555);
@@ -696,11 +731,11 @@ html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacit
 .afp-modal-cancel:hover { background: var(--pai-surface-hover, #f5f5f5); }
 .afp-modal-confirm {
   height: 36px; padding: 0 20px; border-radius: 44px;
-  border: none; background: var(--pai-crit, #c0252a);
+  border: none; background: var(--pai-crit-fg);
   color: #fff; font-size: 13px; font-weight: 600;
   font-family: inherit; cursor: pointer;
 }
-.afp-modal-confirm:hover { background: var(--pai-crit-hover, #a31f23); }
+.afp-modal-confirm:hover { background: #a31f23; }
 
 .subheader__filter-count {
   background: var(--pai-indigo-secondary); color: var(--pai-indigo-secondary-fg);

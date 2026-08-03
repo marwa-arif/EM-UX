@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Ic } from '../ui.jsx'
 import { WidgetCard } from './DashboardCanvas.jsx'
 import ReasoningEngine, { createExchange, useReasoningEngine } from '../components/ReasoningEngine.jsx'
@@ -7,13 +8,13 @@ import TablePagination from '../components/TablePagination.jsx'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
 const RECENT_CHATS = [
-  { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today' },
-  { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today' },
-  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday' },
-  { id: 'c4', label: 'Compliance gaps in AWS environment',          time: 'Yesterday, 9:03 AM', bucket: 'Yesterday' },
-  { id: 'c5', label: 'Top exposed cloud storage buckets',           time: '3 days ago',         bucket: 'Earlier' },
-  { id: 'c6', label: 'Identity risk overview for privileged accounts', time: '5 days ago',       bucket: 'Earlier' },
-  { id: 'c7', label: 'Findings trend over the last quarter',        time: '2 weeks ago',        bucket: 'Earlier' },
+  { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today',     starred: true  },
+  { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today',     starred: false },
+  { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday', starred: false },
+  { id: 'c4', label: 'Compliance gaps in AWS environment',          time: 'Yesterday, 9:03 AM', bucket: 'Yesterday', starred: false },
+  { id: 'c5', label: 'Top exposed cloud storage buckets',           time: '3 days ago',         bucket: 'Earlier',   starred: false },
+  { id: 'c6', label: 'Identity risk overview for privileged accounts', time: '5 days ago',       bucket: 'Earlier',  starred: false },
+  { id: 'c7', label: 'Findings trend over the last quarter',        time: '2 weeks ago',        bucket: 'Earlier',   starred: false },
 ];
 
 const HISTORY_BUCKETS = ['Today', 'Yesterday', 'Earlier'];
@@ -76,6 +77,12 @@ const IcPlay          = () => <Ic size={16} path={<><polygon points="6 3 20 12 6
 const IcClock         = () => <Ic size={16} path={<><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></>} />;
 const IcCheckCircle   = () => <Ic size={28} path={<><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></>} />;
 const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />;
+const IcStar           = () => <Ic size={13} path={<><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+const IcSidebarCollapse = ({ flip = false }) => (
+  <span style={{ display: 'flex', transform: flip ? 'scaleX(-1)' : 'none' }}>
+    <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M13.5 9l2.5 3-2.5 3"/></>} />
+  </span>
+);
 
 const ENTITY_PILLS = [
   { id: 'vuln',   label: 'Vulnerability', count: '13,456', Icon: IcVulnerability },
@@ -83,6 +90,66 @@ const ENTITY_PILLS = [
   { id: 'cloud',  label: 'Cloud',         count: '19,245', Icon: IcCloud },
   { id: 'app',    label: 'Application',   count: '6,324',  Icon: IcApp },
   { id: 'ident',  label: 'Identity',      count: '10,234', Icon: IcIdentity },
+];
+
+// Starter agents so the Home agent picker and the Agents list aren't empty on
+// first use — same shape as agents created via AgentBuilderView, seeded once
+// into AGENTS_STORAGE_KEY (see NavigatorPage) rather than re-injected every load.
+const DEFAULT_AGENTS = [
+  {
+    id: 'agent-seed-1', createdAt: 1700000006000,
+    name: 'Critical Vuln Triage',
+    description: 'Surfaces new critical/high vulnerabilities on exposed assets',
+    instructions: 'Every run, find critical and high-severity vulnerabilities discovered in the last 24 hours on internet-facing devices. Rank by exploitability and flag any without an assigned owner.',
+    dataAccess: [ENTITY_PILLS[0], ENTITY_PILLS[1]],
+    autonomy: 'interactive', depth: 1,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '08:00',
+  },
+  {
+    id: 'agent-seed-2', createdAt: 1700000005000,
+    name: 'Cloud Misconfig Hunter',
+    description: 'Scans cloud accounts for risky public exposure and IAM drift',
+    instructions: 'Scan all cloud accounts for newly public storage, overly permissive IAM policies, and untagged resources. Summarize findings by account and severity.',
+    dataAccess: [ENTITY_PILLS[2]],
+    autonomy: 'agentic', depth: 1,
+    triggerType: 'manual',
+  },
+  {
+    id: 'agent-seed-3', createdAt: 1700000004000,
+    name: 'Identity Risk Reviewer',
+    description: 'Flags stale, over-privileged, or MFA-less identities',
+    instructions: 'Review privileged identities for accounts without MFA, access unused for 90+ days, and permissions beyond role. List the top offenders each run.',
+    dataAccess: [ENTITY_PILLS[4]],
+    autonomy: 'agentic', depth: 0,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '07:00',
+  },
+  {
+    id: 'agent-seed-4', createdAt: 1700000003000,
+    name: 'Device Patch Compliance',
+    description: 'Tracks endpoints past their patch SLA',
+    instructions: 'Check endpoint patch status against policy SLAs, flag devices past due, and group results by business unit.',
+    dataAccess: [ENTITY_PILLS[1]],
+    autonomy: 'agentic', depth: 0,
+    triggerType: 'scheduled', scheduleFreq: 'daily', scheduleTime: '06:30',
+  },
+  {
+    id: 'agent-seed-5', createdAt: 1700000002000,
+    name: 'App Exposure Monitor',
+    description: 'Watches applications for new internet-facing exposure',
+    instructions: 'Track exposure changes across applications and flag any newly internet-exposed service or new critical finding tied to a production app.',
+    dataAccess: [ENTITY_PILLS[3]],
+    autonomy: 'interactive', depth: 1,
+    triggerType: 'scheduled', scheduleFreq: 'weekly', scheduleTime: '09:00',
+  },
+  {
+    id: 'agent-seed-6', createdAt: 1700000001000,
+    name: 'Compliance Gap Auditor',
+    description: 'Checks control coverage across apps and identities',
+    instructions: 'Check control coverage across applications and identities against the current compliance framework. List any gaps opened in the last 7 days and who owns remediation.',
+    dataAccess: [ENTITY_PILLS[3], ENTITY_PILLS[4]],
+    autonomy: 'interactive', depth: 2,
+    triggerType: 'scheduled', scheduleFreq: 'weekly', scheduleTime: '09:00',
+  },
 ];
 
 // Colored dots for the saved-agents dropdown/list — cycled by index rather than
@@ -96,7 +163,7 @@ const VIEW_MODES = [
 ];
 
 // ── Click-outside-aware dropdown ─────────────────────────────────────
-function Dropdown({ children, onClose, className }) {
+function Dropdown({ children, onClose, className, style }) {
   const ref = useRef(null);
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -104,16 +171,12 @@ function Dropdown({ children, onClose, className }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
   return (
-    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} role="menu">
+    <div ref={ref} className={`np-dropdown${className ? ` ${className}` : ''}`} style={style} role="menu">
       {children}
     </div>
   );
 }
 
-// ── History control — single trigger + panel reused across all views ──
-// (Home/Chat/Build each render a <HistoryButton/> in the same top-right
-// spot; the panel itself is rendered once by the page root so it always
-// appears in one consistent place regardless of which view is active.)
 function IcHome() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -135,21 +198,13 @@ function HomeButton({ onClick }) {
   );
 }
 
-function HistoryButton({ onClick }) {
-  return (
-    <button className="nav-history-btn" onClick={onClick} title="History" aria-haspopup="true">
-      <IcHistory />
-      <span className="nav-history-btn-label">History</span>
-    </button>
-  );
-}
 
 // ── History page — replaces the old click-outside dropdown with a full-width
 // view so a growing chat list has room for search + per-item actions. It's an
 // overlay absolutely positioned over .nav-page-content-only (not a `view`
 // state) so Home/Chat/Build stay mounted underneath — "Back" just closes it,
 // landing exactly where the user was, with no lost chat/build state.
-function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
+function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete, onToggleStar, showIcon = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(chat.label);
@@ -177,7 +232,7 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
         />
       ) : (
         <button className="np-history-chat-main" onClick={() => onSelect(chat.label)}>
-          <span className="np-history-chat-icon"><IcChat /></span>
+          {showIcon && <span className="np-history-chat-icon"><IcChat /></span>}
           <span className="np-history-chat-body">
             <span className="np-history-chat-label">{chat.label}</span>
             <span className="np-history-chat-time">{chat.time}</span>
@@ -195,6 +250,9 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
         </button>
         {menuOpen && (
           <Dropdown onClose={() => setMenuOpen(false)} className="np-dropdown--history-menu">
+            <button className="np-dropdown-item" onClick={() => { setMenuOpen(false); onToggleStar(chat.id); }}>
+              <IcStar /><span>{chat.starred ? 'Unstar' : 'Star'}</span>
+            </button>
             <button className="np-dropdown-item" onClick={() => { setMenuOpen(false); setDraft(chat.label); setRenaming(true); }}>
               <IcRename /><span>Rename</span>
             </button>
@@ -209,9 +267,8 @@ function HistoryRow({ chat, active, onSelect, onRename, onRequestDelete }) {
   );
 }
 
-function HistoryPage({ activeLabel, onBack, onSelect }) {
+function HistoryPage({ activeLabel, onBack, onSelect, chats, onRename, onDelete, onToggleStar }) {
   const [query, setQuery] = useState('');
-  const [chats, setChats] = useState(RECENT_CHATS);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const q = query.trim().toLowerCase();
@@ -220,8 +277,7 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
     .map(bucket => ({ bucket, items: filtered.filter(c => c.bucket === bucket) }))
     .filter(g => g.items.length > 0);
 
-  const handleRename = (id, label) => setChats(prev => prev.map(c => c.id === id ? { ...c, label } : c));
-  const handleDelete = (id) => { setChats(prev => prev.filter(c => c.id !== id)); setConfirmDelete(null); };
+  const handleDelete = (id) => { onDelete(id); setConfirmDelete(null); };
 
   return (
     <div className="nav-history-page">
@@ -262,8 +318,9 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
                   chat={c}
                   active={c.label === activeLabel}
                   onSelect={onSelect}
-                  onRename={handleRename}
+                  onRename={onRename}
                   onRequestDelete={setConfirmDelete}
+                  onToggleStar={onToggleStar}
                 />
               ))}
             </div>
@@ -275,7 +332,7 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.label}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDelete.label}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
@@ -334,20 +391,165 @@ const BUILD_SUGGESTIONS = [
   { id: 'bs5', label: 'Findings over time',        chartId: 'line'    },
 ];
 
-function AgentsButton({ onClick }) {
-  return (
-    <button className="nav-history-btn" onClick={onClick} title="Agents">
-      <IcBot />
-      <span className="nav-history-btn-label">Agents</span>
+// ── Persistent left sidebar — History (Starred + recent) and Agents live
+// here at all times, next to the (auto-collapsed) app LeftNav, instead of
+// behind the old per-view "History"/"Agents" buttons and their full-page
+// detours. Collapses to a slim icon rail rather than disappearing, so it
+// never has to cover Home/Chat/Build to be reached.
+function NavSidebar({
+  collapsed, onToggleCollapse, onNewChat,
+  chats, activeLabel, onSelectChat, onToggleStar, onRename, onDelete, onViewAllChats,
+  agents, onRunAgent, onCreateAgent, onViewAllAgents,
+}) {
+  const starred = chats.filter(c => c.starred);
+  const recent = chats.filter(c => !c.starred).slice(0, 6);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const agentMeta = (a) => {
+    if (a.triggerType === 'manual') return 'Manual';
+    const freq = SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || 'Scheduled';
+    return a.scheduleTime ? `${freq} · ${a.scheduleTime}` : freq;
+  };
+
+  const renderChatRow = (c) => collapsed ? (
+    <button
+      key={c.id}
+      className="np-hist-chat-row-collapsed"
+      title={c.label}
+      aria-label={c.label}
+      onClick={() => onSelectChat(c.label)}
+    >
+      <IcChat />
     </button>
+  ) : (
+    <HistoryRow
+      key={c.id}
+      chat={c}
+      active={c.label === activeLabel}
+      onSelect={onSelectChat}
+      onRename={onRename}
+      onRequestDelete={setConfirmDelete}
+      onToggleStar={onToggleStar}
+      showIcon={false}
+    />
+  );
+
+  return (
+    <div className={`np-hist-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Chat history and agents">
+      <div className="np-hist-sidebar-body">
+        {collapsed ? (
+          <div className="np-history-hdr np-history-hdr--collapsed">
+            <button className="np-hist-newchat-collapsed" onClick={onNewChat} title="New chat" aria-label="New chat">
+              <IcEdit />
+            </button>
+          </div>
+        ) : (
+          <div className="np-history-hdr">
+            <button className="np-history-new-btn" onClick={onNewChat}>
+              <IcEdit /> New chat
+            </button>
+          </div>
+        )}
+
+        {starred.length > 0 && (
+          <>
+            <div className="np-history-section">
+              <div className="np-history-section-hdr">
+                {collapsed
+                  ? <span className="np-history-section-title" title="Starred"><IcStar /></span>
+                  : <span className="np-history-section-title"><IcStar /> Starred</span>}
+              </div>
+              {starred.map(renderChatRow)}
+            </div>
+            <div className="np-history-divider" />
+          </>
+        )}
+
+        <div className="np-history-section">
+          <div className="np-history-section-hdr">
+            {collapsed
+              ? <span className="np-history-section-title" title="History"><IcHistory /></span>
+              : <span className="np-history-section-title"><IcHistory /> History</span>}
+          </div>
+          {recent.map(renderChatRow)}
+          {!collapsed && (
+            <button className="np-history-viewall" onClick={onViewAllChats}>
+              <IcHistory /> View all conversations
+            </button>
+          )}
+        </div>
+
+        <div className="np-history-divider" />
+
+        <div className="np-history-section">
+          <div className="np-history-section-hdr">
+            {collapsed
+              ? <span className="np-history-section-title" title="Agents"><IcBot /></span>
+              : <span className="np-history-section-title"><IcBot /> Agents</span>}
+            {!collapsed && (
+              <button className="np-history-add-btn" onClick={onCreateAgent} aria-label="Create agent">
+                <IcPlus />
+              </button>
+            )}
+          </div>
+          {agents.slice(0, 5).map((a) => collapsed ? (
+            <button key={a.id} className="np-hist-agent-row-collapsed" title={a.name} aria-label={a.name} onClick={() => onRunAgent(a)}>
+              <IcBot />
+            </button>
+          ) : (
+            <button key={a.id} className="np-history-agent-row" onClick={() => onRunAgent(a)}>
+              <span className="np-history-agent-body">
+                <span className="np-history-agent-name">{a.name}</span>
+                <span className="np-history-agent-meta">{agentMeta(a)}</span>
+              </span>
+            </button>
+          ))}
+          {!collapsed && (
+            <button className="np-history-viewall" onClick={onViewAllAgents}>
+              <IcBot /> View all agents
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="np-collapse-row">
+        <button
+          className={`np-collapse-btn${collapsed ? ' np-collapse-btn--collapsed' : ''}`}
+          onClick={onToggleCollapse}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <span className="np-collapse-btn-icon"><IcSidebarCollapse flip={!collapsed} /></span>
+          {!collapsed && <span className="np-collapse-btn-label">Collapse</span>}
+        </button>
+      </div>
+
+      {confirmDelete && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title danger">Delete "{confirmDelete.label}"?</span>
+              <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, agents }) {
+function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
   const [query, setQuery] = useState('');
   const [contextFilters, setContextFilters] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  const [agentMenuPos, setAgentMenuPos] = useState({ bottom: 0, left: 0 });
+  const agentBtnRef = useRef(null);
 
   const toggleFilter = (pill) => {
     setContextFilters(prev =>
@@ -374,11 +576,6 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
 
   return (
     <div className="hv-shell">
-      <div className="hv-top-actions">
-        <AgentsButton onClick={onOpenAgents} />
-        <HistoryButton onClick={onToggleHistory} />
-      </div>
-
       <div className="hv-bg">
         <div className="hv-bg-blob hv-bg-blob-1" />
         <div className="hv-bg-blob hv-bg-blob-2" />
@@ -425,8 +622,15 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
             <div className="hv-composer-bar-left">
               <div className="np-rel">
                 <button
+                  ref={agentBtnRef}
                   className={`np-composer-add${agentMenuOpen ? ' active' : ''}`}
-                  onClick={() => setAgentMenuOpen(o => !o)}
+                  onClick={() => {
+                    if (!agentMenuOpen && agentBtnRef.current) {
+                      const r = agentBtnRef.current.getBoundingClientRect();
+                      setAgentMenuPos({ bottom: window.innerHeight - r.top + 6, left: r.left });
+                    }
+                    setAgentMenuOpen(o => !o);
+                  }}
                   aria-label="Use a saved agent"
                   aria-haspopup="menu"
                   aria-expanded={agentMenuOpen}
@@ -434,8 +638,12 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
                 >
                   <IcPlus />
                 </button>
-                {agentMenuOpen && (
-                  <Dropdown onClose={() => setAgentMenuOpen(false)} className="np-dropdown--agent-menu">
+                {agentMenuOpen && createPortal(
+                  <Dropdown
+                    onClose={() => setAgentMenuOpen(false)}
+                    className="np-dropdown--agent-menu"
+                    style={{ '--np-agent-menu-bottom': `${agentMenuPos.bottom}px`, '--np-agent-menu-left': `${agentMenuPos.left}px` }}
+                  >
                     <div className="np-dropdown-label">Agents</div>
                     {agents.length === 0 ? (
                       <button className="np-dropdown-item" onClick={() => { setAgentMenuOpen(false); onOpenAgents(); }}>
@@ -456,7 +664,8 @@ function HomeView({ onSend, mode, onModeChange, onToggleHistory, onOpenAgents, a
                         </button>
                       ))
                     )}
-                  </Dropdown>
+                  </Dropdown>,
+                  document.body
                 )}
               </div>
               {selectedAgent && (
@@ -783,7 +992,7 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runningAgent }) {
+function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
   const [followUp, setFollowUp] = useState('');
   const [exchanges, setExchanges] = useState(() => [createExchange(query, { mode })]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
@@ -882,7 +1091,6 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
       {runningAgent && <span className="ds-badge info" title={runningAgent.description || runningAgent.instructions}>Agent: {runningAgent.name}</span>}
       <div className="chat-space-title-actions">
         <HomeButton onClick={onGoHome} />
-        <HistoryButton onClick={onToggleHistory} />
         <button className="np-thread-menu-btn" title="Thread options" onClick={(e) => { e.stopPropagation(); setThreadMenuOpen(o => !o); }}>
           <IcDots />
         </button>
@@ -906,7 +1114,7 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{threadTitle}"?</span>
+              <span className="ds-modal-title danger">Delete "{threadTitle}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteThread(false)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This thread and its conversation will be removed. This can't be undone.</div>
@@ -965,9 +1173,8 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
             {appliedMode === 'agentic' ? 'Agentic' : 'Interactive'} · {DEPTH_LEVELS[appliedDepth].label}
           </button>
           {canStop ? (
-            <button className="ds-btn sz-sm t-outline" onClick={handleStop} title="Stop generating">
-              <span style={{ width: 10, height: 10, background: 'currentColor', borderRadius: 2, display: 'inline-block' }} />
-              Stop
+            <button className="nav-send-btn" onClick={handleStop} title="Stop generating">
+              <span className="nav-stop-icon" />
             </button>
           ) : (
             <button className="nav-send-btn" disabled={!followUp.trim()} onClick={handleSend}>
@@ -1069,7 +1276,7 @@ function buildMockWidgetData(chartId, label) {
   return undefined; // 'line' renders ChartRender's own placeholder series, same as Workspace
 }
 
-function detectChartId(text) {
+export function detectChartId(text) {
   const t = (text || '').toLowerCase();
   if (/\bkpi\b|^how many\b|count\b|total\b|\bnumber of\b/.test(t)) return 'kpi';
   if (/pie|donut|breakdown|proportion|percent|split/.test(t))       return 'pie';
@@ -1080,7 +1287,7 @@ function detectChartId(text) {
 
 const BUILD_WIDGET_SIZE_SPAN = { small: 1, medium: 2, large: 3, xlarge: 4 };
 
-function buildWidgetSpec(chartId, label, idSeq) {
+export function buildWidgetSpec(chartId, label, idSeq) {
   const sizeId = chartId === 'kpi' ? 'small' : 'medium';
   return {
     id: idSeq,
@@ -1098,7 +1305,7 @@ function buildWidgetSpec(chartId, label, idSeq) {
 // Strips the request-phrasing ("Add a pie chart for…") down to just the
 // subject, so the widget's title reads like a chart caption ("Severity
 // breakdown") instead of the literal sentence the user typed.
-function cleanWidgetTitle(text) {
+export function cleanWidgetTitle(text) {
   let t = text.trim();
   t = t.replace(/^(add|show|create|build|give me)\s+/i, '');
   t = t.replace(/^(a|an|the)\s+/i, '');
@@ -1109,7 +1316,7 @@ function cleanWidgetTitle(text) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function parseWidgetIntent(text) {
+export function parseWidgetIntent(text) {
   const t = text.toLowerCase();
   const addVerb   = /^(add|show|create|build|give me)\b/.test(t);
   const chartWord = /\b(chart|graph|trend|breakdown|distribution|over time)\b/.test(t);
@@ -1172,7 +1379,7 @@ const IcWidgetReady = () => <Ic size={13} path={<><path d="M9 11l3 3L22 4" /><pa
 // an inline text/canvas result. `onWidgetReady` fires exactly once per
 // exchange (guarded by a ref, mirroring ExchangeTurn's canvas-auto-open guard)
 // so the widget materializes the moment its trace finishes — no extra click.
-function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
+export function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
   const engine = useReasoningEngine(exchange, live, updateExchange);
   const readyFiredRef = useRef(false);
 
@@ -1245,7 +1452,7 @@ function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetReady }) {
 }
 
 // ── Build view ───────────────────────────────────────────────────────
-function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
+function BuildView({ initialQuery, onGoHome, onNav }) {
   const [dashName,    setDashName]    = useState('Untitled Dashboard');
   const [editingName, setEditingName] = useState(false);
   const [widgets,          setWidgets]          = useState([]);
@@ -1371,7 +1578,6 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
         <div className="build-topbar-spacer" />
 
         <HomeButton onClick={onGoHome} />
-        <HistoryButton onClick={onToggleHistory} />
       </div>
 
       {/* Chat + Canvas workspace */}
@@ -1487,7 +1693,7 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDeleteWidget.label}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDeleteWidget.label}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteWidget(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This widget will be removed from the dashboard. This can't be undone.</div>
@@ -1518,16 +1724,17 @@ const SCHEDULE_FREQUENCIES = [
   { id: 'monthly', label: 'Monthly' },
 ];
 
-function AgentBuilderView({ onGoHome, onAgentCreated }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [dataAccess, setDataAccess] = useState([]);
-  const [autonomy, setAutonomy] = useState('interactive');
-  const [depth, setDepth] = useState(1);
-  const [triggerType, setTriggerType] = useState('manual');
-  const [scheduleFreq, setScheduleFreq] = useState('daily');
-  const [scheduleTime, setScheduleTime] = useState('09:00');
+function AgentBuilderView({ onGoHome, onAgentCreated, onAgentUpdated, editingAgent }) {
+  const isEditing = !!editingAgent;
+  const [name, setName] = useState(editingAgent?.name || '');
+  const [description, setDescription] = useState(editingAgent?.description || '');
+  const [instructions, setInstructions] = useState(editingAgent?.instructions || '');
+  const [dataAccess, setDataAccess] = useState(editingAgent?.dataAccess || []);
+  const [autonomy, setAutonomy] = useState(editingAgent?.autonomy || 'interactive');
+  const [depth, setDepth] = useState(editingAgent?.depth ?? 1);
+  const [triggerType, setTriggerType] = useState(editingAgent?.triggerType || 'manual');
+  const [scheduleFreq, setScheduleFreq] = useState(editingAgent?.scheduleFreq || 'daily');
+  const [scheduleTime, setScheduleTime] = useState(editingAgent?.scheduleTime || '09:00');
   const [nameTouched, setNameTouched] = useState(false);
   const [instructionsTouched, setInstructionsTouched] = useState(false);
   const [created, setCreated] = useState(false);
@@ -1544,7 +1751,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
     setNameTouched(true);
     setInstructionsTouched(true);
     if (!name.trim() || !instructions.trim()) return;
-    onAgentCreated?.({
+    const agentData = {
       name: name.trim(),
       description: description.trim(),
       instructions: instructions.trim(),
@@ -1554,8 +1761,14 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
       triggerType,
       scheduleFreq,
       scheduleTime,
-    });
-    setCreated(true);
+    };
+    if (isEditing) {
+      onAgentUpdated?.(editingAgent.id, agentData);
+      onGoHome();
+    } else {
+      onAgentCreated?.(agentData);
+      setCreated(true);
+    }
   };
 
   const resetForm = () => {
@@ -1570,7 +1783,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
       <button className="nav-history-back-btn" onClick={onGoHome}>
         <IcArrowLeft /> Back
       </button>
-      <h2 className="nav-history-page-title">Create Agent</h2>
+      <h2 className="nav-history-page-title">{isEditing ? 'Edit Agent' : 'Create Agent'}</h2>
     </div>
   );
 
@@ -1622,7 +1835,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
         <div className="agb-intro">
           <span className="agb-intro-icon"><IcBot /></span>
           <div>
-            <p className="agb-intro-title">Build a custom agent</p>
+            <p className="agb-intro-title">{isEditing ? `Edit "${editingAgent.name}"` : 'Build a custom agent'}</p>
             <p className="agb-intro-sub">Give it a name, tell it what to do, and choose what it can access — then run it on demand or on a schedule.</p>
           </div>
         </div>
@@ -1766,7 +1979,7 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
 
       <div className="agb-footer">
         <button className="ds-btn sz-md t-outline" onClick={onGoHome}>Cancel</button>
-        <button className="ds-btn sz-md t-primary" onClick={handleCreate}>Create Agent</button>
+        <button className="ds-btn sz-md t-primary" onClick={handleCreate}>{isEditing ? 'Save Changes' : 'Create Agent'}</button>
       </div>
     </div>
   );
@@ -1776,7 +1989,85 @@ function AgentBuilderView({ onGoHome, onAgentCreated }) {
 // overlay page (same pattern as HistoryPage), rendered as a real data table
 // (ds-table-wrap/ds-table/TablePagination) rather than plain cards — list
 // data belongs in a table per the design system, not a card list. ────────
-function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
+function AgentRow({ agent: a, dotColor, onRun, onRename, onEdit, onRequestDelete }) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(a.name);
+
+  const commitRename = () => {
+    setRenaming(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== a.name) onRename(a.id, trimmed);
+    else setDraft(a.name);
+  };
+
+  const freqLabel = a.scheduleFreq ? (SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || a.scheduleFreq) : null;
+
+  return (
+    <tr>
+      <td className="ds-td">
+        <div className="agp-name-cell">
+          <span className="agp-dot" style={{ background: dotColor }} aria-hidden="true" />
+          {renaming ? (
+            <input
+              className="nav-history-rename-input"
+              value={draft}
+              autoFocus
+              onChange={e => setDraft(e.target.value)}
+              onFocus={e => e.target.select()}
+              onBlur={commitRename}
+              onKeyDown={e => {
+                if (e.key === 'Enter') commitRename();
+                if (e.key === 'Escape') { setDraft(a.name); setRenaming(false); }
+              }}
+            />
+          ) : (
+            <span className="agp-name-body">
+              <span className="agp-td-name">{a.name}</span>
+              {(a.description || a.instructions) && (
+                <span className="agp-td-desc" title={a.description || a.instructions}>{a.description || a.instructions}</span>
+              )}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="ds-td">
+        <span className={`ds-badge ${a.autonomy === 'agentic' ? 'info' : 'neutral'}`}>
+          {a.autonomy === 'agentic' ? 'Agentic' : 'Interactive'}
+        </span>
+      </td>
+      <td className="ds-td">
+        {a.triggerType === 'manual'
+          ? <span className="ds-badge neutral">Manual</span>
+          : <span className="ds-badge success dot">{freqLabel ? `Scheduled · ${freqLabel}${a.scheduleTime ? ` at ${a.scheduleTime}` : ''}` : 'Scheduled'}</span>
+        }
+      </td>
+      <td className="ds-td lib-td-muted">
+        {a.dataAccess?.length
+          ? <span className="agp-td-access" title={a.dataAccess.map(d => d.label).join(', ')}>{a.dataAccess.map(d => d.label).join(', ')}</span>
+          : '—'
+        }
+      </td>
+      <td className="ds-td">
+        <div className="row-actions">
+          <button className="ds-icon-btn" title={`Run "${a.name}"`} onClick={() => onRun(a)}>
+            <IcPlay />
+          </button>
+          <button className="ds-icon-btn" title={`Rename "${a.name}"`} onClick={() => { setDraft(a.name); setRenaming(true); }}>
+            <IcRename />
+          </button>
+          <button className="ds-icon-btn" title={`Edit "${a.name}"`} onClick={() => onEdit(a)}>
+            <IcEdit />
+          </button>
+          <button className="ds-icon-btn agp-td-delete" title={`Delete "${a.name}"`} onClick={() => onRequestDelete(a)}>
+            <IcTrash />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename, onEdit }) {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -1806,46 +2097,20 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
                 <th className="ds-th">Autonomy</th>
                 <th className="ds-th">Trigger</th>
                 <th className="ds-th">Data access</th>
-                <th className="ds-th" style={{ width: 96 }}>Actions</th>
+                <th className="ds-th" style={{ width: 152 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {pageRows.length > 0 ? pageRows.map((a, i) => (
-                <tr key={a.id}>
-                  <td className="ds-td">
-                    <div className="agp-name-cell">
-                      <span className="agp-dot" style={{ background: AGENT_DOT_VARS[(start + i) % AGENT_DOT_VARS.length] }} aria-hidden="true" />
-                      <span className="agp-name-body">
-                        <span className="agp-td-name">{a.name}</span>
-                        <span className="agp-td-desc">{a.description || a.instructions}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td className="ds-td">
-                    <span className={`ds-badge ${a.autonomy === 'agentic' ? 'info' : 'neutral'}`}>
-                      {a.autonomy === 'agentic' ? 'Agentic' : 'Interactive'}
-                    </span>
-                  </td>
-                  <td className="ds-td">
-                    {a.triggerType === 'manual'
-                      ? <span className="ds-badge neutral">Manual</span>
-                      : <span className="ds-badge success dot">Scheduled · {a.scheduleFreq}</span>
-                    }
-                  </td>
-                  <td className="ds-td lib-td-muted">
-                    {a.dataAccess?.length ? a.dataAccess.map(d => d.label).join(', ') : '—'}
-                  </td>
-                  <td className="ds-td">
-                    <div className="row-actions">
-                      <button className="ds-icon-btn" title={`Run "${a.name}"`} onClick={() => onRun(a)}>
-                        <IcPlay />
-                      </button>
-                      <button className="ds-icon-btn agp-td-delete" title={`Delete "${a.name}"`} onClick={() => setConfirmDelete(a)}>
-                        <IcTrash />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <AgentRow
+                  key={a.id}
+                  agent={a}
+                  dotColor={AGENT_DOT_VARS[(start + i) % AGENT_DOT_VARS.length]}
+                  onRun={onRun}
+                  onRename={onRename}
+                  onEdit={onEdit}
+                  onRequestDelete={setConfirmDelete}
+                />
               )) : (
                 <tr>
                   <td colSpan={5} className="lib-no-results">
@@ -1870,7 +2135,7 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.name}"?</span>
+              <span className="ds-modal-title danger">Delete "{confirmDelete.name}"?</span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">This agent will be permanently removed. This can't be undone.</div>
@@ -1903,8 +2168,14 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   const [historyOpen, setHistoryOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [runningAgent, setRunningAgent] = useState(null);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [chats, setChats] = useState(RECENT_CHATS);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agents, setAgents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(AGENTS_STORAGE_KEY)) || []; } catch { return []; }
+    try {
+      const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
+      return raw !== null ? (JSON.parse(raw) || []) : DEFAULT_AGENTS;
+    } catch { return DEFAULT_AGENTS; }
   });
   const agentIdSeq = useRef(0);
   const mounted = useRef(false);
@@ -1935,17 +2206,33 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
     setView(sentMode === 'build' ? 'build' : 'chat');
   };
 
-  const toggleHistory = () => { setAgentsOpen(false); setHistoryOpen(o => !o); };
+  const openHistoryPage = () => { setAgentsOpen(false); setHistoryOpen(true); };
 
   const goHome = () => { setView('home'); setQuery(''); setRunningAgent(null); };
 
-  const goCreateAgent = () => { setAgentsOpen(false); setView('agent-builder'); };
+  const handleRenameChat = (id, label) => setChats(prev => prev.map(c => c.id === id ? { ...c, label } : c));
+  const handleDeleteChat = (id) => setChats(prev => prev.filter(c => c.id !== id));
+  const handleToggleStarChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, starred: !c.starred } : c));
+
+  const goCreateAgent = () => { setAgentsOpen(false); setEditingAgent(null); setView('agent-builder'); };
+
+  const goEditAgent = (agent) => { setAgentsOpen(false); setEditingAgent(agent); setView('agent-builder'); };
+
+  const backToAgents = () => { setEditingAgent(null); setView('home'); setAgentsOpen(true); };
 
   const openAgentsList = () => { setHistoryOpen(false); setAgentsOpen(true); };
 
   const handleAgentCreated = (agentData) => {
     const agent = { id: `agent-${Date.now()}-${++agentIdSeq.current}`, createdAt: Date.now(), ...agentData };
     setAgents(prev => [agent, ...prev]);
+  };
+
+  const handleAgentUpdated = (id, agentData) => {
+    setAgents(prev => prev.map(a => a.id === id ? { ...a, ...agentData } : a));
+  };
+
+  const handleRenameAgent = (id, name) => {
+    setAgents(prev => prev.map(a => a.id === id ? { ...a, name } : a));
   };
 
   const handleDeleteAgent = (id) => setAgents(prev => prev.filter(a => a.id !== id));
@@ -1965,35 +2252,64 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   };
 
   return (
-    <div className="nav-page-content-only">
-      {view === 'home' && (
-        <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onToggleHistory={toggleHistory} onOpenAgents={openAgentsList} agents={agents} />
-      )}
-      {view === 'chat' && (
-        <ChatView query={activeQuery} mode={mode} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
-      )}
-      {view === 'build' && (
-        <BuildView initialQuery={activeQuery} onToggleHistory={toggleHistory} onGoHome={goHome} onNav={onNav} />
-      )}
-      {view === 'agent-builder' && (
-        <AgentBuilderView onGoHome={goHome} onAgentCreated={handleAgentCreated} />
-      )}
-      {historyOpen && (
-        <HistoryPage
-          activeLabel={view === 'chat' ? activeQuery : null}
-          onBack={() => setHistoryOpen(false)}
-          onSelect={handleSelectChat}
-        />
-      )}
-      {agentsOpen && (
-        <AgentsListPage
-          agents={agents}
-          onBack={() => setAgentsOpen(false)}
-          onRun={handleRunAgent}
-          onCreateNew={goCreateAgent}
-          onDelete={handleDeleteAgent}
-        />
-      )}
+    <div className="nav-page-shell">
+      <NavSidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        onNewChat={goHome}
+        chats={chats}
+        activeLabel={view === 'chat' ? activeQuery : null}
+        onSelectChat={handleSelectChat}
+        onToggleStar={handleToggleStarChat}
+        onRename={handleRenameChat}
+        onDelete={handleDeleteChat}
+        onViewAllChats={openHistoryPage}
+        agents={agents}
+        onRunAgent={handleRunAgent}
+        onCreateAgent={goCreateAgent}
+        onViewAllAgents={openAgentsList}
+      />
+      <div className="nav-page-content-only">
+        {view === 'home' && (
+          <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onOpenAgents={openAgentsList} agents={agents} />
+        )}
+        {view === 'chat' && (
+          <ChatView query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
+        )}
+        {view === 'build' && (
+          <BuildView initialQuery={activeQuery} onGoHome={goHome} onNav={onNav} />
+        )}
+        {view === 'agent-builder' && (
+          <AgentBuilderView
+            onGoHome={editingAgent ? backToAgents : goHome}
+            onAgentCreated={handleAgentCreated}
+            onAgentUpdated={handleAgentUpdated}
+            editingAgent={editingAgent}
+          />
+        )}
+        {historyOpen && (
+          <HistoryPage
+            activeLabel={view === 'chat' ? activeQuery : null}
+            onBack={() => setHistoryOpen(false)}
+            onSelect={handleSelectChat}
+            chats={chats}
+            onRename={handleRenameChat}
+            onDelete={handleDeleteChat}
+            onToggleStar={handleToggleStarChat}
+          />
+        )}
+        {agentsOpen && (
+          <AgentsListPage
+            agents={agents}
+            onBack={() => setAgentsOpen(false)}
+            onRun={handleRunAgent}
+            onCreateNew={goCreateAgent}
+            onDelete={handleDeleteAgent}
+            onRename={handleRenameAgent}
+            onEdit={goEditAgent}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { DSPillSearch, LibraryIcon, SavedIcon, LibraryImportBar, useWorkspace } from '../context/WorkspaceCtx.jsx'
+import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
 
 // Workspace › Library tab
 
@@ -67,15 +67,15 @@ function LibraryPage() {
   }, [sortOpen])
 
   const allQuickCards = [
-    { title: 'Discover Dashboard',                             desc: 'Explore security metrics and insights.',                                                                                          tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/discover') },
-    { title: 'CISO Dashboard',                                 desc: 'Executive security overview.',                                                                                                    tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Client Subsidiary',                              desc: 'Overall security health status.',                                                                                                 tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Executive Summary',                              desc: 'Summary of detected vulnerabilities and their severity levels.',                                                                  tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => onNav('workspace/report/executive-summary') },
-    { title: 'Month over Month Comparison of Vulnerabilities', desc: 'Month-over-month analysis of vulnerability trends and severity changes.',                                                        tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => onNav('workspace/report/month-over-month') },
-    { title: 'Detailed Report on Vulnerabilities',             desc: 'Comprehensive vulnerability inventory with detailed findings, statuses and vulnerability trends.',                               tag: 'REPORT',    actionLabel: 'Edit Template',  action: () => onNav('workspace/report/vulnerabilities') },
-    { title: 'Device Attack Surface',                          desc: 'Consolidated device posture overview including health, vulnerability load, compliance state, and security activity.',            tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Risk Mitigation Queries',                        desc: 'Targeted views that surface remediation-ready items aligned with defined risk-reduction priorities.',                           tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Tracked Security Gaps',                          desc: 'Monitored list of unresolved weaknesses showing progress, ownership, and aging of outstanding security issues.',                tag: 'DASHBOARD', actionLabel: 'Edit Dashboard', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Discover Dashboard',                             desc: 'Explore security metrics and insights.',                                                                                          tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/discover') },
+    { title: 'CISO Dashboard',                                 desc: 'Executive security overview.',                                                                                                    tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Client Subsidiary',                              desc: 'Overall security health status.',                                                                                                 tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Executive Summary',                              desc: 'Summary of detected vulnerabilities and their severity levels.',                                                                  tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/executive-summary') },
+    { title: 'Month over Month Comparison of Vulnerabilities', desc: 'Month-over-month analysis of vulnerability trends and severity changes.',                                                        tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/month-over-month') },
+    { title: 'Detailed Report on Vulnerabilities',             desc: 'Comprehensive vulnerability inventory with detailed findings, statuses and vulnerability trends.',                               tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/vulnerabilities') },
+    { title: 'Device Attack Surface',                          desc: 'Consolidated device posture overview including health, vulnerability load, compliance state, and security activity.',            tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Risk Mitigation Queries',                        desc: 'Targeted views that surface remediation-ready items aligned with defined risk-reduction priorities.',                           tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Tracked Security Gaps',                          desc: 'Monitored list of unresolved weaknesses showing progress, ownership, and aging of outstanding security issues.',                tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
   ]
 
   const filteredCards = allQuickCards.filter(c => {
@@ -95,23 +95,21 @@ function LibraryPage() {
   return (
     <div className="lib-shell">
 
-      <LibraryImportBar />
-
       <div className="lib-card">
         {/* ── Tab bar ───────────────────────────────────────────── */}
         <div className="lib-tabbar">
           <div className="lib-tabbar-left">
-            <button className="ds-tab active has-icon">
-              <LibraryIcon size={14} />
-              Library
-            </button>
             <button className="ds-tab has-icon" onClick={() => onNav('workspace/saved')}>
               <SavedIcon size={14} />
               Saved
             </button>
+            <button className="ds-tab active has-icon">
+              <LibraryIcon size={14} />
+              Templates
+            </button>
           </div>
           <div className="lib-tabbar-right">
-            <DSPillSearch value={librarySearch} onChange={setLibrarySearch} placeholder="Search Library" width={200} />
+            <DSPillSearch value={librarySearch} onChange={setLibrarySearch} placeholder="Search Templates" width={200} />
             <button className="lib-action-btn" onClick={() => {}}>
               <img src="assets/icons/new-report.svg" width={13} height={13} alt="" />
               New Report

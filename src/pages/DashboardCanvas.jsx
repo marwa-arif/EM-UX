@@ -1,8 +1,13 @@
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
+import { createPortal } from 'react-dom'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
-import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
+import { GF_ENTITIES } from '../components/FilterPanel.jsx'
+import { INITIAL_DATA_SOURCES } from './admin/DataIntegrations.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
+import GridLayout from 'react-grid-layout/legacy'
+import 'react-grid-layout/css/styles.css'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 
@@ -78,12 +83,97 @@ const HEADING_WIDGET_HEIGHTS = [
   { id: 'large',   label: 'Large',       px: 460 },
   { id: 'xlarge',  label: 'Extra Large', px: 560 },
 ]
+const ALL_WIDGET_SIZES = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
+const ALL_WIDGET_HEIGHTS = [...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS]
+function widgetHeightPx(w) {
+  return ALL_WIDGET_HEIGHTS.find(s => s.id === w.heightId)?.px || 180
+}
+
+// ── Free-form grid layout engine ──────────────────────────────────────
+// The canvas is a 12-column grid measured in row-units (ROW_UNIT_PX each).
+// Widgets carry an explicit gx/gy/gw/gh position once dragged or resized;
+// until then their position/size is derived from the legacy span/heightId
+// preset fields and packed on the fly, so untouched dashboards/templates
+// keep rendering exactly as they did under the old auto-flow layout.
+const GRID_COLS   = 12
+const ROW_UNIT_PX = 20
+const MIN_GW = 3,  MAX_GW = GRID_COLS
+const MIN_GH = 4,  MAX_GH = 40
+// Fed to react-grid-layout as `margin`/`containerPadding` — keep in sync
+// with any visual spacing changes so the two stay consistent.
+const GRID_PAD_PX = 20
+const GRID_GAP_PX = 12
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
+// Pixel width of `span` grid columns given the grid's current measured
+// content width — used to size the Add Widget slot/ghost preview, which
+// render outside react-grid-layout (normal document flow, not real grid
+// items) and so need their column-fraction width computed by hand.
+function colSpanToPx(span, contentWidth) {
+  const colWidth = (contentWidth - (GRID_COLS - 1) * GRID_GAP_PX) / GRID_COLS
+  return span * colWidth + (span - 1) * GRID_GAP_PX
+}
+
+function legacyGw(w) { return clamp((w.span || 1) * 3, MIN_GW, MAX_GW) }
+function legacyGh(w) { return clamp(Math.ceil(widgetHeightPx(w) / ROW_UNIT_PX), MIN_GH, MAX_GH) }
+
+// react-grid-layout owns all drag/resize/reflow interaction (see the grid
+// render in DashboardCanvas) — this function only has one job: give every
+// widget a valid gx/gy/gw/gh so RGL always has a complete `layout` to start
+// from. A widget that already has a position (persisted, or just set by RGL
+// itself after a drag/resize) keeps it untouched; only widgets missing one
+// (brand new, or a legacy/template widget that predates this position model)
+// get auto-placed, into the first free top-left gap — checking actual
+// per-cell occupancy (not just one "skyline" height per column) so a newly
+// auto-placed widget can always backfill a gap left by an earlier one,
+// regardless of size mix.
+function packWidgets(widgets) {
+  const occupiedRows = [] // occupiedRows[y] = Set of occupied columns in row y
+  const rowFree = (x, y, gw) => {
+    const row = occupiedRows[y]
+    if (!row) return true
+    for (let c = x; c < x + gw; c++) if (row.has(c)) return false
+    return true
+  }
+  const occupy = (x, y, gw, gh) => {
+    for (let r = y; r < y + gh; r++) {
+      if (!occupiedRows[r]) occupiedRows[r] = new Set()
+      for (let c = x; c < x + gw; c++) occupiedRows[r].add(c)
+    }
+  }
+
+  const sized = widgets.map(w => ({
+    ...w,
+    gw: clamp(w.gw ?? legacyGw(w), MIN_GW, MAX_GW),
+    gh: clamp(w.gh ?? legacyGh(w), MIN_GH, MAX_GH),
+  }))
+
+  // Reserve cells for everything that already has a real position first, so
+  // auto-placed widgets never land on top of them.
+  sized.forEach(w => { if (w.gx != null && w.gy != null) occupy(w.gx, w.gy, w.gw, w.gh) })
+
+  return sized.map(w => {
+    if (w.gx != null && w.gy != null) return w
+    let gx = 0, gy = 0
+    outer: for (let y = 0; ; y++) {
+      for (let x = 0; x <= GRID_COLS - w.gw; x++) {
+        let fits = true
+        for (let r = y; r < y + w.gh && fits; r++) fits = rowFree(x, r, w.gw)
+        if (fits) { gx = x; gy = y; break outer }
+      }
+    }
+    occupy(gx, gy, w.gw, w.gh)
+    return { ...w, gx, gy }
+  })
+}
 const PERF_LEVELS = [
-  { max: 4,        label: 'Optimal',           bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)', dot: 'var(--pai-green)' },
-  { max: 7,        label: 'Approaching Limit', bg: 'rgba(217,119,6,0.10)', color: 'var(--pai-high-fg)', dot: 'var(--pai-high-fg)' },
-  { max: Infinity, label: 'Limit Reached',     bg: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', dot: 'var(--pai-crit-fg)' },
+  { max: 4,        label: 'Optimal',           range: '≤4 widgets',  desc: 'loads and refreshes quickly',                      bg: 'rgba(22,163,74,0.10)',  color: 'var(--pai-green)', dot: 'var(--pai-green)' },
+  { max: 7,        label: 'Approaching Limit', range: '5–7 widgets', desc: 'may start to feel slower',                         bg: 'rgba(217,119,6,0.10)', color: 'var(--pai-high-fg)', dot: 'var(--pai-high-fg)' },
+  { max: Infinity, label: 'Limit Reached',     range: '8+ widgets',  desc: 'may load slowly — consider trimming widgets',      bg: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', dot: 'var(--pai-crit-fg)' },
 ]
 const perfLevel = count => PERF_LEVELS.find(l => count <= l.max)
+const PERF_TOOLTIP = PERF_LEVELS.map(l => `${l.label} (${l.range}) — ${l.desc}`).join('. ') + '.'
 
 const KG_COLUMNS = [
   'AAD Created', 'AAD Deleted Date', 'AAD Device Category', 'AAD Device ID',
@@ -691,6 +781,70 @@ function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
   )
 }
 
+// ── DashboardScopeModal ──────────────────────────────────────────────
+// Graph-filter entity picker used to set a dashboard's scope. Mandatory
+// (non-dismissable) the first time a brand-new dashboard is opened; when
+// reopened later via the Dashboard Scope badge it's a normal dismissable
+// modal so the user can change the scope.
+function DashboardScopeModal({ mandatory, onClose, onBack, onSelect }) {
+  const [search, setSearch]         = useState('')
+  const [selectedId, setSelectedId] = useState(null)
+
+  const filtered = GF_ENTITIES.filter(e =>
+    !search || e.label.toLowerCase().includes(search.toLowerCase())
+  )
+  const selected = GF_ENTITIES.find(e => e.id === selectedId) || null
+  const dismiss = mandatory ? onBack : onClose
+
+  return (
+    <div className="ds-modal-overlay" onClick={mandatory ? undefined : onClose}>
+      <div className="ds-modal dc-scope-modal" onClick={e => e.stopPropagation()}>
+        <div className="ds-modal-header">
+          <span className="ds-modal-title">Set Dashboard Scope</span>
+          <button className="ds-modal-close" onClick={dismiss}>✕</button>
+        </div>
+        <div className="ds-modal-body">
+          <p className="dc-scope-modal__hint">
+            Select a node or entity to scope this dashboard to. You can change this later from the Dashboard Scope badge.
+          </p>
+          <input
+            className="dc-scope-modal__search"
+            placeholder="Search entity"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <div className="dc-scope-modal__grid">
+            {filtered.map(entity => (
+              <button
+                type="button"
+                key={entity.id}
+                className={`dc-scope-node${selectedId === entity.id ? ' dc-scope-node--selected' : ''}`}
+                style={{ '--dc-scope-color': entity.color }}
+                onClick={() => setSelectedId(entity.id)}
+              >
+                <span className="dc-scope-node__circle">
+                  <img src={`/assets/icons/${entity.file}`} width={20} height={20} alt="" />
+                </span>
+                <span className="dc-scope-node__label">{entity.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="ds-modal-footer">
+          <button className="ds-btn sz-md t-outline" onClick={dismiss}>
+            {mandatory ? 'Back' : 'Cancel'}
+          </button>
+          <button
+            className="ds-btn sz-md t-primary"
+            disabled={!selected}
+            onClick={() => selected && onSelect(selected)}
+          >Confirm Scope</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── ColorPickerModal ─────────────────────────────────────────────────
 function ColorPickerModal({ color, label, onClose, onApply }) {
   const init       = hexToHsv(color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#FF0000')
@@ -829,7 +983,7 @@ function ColorPickerModal({ color, label, onClose, onApply }) {
 }
 
 // ── Widget Settings Panel ────────────────────────────────────────────
-function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
+function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
   const [tab, setTab]             = useState('data')
   const [title, setTitle]         = useState(() => {
     const defaultLabel   = CHART_TYPES.find(c => c.id === widget.chartId)?.label
@@ -866,6 +1020,12 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const [exploreIn, setExploreIn] = useState(widget.exploreIn ?? false)
   const [kpiCompOperation, setKpiCompOperation]   = useState('count-distinct')
   const [kpiCompAggregateBy, setKpiCompAggregateBy] = useState('host')
+  const [fontSize, setFontSize] = useState(widget.fontSize || 'medium')
+  // A brand-new widget has no persisted classification yet — Configure Colors
+  // stays locked until the user actually engages with the Data tab's
+  // attribute control at least once (typing it for pie, or applying the
+  // attribute picker for bar/stacked charts).
+  const [attributeTouched, setAttributeTouched] = useState(widget.classification != null)
 
   const isPie       = chartType === 'pie'
   const isKpi       = chartType === 'kpi'
@@ -876,6 +1036,10 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
   const isStackHor  = chartType === 'stack-hor'
   const isKPI       = chartType === 'kpi'
   const isHeading   = chartType === 'heading'
+
+  useEffect(() => {
+    onLiveChange?.({ sizeId, heightId })
+  }, [sizeId, heightId])
 
   return (
     <div
@@ -951,8 +1115,21 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   options={(isHeading ? HEADING_WIDGET_HEIGHTS : isKPI ? KPI_WIDGET_HEIGHTS : WIDGET_HEIGHTS).map(h => ({ value: h.id, label: h.label }))}
                 />
               </div>
+              {isKPI && (
+                <div className="dc-size-sub-row">
+                  <div className="dc-size-sub-label">Font Size</div>
+                  <SizeSelectDropdown
+                    value={fontSize}
+                    onChange={v => setFontSize(v)}
+                    options={[{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }]}
+                  />
+                </div>
+              )}
             </div>
             <FieldRow label="Configure Colors">
+              {!isKpi && !isTable && !attributeTouched ? (
+                <div className="dc-color-config-locked">Select an attribute in the Data tab first.</div>
+              ) : (
               <div className="dc-color-config">
                 {Object.entries(chartColors).map(([key, color]) => (
                   <div key={key} className="dc-color-config-row">
@@ -967,6 +1144,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   </div>
                 ))}
               </div>
+              )}
             </FieldRow>
             {colorPickerOpen && (
               <ColorPickerModal
@@ -1037,7 +1215,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
               <>
                 <FieldRow label="Attribute" hint="Define how to divide sections in pie">
                   <FieldRow label="Classification">
-                    <TextInput value={classification} onChange={e => setClassification(e.target.value)} withKG />
+                    <TextInput value={classification} onChange={e => { setClassification(e.target.value); setAttributeTouched(true) }} withKG />
                   </FieldRow>
                 </FieldRow>
                 <FieldRow label="Size" hint="Display total/distinct count in the center of pie chart">
@@ -1077,7 +1255,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   <GraphFilterModal
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setFilterModalOpen(false) }}
+                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
                   />
                 )}
 
@@ -1178,7 +1356,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   <GraphFilterModal
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setFilterModalOpen(false) }}
+                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
                   />
                 )}
 
@@ -1302,7 +1480,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   <GraphFilterModal
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setStackClassModalOpen(false) }}
+                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
                   />
                 )}
 
@@ -1440,7 +1618,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
                   <GraphFilterModal
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setStackClassModalOpen(false) }}
+                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
                   />
                 )}
 
@@ -1692,6 +1870,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose }) {
             ...(isStackVert                               && { magnitude, classification, explodeArrayFields }),
             ...(isStackHor                                && { magnitude, classification, explodeArrayFields }),
             ...(isHeading                                 && { exploreIn }),
+            ...(isKpi                                     && { fontSize }),
           })}
           className="ds-btn sz-md t-primary"
         >Apply</button>
@@ -1769,11 +1948,17 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 }
 
 // ── Widget Card ──────────────────────────────────────────────────────
-export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, reportMode, printMode = false }) {
+// Positioning for the live (non-report) grid is owned entirely by
+// react-grid-layout: it wraps this component's root element in its own
+// `.react-grid-item` (position:absolute, inline width/height/transform for
+// drag/resize), so this card never sets its own grid placement or animates
+// its own position — it just fills whatever box that wrapper gives it (see
+// `.dc-widget-col` in dashboard.css).
+function WidgetCardImpl({ widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, reportMode, printMode = false }) {
   const [hovered, setHovered]         = useState(false)
   const [dlOpen, setDlOpen]           = useState(false)
   const dlRef                         = useRef(null)
-  const h = [...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS].find(s => s.id === widget.heightId)?.px || 180
+  const h = widget.gh ? widget.gh * ROW_UNIT_PX : widgetHeightPx(widget)
   const showDownload = widget.chartId === 'table' && widget.enableDownload !== false && !reportMode
 
   useEffect(() => {
@@ -1787,7 +1972,6 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditW
     <div
       className={reportMode ? 'dc-report-widget' : 'dc-widget-col'}
       style={{
-        ...(reportMode ? {} : { '--dc-widget-span': widget.span }),
         '--dc-fg1': PAI.fg1,
         '--dc-fg3': PAI.fg3,
         '--dc-indigo': PAI.indigo,
@@ -1830,7 +2014,7 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditW
           <div className="dc-widget-card-title-row">
             <span className="dc-widget-card-title">{widget.label}</span>
             {showDownload && (
-              <div ref={dlRef} className="comp-sort-wrap">
+              <div ref={dlRef} className="comp-sort-wrap" onMouseDown={e => e.stopPropagation()}>
                 <button
                   className="ds-btn sz-sm t-outline"
                   disabled
@@ -1853,12 +2037,26 @@ export function WidgetCard({ widget, isEditing, onEdit, onRequestDelete, onEditW
           </div>
         </div>
         <div className="dc-widget-card-body">
-          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} cardHeight={h} printMode={printMode} />
+          <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} fontSize={widget.fontSize} cardHeight={h} printMode={printMode} />
         </div>
       </div>
     </div>
   )
 }
+
+// Memoized, ignoring the callback props (onEdit/onRequestDelete/onEditWithCopilot
+// are recreated fresh every render — they're stable in behavior, never in
+// reference). Without this, every widget re-renders (charts included) on
+// every drag/resize frame react-grid-layout produces, since it re-renders
+// its whole children list on each reflow — with a dozen-plus real widgets on
+// a dashboard, that's a real, visible frame-rate hit during drag, not just a
+// wasted-render nicety.
+export const WidgetCard = React.memo(WidgetCardImpl, (prev, next) =>
+  prev.widget === next.widget &&
+  prev.isEditing === next.isEditing &&
+  prev.reportMode === next.reportMode &&
+  prev.printMode === next.printMode
+)
 
 // ── Floating canvas toolbar (Undo / Redo / Zoom) ───────────────────────
 function DashboardFloatingToolbar({ canUndo, canRedo, onUndo, onRedo, zoom, onZoomIn, onZoomOut, onZoomReset, onReset }) {
@@ -2403,6 +2601,23 @@ const DISCOVER_TEMPLATE = {
   ],
 }
 
+// ── Saved-dashboard edit seeding ─────────────────────────────────────
+// SavedPage's mock rows (SAVED_ROWS) only carry a `template` label, not real
+// widget content, so re-opening one for editing needs a plausible starting
+// point rather than a blank canvas — reuse the closest matching template's
+// widgets/scope by that label. Not every mock label has a dedicated
+// template, so unmatched ones fall back to the exec-summary set.
+const DASHBOARD_EDIT_SEED_BY_TEMPLATE = {
+  'Discover Dashboard':    { widgets: DISCOVER_TEMPLATE.widgets,    scopeId: 'host' },
+  'Executive Summary':     { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'finding' },
+  'Critical Findings':     { widgets: VULN_DETAIL_TEMPLATE.widgets,  scopeId: 'finding' },
+  'Device Attack Surface': { widgets: VULN_DETAIL_TEMPLATE.widgets,  scopeId: 'host' },
+  'Risk Mitigation':       { widgets: VULN_DETAIL_TEMPLATE.widgets,  scopeId: 'vulnerability' },
+  'Security Gaps':         { widgets: VULN_DETAIL_TEMPLATE.widgets,  scopeId: 'vulnerability' },
+  'Client Subsidiary':     { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'account' },
+}
+const DASHBOARD_EDIT_SEED_DEFAULT = { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'host' }
+
 // ── Segmented tabs (same pattern as KG) ─────────────────────────────
 function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
   const btnRefs = useRef([])
@@ -2639,20 +2854,212 @@ function MomSkeleton() {
   )
 }
 
-const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '' }, ref) {
+// Connected data sources feeding this workspace (same list Admin > Data
+// Integrations manages, see DataIntegrations.jsx) — only ones actually
+// "Connected" make sense to ground a generated dashboard on.
+const HERO_DATA_SOURCES = INITIAL_DATA_SOURCES.filter(s => s.status === 'Connected')
+const HERO_SOURCE_COLORS = ['--shell-accent', '--pai-nav-teal', '--pai-green', '--pai-high-fg', '--pai-purple', '--pai-brand-blue']
+const sourceInitials = (name) => name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+
+// ── Create-with-Navigator hero ───────────────────────────────────────
+// Shown instead of the bare "Add Widget" tile while the canvas has zero
+// widgets — describing a dashboard here hands the prompt to Navigator's
+// real Build reasoning engine (docked right panel), which pushes generated
+// widgets straight onto this canvas as they finish. "Create manually"
+// underneath is the previous, unassisted path (openAdd).
+// Reuses Navigator's own AI-home visual language (hv-bg blobs, hv-greeting's
+// animated gradient text, hv-composer-box's always-on gradient border) —
+// see NavigatorPage.jsx's HomeView — instead of a plain bordered box, so this
+// entry point actually reads as the same AI surface, not a generic form.
+function DashboardCreateHero({ onSubmit, onCreateManually }) {
+  const [prompt, setPrompt] = useState('')
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false)
+  const [attachMenuPos, setAttachMenuPos] = useState({ top: 0, left: 0 })
+  const attachBtnRef = useRef(null)
+  const attachMenuRef = useRef(null)
+  const fileInputRef = useRef(null)
+
+  // .hv-composer-box clips its own content (overflow:hidden, for its rounded
+  // gradient border) — a plain absolutely-positioned dropdown nested inside
+  // it gets cut off, so this portals to <body> instead (same escape-hatch
+  // NavigatorPage.jsx's own agent-picker menu uses for the same reason).
+  useEffect(() => {
+    if (!attachMenuOpen) return
+    const handler = e => {
+      if (attachMenuRef.current?.contains(e.target)) return
+      if (attachBtnRef.current?.contains(e.target)) return
+      setAttachMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [attachMenuOpen])
+
+  const submit = (text) => {
+    const t = (text ?? prompt).trim()
+    if (!t) return
+    onSubmit(t)
+  }
+
+  const appendToPrompt = (fragment) => setPrompt(p => (p.trim() ? `${p.trim()} ${fragment}` : fragment))
+
+  const insertEntity = (entity) => {
+    appendToPrompt(`for ${entity.label}`)
+    setAttachMenuOpen(false)
+  }
+
+  const insertSource = (source) => {
+    appendToPrompt(`from ${source.name}`)
+    setAttachMenuOpen(false)
+  }
+
+  const openAttachMenu = () => {
+    if (!attachMenuOpen && attachBtnRef.current) {
+      const r = attachBtnRef.current.getBoundingClientRect()
+      setAttachMenuPos({ top: r.bottom + 6, left: r.left })
+    }
+    setAttachMenuOpen(o => !o)
+  }
+
+  const handleFileChosen = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    appendToPrompt(`using data from "${file.name}"`)
+  }
+
+  return (
+    <div className="dc-create-hero">
+      <div className="hv-bg">
+        <div className="hv-bg-blob hv-bg-blob-1" />
+        <div className="hv-bg-blob hv-bg-blob-2" />
+      </div>
+
+      <div className="dc-create-hero__content">
+        <div className="dc-create-hero__badge">
+          <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
+        </div>
+        <h2 className="hv-greeting">Create a dashboard with Navigator</h2>
+        <p className="hv-sub">Describe the insights you want to see and Navigator will build it for you.</p>
+
+        <div className="hv-composer-box">
+          <div className="hv-tx-input">
+            <textarea
+              className="hv-composer-ta"
+              rows={2}
+              placeholder='Describe a dashboard, e.g. "critical findings by host and source"…'
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
+            />
+          </div>
+          <div className="hv-composer-bar">
+            <div className="dc-create-hero__composer-left">
+              <input ref={fileInputRef} type="file" className="dc-sr-only" onChange={handleFileChosen} />
+              <button
+                ref={attachBtnRef}
+                type="button"
+                className={`np-composer-add${attachMenuOpen ? ' active' : ''}`}
+                onClick={openAttachMenu}
+                aria-label="Attach data to ground this dashboard on"
+                aria-haspopup="menu"
+                aria-expanded={attachMenuOpen}
+                title="Attach data or reference an entity"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+              {attachMenuOpen && createPortal(
+                <div
+                  className="dc-create-hero__entity-menu"
+                  ref={attachMenuRef}
+                  style={{ '--dc-entity-menu-top': `${attachMenuPos.top}px`, '--dc-entity-menu-left': `${attachMenuPos.left}px` }}
+                >
+                  <button
+                    type="button"
+                    className="dc-create-hero__entity-item"
+                    onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click() }}
+                  >
+                    <span className="dc-create-hero__entity-icon dc-create-hero__entity-icon--upload">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                    </span>
+                    Upload a file
+                  </button>
+
+                  <div className="dc-create-hero__menu-label">Connected data sources</div>
+                  {HERO_DATA_SOURCES.map((source, i) => (
+                    <button type="button" key={source.id} className="dc-create-hero__entity-item" onClick={() => insertSource(source)}>
+                      <span className="dc-create-hero__entity-icon" style={{ '--dc-source-color': `var(${HERO_SOURCE_COLORS[i % HERO_SOURCE_COLORS.length]})` }}>
+                        {sourceInitials(source.name)}
+                      </span>
+                      {source.name}
+                    </button>
+                  ))}
+
+                  <div className="dc-create-hero__menu-label">Reference an entity</div>
+                  {GF_ENTITIES.slice(0, 6).map(entity => (
+                    <button type="button" key={entity.id} className="dc-create-hero__entity-item" onClick={() => insertEntity(entity)}>
+                      <img src={`/assets/icons/${entity.file}`} width={14} height={14} alt="" />
+                      {entity.label}
+                    </button>
+                  ))}
+                </div>,
+                document.body
+              )}
+              <span className="dc-create-hero__hint">Press Enter to generate</span>
+            </div>
+            <button
+              type="button"
+              className="nav-send-btn"
+              disabled={!prompt.trim()}
+              onClick={() => submit()}
+              aria-label="Generate dashboard"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="dc-create-hero__divider"><span>or</span></div>
+
+        <button type="button" className="ds-btn sz-md t-outline" onClick={onCreateManually}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create manually
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '', backTarget = 'workspace/saved' }, ref) {
+  const { addSavedDashboard, setJustSavedName, editDashboardSeed } = useWorkspace()
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
     : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
     : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
     : templateId === 'month-over-month'  ? MOM_TEMPLATE
     : null
+  // Set by SavedPage's "Edit" action on an existing saved dashboard — captured
+  // once at mount. WorkspacePage owns clearing it (keyed off the route, once
+  // the user navigates away from this edit-* route) so it isn't picked up
+  // again by the next dashboard this canvas mounts for (e.g. "New Dashboard").
+  const [editSeed] = useState(() => editDashboardSeed)
+  const editSeedEntry = editSeed ? (DASHBOARD_EDIT_SEED_BY_TEMPLATE[editSeed.template] ?? DASHBOARD_EDIT_SEED_DEFAULT) : null
+
   // `seedWidgets`/`seedName` arrive when this canvas was just navigated to from
   // Navigator's Build mode (or Ask/Research's "Add to Workspace") — see
   // WorkspacePage's `isSeededDashboard` handling — and behave exactly like a
   // template, just constructed at runtime from the chat session instead of a
   // hard-coded constant.
-  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? seedName ?? ''))
+  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? editSeed?.name ?? seedName ?? ''))
   const [widgets, setWidgets] = useState(() => {
     if (template) return template.widgets
+    if (editSeedEntry) return editSeedEntry.widgets
     if (seedWidgets && seedWidgets.length) return seedWidgets
     return []
   })
@@ -2660,17 +3067,70 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const [timelineConfirmed, setTimelineConfirmed] = useState(templateId !== 'month-over-month' || !reportMode)
   const [momTimeline, setMomTimeline] = useState('')
 
+  // Dashboard scope: brand-new, never-scoped dashboards (no template, no
+  // seed data, not a report, not an existing dashboard being edited) must
+  // have the graph-filter scope popup set before anything else — see the
+  // "New Dashboard" flow from the Library.
+  const isNewDashboard = !reportMode && !template && !editSeed && (!seedWidgets || !seedWidgets.length)
+  const [dashboardScope, setDashboardScope] = useState(() =>
+    editSeedEntry ? (GF_ENTITIES.find(e => e.id === editSeedEntry.scopeId) ?? null) : null
+  )
+  const [scopeModalOpen, setScopeModalOpen] = useState(false)
+  const [scopeMandatory, setScopeMandatory] = useState(false)
+  useEffect(() => {
+    if (isNewDashboard) { setScopeMandatory(true); setScopeModalOpen(true) }
+  }, [])
+
   // Panel state: null | 'add' | 'settings'
   const [panelMode, setPanelMode]         = useState(null)
   const [settingsWidgetId, setSettingsWidgetId] = useState(null)
+  const [liveSizeId, setLiveSizeId]       = useState(null)
+  const [liveHeightId, setLiveHeightId]   = useState(null)
   const [deletePending, setDeletePending] = useState(null)
   const [deleteDashboardConfirm, setDeleteDashboardConfirm] = useState(false)
 
   // Dashboard-level actions: share + schedule + stop schedule + download (UI only — this app has no backend)
   const [shareOpen, setShareOpen]           = useState(false)
   const [shareRecipients, setShareRecipients] = useState('')
+  const [shareRecipientList, setShareRecipientList] = useState([])
+  const [shareAccessDraft, setShareAccessDraft] = useState('view')
   const [shareMessage, setShareMessage]     = useState('')
   const [shareSendCopy, setShareSendCopy]   = useState(true)
+
+  // Save / Save As — persists into the Saved Dashboards list (see WorkspaceCtx's
+  // savedDashboards), the same local-only "backend" savedReports already uses.
+  const [dashboardId, setDashboardId]       = useState(() => editSeed?.id ?? null)
+  const [saveModalOpen, setSaveModalOpen]   = useState(false)
+  const [saveModalMode, setSaveModalMode]   = useState('save') // 'save' | 'save-as'
+  const [saveNameDraft, setSaveNameDraft]   = useState('')
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
+  // An existing dashboard opened for editing starts out already "saved" — its
+  // snapshot must reflect that so the leave-confirmation doesn't fire until
+  // something actually changes.
+  const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScope }) : null)
+
+  const openSaveModal = (mode) => { setSaveModalMode(mode); setSaveNameDraft(name); setSaveModalOpen(true) }
+  const handleDashboardSaved = (savedName) => {
+    const id = saveModalMode === 'save-as' ? `d-${Date.now()}` : (dashboardId ?? `d-${Date.now()}`)
+    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
+    addSavedDashboard({
+      id, name: savedName, isNew: true, type: 'DASHBOARD',
+      template: template?.name ?? editSeed?.template ?? 'Custom', visibility: 'Private', status: 'Saved',
+      lastUpdated: today,
+    })
+    setDashboardId(id)
+    setName(savedName)
+    lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScope })
+    setSaveModalOpen(false)
+    setJustSavedName(savedName)
+    onNav('workspace/saved')
+  }
+  const isDirty = !reportMode && !(widgets.length === 0 && !name.trim())
+    && JSON.stringify({ name, widgets, dashboardScope }) !== lastSavedSnapshotRef.current
+  const handleBackClick = () => {
+    if (isDirty) { setLeaveConfirmOpen(true); return }
+    onNav(backTarget)
+  }
 
   const [scheduleOpen, setScheduleOpen]         = useState(false)
   const [scheduleActive, setScheduleActive]     = useState(false)
@@ -2793,6 +3253,72 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     setWidgets(next)
   }
 
+  // ── Grid layout + drag/resize interaction ──────────────────────────────
+  // All of it is owned by react-grid-layout now: collision-aware vertical
+  // compaction, drag-to-reorder, resize handles, and the live reflow preview
+  // are its job, not ours. `layoutWidgets` only fills in gx/gy/gw/gh for any
+  // widget that doesn't have a real position yet (new, or pre-dating this
+  // model) — see packWidgets. Once RGL reports a drag/resize result via
+  // onDragStop/onResizeStop, that becomes each widget's real, persisted
+  // position, and packWidgets leaves it alone on every subsequent render.
+  const layoutWidgets = useMemo(() => packWidgets(widgets), [widgets])
+
+  // A callback ref, not a plain useRef — the wrapper this measures only
+  // mounts once widgets.length > 0 or the add-panel is open (DashboardCreateHero
+  // renders in its place before that), so a mount-time effect reading
+  // gridWrapRef.current would find it null and, with an empty dep array,
+  // never get another chance to attach the observer once the div actually
+  // appears. A callback ref fires exactly when the node attaches, whenever
+  // that happens across the component's lifetime.
+  const [gridEl, setGridEl] = useState(null)
+  const gridWrapRef = useCallback(node => setGridEl(node), [])
+  const [gridWidth, setGridWidth] = useState(0)
+  const [interacting, setInteracting] = useState(false) // true while dragging or resizing — drives the approximate grid-line overlay
+  useEffect(() => {
+    if (!gridEl) return
+    const ro = new ResizeObserver(([entry]) => setGridWidth(entry.contentRect.width))
+    ro.observe(gridEl)
+    return () => ro.disconnect()
+  }, [gridEl])
+
+  // The settings panel's live size/height dropdowns preview a resize before
+  // Apply commits it — fed in here (not just into WidgetCard's own display)
+  // so RGL actually reflows neighbors live to match, a true preview of what
+  // Apply will produce rather than a size change that visually overlaps them
+  // until confirmed.
+  const rglLayout = useMemo(
+    () => layoutWidgets.map(w => {
+      let gw = w.gw, gh = w.gh
+      if (panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)) {
+        if (liveSizeId) {
+          const span = ALL_WIDGET_SIZES.find(s => s.id === liveSizeId)?.span || w.span
+          gw = clamp((span || 1) * 3, MIN_GW, MAX_GW)
+        }
+        if (liveHeightId) {
+          const px = ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px
+          if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), MIN_GH, MAX_GH)
+        }
+      }
+      return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: MIN_GW, minH: MIN_GH, maxW: MAX_GW, maxH: MAX_GH }
+    }),
+    [layoutWidgets, panelMode, settingsWidgetId, liveSizeId, liveHeightId]
+  )
+
+  // Fired once per completed drag/resize gesture (not per intermediate
+  // frame) — RGL hands back the final, already-compacted layout, so this is
+  // the single point where a gesture becomes one undoable commit.
+  const commitRglLayout = (layout) => {
+    commitWidgets(ws => ws.map(w => {
+      const l = layout.find(item => item.i === String(w.id))
+      return l ? { ...w, gx: l.x, gy: l.y, gw: l.w, gh: l.h } : w
+    }))
+  }
+
+  // The Add Widget slot always sits below every real widget — computed from
+  // the same layout RGL is currently rendering, so it stays predictable even
+  // mid-drag.
+  const gridBottomRow = layoutWidgets.length ? Math.max(...layoutWidgets.map(w => w.gy + w.gh)) : 0
+
   // Widget mutators — the single path both the manual Add Widget panel and
   // Copilot's builderApi use, so both stay in sync against one `widgets` state.
   // Each call is its own undo step: for the manual panel, Save (create with
@@ -2839,7 +3365,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
             setMomTimeline(`${MONTHS_LONG[startMonth]} ${startYear} – ${MONTHS_LONG[endMonth]} ${endYear}`)
             setTimelineConfirmed(true)
           }}
-          onCancel={() => onNav('workspace/library')}
+          onCancel={() => onNav(backTarget)}
         />
       </div>
     )
@@ -2855,6 +3381,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     const newId = addWidget({ chartId: selectedChart, label: widgetTitle, description: widgetDescription, sizeId: widgetSize, heightId: widgetHeight })
     setSettingsWidgetId(newId)
     setPanelMode('settings')
+    setLiveSizeId(null); setLiveHeightId(null)
   }
 
   const handleAddCancel = () => { setPanelMode(null) }
@@ -2863,6 +3390,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     configureWidget(newId, changes)
     setPanelMode(null)
     setSettingsWidgetId(null)
+    setLiveSizeId(null); setLiveHeightId(null)
   }
 
   const handleSettingsClose = (widgetId) => {
@@ -2870,15 +3398,16 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     setWidgets(ws => ws.filter(w => !(w.id === widgetId && w.phase === 'settings')))
     setPanelMode(null)
     setSettingsWidgetId(null)
+    setLiveSizeId(null); setLiveHeightId(null)
   }
 
-  const openSettings = (id) => { setSettingsWidgetId(id); setPanelMode('settings') }
+  const openSettings = (id) => { setSettingsWidgetId(id); setPanelMode('settings'); setLiveSizeId(null); setLiveHeightId(null) }
   const deleteWidget = (id) => { removeWidget(id); if (settingsWidgetId === id) setPanelMode(null) }
 
   const DISCOVER_CARD_IDS = { total: 1001, crit: 1002, source: 1003, type: 1004, insights: 1005, assets: 1006 }
   const handleDiscoverEdit = (cardKey) => {
     const id = DISCOVER_CARD_IDS[cardKey]
-    if (id) { setSettingsWidgetId(id); setPanelMode('settings') }
+    if (id) { setSettingsWidgetId(id); setPanelMode('settings'); setLiveSizeId(null); setLiveHeightId(null) }
   }
 
   const settingsWidget = widgets.find(w => w.id === settingsWidgetId)
@@ -2908,7 +3437,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
           <div className={`dc-toolbar${toolbarStacked ? ' dc-toolbar--stacked' : ''}`} ref={toolbarOuterRef}>
             <div className="dc-toolbar-row dc-toolbar-row--top" ref={toolbarTopRowRef}>
               <button
-                onClick={() => onNav('workspace/library')}
+                onClick={handleBackClick}
                 className="dc-toolbar-back-btn"
               >
                 <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
@@ -2921,12 +3450,19 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               />
 
               {!reportMode && (
-                <span className="dc-scope-badge" title="Dashboard Scope">
-                  <span className="dc-btn-label">Dashboard Scope</span>
+                <button
+                  type="button"
+                  className="dc-scope-badge"
+                  title="Dashboard Scope"
+                  onClick={() => { setScopeMandatory(false); setScopeModalOpen(true) }}
+                >
+                  <span className="dc-btn-label">{dashboardScope ? dashboardScope.label : 'Dashboard Scope'}</span>
                   <span className="dc-scope-icon">
-                    <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />
+                    {dashboardScope
+                      ? <img src={`/assets/icons/${dashboardScope.file}`} width={16} height={16} alt="" className="dc-scope-icon-img" />
+                      : <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />}
                   </span>
-                </span>
+                </button>
               )}
 
               {momTimeline && (
@@ -2934,23 +3470,19 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               )}
 
               {perf && !reportMode && (
-                <span
-                  className="dc-perf-badge"
-                  style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
-                >
-                  <span className="dc-perf-dot" />
-                  {perf.label}
+                <span className="dc-tip dc-tip--wrap" data-tip={PERF_TOOLTIP}>
+                  <span
+                    className="dc-perf-badge"
+                    style={{ '--dc-perf-bg': perf.bg, '--dc-perf-color': perf.color, '--dc-perf-dot': perf.dot }}
+                  >
+                    <span className="dc-perf-dot" />
+                    {perf.label}
+                  </span>
                 </span>
               )}
             </div>
 
             <div className={`dc-toolbar-row dc-toolbar-row--actions${toolbarCompact ? ' dc-toolbar-row--compact' : ''}`} ref={toolbarActionsRowRef}>
-              {!reportMode && (
-                <button className="ds-btn sz-md t-outline" onClick={() => onOpenCopilotBuilder?.()}>Build with Copilot</button>
-              )}
-
-              <div className="dc-toolbar-divider" />
-
               {!reportMode && (
                 <button className="ds-btn sz-md t-outline" title="Share" onClick={() => setShareOpen(true)}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2997,10 +3529,14 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
               <div className="dc-toolbar-spacer" />
 
+              {!reportMode && (
+                <button className="ds-btn sz-md t-outline" onClick={() => openSaveModal('save-as')}>Save As</button>
+              )}
+
               <button
                 className="ds-btn sz-md t-primary"
                 onClick={() => {
-                  if (!reportMode) return
+                  if (!reportMode) { openSaveModal('save'); return }
                   const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
                     : templateId === 'month-over-month' ? 'month-over-month'
                     : 'executive-summary'
@@ -3058,69 +3594,118 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   </div>
                 )
               })()
+            ) : (widgets.length === 0 && panelMode !== 'add') ? (
+              <DashboardCreateHero
+                onSubmit={text => onOpenCopilotBuilder?.({ initialPrompt: text })}
+                onCreateManually={openAdd}
+              />
             ) : (
-              <div className="dc-grid" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
-
-                {widgets.map(w => (
-                  <WidgetCard
-                    key={w.id}
-                    widget={w}
-                    isEditing={panelMode === 'settings' && w.id === settingsWidgetId}
-                    onEdit={() => openSettings(w.id)}
-                    onRequestDelete={w => setDeletePending(w)}
-                    onEditWithCopilot={w => onOpenCopilotBuilder?.({ widgetId: w.id, widgetLabel: w.label })}
-                    reportMode={false}
-                  />
-                ))}
-
-                {/* Add Widget placeholder / Live preview — hidden in report mode */}
-                {!reportMode && (panelMode === 'add' ? (
-                  <div
-                    className="dc-preview-col"
-                    style={{ '--dc-preview-span': WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1 }}
+              <div
+                className="dc-grid"
+                ref={gridWrapRef}
+                style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+              >
+                {gridWidth > 0 && (
+                  <GridLayout
+                    className={`dc-grid-inner${interacting ? ' dc-grid-inner--interacting' : ''}`}
+                    layout={rglLayout}
+                    cols={GRID_COLS}
+                    rowHeight={ROW_UNIT_PX}
+                    margin={[GRID_GAP_PX, GRID_GAP_PX]}
+                    containerPadding={[GRID_PAD_PX, GRID_PAD_PX]}
+                    width={gridWidth}
+                    draggableHandle=".dc-action-btn--grab, .dc-widget-card-header"
+                    resizeHandles={['se']}
+                    transformScale={zoom}
+                    useCSSTransforms
+                    compactType="vertical"
+                    onDragStart={() => setInteracting(true)}
+                    onDragStop={layout => { setInteracting(false); commitRglLayout(layout) }}
+                    onResizeStart={() => setInteracting(true)}
+                    onResizeStop={layout => { setInteracting(false); commitRglLayout(layout) }}
                   >
-                    <div className="dc-widget-actions">
-                      <button title="Move" className="dc-action-btn dc-action-btn--grab">
-                        <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
-                      </button>
-                      <button title="Add nested widget" className="dc-action-btn">
-                        <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
-                      </button>
-                      <button title="Edit" className="dc-action-btn">
-                        <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
-                      </button>
-                      <button title="Delete" className="dc-action-btn dc-action-btn--delete">
-                        <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
-                      </button>
-                    </div>
-                    <div
-                      className="dc-preview-card"
-                      style={{ '--dc-preview-height': `${WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260}px` }}
-                    >
-                      <div className="dc-preview-header">
-                        <span className="dc-preview-title">
-                          {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
-                        </span>
-                        {widgetDescription && (
-                          <div className="dc-preview-desc">{widgetDescription}</div>
-                        )}
+                    {layoutWidgets.map(w => {
+                      const isBeingEdited = panelMode === 'settings' && w.id === settingsWidgetId
+                      const renderWidget = isBeingEdited && (liveSizeId || liveHeightId)
+                        ? {
+                            ...w,
+                            sizeId: liveSizeId || w.sizeId,
+                            heightId: liveHeightId || w.heightId,
+                            span: ALL_WIDGET_SIZES.find(s => s.id === (liveSizeId || w.sizeId))?.span || w.span,
+                          }
+                        : w
+                      return (
+                        <div key={String(w.id)}>
+                          <WidgetCard
+                            widget={renderWidget}
+                            isEditing={isBeingEdited}
+                            onEdit={() => openSettings(w.id)}
+                            onRequestDelete={w => setDeletePending(w)}
+                            onEditWithCopilot={w => onOpenCopilotBuilder?.({ widgetId: w.id, widgetLabel: w.label })}
+                            reportMode={false}
+                          />
+                        </div>
+                      )
+                    })}
+                  </GridLayout>
+                )}
+
+                {/* Add Widget placeholder / Live preview — hidden in report mode.
+                    Rendered in normal document flow below the RGL-managed grid
+                    (not a grid item itself), so it always sits below every real
+                    widget without needing a computed row of its own. */}
+                {!reportMode && (
+                  <div style={{ padding: `0 ${GRID_PAD_PX}px`, marginTop: `${GRID_GAP_PX}px` }}>
+                    {panelMode === 'add' ? (
+                      <div
+                        className="dc-preview-col"
+                        style={{ width: `${colSpanToPx((WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1) * 3, gridWidth)}px` }}
+                      >
+                        <div className="dc-widget-actions">
+                          <button title="Move" className="dc-action-btn dc-action-btn--grab">
+                            <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+                          </button>
+                          <button title="Add nested widget" className="dc-action-btn">
+                            <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                          </button>
+                          <button title="Edit" className="dc-action-btn">
+                            <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+                          </button>
+                          <button title="Delete" className="dc-action-btn dc-action-btn--delete">
+                            <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+                          </button>
+                        </div>
+                        <div
+                          className="dc-preview-card"
+                          style={{ '--dc-preview-height': `${WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260}px` }}
+                        >
+                          <div className="dc-preview-header">
+                            <span className="dc-preview-title">
+                              {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
+                            </span>
+                            {widgetDescription && (
+                              <div className="dc-preview-desc">{widgetDescription}</div>
+                            )}
+                          </div>
+                          <div className="dc-preview-body">
+                            {selectedChart && <ChartSilhouette chartId={selectedChart} />}
+                          </div>
+                        </div>
                       </div>
-                      <div className="dc-preview-body">
-                        {selectedChart && <ChartSilhouette chartId={selectedChart} />}
-                      </div>
-                    </div>
+                    ) : (
+                      <button
+                        onClick={openAdd}
+                        className="dc-add-widget-btn"
+                        style={{ width: `${colSpanToPx(3, gridWidth)}px`, height: `${13 * ROW_UNIT_PX + 12 * GRID_GAP_PX}px` }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        <span className="dc-add-widget-btn-label">Add Widget</span>
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    onClick={openAdd}
-                    className="dc-add-widget-btn"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    <span className="dc-add-widget-btn-label">Add Widget</span>
-                  </button>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -3158,17 +3743,27 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
             widget={settingsWidget}
             onSaveChanges={changes => handleSettingsSave(settingsWidget.id, changes)}
             onClose={() => handleSettingsClose(settingsWidget.id)}
+            onLiveChange={({ sizeId, heightId }) => { setLiveSizeId(sizeId); setLiveHeightId(heightId) }}
           />
         )}
       </div>
     </div>
 
+    {scopeModalOpen && (
+      <DashboardScopeModal
+        mandatory={scopeMandatory}
+        onClose={() => setScopeModalOpen(false)}
+        onBack={() => onNav(backTarget)}
+        onSelect={(entity) => { setDashboardScope(entity); setScopeModalOpen(false); setScopeMandatory(false) }}
+      />
+    )}
+
     {deletePending && (
       <div className="afp-modal-overlay" onClick={() => setDeletePending(null)}>
         <div className="afp-modal" onClick={e => e.stopPropagation()}>
-          <p className="afp-modal-title">Delete widget</p>
+          <p className="afp-modal-title danger">Delete widget</p>
           <p className="afp-modal-body">
-            Delete <strong>"{deletePending.label}"</strong>? This widget will be permanently removed from the dashboard.
+            Delete <strong>"{deletePending.label}"</strong>? Can't be undone.
           </p>
           <div className="afp-modal-actions">
             <button className="afp-modal-cancel" onClick={() => setDeletePending(null)}>Cancel</button>
@@ -3182,15 +3777,57 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay">
         <div className="ds-modal">
           <div className="ds-modal-header">
-            <span className="ds-modal-title">Delete dashboard</span>
+            <span className="ds-modal-title danger">Delete dashboard</span>
             <button className="ds-modal-close" onClick={() => setDeleteDashboardConfirm(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
-            Delete <strong>"{name || 'Untitled Dashboard'}"</strong>? This dashboard and all of its widgets will be permanently removed.
+            <span>Delete <strong>"{name || 'Untitled Dashboard'}"</strong>? Its widgets will be permanently removed too.</span>
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setDeleteDashboardConfirm(false)}>Cancel</button>
-            <button className="ds-btn sz-md t-danger" onClick={() => { setDeleteDashboardConfirm(false); onNav('workspace/library') }}>Delete dashboard</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => { setDeleteDashboardConfirm(false); onNav(backTarget) }}>Delete dashboard</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {saveModalOpen && (
+      <div className="ds-modal-overlay">
+        <div className="ds-modal">
+          <div className="ds-modal-header">
+            <span className="ds-modal-title">{saveModalMode === 'save-as' ? 'Save Dashboard As' : 'Save Dashboard'}</span>
+            <button className="ds-modal-close" onClick={() => setSaveModalOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <FieldRow label="Dashboard Name">
+              <TextInput placeholder="Enter dashboard name..." value={saveNameDraft} onChange={e => setSaveNameDraft(e.target.value)} />
+            </FieldRow>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setSaveModalOpen(false)}>Cancel</button>
+            <button
+              className="ds-btn sz-md t-primary"
+              disabled={!saveNameDraft.trim()}
+              onClick={() => handleDashboardSaved(saveNameDraft.trim())}
+            >Save</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {leaveConfirmOpen && (
+      <div className="ds-modal-overlay">
+        <div className="ds-modal">
+          <div className="ds-modal-header">
+            <span className="ds-modal-title warning">Discard unsaved changes?</span>
+            <button className="ds-modal-close" onClick={() => setLeaveConfirmOpen(false)}>✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <span><strong>"{name || 'this dashboard'}"</strong> has changes that haven't been saved. If you leave now, they'll be lost.</span>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setLeaveConfirmOpen(false)}>Cancel</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => { setLeaveConfirmOpen(false); onNav(backTarget) }}>Discard & Leave</button>
           </div>
         </div>
       </div>
@@ -3200,18 +3837,18 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay">
         <div className="ds-modal" style={{ maxWidth: 600 }}>
           <div className="ds-modal-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-red-critical, #d12329)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pai-med-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="15" y2="19"/><line x1="15" y1="15" x2="9" y2="19"/>
             </svg>
-            <span className="ds-modal-title">Stop Report Schedule</span>
+            <span className="ds-modal-title warning">Stop Report Schedule</span>
             <button className="ds-modal-close" onClick={() => setStopScheduleOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
-            Are you sure you want to stop the automatic generation for <strong style={{ display: 'inline' }}>"{name || 'this dashboard'}"</strong>? The report will be saved and no longer be generated automatically.
+            <span>Stop automatic generation for <strong>"{name || 'this dashboard'}"</strong>? The report stays saved but won't regenerate.</span>
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setStopScheduleOpen(false)}>Cancel</button>
-            <button className="ds-btn sz-md t-danger" onClick={() => { setScheduleActive(false); setStopScheduleOpen(false) }}>Delete</button>
+            <button className="ds-btn sz-md t-primary" onClick={() => { setScheduleActive(false); setStopScheduleOpen(false) }}>Stop Schedule</button>
           </div>
         </div>
       </div>
@@ -3275,8 +3912,58 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 <div className="dc-field-label">Recipients</div>
                 <div className="dc-modal-to-field">
                   <span className="dc-modal-to-field-prefix">To:</span>
-                  <input value={shareRecipients} onChange={e => setShareRecipients(e.target.value)} placeholder="Name, group or email" />
+                  <input
+                    value={shareRecipients}
+                    onChange={e => setShareRecipients(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter' || !shareRecipients.trim()) return
+                      e.preventDefault()
+                      setShareRecipientList(prev => [...prev, { id: `${Date.now()}-${prev.length}`, name: shareRecipients.trim(), access: shareAccessDraft }])
+                      setShareRecipients('')
+                    }}
+                    placeholder="Name, group or email"
+                  />
                 </div>
+                <div className="dc-share-add-row">
+                  <select
+                    className="dc-share-access-select"
+                    value={shareAccessDraft}
+                    onChange={e => setShareAccessDraft(e.target.value)}
+                  >
+                    <option value="view">Can view</option>
+                    <option value="edit">Can edit</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="ds-btn sz-sm t-outline"
+                    disabled={!shareRecipients.trim()}
+                    onClick={() => {
+                      setShareRecipientList(prev => [...prev, { id: `${Date.now()}-${prev.length}`, name: shareRecipients.trim(), access: shareAccessDraft }])
+                      setShareRecipients('')
+                    }}
+                  >Add recipient</button>
+                </div>
+                {shareRecipientList.length > 0 && (
+                  <div className="dc-chips">
+                    {shareRecipientList.map(r => (
+                      <span key={r.id} className="dc-chip">
+                        {r.name}
+                        <select
+                          className="dc-chip-access-select"
+                          value={r.access}
+                          onChange={e => setShareRecipientList(prev => prev.map(x => x.id === r.id ? { ...x, access: e.target.value } : x))}
+                        >
+                          <option value="view">Can view</option>
+                          <option value="edit">Can edit</option>
+                        </select>
+                        <button
+                          className="dc-chip-x"
+                          onClick={() => setShareRecipientList(prev => prev.filter(x => x.id !== r.id))}
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="dc-modal-field">
                 <div className="dc-field-label">Message</div>

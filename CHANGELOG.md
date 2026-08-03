@@ -18,13 +18,69 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
 <!-- pull: 2026-06-09 09:44 | branch: feature/ui-updates | 8d7c413 chore: bump to v0.6.4 -->
 <!-- pull: 2026-06-23 11:03 | branch: develop | 3a6e66c Merge feature/ui-updates into develop (v0.6.6 — DS token pass and font scale audit) -->
+<!-- pull: 2026-06-23 11:28 | branch: feature/ui-updates | 06d642d chore: bump to v0.6.6 -->
+<!-- pull: 2026-07-21 16:32 | branch: feature/ui-updates | 2cd785f Merge pull request #5 from marwa-arif/feature/studio-workspace -->
 <!-- pull: 2026-07-22 17:30 | branch: develop | daa8ebc Merge remote-tracking branch 'origin/develop' into develop -->
+<!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.14.0] — 2026-07-28
+### Added
+- AssetDetailDrawer + EntityRelSummaryGraph for the Assets by Criticality Score widget (Discover Device/Cloud/Identity), including a View/Hide Exposure Factors button, tooltip, and score-ring panel matching the Findings page's entity drawer.
+### Changed
+- Centered action-column icon buttons under their headers across Assessments, Compliance Findings, Compliance drawers, and Discover pages.
+### Fixed
+- CSS specificity bugs that silently prevented action-column header centering from applying.
+- FindingsPage/DiscoverIdentityPage pagination totals now reflect actual row counts instead of decorative/mismatched constants.
+- ActiveFilterPanel: duplicate and toggle-leaking implicit-filter chips; insight-row filters now merge with existing Filter-panel chips instead of overwriting them.
+
+---
+
+## [0.13.1] — 2026-07-27
+### Changed
+- Merged `develop` into `feature/studio-workspace` to bring in the Saved-page delete-confirmation/toast, subheader pill restyle, and Exposure Overview refinements (already versioned as v0.12.0/v0.11.5 on `develop`) after the two branches' independent version bumps had diverged.
+
+---
+
+## [0.13.0] — 2026-07-27
+### Added
+- Navigator: default seeded agents (Critical Vuln Triage, Cloud Misconfig Hunter, Identity Risk Reviewer, Device Patch Compliance, App Exposure Monitor, Compliance Gap Auditor) so the Home agent picker and Agents list aren't empty on first use.
+- Navigator: edit-in-place for existing agents in AgentBuilderView (was create-only).
+### Changed
+- Navigator: saved-agent dropdown menu now renders via a portal so it isn't clipped by ancestor overflow.
+
+---
+
+## [0.12.0] — 2026-07-22
+### Added
+- Saved page: delete confirmation modal (names the dashboard/report, states the action can't be undone) and a success toast on confirm.
+### Changed
+- Subheader filter pill group restyled — pill wrapper now transparent/borderless, individual filter pills carry the card background and border instead.
+
+---
+
+## [0.11.5] — 2026-07-22
+### Added
+- Hover tooltips on every info icon across Exposure Overview (header, column labels, Trend Explore drawer cards), matching the app's white-card tooltip style.
+- Exposure-by table rows: clicking a row's name now navigates to Findings the same way the row's Explore button does.
+- Category filters carried from Exposure Overview into Findings now surface in the shared Active Filters pill/panel instead of a page-local "Filtered by" bar, and clearing them from that panel resets the table.
+- Graph-based visual filter builder (node canvas, attribute panels, date-range picker) now embeds directly into the Filter panel instead of living in a separate Knowledge Graph-only drawer.
+### Changed
+- Exposure Overview's "Exposure by" dropdown and row-action buttons now use the same comp-sort-btn pill pattern as other dashboards, instead of a page-specific style.
+- Bubble ring icon color and the hover "Explore" button now always match the ring's severity color (red/orange) instead of a fixed color.
+- Exposure Trend header pill regrouped into label / sparkline / stat sections, with the trend stat shown as a pill badge matching the Enterprise Score gauge's indicator.
+- Mini progress bars in the contribution table now fill their column's available width instead of a fixed 100px track.
+- Trend Explore drawer: the top card's title now toggles between "Exposure Score" and "Sum of Exposure" to match the selected metric, and all three trend charts use one consistent line color.
+### Fixed
+- Trend Explore chart Y-axis label no longer overlaps the tick values.
+- Attack Surface bubble hover "Explore" button no longer gets clipped by the page's scroll boundary.
 
 ---
 

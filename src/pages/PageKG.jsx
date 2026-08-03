@@ -2,9 +2,11 @@
 // Layout: Summary card (top, with view toggle + node search), graph canvas (SVG),
 // then the filtered Details table.
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { PAI, Icons, Ic } from '../ui.jsx';
 import TablePagination from '../components/TablePagination.jsx';
+import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx';
 
 function useDark() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
@@ -831,6 +833,24 @@ const TYPE_TO_TABLE_LABEL = {
   group: { type: 'Group', sources: ['azure'], os: '—', glyph: 'group' },
 };
 
+// ── Full source names, for the Evolution tab column header + filter popup ──
+const SOURCE_NAMES = {
+  ms: 'Microsoft Defender', crwd: 'CrowdStrike', azure: 'Microsoft Azure AD',
+  aws: 'AWS', k8s: 'Kubernetes (EKS)', jira: 'Jira',
+};
+
+// ── Identity tab dummy data (uniform mock across all entity types) ────────
+const IDENTITY_RINGS = [
+  { key: 'Operational Status', color: 'var(--pai-green, #16A34A)', value: 'Active' },
+  { key: 'Identity Provider', color: 'var(--pai-indigo, #3B82F6)', value: 'Active Directory' },
+  { key: 'Successful Login Location', color: 'var(--fg-3, #8a8a8a)', value: '(empty)' },
+];
+const IDENTITY_RELATION_ROW = {
+  label: 'JANE LEWIS', activity: 'Active', operational: 'Active', ownership: 'Corp',
+  provider: 'Active Directory', loginLocation: '—', origin: 'MS Active Directory',
+  firstSeen: '—', duration: '—', recency: '0',
+};
+
 const ROWS = [
   // host rows
   { label: 'support-portal.acme.io',       type: 'host', ip: '198.1.2.1, 192.168.1.5', last: '2023-10-21', active: '2024-08-11' },
@@ -1283,7 +1303,8 @@ function SankeyFilterPopup({ type, items, selected, operator, onApply, onClose, 
   });
 
   const title = type === 'origin' ? 'Filter Origin' :
-                type === 'contrib' ? 'Filter Contribution' : 'Filter Entities';
+                type === 'contrib' ? 'Filter Contribution' :
+                type === 'source' ? 'Filter Data Source' : 'Filter Entities';
   const popupW = 280;
   const left = Math.max(0, Math.min(anchorX - 20, svgW - popupW));
 
@@ -1712,13 +1733,26 @@ function EntityKpiGrid() {
 // ─────────────────────────────────────────────────────────────────────
 // PageKG — composes graph + table + selection state
 // ─────────────────────────────────────────────────────────────────────
-function PageKG() {
+function PageKG({ focusEntity } = {}) {
   const [summaryTab, setSummaryTab] = useState('Relationships');
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelRow, setPanelRow] = useState(null);
   const [panelTab, setPanelTab] = useState('summary');
+  const [identityTabUnlocked, setIdentityTabUnlocked] = useState(false);
+  const [evoShowHidden, setEvoShowHidden] = useState(false);
+  const [evoSourceFilterOpen, setEvoSourceFilterOpen] = useState(false);
+  const [checkedSources, setCheckedSources] = useState(() => new Set());
+  const [evoSectionEl, setEvoSectionEl] = useState(null);
+  const evoSectionRef = useCallback(node => setEvoSectionEl(node), []);
+  const [evoSectionW, setEvoSectionW] = useState(400);
+  useEffect(() => {
+    if (!evoSectionEl) return;
+    const ro = new ResizeObserver(es => setEvoSectionW(es[0].contentRect.width));
+    ro.observe(evoSectionEl);
+    return () => ro.disconnect();
+  }, [evoSectionEl]);
   // When `highlightOnly` is true, the selected node gets a visual ring
   // but does NOT dim other nodes/edges or filter the details table.
   // Set when selection comes from a tab switch (Host/Identity).
@@ -1749,6 +1783,16 @@ function PageKG() {
     }
     return INITIAL_EDGES.map(e => [...e]);
   });
+
+  // "Explore in Knowledge Graph" deep-link — pre-select the node a caller
+  // navigated in for (by entity-type key, falling back to a label match).
+  useEffect(() => {
+    if (!focusEntity) return;
+    const id = ENTITY_TYPES[focusEntity.type]
+      ? focusEntity.type
+      : Object.keys(ENTITY_TYPES).find(k => ENTITY_TYPES[k].label.toLowerCase() === (focusEntity.label || '').toLowerCase());
+    if (id) setSelected(id);
+  }, [focusEntity]);
 
   // Expose edge editing API + entity list to the Tweaks panel
   useEffect(() => {
@@ -2221,13 +2265,25 @@ function PageKG() {
 
       <DetailsTable rows={filteredRows} totalCount={totalCount}
                     search={tableSearch} onSearch={setTableSearch}
-                    onRowClick={(row) => { setPanelRow(row); setPanelOpen(true); setPanelTab('summary'); }}/>
+                    onRowClick={(row) => {
+                      setPanelRow(row); setPanelOpen(true); setPanelTab('summary');
+                      setIdentityTabUnlocked(false); setCheckedSources(new Set());
+                    }}/>
 
       {/* ── Panel backdrop ── */}
       <div
         className={panelOpen ? 'kg-panel-backdrop kg-panel-backdrop--open' : 'kg-panel-backdrop'}
         onClick={() => setPanelOpen(false)}
       />
+
+      {/* ── External close button — sits to the left of the panel, matching the Assessment drawer ── */}
+      {panelOpen && (
+        <button className="kg-dp-close-ext" onClick={() => setPanelOpen(false)}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+            <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+          </svg>
+        </button>
+      )}
 
       {/* ── Detail slide-over panel ── */}
       <div className={panelOpen ? 'kg-detail-panel kg-detail-panel--open' : 'kg-detail-panel'}>
@@ -2255,48 +2311,42 @@ function PageKG() {
                       <span className="kg-dp-meta-item">Last Active: <strong>{panelRow.active}</strong></span>
                     </div>
                   </div>
-                  <button className="kg-dp-close-btn" onClick={() => setPanelOpen(false)}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
                 </div>
 
-                {/* Entity relationship mini-graph */}
-                <div className="kg-dp-rel-card">
-                  <div className="kg-dp-rel-header">Entity Relationship Summary</div>
-                  <div className="kg-dp-rel-body">
-                    <svg width="280" height="90" className="kg-dp-rel-svg">
-                      <line x1="90" y1="44" x2="190" y2="44" stroke="var(--shell-border)" strokeWidth="1.5"/>
-                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill="var(--shell-text-muted)" fontFamily="inherit">Has</text>
-                      <circle cx="60" cy="44" r="28" fill={ent.tint || 'var(--pai-bg-raised)'} stroke={ent.stroke || 'var(--shell-border)'} strokeWidth="1.5"/>
-                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
-                          <EntityGlyph kind={meta.glyph} size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill="var(--shell-text-sub)" fontWeight="600" fontFamily="inherit">
-                        {(meta.type || panelRow.type).slice(0, 12)}
-                      </text>
-                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
-                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
-                          <EntityGlyph kind="finding" size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
-                      <circle cx="244" cy="20" r="9" fill="var(--pai-indigo)"/>
-                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
-                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0, 4) : fmtN(ent.count || 0)}
-                      </text>
-                    </svg>
-                  </div>
-                </div>
+                <EntityRelSummaryGraph
+                  center={{
+                    label: panelRow.label,
+                    icon: <EntityGlyph kind={meta.glyph} size={16} />,
+                    accent: ent.icon || 'var(--pai-indigo)',
+                  }}
+                  leaves={[
+                    {
+                      key: 'finding',
+                      label: 'Finding',
+                      icon: <EntityGlyph kind="finding" size={16} />,
+                      tint: ENTITY_TYPES.finding.tint,
+                      stroke: ENTITY_TYPES.finding.stroke,
+                      accent: ENTITY_TYPES.finding.icon,
+                      count: fmtN(ent.count || 0),
+                    },
+                    {
+                      key: 'identity',
+                      label: 'Identity',
+                      icon: <EntityGlyph kind="identity" size={16} />,
+                      tint: ENTITY_TYPES.identity.tint,
+                      stroke: ENTITY_TYPES.identity.stroke,
+                      accent: ENTITY_TYPES.identity.icon,
+                      count: 1,
+                      onClick: () => { setIdentityTabUnlocked(true); setPanelTab('identity'); },
+                      testId: 'mini-graph-identity-node',
+                    },
+                  ]}
+                />
               </div>
 
               {/* Tabs */}
               <div className="kg-dp-tabs">
-                {['summary', 'evolution', 'derivation'].map(t => (
+                {['summary', 'evolution', ...(identityTabUnlocked ? ['identity'] : []), 'derivation'].map(t => (
                   <button
                     key={t}
                     onClick={() => setPanelTab(t)}
@@ -2364,11 +2414,157 @@ function PageKG() {
                   </>
                 )}
 
-                {panelTab === 'evolution' && (
-                  <div className="kg-dp-empty-tab">
-                    Evolution history for <strong>{panelRow.label}</strong>.<br/>
-                    Track how attributes changed over time across data sources.
-                  </div>
+                {panelTab === 'evolution' && (() => {
+                  const sources = meta.sources || [];
+                  const primarySource = sources.find(s => SOURCE_NAMES[s]);
+                  const sourceLabel = SOURCE_NAMES[primarySource] || 'Unknown Source';
+                  const sourceItems = sources.filter(s => SOURCE_NAMES[s]).map(s => ({ id: s, label: SOURCE_NAMES[s] }));
+                  const evoRows = [
+                    ['Display Label', panelRow.label],
+                    ['Type',          meta.type || panelRow.type],
+                    ['OS Family',     meta.os],
+                    ['IP Address',    panelRow.ip],
+                    ['Last Found',    panelRow.last],
+                    ['Last Active',   panelRow.active],
+                  ];
+                  return (
+                    <div className="kg-dp-section" ref={evoSectionRef} style={{ position: 'relative' }}>
+                      <div className="kg-dp-section-header kg-dp-section-header--flex">
+                        <span>Evolution</span>
+                        <button
+                          className="kg-dp-icon-btn"
+                          title="Data Source Filter"
+                          onClick={() => {
+                            setCheckedSources(new Set(primarySource ? [primarySource] : []));
+                            setEvoSourceFilterOpen(true);
+                          }}
+                        >
+                          {Icons.filter}
+                        </button>
+                      </div>
+                      <div className="ds-table-wrap">
+                        <table className="ds-table">
+                          <thead>
+                            <tr>
+                              <th className="ds-th">Attribute</th>
+                              <th className="ds-th">
+                                <div className="kg-dp-evo-resolved-head">
+                                  Resolved
+                                  <button className="kg-dp-evo-hidden-btn" onClick={() => setEvoShowHidden(v => !v)}>
+                                    {evoShowHidden ? 'Hide' : 'Show Hidden'}
+                                  </button>
+                                </div>
+                              </th>
+                              <th className="ds-th">
+                                <div className="kg-dp-evo-src-head">
+                                  <span>{sourceLabel}</span>
+                                  <span className="kg-dp-evo-latest-badge">Latest</span>
+                                </div>
+                                <div className="kg-dp-evo-src-date">[{panelRow.last}]</div>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {evoRows.map(([k, v]) => (
+                              <tr key={k}>
+                                <td className="ds-td">{k}</td>
+                                <td className="ds-td" style={{ fontWeight: 600 }}>
+                                  {v}
+                                  {evoShowHidden && primarySource && <span className="kg-dp-evo-hidden-tag">{primarySource}</span>}
+                                </td>
+                                <td className="ds-td">{v}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {evoSourceFilterOpen && (
+                        <SankeyFilterPopup
+                          type="source"
+                          items={sourceItems}
+                          selected={checkedSources}
+                          onApply={(draft) => setCheckedSources(draft)}
+                          onClose={() => setEvoSourceFilterOpen(false)}
+                          anchorX={evoSectionW - 20}
+                          svgW={evoSectionW}
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {panelTab === 'identity' && (
+                  <>
+                    <div className="kg-dp-section">
+                      <div className="kg-dp-section-header">Identity Summary</div>
+                      <div className="kg-dp-identity-rings">
+                        {IDENTITY_RINGS.map(ring => (
+                          <div key={ring.key} className="kg-dp-ring-col">
+                            <div className="kg-dp-ring-wrap">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[{ v: 1 }]}
+                                    dataKey="v"
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius="68%"
+                                    outerRadius="90%"
+                                    startAngle={90}
+                                    endAngle={450}
+                                    cornerRadius={4}
+                                    strokeWidth={0}
+                                  >
+                                    <Cell fill={ring.color} />
+                                  </Pie>
+                                </PieChart>
+                              </ResponsiveContainer>
+                              <div className="kg-dp-ring-num">1</div>
+                            </div>
+                            <div className="kg-dp-ring-label">{ring.key}</div>
+                            <div className="kg-dp-ring-value">
+                              <span className="kg-dp-ring-dot" style={{ background: ring.color }} />
+                              {ring.value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="kg-dp-section">
+                      <div className="kg-dp-section-header kg-dp-section-header--flex">
+                        <span>Relationship Summary (1)</span>
+                        <button className="ds-btn sz-sm t-primary">
+                          Download {Icons.chevron}
+                        </button>
+                      </div>
+                      <div className="ds-table-wrap">
+                        <table className="ds-table">
+                          <thead>
+                            <tr>
+                              {['Display Label', 'Activity Status', 'Operational Status', 'Ownership', 'Identity Provider', 'Successful Login Location', 'Origin', 'First Seen', 'Duration', 'Recency'].map(h => (
+                                <th key={h} className="ds-th">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.label}</td>
+                              <td className="ds-td"><span className="ds-badge success">{IDENTITY_RELATION_ROW.activity}</span></td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.operational}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.ownership}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.provider}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.loginLocation}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.origin}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.firstSeen}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.duration}</td>
+                              <td className="ds-td">{IDENTITY_RELATION_ROW.recency}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {panelTab === 'derivation' && (

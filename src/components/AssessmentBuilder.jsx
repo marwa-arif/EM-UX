@@ -1212,8 +1212,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
               <div className="asb-section-row">
                 <div className="asb-section-title">{scope.primary ? 'Scope & Condition' : 'Select an Entity'}</div>
                 {onUseNavigator && (
-                  <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                  <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                    <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                   </button>
                 )}
               </div>
@@ -1380,8 +1380,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Validation</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>
@@ -1548,8 +1548,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Contribution</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>
@@ -1634,8 +1634,8 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
             <div className="asb-section-row">
               <div className="asb-section-title">Deploy</div>
               {onUseNavigator && (
-                <button className="asb-use-nav-btn asb-nav-gradient" onClick={onUseNavigator}>
-                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="asb-nav-icon" /> Use Navigator
+                <button className="ds-btn sz-md t-nav-gradient" onClick={onUseNavigator}>
+                  <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" className="ds-btn-nav-icon" /> Use Navigator
                 </button>
               )}
             </div>
@@ -1675,8 +1675,11 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
         <div className="ct-overlay" onClick={() => setSummaryPreviewOpen(false)}>
           <div className="ct-modal asb-preview-modal" onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Assessment preview</div>
-              <div className="ct-modal__subtitle">Scope and condition defined so far</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Assessment preview</div>
+                <div className="ct-modal__subtitle">Scope and condition defined so far</div>
+              </div>
+              <button className="ct-modal__close" onClick={() => setSummaryPreviewOpen(false)} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <AssessmentSummaryPanel scope={scope} scopeSummary={scopeSummary} conditionSummary={conditionSummary} />
@@ -1692,8 +1695,11 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
         <div className="ct-overlay" onClick={() => setCancelConfirmOpen(false)}>
           <div className="ct-modal" onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Cancel this assessment?</div>
-              <div className="ct-modal__subtitle">All progress on this assessment will be lost. This action cannot be undone.</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title danger">Cancel this assessment?</div>
+                <div className="ct-modal__subtitle">Progress will be lost. This can't be undone.</div>
+              </div>
+              <button className="ct-modal__close" onClick={() => setCancelConfirmOpen(false)} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__footer">
               <button className="ct-btn ct-btn--cancel" onClick={() => setCancelConfirmOpen(false)}>Keep editing</button>
@@ -1707,8 +1713,11 @@ const AssessmentBuilder = forwardRef(function AssessmentBuilder({ onClose, onDep
         <div className="ct-overlay" onClick={() => setPreviewOpen(false)}>
           <div className="ct-modal asb-preview-modal" onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Preview &amp; deploy</div>
-              <div className="ct-modal__subtitle">Review this assessment before it goes live</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Preview &amp; deploy</div>
+                <div className="ct-modal__subtitle">Review this assessment before it goes live</div>
+              </div>
+              <button className="ct-modal__close" onClick={() => setPreviewOpen(false)} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="asb-deploy-recap">

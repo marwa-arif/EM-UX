@@ -1,17 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
+import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
+import '../styles/kg.css'
 
 // ── Icons ──────────────────────────────────────────────────────────
-const IcExploreAction = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3.72222 13.5C3.39807 13.5 3.08719 13.3712 2.85798 13.142C2.62877 12.9128 2.5 12.6019 2.5 12.2778V8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5H3.72222Z"/>
-    <path d="M13.5 9.34636V12.2778C13.5 12.6019 13.3712 12.9128 13.142 13.142C12.9128 13.3712 12.6019 13.5 12.2778 13.5H8M6.69508 2.5H3.72222C3.39807 2.5 3.08719 2.62877 2.85798 2.85798C2.62877 3.08719 2.5 3.39807 2.5 3.72222V8M13.5 2.5L9.36629 6.63371M13.5 6.62568V2.5H9.36629M2.5 8V12.2778C2.5 12.6019 2.62877 12.9128 2.85798 13.142C3.08719 13.3712 3.39807 13.5 3.72222 13.5H8M2.5 8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5"/>
-  </svg>
-)
-
 const IcRemediation = () => (
   <svg width="13" height="14" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M5.69133 3.905C6.06508 2.81125 7.57633 2.77813 8.01945 3.80563L8.05696 3.90563L8.56133 5.38063C8.67692 5.7189 8.86371 6.02844 9.1091 6.28839C9.35449 6.54834 9.65277 6.75263 9.98383 6.8875L10.1195 6.93812L11.5945 7.44188C12.6882 7.81563 12.7213 9.32687 11.6945 9.77L11.5945 9.8075L10.1195 10.3119C9.78107 10.4274 9.4714 10.6141 9.21134 10.8595C8.95128 11.1049 8.74689 11.4033 8.61196 11.7344L8.56133 11.8694L8.05758 13.345C7.68383 14.4388 6.17258 14.4719 5.73008 13.445L5.69133 13.345L5.18758 11.87C5.07207 11.5316 4.88531 11.2219 4.63992 10.9619C4.39452 10.7018 4.0962 10.4974 3.76508 10.3625L3.63008 10.3119L2.15508 9.80812C1.0607 9.43437 1.02758 7.92312 2.05508 7.48062L2.15508 7.44188L3.63008 6.93812C3.96835 6.82254 4.2779 6.63575 4.53784 6.39036C4.79779 6.14497 5.00209 5.84668 5.13696 5.51562L5.18758 5.38063L5.69133 3.905ZM6.87446 4.30875L6.37071 5.78375C6.1947 6.29956 5.90837 6.77081 5.53166 7.16469C5.15496 7.55856 4.69692 7.86558 4.18946 8.06437L4.03321 8.12125L2.5582 8.625L4.03321 9.12875C4.54902 9.30476 5.02027 9.59108 5.41414 9.96779C5.80801 10.3445 6.11503 10.8025 6.31383 11.31L6.37071 11.4662L6.87446 12.9412L7.37821 11.4662C7.55421 10.9504 7.84054 10.4792 8.21725 10.0853C8.59395 9.69144 9.05199 9.38442 9.55945 9.18563L9.7157 9.12937L11.1907 8.625L9.7157 8.12125C9.19989 7.94524 8.72864 7.65892 8.33477 7.28221C7.9409 6.9055 7.63388 6.44747 7.43508 5.94L7.37883 5.78375L6.87446 4.30875ZM11.8745 1.75C11.9914 1.75 12.106 1.7828 12.2052 1.84467C12.3044 1.90654 12.3843 1.995 12.4357 2.1L12.4657 2.17313L12.6845 2.81438L13.3263 3.03313C13.4435 3.07293 13.5462 3.14663 13.6215 3.24488C13.6967 3.34313 13.7411 3.46151 13.749 3.58501C13.7569 3.70851 13.728 3.83158 13.6658 3.93862C13.6037 4.04565 13.5112 4.13184 13.4001 4.18625L13.3263 4.21625L12.6851 4.435L12.4663 5.07687C12.4265 5.19402 12.3527 5.29669 12.2544 5.37187C12.1561 5.44705 12.0377 5.49137 11.9142 5.4992C11.7907 5.50703 11.6677 5.47803 11.5607 5.41586C11.4537 5.3537 11.3676 5.26117 11.3132 5.15L11.2832 5.07687L11.0645 4.43563L10.4226 4.21688C10.3054 4.17707 10.2027 4.10337 10.1274 4.00512C10.0522 3.90687 10.0078 3.78849 9.99991 3.66499C9.99201 3.54149 10.021 3.41842 10.0831 3.31138C10.1452 3.20435 10.2377 3.11816 10.3488 3.06375L10.4226 3.03375L11.0638 2.815L11.2826 2.17313C11.3247 2.04964 11.4045 1.94244 11.5106 1.86656C11.6167 1.79068 11.744 1.74992 11.8745 1.75Z" fill="url(#remGradFP)"/>
@@ -40,12 +35,235 @@ const ENTITY_ICON_SRCS = {
   multi:    'assets/icons/entities/assessment.svg',
 }
 
+const ENTITY_TYPE_LABEL = {
+  device:   'Host / Device',
+  cloud:    'Cloud Account',
+  identity: 'Identity',
+  storage:  'Storage',
+  multi:    'Multiple',
+}
+
 function EntityBadge({ type }) {
   const src = ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.multi
   return (
     <span className="cfp-entity-badge">
       <img src={src} width={14} height={14} alt="" />
     </span>
+  )
+}
+
+// ── Finding detail drawer ───────────────────────────────────────────
+// Colors/glyphs mirror the Knowledge Graph entity palette (PageKG.jsx ENTITY_TYPES)
+// so a Finding's detail drawer reads as the same entity type everywhere in the app.
+const KG_ENT = {
+  finding:    { tint: '#E9E4F6', stroke: '#BCABE4', icon: '#582DBB', glyph: 'entity-finding.svg' },
+  host:       { tint: '#E3E9F1', stroke: '#AABBD3', icon: '#2B5690', glyph: 'entity-host.svg' },
+  assessment: { tint: '#F4ECE5', stroke: '#DEC4AF', icon: '#AC6C36', glyph: 'entity-assessment.svg' },
+}
+
+const SEV_COLORS = {
+  Critical: 'var(--pai-crit-fg)',
+  High:     'var(--pai-high-fg)',
+  Medium:   'var(--pai-med-fg)',
+  Low:      'var(--pai-low-fg)',
+}
+
+// Per-title mock metadata — the ROWS mock data only carries title/entity/type/evidence,
+// so the richer drawer fields below are deliberately dummy/illustrative.
+const FINDING_META = {
+  'Devices with End-of-Life OS':           { severity: 'High',     domain: 'Vulnerability & Patch Management', category: 'Control Gap',      description: 'This assessment verifies that devices are not running operating systems that have reached end-of-life and no longer receive security patches.' },
+  'Malware scan overdue':                  { severity: 'Medium',   domain: 'Endpoint Security',                 category: 'Control Gap',      description: 'This assessment verifies that endpoint anti-malware scans are running on schedule and have not exceeded the allowed SLA window.' },
+  'Authentication factors not configured': { severity: 'Medium',   domain: 'Identity & Access Management',      category: 'Control Gap',      description: 'This assessment verifies that identities have at least one authentication factor registered for account access.' },
+  'MFA not enabled':                       { severity: 'Critical', domain: 'Identity & Access Management',      category: 'Control Gap',      description: 'This assessment verifies that multi-factor authentication is enforced for the associated entity.' },
+  'Full disk encryption not enforced':     { severity: 'High',     domain: 'Data Protection',                    category: 'Control Gap',      description: 'This assessment verifies that full disk encryption is enabled to protect data at rest.' },
+  'Vulnerability scan overdue':            { severity: 'Medium',   domain: 'Vulnerability & Patch Management',  category: 'Control Gap',      description: 'This assessment verifies that vulnerability scans are completed within the required SLA window.' },
+  'Unaccountable devices':                 { severity: 'Low',      domain: 'Asset Management',                  category: 'Governance Gap',   description: 'This assessment verifies that all discovered devices have an active, accountable owner on record.' },
+  'EDR agent not fully functional':        { severity: 'High',     domain: 'Endpoint Security',                 category: 'Control Gap',      description: 'This assessment verifies that the EDR agent is installed and reporting normally on the associated device.' },
+  'No login activity':                     { severity: 'Low',      domain: 'Identity & Access Management',      category: 'Inactive Account',  description: 'This assessment flags identities or devices with no recorded login activity within the expected window.' },
+  'Host firewall disabled':                { severity: 'High',     domain: 'Network Security',                  category: 'Control Gap',      description: 'This assessment verifies that the host-based firewall is enabled and actively enforcing policy.' },
+  'FIM not enabled':                       { severity: 'Medium',   domain: 'Endpoint Security',                 category: 'Control Gap',      description: 'This assessment verifies that File Integrity Monitoring is enabled to detect unauthorized changes.' },
+  'Patch management overdue':              { severity: 'High',     domain: 'Vulnerability & Patch Management',  category: 'Control Gap',      description: 'This assessment verifies that security patches are applied within the required patch management SLA.' },
+}
+const DEFAULT_FINDING_META = { severity: 'Medium', domain: 'General Compliance', category: 'Control Gap', description: 'This assessment verifies compliance controls associated with the selected finding.' }
+
+// Deterministic hex id derived from the row — mock data only, not a real entity identifier.
+function mockEntityId(seed) {
+  let h1 = 0, h2 = 0
+  for (let i = 0; i < seed.length; i++) {
+    h1 = (h1 * 31 + seed.charCodeAt(i)) >>> 0
+    h2 = (h2 * 131 + seed.charCodeAt(i)) >>> 0
+  }
+  return (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).padEnd(32, '0')
+}
+
+function KgGlyph({ file, size = 20 }) {
+  return <img src={`assets/icons/${file}`} width={size} height={size} className="kg-entity-glyph" alt="" />
+}
+
+function FindingDrawer({ row, onClose }) {
+  const [closing, setClosing] = useState(false)
+  const [tab, setTab] = useState('summary')
+
+  const handleClose = useCallback(() => {
+    setClosing(true)
+    setTimeout(onClose, 180)
+  }, [onClose])
+
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') handleClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [handleClose])
+
+  const meta = FINDING_META[row.title] || DEFAULT_FINDING_META
+  const entityId = mockEntityId(`${row.title}|${row.entity}`)
+
+  const infoFields = [
+    ['Entity ID',              entityId],
+    ['Display Label',          row.title],
+    ['Class',                  'Finding'],
+    ['Type',                   meta.domain],
+    ['Origin',                 'Knowledge Graph'],
+    ['Origin (Count)',         1],
+    ['First Found',            '2024-08-07'],
+    ['First Seen',             '2024-08-07'],
+    ['Last Found',             '2024-08-08'],
+    ['Last Active',            '2024-08-08'],
+    ['Activity Status',        'Active'],
+    ['Lifetime',               1],
+    ['Recent Activity',        0],
+    ['Observed Lifetime',      1],
+    ['Recency',                0],
+    ['Description',            meta.description],
+    ['Origin Contribution Type', 'Unique'],
+    ['Exposure Category',      meta.category],
+  ]
+
+  return (
+    <>
+      <div className="comp-drawer-backdrop" onClick={handleClose} />
+      <button className="comp-drawer-close-ext" onClick={handleClose}>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+          <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+        </svg>
+      </button>
+
+      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
+        <div className="kg-dp-header">
+          <div className="kg-dp-title-row">
+            <div className="kg-dp-icon-circle" style={{ '--dp-tint': KG_ENT.finding.tint, '--dp-stroke': KG_ENT.finding.stroke }}>
+              <KgGlyph file={KG_ENT.finding.glyph} size={22} />
+            </div>
+            <div className="kg-dp-title-body">
+              <div className="kg-dp-name-row">
+                <span className="kg-dp-name">{row.title}</span>
+                <span className="kg-dp-type-chip" style={{ '--dp-chip-border': KG_ENT.finding.stroke, '--dp-chip-color': KG_ENT.finding.icon }}>
+                  Finding
+                </span>
+              </div>
+              <div className="kg-dp-meta-row">
+                <span className="kg-dp-meta-item">
+                  Exposure Severity <strong style={{ color: SEV_COLORS[meta.severity] }}>{meta.severity}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <EntityRelSummaryGraph
+            center={{ label: row.title, icon: <KgGlyph file={KG_ENT.finding.glyph} size={16} />, accent: KG_ENT.finding.icon }}
+            leaves={[
+              { key: 'host', label: 'Host', icon: <KgGlyph file={KG_ENT.host.glyph} size={16} />, tint: KG_ENT.host.tint, stroke: KG_ENT.host.stroke, accent: KG_ENT.host.icon, count: 1 },
+              { key: 'assessment', label: 'Assessment', icon: <KgGlyph file={KG_ENT.assessment.glyph} size={16} />, tint: KG_ENT.assessment.tint, stroke: KG_ENT.assessment.stroke, accent: KG_ENT.assessment.icon, count: 1 },
+            ]}
+          />
+        </div>
+
+        {/* Tabs */}
+        <div className="kg-dp-tabs">
+          {['summary', 'evolution'].map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="kg-dp-body">
+          {tab === 'summary' && (
+            <>
+              <div className="kg-dp-section">
+                <div className="kg-dp-section-header">General Information</div>
+                <div className="kg-dp-grid kg-dp-grid--4">
+                  {infoFields.map(([k, v]) => (
+                    <div key={k} className="kg-dp-grid-cell">
+                      <div className="kg-dp-grid-key">{k}</div>
+                      <div className="kg-dp-grid-val">{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="kg-dp-section">
+                <div className="kg-dp-section-header">Affected Resources</div>
+                <div className="ds-table-wrap">
+                  <table className="ds-table">
+                    <thead>
+                      <tr>
+                        <th className="ds-th">Associated Entities Display Label</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="ds-td">
+                          <div className="cfp-entity-cell">
+                            <EntityBadge type={row.type} />
+                            <span>{row.entity}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'evolution' && (
+            <div className="kg-dp-section">
+              <div className="kg-dp-section-header">Evolution</div>
+              <div className="ds-table-wrap">
+                <table className="ds-table">
+                  <thead>
+                    <tr>
+                      <th className="ds-th">Attribute</th>
+                      <th className="ds-th">
+                        <div className="kg-dp-evo-src-head">
+                          <span>Knowledge Graph</span>
+                          <span className="kg-dp-evo-latest-badge">Latest</span>
+                        </div>
+                        <div className="kg-dp-evo-src-date">[2024-08-08]</div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {infoFields.map(([k, v]) => (
+                      <tr key={k}>
+                        <td className="ds-td">{k}</td>
+                        <td className="ds-td" style={{ fontWeight: 600 }}>{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -142,13 +360,14 @@ const ROWS = [
   { title: 'EDR agent not fully functional',        entity: 'WORK-BQN304182.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
 ]
 
-export default function ComplianceFindingsPage({ filter = null, onClearFilter }) {
+export default function ComplianceFindingsPage({ filter = null, onClearFilter, onNav }) {
   const [inclClosed, setInclClosed]     = useState(false)
   const [search, setSearch]             = useState('')
   const [page, setPage]                 = useState(1)
   const [rowsPerPage, setRowsPerPage]   = useState(25)
   const [downloadOpen, setDownloadOpen] = useState(false)
   const [remediationRow, setRemediationRow]         = useState(null) // { i, rect }
+  const [findingDrawerRow, setFindingDrawerRow]     = useState(null)
   const [createTicketEntity, setCreateTicketEntity] = useState(null) // null | string
   const [ctDescription, setCtDescription]           = useState('')
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin')
@@ -283,7 +502,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
               </thead>
               <tbody>
                 {visibleRows.map((row, i) => (
-                  <tr key={i}>
+                  <tr key={i} className="cfp-tr--clickable" onClick={() => setFindingDrawerRow(row)}>
                     <td className="ds-td cfp-td-title">{row.title}</td>
                     <td className="ds-td">
                       <div className="cfp-entity-cell">
@@ -301,6 +520,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                           className="comp-drawer-action-icon"
                           title="Remediation"
                           onClick={e => {
+                            e.stopPropagation()
                             const rect = e.currentTarget.getBoundingClientRect()
                             const globalI = (page - 1) * rowsPerPage + i
                             setRemediationRow(prev =>
@@ -309,9 +529,6 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
                           }}
                         >
                           <IcRemediation />
-                        </button>
-                        <button className="comp-drawer-action-icon cfp-action-explore" title="Explore">
-                          <IcExploreAction />
                         </button>
                       </div>
                     </td>
@@ -330,6 +547,11 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
           />
         </div>
       </div>
+
+      {/* Finding detail drawer */}
+      {findingDrawerRow && (
+        <FindingDrawer row={findingDrawerRow} onClose={() => setFindingDrawerRow(null)} />
+      )}
 
       {/* Remediation popup */}
       {remediationRow !== null && (
@@ -391,8 +613,11 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter })
         <div className="ct-overlay" onClick={closeCreateTicket}>
           <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
             <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              <div className="ct-modal__header-text">
+                <div className="ct-modal__title">Create Ticket</div>
+                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+              </div>
+              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
             </div>
             <div className="ct-modal__body">
               <div className="ct-field">

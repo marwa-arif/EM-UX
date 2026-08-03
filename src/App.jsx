@@ -5,7 +5,7 @@ import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import { PageKG } from './pages/PageKG.jsx'
-import { FilterPanel, GraphFilterDrawer } from './components/FilterPanel.jsx'
+import { FilterPanel } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
@@ -354,6 +354,8 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               builderApi={navigatorProps?.builderApi}
               builderKind={navigatorProps?.builderKind}
               builderContext={navigatorProps?.builderContext}
+              pageId={navigatorProps?.pageId}
+              pageLabel={navigatorProps?.pageLabel}
             />
           )}
         </div>
@@ -588,21 +590,34 @@ function App() {
     if (path === '/') return 'navigator';
     return path.slice(1) || 'navigator';
   });
-  const [appMode, setAppMode] = useState('em'); // 'em' | 'studio'
+  const [appMode, setAppMode] = useState(() => {
+    const path = stripBase(window.location.pathname);
+    return path.startsWith('/studio') ? 'studio' : 'em';
+  }); // 'em' | 'studio'
   const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
+  const [findingsCategoryFilter, setFindingsCategoryFilter] = useState(null);
+  const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [navCollapsed, setNavCollapsed] = useState(false);
+  // Lets a click on a dropdown-capable LeftNav item force the sidebar open
+  // even while auto-collapsed (e.g. on the Navigator route) so its children
+  // become visible/clickable. Cleared on every navigation.
+  const [navExpandOverride, setNavExpandOverride] = useState(false);
   const [rightPanel, setRightPanel] = useState(null); // null | 'filter' | 'navigator'
   const [navigatorQuery, setNavigatorQuery] = useState('');
   // Bumped on every LeftNav "Navigator" click so NavigatorPage resets to its
   // Home screen even when `current` is already 'navigator' (mid-chat) — a
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
+  // Bumped whenever "Reset Filters" is used on a Discover page, so that page's
+  // local per-row filtered-dashboard state can clear even though it lives
+  // outside filtersByPage (which only tracks the chip shown in Active Filters).
+  const [discoverFilterReset, setDiscoverFilterReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
@@ -621,7 +636,6 @@ function App() {
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
   const [visitedTabs, setVisitedTabs] = useState([]);
-  const [graphFilterOpen, setGraphFilterOpen] = useState(false);
   const [filtersByPage, setFiltersByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
@@ -657,6 +671,7 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = stripBase(window.location.pathname);
+      setAppMode(path.startsWith('/studio') ? 'studio' : 'em');
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
@@ -697,17 +712,24 @@ function App() {
   };
 
   const handleNav = (id, data) => {
+    setNavExpandOverride(false);
     if (id === 'navigator') {
-      setNavigatorViewMode('sidebar');
+      setNavigatorViewMode('floating');
+      setNavigatorFloating(true);
       setNavigatorBuilderMode(false);
       openRightTab('navigator');
       return;
     }
     if (id === 'navigator-builder') {
       setNavigatorViewMode('sidebar');
+      setNavigatorFloating(false);
       setNavigatorBuilderMode(true);
       setNavigatorBuilderKind(data?.kind || 'assessment');
-      setNavigatorBuilderContext(data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel } : null);
+      setNavigatorBuilderContext(
+        data?.widgetId ? { widgetId: data.widgetId, widgetLabel: data.widgetLabel }
+        : data?.initialPrompt ? { initialPrompt: data.initialPrompt }
+        : null
+      );
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       setRightPanel('navigator');
       return;
@@ -763,6 +785,19 @@ function App() {
       handleNav(adminPrevPage);
       return;
     }
+    if (id === 'kg') {
+      setKgFocusEntity(data || null);
+    }
+    if (id === 'exposure/findings') {
+      const category = data?.category || null;
+      setFindingsCategoryFilter(category);
+      setFiltersByPage(prev => ({
+        ...prev,
+        'exposure/findings': category
+          ? { count: 1, chips: [{ attrId: 'exposure-category', key: 'Exposure Category', value: category }] }
+          : { count: 0, chips: [] },
+      }));
+    }
     setCurrent(id);
     let url;
     if (id === 'workspace') url = '/workspace';
@@ -779,6 +814,18 @@ function App() {
 
   const setPageFilters = (pageId, count, chips) =>
     setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
+
+  // Sets (or clears) the single "assessment-id" chip an insight-row filter icon
+  // adds, merging with whatever other chips are already applied on that page
+  // instead of replacing the whole array (which used to silently drop any
+  // filters applied via the Filter side-panel).
+  const setAssessmentFilterChip = (pageId, chip) =>
+    setFiltersByPage(prev => {
+      const cur = prev[pageId] || { count: 0, chips: [] };
+      const rest = cur.chips.filter(c => c.attrId !== 'assessment-id');
+      const nextChips = chip ? [...rest, chip] : rest;
+      return { ...prev, [pageId]: { count: new Set(nextChips.map(c => c.attrId)).size, chips: nextChips } };
+    });
 
   // Explore in: navigate to destId carrying the current page's filters
   const handleExplore = (destId) => {
@@ -802,8 +849,9 @@ function App() {
           });
         } else {
           setPageFilters(current, c, chips || []);
+          if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
         }
-      }, onOpenGraphFilter: () => setGraphFilterOpen(o => !o), graphFilterOpen }}
+      }}}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
@@ -812,6 +860,8 @@ function App() {
         builderApi: activeBuilderSurface?.api ?? null,
         builderKind: navigatorBuilderKind,
         builderContext: navigatorBuilderContext,
+        pageId: current,
+        pageLabel: PAGE_META[current]?.title || null,
       }}
       navigatorFloating={navigatorFloating}
     />
@@ -834,7 +884,7 @@ function App() {
           onBuilderApiReady={setDashboardBuilderApi}
           onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
           rightPanelSlot={sharedRightPanel}
-          rightPanelOpen={rightPanel !== null}
+          rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
           navigatorActive={rightPanel === 'navigator'}
           seedDashboard={dashboardSeed}
         />
@@ -877,10 +927,13 @@ function App() {
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
   const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
-  // Auto-collapse while a right panel (navigator/filter) is open, but never
-  // let that override the user's manual preference once the panel closes.
-  const collapsed = navCollapsed || rightPanel !== null;
   const isNavigatorRoute = current === 'navigator';
+  // Auto-collapse whenever a docked right panel is open (Navigator in sidebar/
+  // builder mode, or the filter panel) or the full-page Navigator route is
+  // active, to reclaim width. Floating Navigator overlays content instead of
+  // consuming layout width, so it's exempt. Never overrides the user's manual
+  // preference once Navigator/the panel closes.
+  const collapsed = (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)) || isNavigatorRoute) && !navExpandOverride;
 
   return (
     <div className="app-shell">
@@ -897,7 +950,15 @@ function App() {
           current={current}
           onNav={handleNav}
           collapsed={collapsed}
-          onToggleCollapse={() => setNavCollapsed(!navCollapsed)}
+          onToggleCollapse={() => {
+            if (isNavigatorRoute) {
+              setNavExpandOverride((o) => !o);
+            } else {
+              setNavExpandOverride(false);
+              setNavCollapsed((c) => !c);
+            }
+          }}
+          onExpand={() => setNavExpandOverride(true)}
           mode={appMode}
           onModeChange={handleModeChange}
         />
@@ -944,8 +1005,14 @@ function App() {
                       const updated = cur.chips.filter((_, i) => i !== idx);
                       return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
+                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
+                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
                   }}
-                  onClearFilters={() => setPageFilters(current, 0, [])}
+                  onClearFilters={() => {
+                    setPageFilters(current, 0, []);
+                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
+                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
+                  }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}
                   onAdd={showingAssessmentBuilder ? undefined : pageMeta.onAdd}
@@ -958,32 +1025,23 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
-                {current === 'exposure/overview'   && <ExposureOverviewPage />}
-                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} />}
-                {current === 'discover/device'     && <DiscoverDevicePage />}
-                {current === 'discover/cloud'      && <DiscoverCloudPage />}
-                {current === 'discover/identity'   && <DiscoverIdentityPage />}
-                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
-                {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} />}
+                {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
+                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} categoryFilter={findingsCategoryFilter} />}
+                {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/device', chip)} resetToken={discoverFilterReset} />}
+                {current === 'discover/cloud'      && <DiscoverCloudPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/cloud', chip)} resetToken={discoverFilterReset} />}
+                {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/identity', chip)} resetToken={discoverFilterReset} />}
+                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
+                {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
-                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
-                {isKG && <PageKG />}
+                {isKG && <PageKG focusEntity={kgFocusEntity} />}
               </div>
             </div>
             {sharedRightPanel}
           </main>
         )}
       </div>
-
-      {isKG && appMode !== 'studio' && GraphFilterDrawer && (
-        <GraphFilterDrawer
-          open={graphFilterOpen}
-          onClose={() => setGraphFilterOpen(false)}
-          onApply={(count) => { setPageFilters(current, count, activeFilters); setGraphFilterOpen(false); }}
-          top={canvasTop}
-        />
-      )}
 
       {isKG && appMode !== 'studio' && (
         <TweaksPanel title="Tweaks">

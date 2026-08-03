@@ -183,6 +183,7 @@ html.theme-light .ds-btn.t-danger:hover { background: var(--pai-crit-bg-hover); 
 .nav-send-btn:hover { background: var(--pai-indigo-hover); }
 .nav-send-btn:active { transform: scale(0.92); }
 .nav-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.nav-stop-icon { width: 10px; height: 10px; border-radius: 2px; background: currentColor; display: inline-block; }
 
 /* ── Contextual suggestions ──────────────────────────────────────── */
 .nav-suggestions { border-top: 1px solid var(--shell-border); display: flex; flex-direction: column; }
@@ -325,29 +326,21 @@ html.theme-light .ds-btn.t-danger:hover { background: var(--pai-crit-bg-hover); 
 .chat-dragger:hover .chat-dragger-handle { background: var(--shell-hover); }
 .chat-dragger:hover .chat-dragger-handle span { background: var(--shell-accent); }
 
-/* ── Reasoning / step rows ───────────────────────────────────────── */
-.sr-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 8px 12px 10px; border-radius: 6px; border-left: 2px solid transparent; margin-left: -12px; transition: background 0.28s ease,border-color 0.28s ease,box-shadow 0.28s ease; position: relative; }
-.sr-row.active { border-left-color: var(--shell-accent); background: linear-gradient(90deg,rgba(99,96,216,0.14) 0%,rgba(99,96,216,0.05) 50%,transparent 100%); box-shadow: inset 0 0 0 1px rgba(99,96,216,.08); }
-html.theme-light .sr-row.active { background: linear-gradient(90deg,rgba(99,96,216,0.08) 0%,rgba(99,96,216,0.02) 50%,transparent 100%); }
-.sr-row.active .sr-label { color: var(--shell-text) !important; font-weight: 600 !important; opacity: 1 !important; font-size: 13px; }
+/* ── Reasoning / step rows — each step is its own bordered card ──── */
+.sr-row { display: flex; flex-direction: column; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 4px; background: var(--card-bg); transition: border-color 0.2s ease,opacity 0.2s ease; }
+.sr-row.active { border-color: var(--shell-accent); }
 .sr-row.active .sr-status { color: var(--shell-accent); }
-.sr-row.done .sr-label { opacity: 0.3; font-weight: 400; }
-.sr-row.done .sr-status { opacity: 0.5; }
-.sr-row.sr-expanded .sr-body { max-height: 400px; opacity: 1; padding-top: 5px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: 0 6px 6px 6px; padding: 8px 12px 10px; margin: 5px 0 3px; }
-html.theme-light .sr-row.sr-expanded .sr-body { background: var(--ctrl-bg); }
-.sr-step-track { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; align-self: stretch; }
-.sr-step-line { width: 1.5px; flex: 1; min-height: 8px; background: var(--shell-border); opacity: 0.4; border-radius: 1px; margin-top: 3px; transition: background 0.5s ease,opacity 0.5s ease; }
-.sr-row.done .sr-step-line { background: var(--shell-accent); opacity: 0.2; }
-.sr-row.active .sr-step-line { background: var(--shell-accent); opacity: 0.55; animation: line-pulse 1.8s ease-in-out infinite; }
-.sr-row-last .sr-step-line { display: none !important; }
-.sr-content { flex: 1; min-width: 0; }
-.sr-status { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; color: var(--shell-text-faint); transition: color 0.2s; }
-.sr-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
+.sr-row.active .sr-label { color: var(--shell-text); font-weight: 600; }
+.sr-row.done { opacity: 0.6; }
+.sr-row.done .sr-status { color: var(--shell-accent); }
+.sr-row.sr-expanded .sr-body { max-height: 400px; opacity: 1; padding-top: 8px; margin-top: 8px; border-top: 1px solid var(--card-border); }
+.sr-status { width: 14px; height: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--shell-text-faint); transition: color 0.2s; }
+.sr-header { display: flex; align-items: center; gap: 8px; user-select: none; }
 .sr-header:hover .sr-label { color: var(--shell-text); }
-.sr-chev { color: var(--shell-text-faint); flex-shrink: 0; opacity: 0.5; margin-top: 3px; transition: transform 0.18s,opacity 0.18s; }
+.sr-chev { color: var(--shell-text-faint); flex-shrink: 0; opacity: 0.5; transition: transform 0.18s,opacity 0.18s; }
 .sr-row.sr-expanded .sr-chev { transform: rotate(180deg); opacity: 0.8; }
 .sr-label { font-size: 12px; color: var(--shell-text-muted); line-height: 1.45; flex: 1; transition: color .22s,opacity .22s; }
-.sr-body { display: flex; flex-direction: column; gap: 4px; max-height: 0; overflow: hidden; opacity: 0; padding-top: 0; transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1),opacity 0.4s ease,padding-top 0.4s ease; }
+.sr-body { display: flex; flex-direction: column; gap: 4px; max-height: 0; overflow: hidden; opacity: 0; padding-top: 0; margin-top: 0; border-top: 1px solid transparent; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease,padding-top 0.3s ease,margin-top 0.3s ease; }
 .sr-thoughts { display: flex; flex-direction: column; gap: 1px; }
 .sr-thought { font-size: 11px; color: var(--shell-text-muted); font-family: inherit; line-height: 1.6; opacity: 0; display: flex; align-items: baseline; gap: 8px; animation: thought-in 0.4s ease forwards; }
 .sr-thought::before { content: '›'; color: var(--shell-text-faint); flex-shrink: 0; font-size: 10px; }
@@ -446,7 +439,6 @@ html.theme-light .sr-row.sr-expanded .sr-body { background: var(--ctrl-bg); }
 @keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 @keyframes fade-up { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 @keyframes slide-in-right { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:none} }
-@keyframes line-pulse { 0%,100%{opacity:0.55} 50%{opacity:0.2} }
 @keyframes progress-shimmer { 0%{background-position:0% 0%} 100%{background-position:200% 0%} }
 @keyframes tac-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,96,216,0),0 0 0 1px rgba(99,96,216,.2)} 50%{box-shadow:0 0 0 4px rgba(99,96,216,.1),0 0 0 1px rgba(99,96,216,.55)} }
 @keyframes tac-dot-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
@@ -459,21 +451,9 @@ html.theme-light .sr-row.sr-expanded .sr-body { background: var(--ctrl-bg); }
 
 /* ── Reasoning summary bar — always-visible collapsed header above .sr-row list ── */
 .nr-bar { display: flex; align-items: center; gap: 8px; }
+.nr-steps-label { font-size: 12px; font-weight: 500; color: var(--shell-text-muted); line-height: 1.4; }
 .nr-step-spinner { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid rgba(99,96,216,0.18); border-top-color: var(--shell-accent); animation: sr-spin 0.75s linear infinite; display: inline-block; }
-.nr-step-spinner.hidden { display: none; }
-.nr-active-label { font-size: 13px; font-weight: 500; color: var(--shell-text); line-height: 1.4; transition: color 0.2s; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nr-active-label.nr-shimmer {
-  background: linear-gradient(90deg, var(--shell-text-muted) 0%, var(--shell-text) 30%, oklch(92% 0.03 260) 50%, var(--shell-text) 70%, var(--shell-text-muted) 100%);
-  background-size: 250% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
-  animation: nr-text-shine 1.8s ease-in-out infinite;
-}
-@keyframes nr-text-shine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 .nr-elapsed { font-size: 11px; color: var(--shell-text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; letter-spacing: 0.01em; margin-left: auto; }
-.nr-dot-row { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.nr-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--shell-border); transition: background 0.25s, width 0.18s, height 0.18s; }
-.nr-dot.done { background: rgba(99,96,216,0.45); }
-.nr-dot.active { background: var(--shell-accent); width: 7px; height: 7px; animation: nr-dot-pulse 1.6s ease-in-out infinite; }
-@keyframes nr-dot-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,96,216,0.4); } 50% { box-shadow: 0 0 0 4px rgba(99,96,216,0); } }
 .nr-collapse-btn { background: none; border: none; cursor: pointer; padding: 2px; color: var(--shell-text-muted); display: flex; align-items: center; flex-shrink: 0; transition: transform 0.2s; }
 .nr-collapse-btn.open { transform: rotate(180deg); }
 
@@ -685,7 +665,17 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 .np-ctx-chip-remove svg { width: 9px; height: 9px; }
 .np-dropdown-agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.np-dropdown--agent-menu { bottom: 100%; left: 20px; margin-bottom: 6px; width: 190px; }
+/* Portaled to document.body (see HomeView) so it escapes .hv-composer-box's
+   overflow:hidden — the composer card clips anything positioned relative to
+   it, which trapped this dropdown once the agent list grew past one row. */
+.np-dropdown--agent-menu {
+  position: fixed;
+  bottom: var(--np-agent-menu-bottom);
+  left: var(--np-agent-menu-left);
+  width: 190px;
+  max-height: 260px;
+  overflow-y: auto;
+}
 .np-composer-send {
   width: 30px; height: 30px; border-radius: 50%;
   background: var(--pai-fg1); border: none; cursor: pointer; flex-shrink: 0;
@@ -851,13 +841,19 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 .np-history-add-btn:hover { background: var(--shell-raised); color: var(--shell-text-2); }
 .np-history-agent-row {
+  box-sizing: border-box;
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border-radius: 8px; border: none;
   background: transparent; cursor: pointer; width: 100%; text-align: left;
   transition: background 0.1s;
 }
 .np-history-agent-row:hover { background: var(--shell-raised); }
-.np-history-agent-name { font-size: 13px; color: var(--pai-fg2); font-family: inherit; }
+.np-history-agent-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.np-history-agent-name {
+  font-size: 12px; color: var(--pai-fg2); font-family: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.np-history-agent-meta { font-size: 11px; color: var(--shell-text-faint); }
 .np-history-viewall {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border: none; background: transparent;
@@ -866,6 +862,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 .np-history-viewall:hover { color: var(--pai-indigo); background: rgba(99,96,216,0.05); }
 .np-history-chat-row {
+  box-sizing: border-box;
   display: flex; align-items: center; gap: 4px;
   padding: 9px 10px; border-radius: 8px; border: 1px solid transparent;
   background: transparent; width: 100%; text-align: left;
@@ -1346,30 +1343,41 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 .np-firstrun {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 12px 4px 8px; text-align: center;
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  gap: 20px;
+  padding: 4px 4px 8px;
+  animation: np-identity-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.np-firstrun-identity {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
-  animation: np-identity-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+.np-firstrun-greeting {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 0 2px;
 }
-.np-firstrun-logo {
-  width: 56px; height: 56px; border-radius: 16px;
-  background: rgba(99,96,216,0.07);
-  display: flex; align-items: center; justify-content: center;
+.np-firstrun-title {
+  font-size: 14px; font-weight: 700; color: var(--shell-text);
+  line-height: 1.35; margin: 0; letter-spacing: -0.1px;
 }
-.np-firstrun-name {
-  font-size: 14px; font-weight: 600; color: var(--shell-text); letter-spacing: -0.2px;
+.np-firstrun-sub {
+  font-size: 12px; color: var(--shell-text-muted); line-height: 1.45; margin: 0;
 }
-.np-firstrun-bottom {
-  width: 100%; display: flex; flex-direction: column; gap: 8px;
+.np-firstrun-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 0 2px;
+}
+.np-firstrun-chip {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  padding: 4px 12px; border-radius: 44px;
+  border: 1px solid rgba(0,0,0,0.08); background: var(--card-bg);
+  font-size: 11px; color: var(--shell-text-2); white-space: nowrap;
+}
+.np-firstrun-chip strong { color: var(--shell-text); font-weight: 700; }
+.np-firstrun-ask {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 2px;
 }
 .np-firstrun-suggestions {
-  display: flex; gap: 8px; width: 100%;
+  display: flex; flex-direction: column; gap: 8px; width: 100%;
 }
 .np-firstrun-suggestion {
-  flex: 1;
   padding: 11px 13px; border-radius: 12px;
   border: 1px solid rgba(0,0,0,0.08); background: var(--card-bg);
   text-align: left; font-size: 12px; color: var(--shell-text-2); line-height: 1.45;
@@ -1381,7 +1389,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   background: rgba(99,96,216,0.03);
 }
 .np-firstrun-limit {
-  font-size: 11px; color: var(--shell-text-faint); line-height: 1.5; margin: 0; text-align: center;
+  font-size: 11px; color: var(--shell-text-faint); line-height: 1.5; margin: 0; padding: 0 2px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1397,12 +1405,60 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 
 /* ── NavigatorPage content — rendered inside the standard app shell's
    page-scroll area (LeftNav + SubHeader now live outside this component) ── */
+.nav-page-shell {
+  height: 100%; min-height: 0;
+  display: flex; flex-direction: row;
+  overflow: hidden;
+}
 .nav-page-content-only {
+  flex: 1; min-width: 0;
   height: 100%; min-height: 0;
   display: flex; flex-direction: column;
   overflow: hidden;
   position: relative;
 }
+
+/* ── Persistent History + Agents sidebar (NavSidebar) — sits next to
+   .nav-page-content-only inside .nav-page-shell; collapses to a slim icon
+   rail rather than disappearing. Reuses .np-history-section/-chat-row/
+   .np-collapse-row/-btn from the History overlay styles above. ── */
+.np-hist-sidebar {
+  flex-shrink: 0; width: 220px; overflow: hidden;
+  background: var(--card-bg);
+  border-right: 1px solid var(--shell-border, rgba(0,0,0,0.06));
+  transition: width 220ms cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+.np-hist-sidebar.collapsed { width: 52px; }
+.np-hist-sidebar-body {
+  flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+  scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent;
+}
+.np-hist-sidebar.collapsed .np-history-section { align-items: center; padding: 8px 4px 4px; }
+.np-hist-sidebar.collapsed .np-history-section-hdr { justify-content: center; padding: 4px 0 8px; }
+.np-hist-sidebar.collapsed .np-history-divider { margin: 4px 10px; }
+
+/* Header height matches .leftnav__header (48px, border-box) so the two
+   border-bottom lines land on the same row instead of stepping between the
+   icon rail and this sidebar. */
+.np-hist-sidebar .np-history-hdr {
+  height: 48px; box-sizing: border-box; padding: 8px 12px;
+}
+.np-history-hdr--collapsed { justify-content: center; padding: 8px; }
+.np-hist-sidebar .np-history-new-btn { width: 100%; justify-content: center; }
+
+.np-hist-newchat-collapsed,
+.np-hist-agent-row-collapsed,
+.np-hist-chat-row-collapsed {
+  width: 32px; height: 32px; margin: 2px auto; border-radius: 8px; border: none;
+  background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--shell-text-faint); transition: background 0.1s, color 0.1s; flex-shrink: 0;
+}
+.np-history-hdr--collapsed .np-hist-newchat-collapsed { margin: 0; }
+.np-hist-newchat-collapsed:hover,
+.np-hist-agent-row-collapsed:hover,
+.np-hist-chat-row-collapsed:hover { background: var(--shell-raised); color: var(--shell-text-2); }
+.np-hist-chat-row-collapsed.active { background: rgba(99,96,216,0.12); color: var(--pai-indigo); }
 
 /* ── History control — trigger button + panel shared by Home/Chat/Build ── */
 .nav-history-btn {
@@ -2725,9 +2781,9 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 .cv-reasoning {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 4px;
   background: var(--table-th-bg);
 }
 
@@ -2945,7 +3001,7 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   border: none;
   background: transparent;
   color: var(--shell-text);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-family: inherit;
   resize: none;
   outline: none;
@@ -2991,6 +3047,21 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   gap: 12px;
   padding: 10px 16px;
 }
+
+/* ── Prompt-driven dashboard builder (docked panel) ──────────────────────
+   Reuses NavigatorPage's .cv-msg chat turn markup (BuildExchangeTurn), whose
+   24px side padding assumes the full Build tab's width — tightened here for
+   the 400px docked panel. */
+.np-prompt-build-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+.np-prompt-build-messages .cv-msg { padding: 0 16px; }
 .np-builder-msg { display: flex; align-items: flex-start; gap: 8px; }
 .np-builder-msg.user { flex-direction: row-reverse; }
 .np-builder-msg-badge {
@@ -3108,6 +3179,11 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 .agp-td-name { font-size: 12px; font-weight: 600; color: var(--shell-text); }
 .agp-td-desc {
   font-size: 12px; color: var(--shell-text-muted);
-  max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.agp-td-access {
+  display: inline-block; max-width: 110px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
 }
 .agp-td-delete { color: var(--pai-crit-fg); }
+.agp-td-delete:hover { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }

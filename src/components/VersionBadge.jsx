@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import pkg from '../../package.json';
 import changelog from '../data/changelog.json';
 
 function ChangelogModal({ onClose }) {
   const currentVersion = pkg.version;
 
-  return (
+  return createPortal(
     <div className="vb-overlay" onClick={onClose}>
       <div className="vb-modal" onClick={e => e.stopPropagation()}>
         <div className="vb-modal__header">
@@ -48,7 +49,8 @@ function ChangelogModal({ onClose }) {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

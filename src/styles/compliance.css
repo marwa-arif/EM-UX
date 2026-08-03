@@ -1124,6 +1124,7 @@ html.theme-dark .comp-fw-card--selected {
   background: var(--card-bg);
   border-left: 1px solid var(--shell-border);
   border-radius: 12px 0 0 12px;
+  overflow: hidden;
   z-index: 201;
   display: flex;
   flex-direction: column;
@@ -1428,6 +1429,12 @@ html.theme-dark .comp-fw-card--selected {
   white-space: nowrap;
 }
 
+/* `.comp-drawer-table th` (class+element) outranks a lone class selector —
+   qualify with the table's own class so centering actually wins. */
+.comp-drawer-table th.comp-drawer-th-actions {
+  text-align: center;
+}
+
 .comp-drawer-table td {
   padding: 8px 16px;
   color: var(--shell-text);
@@ -1534,12 +1541,14 @@ html.theme-dark .comp-fw-card--selected {
 .comp-drawer-action-btns {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .comp-drawer-action-icon {
   width: 24px;
   height: 24px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1550,8 +1559,12 @@ html.theme-dark .comp-fw-card--selected {
   color: var(--shell-text-muted);
   transition: background 100ms;
 }
+.comp-drawer-action-icon svg { flex-shrink: 0; }
+.comp-drawer-action-icon--filter { color: var(--fg-1, #101010); }
 
 .comp-drawer-action-icon:hover { background: var(--shell-hover); }
+.comp-drawer-action-icon--active { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
+.comp-drawer-action-icon--active:hover { background: var(--pai-indigo-tint); }
 
 .comp-drawer-download-btn {
   display: inline-flex;
@@ -1671,7 +1684,9 @@ html.theme-dark .comp-fw-card--selected {
   position: fixed;
   inset: 0;
   z-index: 9100;
-  background: rgba(0,0,0,0.38);
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1683,7 +1698,7 @@ html.theme-dark .comp-fw-card--selected {
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
   border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: var(--shadow-modal, 0 24px 48px rgba(16,16,16,0.16));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1691,10 +1706,16 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 .ct-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   padding: 16px 20px 12px;
   border-bottom: 1px solid var(--shell-border);
   flex-shrink: 0;
 }
+
+.ct-modal__header-text { min-width: 0; }
 
 .ct-modal__title {
   font-size: 14px;
@@ -1702,12 +1723,26 @@ html.theme-dark .comp-fw-card--selected {
   color: var(--shell-text);
   margin-bottom: 4px;
 }
+.ct-modal__title.warning { color: var(--pai-med-fg); }
+.ct-modal__title.danger { color: var(--pai-crit-fg); }
 
 .ct-modal__subtitle {
   font-size: 11px;
   color: var(--shell-text-muted);
   line-height: 1.5;
 }
+
+.ct-modal__close {
+  width: 24px; height: 24px;
+  border: none; background: transparent;
+  color: var(--shell-text-muted);
+  font-size: 14px; line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ct-modal__close:hover { background: var(--shell-hover); }
 
 .ct-modal__body {
   padding: 16px 20px;
@@ -1809,12 +1844,14 @@ html.theme-dark .comp-fw-card--selected {
 .ct-btn--create:disabled { opacity: 0.38; cursor: not-allowed; }
 
 .ct-btn--danger {
-  background: var(--danger-fg);
-  color: #fff;
-  border-color: var(--danger-fg);
+  background: rgba(105,31,31,0.25);
+  color: #e87c7c;
+  border-color: transparent;
 }
+html.theme-light .ct-btn--danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
 
-.ct-btn--danger:hover { background: var(--danger-fg-pressed); border-color: var(--danger-fg-pressed); }
+.ct-btn--danger:hover { background: rgba(105,31,31,0.35); }
+html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 
 /* warning notice */
 .ct-warning {
@@ -3042,13 +3079,21 @@ html.theme-dark .comp-fw-card--selected {
   overflow-y: auto;
 }
 
-.cfp-th-actions { width: 72px; }
+/* `.ds-th` (navigator.css) is a single class, same specificity as `.cfp-th-actions`
+   alone — cascade order between the two stylesheets isn't guaranteed, so combine
+   both classes on the selector to win unambiguously regardless of import order. */
+.cfp-th-actions { width: 44px; }
+.ds-th.cfp-th-actions { text-align: center; }
 
 .cfp-td-title {
   font-weight: 500;
   color: var(--shell-text);
   white-space: nowrap;
 }
+
+.cfp-tr--clickable { cursor: pointer; }
+.cfp-tr--clickable:hover td { background: rgba(0, 0, 0, 0.02); }
+.cfp-tr--clickable:hover .cfp-td-title { color: var(--pai-indigo); }
 
 .cfp-entity-cell {
   display: flex;
@@ -3068,6 +3113,7 @@ html.theme-dark .comp-fw-card--selected {
 .cfp-td-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 }
 

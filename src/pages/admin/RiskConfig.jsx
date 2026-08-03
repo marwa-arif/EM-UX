@@ -96,7 +96,7 @@ export function NotificationRulesSection({ onConfirm }) {
 
   const requestDelete = (r) => onConfirm({
     title: `Delete "${r.name}"?`,
-    body: 'This notification rule will no longer fire. This action cannot be undone.',
+    body: "This rule will no longer fire. Can't be undone.",
     confirmLabel: 'Delete',
     onConfirm: () => setRules(prev => prev.filter(x => x.id !== r.id)),
   });

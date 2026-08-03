@@ -42,7 +42,23 @@
 .xo3-col--hero { flex: 0 0 308px; }
 .xo3-divider { padding-left: 24px; border-left: 1px solid var(--shell-border); align-items: stretch; }
 
-.xo3-col-label { font-size: 14px; font-weight: 500; color: var(--shell-text-muted); }
+.xo3-col-label { font-size: 14px; font-weight: 500; color: var(--shell-text-muted); display: inline-flex; align-items: center; gap: 4px; }
+
+/* Info icon hover tooltip — explains how each column's score is derived */
+.xo3-info-tip { position: relative; display: inline-flex; align-items: center; cursor: default; }
+.xo3-info-tip-card {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--card-bg); color: var(--shell-text, #101010);
+  border-radius: 8px; padding: 12px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-size: 12px; font-weight: 400; line-height: 1.6; text-align: left;
+  width: max-content; max-width: 280px; white-space: normal;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 120ms;
+  z-index: 100;
+}
+.xo3-info-tip-card--right { left: auto; right: 0; }
+.xo3-info-tip:hover .xo3-info-tip-card { opacity: 1; visibility: visible; }
+.xo3-icon-muted { color: var(--shell-text-muted); }
 
 /* ── Score gauge — banded dial + needle ────────────────────────────
    The colored zones are the instrument; the needle just marks a position
@@ -120,7 +136,7 @@
 .xo3-mrow-chip--caution { color: var(--pai-med-fg); background: var(--pai-med-bg); }
 .xo3-mrow-chip--low     { color: var(--pai-low-fg); background: var(--pai-low-bg); }
 
-/* ── Enterprise score hero ring ───────────────────────────────── */
+/* ── Exposure score hero ring ────────────────────────────────── */
 .xo3-hero-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
 .xo3-hero-body { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .xo3-hero-score-row { display: flex; align-items: baseline; gap: 4px; }
