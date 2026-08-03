@@ -129,7 +129,7 @@ const STUDIO_MODEL = [
   ]},
 ];
 
-function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onModeChange, ux3Active = false }) {
+function LeftNav({ current, onNav, collapsed, onToggleCollapse, onExpand, mode = 'em', onModeChange, ux3Active = false }) {
   const model = [
     { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
     { id: 'workspace',  label: 'Workspace',       icon: 'navbar-workspace', dividerAfter: true },
@@ -270,6 +270,7 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
               activeChild={activeChild}
               isOpen={openIds.has(item.id) || activeParent === item.id}
               onToggle={() => toggle(item.id)}
+              onExpand={onExpand}
               onNav={navigate}
             />
             {item.dividerAfter && <div className="leftnav__divider" />}
@@ -314,13 +315,22 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
   );
 }
 
-function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
+function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggle, onExpand, onNav }) {
   const hasChildren = item.children && item.children.length;
   const treatAsLeaf = !hasChildren;
+  // Grey = this section is expanded (ambient — may just be a preview, see openIds above).
+  // Accent = this exact destination is the current page — same meaning as a selected
+  // child, so a leaf item (no children of its own) gets the same treatment a child does.
+  const isExpanded = hasChildren && isOpen;
+  const isSelected = treatAsLeaf && isActiveParent;
 
   const handleClick = () => {
-    if (treatAsLeaf) onNav(item.navigateId ?? item.id);
-    else onToggle();
+    if (treatAsLeaf) { onNav(item.navigateId ?? item.id); return; }
+    // Collapsed rail hides the children list entirely, so a click that only
+    // toggled `openIds` would look like nothing happened — expand the rail
+    // too so the dropdown becomes visible.
+    if (collapsed) onExpand?.();
+    onToggle();
   };
 
   return (
@@ -331,18 +341,28 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
         className={[
           'nav-item__btn',
           collapsed ? 'nav-item__btn--collapsed' : '',
-          (hasChildren ? isOpen : isActiveParent) ? 'nav-item__btn--active' : '',
+          isExpanded ? 'nav-item__btn--active' : '',
+          isSelected ? 'nav-item__btn--selected' : '',
         ].filter(Boolean).join(' ')}
       >
         {item.iconNode ? (
-          <span className={`nav-item__icon${(hasChildren ? isOpen : isActiveParent) ? ' nav-item__icon--active' : ''}`}>
+          <span className={`nav-item__icon${isExpanded ? ' nav-item__icon--active' : ''}${isSelected ? ' nav-item__icon--selected' : ''}`}>
             {item.iconNode}
           </span>
+        ) : isSelected ? (
+          <span
+            className="nav-item__icon nav-item__icon--masked"
+            style={{
+              maskImage: `url('assets/icons/${item.icon}.svg')`,
+              WebkitMaskImage: `url('assets/icons/${item.icon}.svg')`,
+              maskMode: 'alpha',
+            }}
+          />
         ) : (
           <img
             src={`assets/icons/${item.icon}.svg`}
             width={16} height={16}
-            className={`nav-item__icon${(hasChildren ? isOpen : isActiveParent) ? ' nav-item__icon--active' : ''}`}
+            className={`nav-item__icon${isExpanded ? ' nav-item__icon--active' : ''}`}
             alt=""
           />
         )}

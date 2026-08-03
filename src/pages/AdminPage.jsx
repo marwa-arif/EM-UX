@@ -168,13 +168,13 @@ function AdminPage({ onNav, theme, onToggleTheme }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">{confirmAction.title}</span>
+              <span className={`ds-modal-title ${confirmAction.tier === 'warning' ? 'warning' : 'danger'}`}>{confirmAction.title}</span>
               <button className="ds-modal-close" onClick={() => setConfirmAction(null)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">{confirmAction.body}</div>
             <div className="ds-modal-footer">
               <button className="ds-btn sz-md t-outline" onClick={() => setConfirmAction(null)}>Cancel</button>
-              <button className="ds-btn sz-md t-danger" onClick={() => { confirmAction.onConfirm(); setConfirmAction(null); }}>
+              <button className={`ds-btn sz-md ${confirmAction.tier === 'warning' ? 't-primary' : 't-danger'}`} onClick={() => { confirmAction.onConfirm(); setConfirmAction(null); }}>
                 {confirmAction.confirmLabel}
               </button>
             </div>

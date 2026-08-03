@@ -45,6 +45,8 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
     return () => document.removeEventListener('mousedown', onDown);
   }, [exploreOpen]);
 
+  const savedFilterChip = activeFilters.find(f => f.attrId === 'saved-filter');
+
   const handlePillClick = () => {
     if (!filterPillOpen && pillBtnRef.current && subheaderRef.current) {
       const pillRect = pillBtnRef.current.getBoundingClientRect();
@@ -155,9 +157,17 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               <button
                 ref={pillBtnRef}
                 onClick={handlePillClick}
-                className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}`}
+                title={savedFilterChip ? `Saved filter applied: ${savedFilterChip.value}` : undefined}
+                className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}${savedFilterChip ? ' subheader__filter-pill--saved' : ''}`}
               >
-                Active Filters
+                {savedFilterChip ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="subheader__filter-pill-saved-icon">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span className="subheader__filter-pill-saved-name">Saved: {savedFilterChip.value}</span>
+                  </>
+                ) : 'Active Filters'}
                 {activeFilterCount > 0 && (
                   <span className="subheader__filter-count">{activeFilterCount}</span>
                 )}

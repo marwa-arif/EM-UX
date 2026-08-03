@@ -77,10 +77,46 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 500;
+  font-family: inherit;
   color: var(--pai-indigo);
   background: var(--pai-indigo-tint);
+  border: 1px solid transparent;
   border-radius: 44px;
   padding: 2px 8px;
+  cursor: pointer;
+}
+.dev-newly-added:hover { border-color: var(--pai-indigo); }
+.dev-newly-added--active { background: var(--pai-indigo); color: var(--pai-surface, #fff); }
+
+.dev-asset-filter-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+.dev-asset-filter-clear {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pai-indigo);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dev-td-new-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pai-indigo);
+  background: var(--pai-indigo-tint);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
 }
 
 
@@ -895,6 +931,9 @@
 
 .dev-tip-trend-up   { color: var(--pai-crit-fg); display: flex; align-items: center; gap: 2px; }
 .dev-tip-trend-down { color: var(--pai-green);   display: flex; align-items: center; gap: 2px; }
+
+.dev-tip-drivers { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 4px; }
+.dev-tip-driver-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 11px; }
 
 /* ── Type legend (multi-line, inside drawer) ─────────────────── */
 

@@ -14,7 +14,7 @@ const GROUP_BY_OPTIONS = [
 const GROUP_BY_DATA = {
   'Exposure Category': [
     { name: 'Control Gap',            score: 584, exposurePct: 49,  findingsPct: 46,  assetsPct: 100 },
-    { name: 'Behavioural Indicator',  score: 558, exposurePct: 0.4, findingsPct: 0.4, assetsPct: 0.4 },
+    { name: 'Misconfiguration',       score: 558, exposurePct: 0.4, findingsPct: 0.4, assetsPct: 0.4 },
     { name: 'Software Vulnerability', score: 502, exposurePct: 51,  findingsPct: 54,  assetsPct: 7   },
   ],
   'Asset Origin': [
@@ -148,6 +148,43 @@ const EXP_FINDINGS_TREND = {
   '1Y': buildTrend(TREND_LABELS['1Y'], [90000, 110000, 130000, 150000, 180000, 210000, 250000, 300000, 380000, 460000, 780000, 1600000]),
 };
 
+// ── Trend Explore: driver attribution (derived from value deltas — no backend "why" data exists yet) ──
+const DRIVER_CATEGORIES = EXPOSURE_BY_OPTIONS.slice(1); // Cloud, Device, Identity, Control Gap, Software Vulnerability, Misconfiguration
+
+// When "Exposure by" is scoped to one entity, citing that same entity as its own driver is circular —
+// drill down one level into the specific factors behind that entity's trend instead.
+const ENTITY_SUB_DRIVERS = {
+  'Cloud': ['S3 Bucket Misconfigurations', 'Public IAM Roles', 'Unencrypted Storage'],
+  'Device': ['Unpatched OS Vulnerabilities', 'EDR Coverage Gaps', 'Stale Certificates'],
+  'Identity': ['Overprivileged Accounts', 'Stale Service Accounts', 'MFA Gaps'],
+  'Control Gap': ['Missing Endpoint Controls', 'Disabled Security Policies', 'Unmonitored Segments'],
+  'Software Vulnerability': ['Critical CVEs', 'End-of-Life Software', 'Unpatched Libraries'],
+  'Misconfiguration': ['Open Network Ports', 'Default Credentials', 'Excessive Permissions'],
+};
+
+function deriveDrivers(data, idx, offset = 0, entity = 'All') {
+  if (idx <= 0) return null;
+  const delta = data[idx].value - data[idx - 1].value;
+  if (!delta) return null;
+  const pool = entity !== 'All' && ENTITY_SUB_DRIVERS[entity] ? ENTITY_SUB_DRIVERS[entity] : DRIVER_CATEGORIES;
+  const n = pool.length;
+  const catA = pool[(idx + offset) % n];
+  const catB = pool[(idx + offset + 2) % n];
+  const sign = delta > 0 ? 1 : -1;
+  return [
+    { label: catA, pct: sign * (62 + (idx % 3) * 4) / 10 },
+    { label: catB, pct: sign * (24 + (idx % 2) * 3) / 10 },
+  ];
+}
+
+function summarizePeriodDrivers(data, offset = 0, entity = 'All') {
+  const first = data[0].value, last = data[data.length - 1].value;
+  const pct = first ? ((last - first) / first) * 100 : 0;
+  if (Math.abs(pct) < 0.05) return null;
+  const drivers = deriveDrivers(data, data.length - 1, offset, entity);
+  return { pct, isUp: pct > 0, drivers };
+}
+
 // ── Icons ─────────────────────────────────────────────────────────
 const IcSort = () => (
   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -197,6 +234,24 @@ function InfoTooltip({ children, align = 'left' }) {
   );
 }
 
+// ── Trend Explore: always-visible driver summary line ─────────────
+function TrendDriverSummary({ data, offset = 0, entity = 'All' }) {
+  const summary = summarizePeriodDrivers(data, offset, entity);
+  if (!summary) return null;
+  const { isUp, pct, drivers } = summary;
+  const scopeText = entity !== 'All' ? ` within ${entity}` : '';
+  return (
+    <div className="exp-trend-card-summary">
+      {isUp ? <IcTrendUp size={12} /> : <IcTrendDown size={12} color="var(--pai-teal)" />}
+      <span>
+        {isUp ? 'Up' : 'Down'} {Math.abs(pct).toFixed(1)}% over this period{scopeText} — mainly driven by{' '}
+        <strong>{drivers[0].label}</strong> ({drivers[0].pct > 0 ? '+' : ''}{drivers[0].pct.toFixed(1)}%) and{' '}
+        <strong>{drivers[1].label}</strong> ({drivers[1].pct > 0 ? '+' : ''}{drivers[1].pct.toFixed(1)}%).
+      </span>
+    </div>
+  );
+}
+
 // ── Small inline SVG icons for bubbles ───────────────────────────
 const IcExposure = ({ color = '#6360D8', size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
@@ -242,11 +297,14 @@ function Bubble({
   tooltipBelow = false,
 }) {
   const isHigh = severity === 'H';
-  const color = isHigh ? 'var(--pai-crit-fg)' : 'var(--pai-med-fg)';
-  const tagBg = isHigh ? 'var(--pai-crit-bg)' : 'var(--pai-warn-bg)';
+  const isLow = severity === 'L';
+  const color = isHigh ? 'var(--pai-crit-fg)' : isLow ? 'var(--pai-low-fg)' : 'var(--pai-med-fg)';
+  const tagBg = isHigh ? 'var(--pai-crit-bg)' : isLow ? 'var(--pai-low-bg)' : 'var(--pai-warn-bg)';
   const gradient = isHigh
     ? 'linear-gradient(177deg, #F48484 2%, #E15252 97%)'
-    : 'linear-gradient(177deg, #E6B36D 2%, #D98B1D 97%)';
+    : isLow
+      ? 'linear-gradient(177deg, #8ED1AE 2%, #31A56D 97%)'
+      : 'linear-gradient(177deg, #E6B36D 2%, #D98B1D 97%)';
   const [hovered, setHovered] = useState(false);
   const showTooltip = hovered && sumExposure != null;
 
@@ -296,7 +354,7 @@ function Bubble({
   );
 }
 
-// ── Enterprise score gauge ────────────────────────────────────────
+// ── Exposure score gauge ──────────────────────────────────────────
 const GAUGE_SIZE = 300;
 const OUTER_R = 143;
 const INNER_R = 116;
@@ -304,8 +362,8 @@ const TICK_COUNT = 80;
 const cx = GAUGE_SIZE / 2;
 const cy = GAUGE_SIZE / 2;
 
-const W_OUTER = 2.5;
-const W_INNER = 0.6;
+const W_TICK = 1.4;
+const GAUGE_SCORE = 912;
 
 const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
   const a = (i / TICK_COUNT) * 2 * Math.PI;
@@ -313,15 +371,15 @@ const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
   const ox = cx + OUTER_R * sin, oy = cy - OUTER_R * cos;
   const ix = cx + INNER_R * sin, iy = cy - INNER_R * cos;
   const points = [
-    `${ox + W_OUTER * cos},${oy + W_OUTER * sin}`,
-    `${ox - W_OUTER * cos},${oy - W_OUTER * sin}`,
-    `${ix - W_INNER * cos},${iy - W_INNER * sin}`,
-    `${ix + W_INNER * cos},${iy + W_INNER * sin}`,
+    `${ox + W_TICK * cos},${oy + W_TICK * sin}`,
+    `${ox - W_TICK * cos},${oy - W_TICK * sin}`,
+    `${ix - W_TICK * cos},${iy - W_TICK * sin}`,
+    `${ix + W_TICK * cos},${iy + W_TICK * sin}`,
   ].join(' ');
-  return <polygon key={i} points={points} fill="#DCDCDC" />;
+  return <polygon key={i} points={points} fill="var(--shell-border-2, #DCDCDC)" />;
 });
 
-function EnterpriseScore() {
+function ExposureScoreGauge() {
   const innerDia = (INNER_R - 6) * 2;
   const [hovered, setHovered] = useState(false);
   return (
@@ -336,7 +394,7 @@ function EnterpriseScore() {
         <svg className="exp-gauge-ticks" width={GAUGE_SIZE} height={GAUGE_SIZE}>{ticks}</svg>
         <div className="exp-gauge-inner" style={{ width: innerDia, height: innerDia }}>
           <div className="exp-gauge-score-row">
-            <span className="exp-gauge-score">912</span>
+            <span className="exp-gauge-score">{GAUGE_SCORE}</span>
             <span className="exp-gauge-denom">/1000</span>
           </div>
           <span className="exp-gauge-label">Exposure Score</span>
@@ -401,7 +459,7 @@ function ExposureOverviewSection({ onNav }) {
       sumExposure: '413.2M', secondaryLabel: 'Total Findings', secondaryValue: '727,760', secondaryIcon: <IcTotalFindings /> },
     { score: 732, severity: 'M', icon: <IcExposure />, label: 'Software Vulnerability', size: 86,
       sumExposure: '422.0M', secondaryLabel: 'Total Findings', secondaryValue: '860,059', secondaryIcon: <IcTotalFindings /> },
-    { score: 356, severity: 'M', icon: <IcExposure />, label: 'Misconfiguration',        size: 78,
+    { score: 108, severity: 'L', icon: <IcExposure />, label: 'Misconfiguration',        size: 78,
       sumExposure: '2,344',  secondaryLabel: 'Total Findings', secondaryValue: '4',       secondaryIcon: <IcTotalFindings /> },
   ];
 
@@ -467,8 +525,8 @@ function ExposureOverviewSection({ onNav }) {
           ))}
 
           <div className="exp-ov-col">
-            <EnterpriseScore />
-            {colLabel('Enterprise Score', 'The Enterprise Score represents the overall exposure level of the organization. It is calculated based on the scores of all findings across the organization. The calculation uses a root mean square (RMS) method, which gives more weight to higher-risk findings, ensuring that critical issues have a greater impact on the overall score.')}
+            <ExposureScoreGauge />
+            {colLabel('Exposure Score', 'The Exposure Score represents the overall exposure level of the organization, on a scale of 0-1000. It is calculated based on the scores of all findings across the organization, using a root mean square (RMS) method that gives more weight to higher-risk findings, so critical issues have a greater impact on the overall score.')}
           </div>
           <div className="exp-ov-col">
             <BubbleTriangle items={attackSurface} indexOffset={0} />
@@ -521,7 +579,7 @@ function YAxisTitle({ value, viewBox }) {
   );
 }
 
-function makeExpTrendTooltip(data, { label, format }) {
+function makeExpTrendTooltip(data, { label, format, offset = 0, entity = 'All', color = 'var(--pai-teal)' }) {
   return function ExpTrendTooltip({ active, payload, label: pointLabel }) {
     if (!active || !payload?.length) return null;
     const value = payload[0].value;
@@ -529,8 +587,9 @@ function makeExpTrendTooltip(data, { label, format }) {
     const prev = idx > 0 ? data[idx - 1].value : null;
     const pct = prev ? ((value - prev) / prev) * 100 : null;
     const isUp = pct > 0;
+    const drivers = idx > 0 ? deriveDrivers(data, idx, offset, entity) : null;
     return (
-      <div className="dev-tip-card dev-tip-card--md" style={{ '--tip-border': 'var(--pai-indigo)' }}>
+      <div className="dev-tip-card dev-tip-card--md" style={{ '--tip-border': color }}>
         <div className="dev-tip-title">{fmtTipDate(pointLabel)}</div>
         <div className={`dev-tip-row dev-tip-row--bold${pct !== null ? ' dev-tip-row--mb' : ''}`}>
           <span className="dev-tip-text">{label}</span>
@@ -543,6 +602,18 @@ function makeExpTrendTooltip(data, { label, format }) {
               {Math.abs(pct).toFixed(2)}%
             </span>
             &nbsp;from last week
+          </div>
+        )}
+        {drivers && (
+          <div className="dev-tip-drivers">
+            {drivers.map(d => (
+              <div className="dev-tip-driver-row" key={d.label}>
+                <span className="dev-tip-muted">{d.label}</span>
+                <span className={d.pct > 0 ? 'dev-tip-trend-up' : 'dev-tip-trend-down'}>
+                  {d.pct > 0 ? '+' : ''}{d.pct.toFixed(1)}%
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -615,6 +686,7 @@ function TrendExploreDrawer({ onClose }) {
               <span className="exp-trend-card-spacer" />
               <ExpMetricToggle value={metric} onChange={setMetric} />
             </div>
+            <TrendDriverSummary data={scoreData} offset={0} entity={exposureBy} />
             <div className="exp-trend-card-chart exp-trend-card-chart--lg">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={scoreData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
@@ -634,6 +706,8 @@ function TrendExploreDrawer({ onClose }) {
                     content={makeExpTrendTooltip(scoreData, {
                       label: metric === 'sum' ? 'Sum of Exposure' : 'Score',
                       format: v => metric === 'sum' ? fmtCompact(v) : v.toFixed(2),
+                      offset: 0,
+                      entity: exposureBy,
                     })}
                     cursor={false}
                   />
@@ -650,6 +724,7 @@ function TrendExploreDrawer({ onClose }) {
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Risk/Asset <InfoTooltip>This metric measures the average risk burden per device in your environment. It is derived by combining the total exposure score with the number of affected devices across all findings. A higher value suggests that risk is concentrated across fewer assets or that individual assets carry a disproportionate level of risk, helping you prioritise asset-level remediation.</InfoTooltip></span>
               </div>
+              <TrendDriverSummary data={riskData} offset={1} entity={exposureBy} />
               <div className="exp-trend-card-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={riskData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
@@ -664,7 +739,7 @@ function TrendExploreDrawer({ onClose }) {
                       label={{ value: TREND_UNIT[tRange], position: 'insideBottom', offset: -16, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                     <YAxis tick={axisTick} axisLine={false} tickLine={false} width={60} tickFormatter={fmtCompact}
                       label={<YAxisTitle value="Density" />} />
-                    <Tooltip content={makeExpTrendTooltip(riskData, { label: 'Density', format: v => v.toLocaleString() })} cursor={false} />
+                    <Tooltip content={makeExpTrendTooltip(riskData, { label: 'Density', format: v => v.toLocaleString(), offset: 1, entity: exposureBy })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
                       fill="url(#expTrendRiskFill)" dot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
                       activeDot={{ r: 5, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
@@ -678,6 +753,7 @@ function TrendExploreDrawer({ onClose }) {
                 <span className="exp-trend-card-title">Total Findings <InfoTooltip>This represents the total count of distinct findings identified across all finding categories (e.g., vulnerabilities, misconfigurations, compliance gaps). The trend reflects how your finding landscape is evolving over time — an upward trend may indicate newly discovered issues or expanded scan coverage, while a downward trend signals active remediation progress.</InfoTooltip></span>
                 <span className="exp-trend-card-badge exp-trend-card-badge--muted">{fmtCompact(findingsCurrent)}</span>
               </div>
+              <TrendDriverSummary data={findingsData} offset={3} entity={exposureBy} />
               <div className="exp-trend-card-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={findingsData} margin={{ top: 16, right: 24, bottom: 32, left: 16 }}>
@@ -692,7 +768,7 @@ function TrendExploreDrawer({ onClose }) {
                       label={{ value: TREND_UNIT[tRange], position: 'insideBottom', offset: -16, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                     <YAxis tick={axisTick} axisLine={false} tickLine={false} width={60} tickFormatter={fmtCompact}
                       label={<YAxisTitle value="Count" />} />
-                    <Tooltip content={makeExpTrendTooltip(findingsData, { label: 'Count', format: v => v.toLocaleString() })} cursor={false} />
+                    <Tooltip content={makeExpTrendTooltip(findingsData, { label: 'Count', format: v => v.toLocaleString(), offset: 3, entity: exposureBy })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
                       fill="url(#expTrendFindingsFill)" dot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
                       activeDot={{ r: 5, fill: 'var(--pai-teal)', strokeWidth: 0 }} />

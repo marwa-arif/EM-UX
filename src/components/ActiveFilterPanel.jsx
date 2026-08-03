@@ -304,6 +304,9 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
 
   const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
 
+  const savedFilterIdx  = activeFilters.findIndex(f => f.attrId === 'saved-filter')
+  const savedFilterChip = savedFilterIdx >= 0 ? activeFilters[savedFilterIdx] : null
+
   const entityGroups = useMemo(() => {
     const entities = new Map()
     activeFilters.forEach((chip, idx) => {
@@ -351,6 +354,16 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
         </div>
 
         <div className="afp-body">
+          {savedFilterChip && (
+            <div className="afp-saved-filter-banner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="afp-saved-filter-banner__icon">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span className="afp-saved-filter-banner__label">Saved Filter applied</span>
+              <span className="afp-saved-filter-banner__name">{savedFilterChip.value}</span>
+              <button className="afp-fc-remove" title="Remove saved filter" onClick={() => onRemove?.(savedFilterIdx)}>×</button>
+            </div>
+          )}
           {entityTree.map(({ entity, relation }, entityIdx) => {
             const explicitAttrs    = entityGroups.find(g => g.entity === entity)?.attrs || []
             const showEntityWhere  = explicitAttrs.length > 0 || implicitFilters
@@ -464,9 +477,9 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       {showResetConfirm && (
         <div className="afp-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setShowResetConfirm(false) }}>
           <div className="afp-modal">
-            <h3 className="afp-modal-title">Reset All Filters</h3>
+            <h3 className="afp-modal-title danger">Reset All Filters</h3>
             <p className="afp-modal-body">
-              This will remove all explicit filters from your current view. Implicit filters will remain active. This action cannot be undone.
+              Removes all explicit filters from this view. This can't be undone.
             </p>
             <div className="afp-modal-actions">
               <button className="afp-modal-cancel" onClick={() => setShowResetConfirm(false)}>Cancel</button>

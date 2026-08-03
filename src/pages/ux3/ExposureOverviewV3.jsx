@@ -54,6 +54,19 @@ const IcTrendDown = () => (
     <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
   </svg>
 );
+const IcInfo = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="xo3-icon-muted">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>
+);
+function InfoTooltip({ children, align = 'left' }) {
+  return (
+    <span className="xo3-info-tip">
+      <IcInfo />
+      <div className={`xo3-info-tip-card${align === 'right' ? ' xo3-info-tip-card--right' : ''}`}>{children}</div>
+    </span>
+  );
+}
 const IcSearch = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -267,7 +280,7 @@ function ChartRow({ score, icon, label }) {
   );
 }
 
-function EnterpriseScore({ score }) {
+function ExposureScoreGauge({ score }) {
   const b = band(score);
   return (
     <div className="xo3-hero-ring-wrap">
@@ -363,8 +376,11 @@ export default function ExposureOverviewV3() {
         {!collapsed && (
           <div className="xo3-body">
             <div className="xo3-col xo3-col--hero">
-              <EnterpriseScore score={912} />
-              <div className="xo3-col-label">Enterprise Score</div>
+              <ExposureScoreGauge score={912} />
+              <div className="xo3-col-label">
+                Exposure Score
+                <InfoTooltip>The Exposure Score represents the overall exposure level of the organization, on a scale of 0-1000. It is calculated based on the scores of all findings across the organization, using a root mean square (RMS) method that gives more weight to higher-risk findings, so critical issues have a greater impact on the overall score.</InfoTooltip>
+              </div>
             </div>
 
             <div className="xo3-col xo3-divider">
@@ -373,7 +389,10 @@ export default function ExposureOverviewV3() {
                 { score: 893, icon: <IcDevice />, label: 'Device' },
                 { score: 601, icon: <IcIdentity />, label: 'Identity' },
               ]} />
-              <div className="xo3-col-label">Attack Surface</div>
+              <div className="xo3-col-label">
+                Attack Surface
+                <InfoTooltip>The attack surface score is derived as the root mean square (RMS) of the asset exposure scores across each asset within an attack surface, enabling security teams to pinpoint high-risk areas and prioritize remediation efforts more effectively.</InfoTooltip>
+              </div>
             </div>
 
             <div className="xo3-col xo3-divider">
@@ -382,7 +401,10 @@ export default function ExposureOverviewV3() {
                 { score: 732, icon: <IcExposure />, label: 'Software Vulnerability' },
                 { score: 230, icon: <IcExposure />, label: 'Misconfiguration' },
               ]} />
-              <div className="xo3-col-label">Exposure Categories</div>
+              <div className="xo3-col-label">
+                Exposure Categories
+                <InfoTooltip align="right">An exposure category's score is the root mean square (RMS) of all findings within each exposure category, considering factors like exploitability, ease of exploit, internet accessibility, open ports, and more.</InfoTooltip>
+              </div>
             </div>
           </div>
         )}

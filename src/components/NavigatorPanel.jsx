@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Ic } from '../ui.jsx'
+import { createExchange } from './ReasoningEngine.jsx'
+import { BuildExchangeTurn, parseWidgetIntent, buildWidgetSpec, detectChartId, cleanWidgetTitle } from '../pages/NavigatorPage.jsx'
 
 // ── Static data ───────────────────────────────────────────────────────
 const AGENTS = [
@@ -587,34 +589,164 @@ const FIRSTRUN_SUGGESTIONS = [
   'Summarize CVEs affecting my environment',
 ]
 
-function FirstRunHero({ onSend }) {
+// Per-page context: opening Navigator from a specific EM page scopes its
+// suggestions/quick actions to that page instead of the generic defaults.
+// Keyed by the same page ids as App.jsx's PAGE_META.
+const PAGE_CONTEXT = {
+  'exposure/overview': {
+    firstRun: ["What's driving my exposure score up this month?", 'Which asset type contributes most to my attack surface?'],
+    quick: [
+      { sub: 'Digest of exposure trends', query: 'Summarize my current exposure overview and key trends' },
+      { sub: 'Surface top risk drivers',   query: 'Analyze my exposure overview and surface the key risk drivers' },
+    ],
+    chips: [{ count: '912', label: 'Exposure Score' }, { count: '1.6M', label: 'Total Findings' }],
+  },
+  'exposure/findings': {
+    firstRun: ['What are my most critical findings right now?', 'Which findings are trending upward this week?'],
+    quick: [
+      { sub: 'Digest of open findings',      query: 'Summarize the current findings on this page' },
+      { sub: 'Surface top risk findings',    query: 'Analyze these findings and surface the highest-risk ones' },
+    ],
+    chips: [{ count: '56k', label: 'Total Exposure' }, { count: '3.28M', label: 'Total Findings' }],
+  },
+  'discover/device': {
+    firstRun: ['Which devices have the highest exposure score?', 'Show devices missing critical patches'],
+    quick: [
+      { sub: 'Digest of device posture',    query: 'Summarize device posture on this page' },
+      { sub: 'Surface highest-risk devices', query: 'Analyze these devices and surface the highest-risk ones' },
+    ],
+    chips: [{ count: '12,382', label: 'Devices' }, { count: '953', label: 'Critical' }],
+  },
+  'discover/cloud': {
+    firstRun: ['Which cloud accounts have the most critical findings?', 'Show misconfigured storage resources'],
+    quick: [
+      { sub: 'Digest of cloud posture',      query: 'Summarize cloud posture on this page' },
+      { sub: 'Surface top misconfigurations', query: 'Analyze these cloud accounts and surface the top misconfigurations' },
+    ],
+    chips: [{ count: '11,763', label: 'Cloud Assets' }, { count: '750', label: 'Critical' }],
+  },
+  'discover/identity': {
+    firstRun: ['Which identities have access to critical assets?', 'Show identities with excessive permissions'],
+    quick: [
+      { sub: 'Digest of identity risk',      query: 'Summarize identity risk on this page' },
+      { sub: 'Surface over-privileged access', query: 'Analyze these identities and surface excessive-permission risk' },
+    ],
+    chips: [{ count: '87,073', label: 'Identities' }, { count: '27', label: 'Critical' }],
+  },
+  'report/compliance': {
+    firstRun: ['Where are my biggest compliance gaps?', 'Which controls are failing most often?'],
+    quick: [
+      { sub: 'Digest of compliance status',  query: 'Summarize compliance status on this page' },
+      { sub: 'Surface the biggest gaps',      query: 'Analyze compliance on this page and surface the biggest gaps' },
+    ],
+    chips: [{ count: '89%', label: 'Compliance Score' }, { count: '7.75M', label: 'Controls Passed' }],
+  },
+  'report/assessments': {
+    firstRun: ['Summarize my latest assessment results', 'Which assessments are overdue for review?'],
+    quick: [
+      { sub: 'Digest of assessment results',  query: 'Summarize the latest assessment results' },
+      { sub: 'Surface overdue assessments',   query: 'Analyze assessments and surface which are overdue for review' },
+    ],
+    chips: [{ count: '25', label: 'Assessments' }, { count: '88,810', label: 'Highest Open Findings' }],
+  },
+  'report/compliance-matrix': {
+    firstRun: ['Which frameworks have the lowest coverage?', 'Show controls mapped to multiple frameworks'],
+    quick: [
+      { sub: 'Digest of framework coverage', query: 'Summarize framework coverage on this compliance matrix' },
+      { sub: 'Surface lowest-coverage areas', query: 'Analyze this compliance matrix and surface the lowest-coverage areas' },
+    ],
+    chips: [{ count: '6', label: 'Frameworks' }],
+  },
+  'report/compliance-findings': {
+    firstRun: ['What are my most common compliance findings?', 'Which compliance findings are still open?'],
+    quick: [
+      { sub: 'Digest of compliance findings', query: 'Summarize the compliance findings on this page' },
+      { sub: 'Surface recurring gaps',         query: 'Analyze these compliance findings and surface recurring gaps' },
+    ],
+    chips: [{ count: '1.08M', label: 'Open Findings' }, { count: '1.39M', label: 'Total Findings' }],
+  },
+  'data-quality/overview': {
+    firstRun: ['Where are my biggest data quality gaps?', 'Which data sources have the most stale records?'],
+    quick: [
+      { sub: 'Digest of data quality',       query: 'Summarize data quality on this page' },
+      { sub: 'Surface the biggest gaps',      query: 'Analyze data quality and surface the biggest gaps' },
+    ],
+  },
+  'data-quality/in-depth': {
+    firstRun: ['Which fields have the highest null rate?', 'Show data quality trends over time'],
+    quick: [
+      { sub: 'Digest of field-level quality', query: 'Summarize field-level data quality on this page' },
+      { sub: 'Surface trending issues',       query: 'Analyze data quality trends and surface what is getting worse' },
+    ],
+  },
+  'remediation/queue': {
+    firstRun: ['What should I remediate first?', 'Which remediation items are overdue?'],
+    quick: [
+      { sub: 'Digest of the queue',          query: 'Summarize the remediation queue on this page' },
+      { sub: 'Surface what to prioritize',    query: 'Analyze the remediation queue and surface what to prioritize' },
+    ],
+  },
+  'remediation/closed': {
+    firstRun: ['Summarize what was remediated this month', 'Which closed items had the highest severity?'],
+    quick: [
+      { sub: 'Digest of closed items',       query: 'Summarize what was remediated recently' },
+      { sub: 'Surface the highest severity', query: 'Analyze closed remediation items and surface the highest-severity ones' },
+    ],
+  },
+  kg: {
+    firstRun: ['What connects this asset to critical findings?', 'Show relationships driving my highest-risk paths'],
+    quick: [
+      { sub: 'Digest of key relationships',  query: 'Summarize the key relationships in this graph' },
+      { sub: 'Surface highest-risk paths',   query: 'Analyze this graph and surface the highest-risk paths' },
+    ],
+    chips: [{ count: '15.5M', label: 'Findings' }, { count: '71,442', label: 'Identities' }],
+  },
+}
+
+const DEFAULT_CHIPS = CTX_PILLS.slice(0, 2).map(p => ({ count: p.count.toLocaleString(), label: p.label }))
+
+function FirstRunHero({ onSend, suggestions = FIRSTRUN_SUGGESTIONS, pageLabel, chips = DEFAULT_CHIPS }) {
   return (
     <div className="np-firstrun" role="region" aria-label="Navigator introduction">
-      <div className="np-firstrun-identity">
-        <div className="np-firstrun-logo"><NavIcon size={44} /></div>
-        <span className="np-firstrun-name">Navigator</span>
+      <div className="np-firstrun-greeting">
+        <h2 className="np-firstrun-title">
+          {pageLabel ? `What can I do for you on ${pageLabel}?` : 'What can I do for you?'}
+        </h2>
+        <p className="np-firstrun-sub">Ask about hosts, findings, identities, or CVEs</p>
       </div>
-      <div className="np-firstrun-bottom">
+
+      <div className="np-firstrun-chips" aria-label="Data available to Navigator">
+        {chips.slice(0, 2).map((c, i) => (
+          <span key={i} className="np-firstrun-chip">
+            <strong>{c.count}</strong> {c.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="np-firstrun-ask">
+        <div className="np-section-label">Try asking</div>
         <div className="np-firstrun-suggestions">
-          {FIRSTRUN_SUGGESTIONS.slice(0, 2).map((q, i) => (
+          {suggestions.slice(0, 2).map((q, i) => (
             <button key={i} className="np-firstrun-suggestion" onClick={() => onSend(q)}>
               {q}
             </button>
           ))}
         </div>
-        <p className="np-firstrun-limit" role="note">
-          Answers are grounded in your connected data. Verify critical findings before acting.
-        </p>
       </div>
+
+      <p className="np-firstrun-limit" role="note">
+        Answers are grounded in your connected data. Verify critical findings before acting.
+      </p>
     </div>
   )
 }
 
 // ── Home view ─────────────────────────────────────────────────────────
-function PanelHome({ onSend, isFirstRun }) {
+function PanelHome({ onSend, isFirstRun, pageId, pageLabel }) {
   const [query, setQuery]   = useState('')
   const [activeCtx, setCtx] = useState(new Set())
   const taRef               = useRef(null)
+  const pageCtx              = PAGE_CONTEXT[pageId]
 
   const toggleCtx = (id) => setCtx(prev => {
     const next = new Set(prev)
@@ -636,9 +768,10 @@ function PanelHome({ onSend, isFirstRun }) {
     <div className="np-home">
       <div className="np-home-scroll">
         {isFirstRun ? (
-          <FirstRunHero onSend={handleSend} />
+          <FirstRunHero onSend={handleSend} suggestions={pageCtx?.firstRun} pageLabel={pageLabel} chips={pageCtx?.chips} />
         ) : (
           <>
+            {pageLabel && <div className="np-builder-caption">Asking about {pageLabel}</div>}
             <div className="np-hero">
               <div className="np-hero-icon" aria-hidden="true"><NavIcon size={24} /></div>
               <div className="np-hero-text">
@@ -651,24 +784,24 @@ function PanelHome({ onSend, isFirstRun }) {
             <div className="np-quick-btns">
               <button
                 className="np-quick-btn primary"
-                onClick={() => handleSend('Summarize current view')}
+                onClick={() => handleSend(pageCtx?.quick?.[0]?.query || 'Summarize current view')}
                 aria-label="Summarize current view"
               >
                 <span className="np-quick-btn-icon" aria-hidden="true"><IcSparkle /></span>
                 <span className="np-quick-btn-text">
                   <span className="np-quick-btn-label">Summarize</span>
-                  <span className="np-quick-btn-sub">Digest of this view</span>
+                  <span className="np-quick-btn-sub">{pageCtx?.quick?.[0]?.sub || 'Digest of this view'}</span>
                 </span>
               </button>
               <button
                 className="np-quick-btn secondary"
-                onClick={() => handleSend('Analyze current page exposure and surface key risks')}
+                onClick={() => handleSend(pageCtx?.quick?.[1]?.query || 'Analyze current page exposure and surface key risks')}
                 aria-label="Analyze this page"
               >
                 <span className="np-quick-btn-icon" aria-hidden="true"><IcZap /></span>
                 <span className="np-quick-btn-text">
                   <span className="np-quick-btn-label">Analyze</span>
-                  <span className="np-quick-btn-sub">Surface key risks</span>
+                  <span className="np-quick-btn-sub">{pageCtx?.quick?.[1]?.sub || 'Surface key risks'}</span>
                 </span>
               </button>
             </div>
@@ -1073,6 +1206,75 @@ function BuilderChat({ builderApi, builderKind = 'assessment', builderContext = 
   )
 }
 
+// ── Prompt-driven dashboard builder ──────────────────────────────────────
+// Triggered from the "Create a dashboard with Navigator" prompt on a brand
+// new, still-empty DashboardCanvas (see its dc-create-hero). Reuses Build
+// mode's actual reasoning engine (BuildExchangeTurn/createExchange from
+// NavigatorPage.jsx) instead of DASHBOARD_BUILDER_STAGES' fixed script, so
+// the generated widget genuinely reflects what was typed — but pushes each
+// finished widget straight onto the already-open canvas via builderApi
+// rather than a separate local canvas the user would have to hand off.
+function PromptDashboardBuilder({ builderApi, initialPrompt }) {
+  const widgetIdSeq = useRef(0)
+  const nextWidgetId = () => (widgetIdSeq.current += 1)
+
+  const [exchanges, setExchanges] = useState(() => [
+    createExchange(initialPrompt, {
+      forceTier: 'build',
+      pendingWidget: buildWidgetSpec(detectChartId(initialPrompt), cleanWidgetTitle(initialPrompt), nextWidgetId()),
+    }),
+  ])
+  const [liveId, setLiveId] = useState(() => exchanges[0].id)
+  const [inputValue, setInputVal] = useState('')
+  const messagesRef = useRef(null)
+
+  useEffect(() => {
+    if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+  }, [exchanges.length])
+
+  const updateExchange = useCallback((id, fn) => {
+    setExchanges(prev => prev.map(ex => ex.id === id ? fn(ex) : ex))
+  }, [])
+
+  const handleWidgetReady = useCallback((widget) => {
+    builderApi?.current?.addWidget?.({ chartId: widget.chartId, label: widget.label, sizeId: widget.sizeId, heightId: widget.heightId })
+  }, [builderApi])
+
+  const handleSend = (text) => {
+    if (!text.trim()) return
+    setInputVal('')
+    const intent = parseWidgetIntent(text)
+    const ex = intent.create
+      ? createExchange(text, { forceTier: 'build', pendingWidget: buildWidgetSpec(intent.chartId, intent.title, nextWidgetId()) })
+      : createExchange(text, { textReply: 'If you want to visualize this, try asking me to "add a chart".' })
+    setExchanges(prev => [...prev, ex])
+    setLiveId(ex.id)
+  }
+
+  return (
+    <div className="np-builder-chat">
+      <div className="np-builder-caption">Building your dashboard</div>
+      <div className="np-prompt-build-messages" ref={messagesRef} role="log" aria-live="polite" aria-label="Building your dashboard">
+        {exchanges.map(ex => (
+          <BuildExchangeTurn
+            key={ex.id}
+            exchange={ex}
+            live={ex.id === liveId}
+            updateExchange={updateExchange}
+            onWidgetReady={handleWidgetReady}
+          />
+        ))}
+      </div>
+      <Composer
+        value={inputValue}
+        onChange={e => setInputVal(e.target.value)}
+        onSend={() => handleSend(inputValue)}
+        placeholder="Add another widget or refine the dashboard…"
+      />
+    </div>
+  )
+}
+
 // ── View modes ────────────────────────────────────────────────────────
 const VIEW_MODES = [
   { id: 'sidebar',    label: 'Sidebar',     Icon: IcSidebar },
@@ -1081,7 +1283,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null }) {
   const [view, setView]             = useState('home')
 
   // Enter the scripted assessment-builder chat when triggered externally
@@ -1466,9 +1668,11 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         {/* ── Body ── */}
         <div className="np-panel-body">
           {view === 'builder'
-            ? <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />
+            ? (builderKind === 'dashboard' && builderContext?.initialPrompt
+                ? <PromptDashboardBuilder key={`prompt:${builderContext.initialPrompt}`} builderApi={builderApi} initialPrompt={builderContext.initialPrompt} />
+                : <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />)
             : view === 'home'
-            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} />
+            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} />
             : <PanelChat
                 query={activeQuery}
                 onNewChat={handleNew}
