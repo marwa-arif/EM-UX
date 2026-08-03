@@ -12,6 +12,7 @@ const ATTR_ENTITY = {
   'business-unit':     'Host',
   'type-assessment':   'Assessment',
   'saved-filter':      'Saved',
+  'assessment-id':     'Finding',
 }
 
 const IcClose = () => (
@@ -74,13 +75,16 @@ const PAGE_AFP_CONFIG = {
     implicitFindingFilters: [],
   },
   'discover/device': {
-    entityTree: [{ entity: 'Host', relation: null }],
+    entityTree: [{ entity: 'Host', relation: 'Host Has Finding' }],
     implicitEntityFilters: [],
-    implicitFindingFilters: [],
+    implicitFindingFilters: [
+      { key: 'Status',          mode: 'INCLUDE', values: ['Open'] },
+      { key: 'Activity Status', mode: 'INCLUDE', values: ['Active'] },
+    ],
   },
   'discover/cloud': {
     entityTree: [
-      { entity: 'Host',             relation: null },
+      { entity: 'Host',             relation: 'Host Has Finding' },
       { entity: 'Storage',          relation: null },
       { entity: 'Network',          relation: null },
       { entity: 'Container',        relation: null },
@@ -88,16 +92,22 @@ const PAGE_AFP_CONFIG = {
       { entity: 'Cluster',          relation: null },
     ],
     implicitEntityFilters: [],
-    implicitFindingFilters: [],
+    implicitFindingFilters: [
+      { key: 'Status',          mode: 'INCLUDE', values: ['Open'] },
+      { key: 'Activity Status', mode: 'INCLUDE', values: ['Active'] },
+    ],
   },
   'discover/identity': {
     entityTree: [
-      { entity: 'Identity', relation: null },
+      { entity: 'Identity', relation: 'Identity Has Finding' },
       { entity: 'Person',   relation: null },
       { entity: 'Account',  relation: null },
     ],
     implicitEntityFilters: [],
-    implicitFindingFilters: [],
+    implicitFindingFilters: [
+      { key: 'Status',          mode: 'INCLUDE', values: ['Open'] },
+      { key: 'Activity Status', mode: 'INCLUDE', values: ['Active'] },
+    ],
   },
   'workspace/report': {
     entityTree: [{ entity: 'Host', relation: null }],
@@ -354,10 +364,16 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
               <button className="afp-fc-remove" title="Remove saved filter" onClick={() => onRemove?.(savedFilterIdx)}>×</button>
             </div>
           )}
-          {entityTree.map(({ entity, relation }) => {
+          {entityTree.map(({ entity, relation }, entityIdx) => {
             const explicitAttrs    = entityGroups.find(g => g.entity === entity)?.attrs || []
             const showEntityWhere  = explicitAttrs.length > 0 || implicitFilters
-            const showFindingWhere = implicitFilters
+            const findingAttrs     = entityGroups.find(g => g.entity === 'Finding')?.attrs || []
+            const showFindingWhere = implicitFilters || findingAttrs.length > 0
+            // The Finding sub-block's contents (implicitFindingFilters/findingAttrs) aren't
+            // scoped per entity — render them once, under the first related entity, instead
+            // of once per entity in the tree (entityTree can have several `relation`s, e.g.
+            // the fallback ENTITY_TREE, which would otherwise repeat the same chips N times).
+            const isFirstRelated   = relation && entityIdx === entityTree.findIndex(e => e.relation)
 
             return (
               <div key={entity} className="afp-entity-block">
@@ -390,7 +406,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                     </>
                   )}
 
-                  {relation && (
+                  {relation && isFirstRelated && (
                     <>
                       <span className="afp-entity-chip afp-relation-chip">{relation}</span>
                       <div className="afp-entity-content">
@@ -400,13 +416,23 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                           <>
                             <span className="afp-where">where</span>
                             <div className="afp-filter-chips">
-                              {implicitFindingFilters.map(f => (
+                              {implicitFilters && implicitFindingFilters.map(f => (
                                 <span key={f.key} className="afp-filter-chip">
                                   <span className="afp-fc-label">{f.key}</span>
                                   <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
                                   <span className="afp-fc-badge">[{f.mode}]</span>
                                   {f.op && <span className="afp-fc-badge afp-fc-badge--op">[{f.op}]</span>}
                                   <span className="afp-fc-values">&nbsp;{f.values.join(', ')}</span>
+                                </span>
+                              ))}
+                              {findingAttrs.map((attr, i) => (
+                                <span key={`fa-${i}`} className="afp-filter-chip">
+                                  <span className="afp-fc-label">{attr.key.replace(/ · .*$/, '')}</span>
+                                  <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                                  <span className="afp-fc-badge">[INCLUDE]</span>
+                                  {attr.values.length > 1 && <span className="afp-fc-badge afp-fc-badge--op">[OR]</span>}
+                                  <span className="afp-fc-values">&nbsp;{attr.values.join(', ')}</span>
+                                  <button className="afp-fc-remove" title="Remove filter" onClick={() => attr.indices.slice().reverse().forEach(idx => onRemove?.(idx))}>×</button>
                                 </span>
                               ))}
                             </div>

@@ -19,12 +19,25 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-06-23 11:03 | branch: develop | 3a6e66c Merge feature/ui-updates into develop (v0.6.6 — DS token pass and font scale audit) -->
 <!-- pull: 2026-06-23 11:28 | branch: feature/ui-updates | 06d642d chore: bump to v0.6.6 -->
 <!-- pull: 2026-07-21 16:32 | branch: feature/ui-updates | 2cd785f Merge pull request #5 from marwa-arif/feature/studio-workspace -->
+<!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.14.0] — 2026-07-28
+### Added
+- AssetDetailDrawer + EntityRelSummaryGraph for the Assets by Criticality Score widget (Discover Device/Cloud/Identity), including a View/Hide Exposure Factors button, tooltip, and score-ring panel matching the Findings page's entity drawer.
+### Changed
+- Centered action-column icon buttons under their headers across Assessments, Compliance Findings, Compliance drawers, and Discover pages.
+### Fixed
+- CSS specificity bugs that silently prevented action-column header centering from applying.
+- FindingsPage/DiscoverIdentityPage pagination totals now reflect actual row counts instead of decorative/mismatched constants.
+- ActiveFilterPanel: duplicate and toggle-leaking implicit-filter chips; insight-row filters now merge with existing Filter-panel chips instead of overwriting them.
 
 ---
 

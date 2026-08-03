@@ -906,6 +906,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Only rows wired to onRowClick (kg-tr--clickable) get the click affordance on their text */
+.kg-tr--clickable:hover .kg-td--label { color: var(--pai-indigo); }
 .kg-td--type {
   padding: 8px 12px;
   color: var(--fg-1, #101010);
@@ -1602,10 +1604,11 @@
 .kg-panel-backdrop--open { display: block; }
 
 .kg-detail-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; width: 55%;
+  position: fixed; top: 0; right: 0; bottom: 0; width: 80vw; max-width: 80vw;
   background: var(--card-bg, #fff);
   border-left: 1px solid var(--shell-border, #E6E6E6);
   border-radius: 12px 0 0 12px;
+  overflow: hidden;
   box-shadow: -8px 0 32px rgba(0,0,0,0.12);
   z-index: 300;
   display: flex; flex-direction: column;
@@ -1618,7 +1621,7 @@
 /* External close button — sits to the left of the panel, matching the
    Assessment drawer's comp-drawer-close-ext pattern. */
 .kg-dp-close-ext {
-  position: fixed; top: 16px; right: calc(55% + 8px);
+  position: fixed; top: 16px; right: calc(80vw + 8px);
   width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--card-border, #E6E6E6);
   background: var(--card-bg, #fff);
@@ -1675,12 +1678,17 @@
   border-bottom: 1px solid var(--shell-border, #E6E6E6);
   font-size: 11px; font-weight: 600; color: var(--fg-1, #101010);
 }
+.kg-dp-rel-header--flex { display: flex; align-items: center; justify-content: space-between; }
 .kg-dp-rel-body { padding: 12px; display: flex; align-items: center; gap: 12px; }
 .kg-dp-rel-svg { display: block; overflow: visible; flex: 1; }
 .kg-dp-rel-icon-wrap {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
 }
+/* Center node's icon renders on a solid accent-filled circle, so it's forced to pure
+   white regardless of the glyph's own baked-in color (raster SVGs and inline <svg
+   stroke="currentColor"> icons both work — the filter operates on rendered pixels). */
+.kg-dp-rel-center-icon { filter: brightness(0) invert(1); }
 
 /* tabs */
 .kg-dp-tabs {
@@ -1719,6 +1727,7 @@
   background: var(--card-bg, #fff);
   border: 1px solid var(--shell-border, #E6E6E6);
   border-radius: 4px; overflow: hidden;
+  flex-shrink: 0; /* overflow:hidden zeroes a flex item's auto min-size — without this, tall content shrinks/clips instead of letting kg-dp-body scroll */
 }
 .kg-dp-section-header {
   padding: 10px 14px;
@@ -1745,6 +1754,10 @@
   text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px;
 }
 .kg-dp-grid-val { font-size: 12px; color: var(--fg-1, #101010); word-break: break-all; }
+.kg-dp-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(even) { border-right: 1px solid var(--shell-raised, #F5F5F5); }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(4n) { border-right: none; }
+.kg-dp-grid--4 .kg-dp-grid-cell:nth-last-child(-n+2) { border-bottom: 1px solid var(--shell-raised, #F5F5F5); }
 
 /* data sources */
 .kg-dp-sources-row { padding: 10px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

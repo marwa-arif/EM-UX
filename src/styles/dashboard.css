@@ -2995,6 +2995,15 @@
   transform: none;
 }
 
+/* Trigger sits at the far right of its container (e.g. a table's last column) —
+   anchor the tooltip to that edge instead of centering, so it opens leftward
+   and never gets clipped by an ancestor's overflow-x:hidden. */
+.dc-tip--end::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 /* ── Axis row with trailing action button ────────────────────────── */
 .dc-axis-row--with-action {
   align-items: flex-end;

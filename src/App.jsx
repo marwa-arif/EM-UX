@@ -600,6 +600,7 @@ function App() {
   const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [findingsCategoryFilter, setFindingsCategoryFilter] = useState(null);
+  const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -613,6 +614,10 @@ function App() {
   // Home screen even when `current` is already 'navigator' (mid-chat) — a
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
+  // Bumped whenever "Reset Filters" is used on a Discover page, so that page's
+  // local per-row filtered-dashboard state can clear even though it lives
+  // outside filtersByPage (which only tracks the chip shown in Active Filters).
+  const [discoverFilterReset, setDiscoverFilterReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
@@ -780,6 +785,9 @@ function App() {
       handleNav(adminPrevPage);
       return;
     }
+    if (id === 'kg') {
+      setKgFocusEntity(data || null);
+    }
     if (id === 'exposure/findings') {
       const category = data?.category || null;
       setFindingsCategoryFilter(category);
@@ -807,6 +815,18 @@ function App() {
   const setPageFilters = (pageId, count, chips) =>
     setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
 
+  // Sets (or clears) the single "assessment-id" chip an insight-row filter icon
+  // adds, merging with whatever other chips are already applied on that page
+  // instead of replacing the whole array (which used to silently drop any
+  // filters applied via the Filter side-panel).
+  const setAssessmentFilterChip = (pageId, chip) =>
+    setFiltersByPage(prev => {
+      const cur = prev[pageId] || { count: 0, chips: [] };
+      const rest = cur.chips.filter(c => c.attrId !== 'assessment-id');
+      const nextChips = chip ? [...rest, chip] : rest;
+      return { ...prev, [pageId]: { count: new Set(nextChips.map(c => c.attrId)).size, chips: nextChips } };
+    });
+
   // Explore in: navigate to destId carrying the current page's filters
   const handleExplore = (destId) => {
     const src = filtersByPage[current] || { count: 0, chips: [] };
@@ -829,6 +849,7 @@ function App() {
           });
         } else {
           setPageFilters(current, c, chips || []);
+          if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
         }
       }}}
       navigatorProps={{
@@ -985,10 +1006,12 @@ function App() {
                       return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
                     if (current === 'exposure/findings') setFindingsCategoryFilter(null);
+                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
                   }}
                   onClearFilters={() => {
                     setPageFilters(current, 0, []);
                     if (current === 'exposure/findings') setFindingsCategoryFilter(null);
+                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}
@@ -1004,15 +1027,15 @@ function App() {
                 {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} categoryFilter={findingsCategoryFilter} />}
-                {current === 'discover/device'     && <DiscoverDevicePage />}
-                {current === 'discover/cloud'      && <DiscoverCloudPage />}
-                {current === 'discover/identity'   && <DiscoverIdentityPage />}
-                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} />}
-                {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} />}
+                {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/device', chip)} resetToken={discoverFilterReset} />}
+                {current === 'discover/cloud'      && <DiscoverCloudPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/cloud', chip)} resetToken={discoverFilterReset} />}
+                {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/identity', chip)} resetToken={discoverFilterReset} />}
+                {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
+                {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
-                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
-                {isKG && <PageKG />}
+                {isKG && <PageKG focusEntity={kgFocusEntity} />}
               </div>
             </div>
             {sharedRightPanel}

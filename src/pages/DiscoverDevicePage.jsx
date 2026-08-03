@@ -1,10 +1,57 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import TablePagination from '../components/TablePagination.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
-import DSDropdown from '../components/DSDropdown.jsx'
+import { AssessmentDrawer } from './CompliancePage.jsx'
+import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
 import '../styles/device.css'
+import '../styles/compliance.css'
+import '../styles/dashboard.css'
+import '../styles/kg.css'
+
+// ── Group-by select dropdown (comp-sort pattern, matches other dashboards) ──
+const IcChevron = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m6 9 6 6 6-6"/>
+  </svg>
+);
+function SelectDropdown({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="comp-sort-wrap">
+      <button
+        className={`comp-sort-btn${open ? ' comp-sort-btn--active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span>{value}</span>
+        <IcChevron />
+      </button>
+      {open && (
+        <div className="comp-sort-menu comp-sort-menu--right">
+          {options.map(opt => (
+            <button
+              key={opt}
+              className={`comp-sort-item${opt === value ? ' comp-sort-item--selected' : ''}`}
+              onClick={() => { onChange(opt); setOpen(false); }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── DS-style chart tooltips ───────────────────────────────────────
 const TIP_WRAP = { animation: 'dsTooltipFade 0.15s ease', overflow: 'visible', zIndex: 100 };
@@ -95,6 +142,28 @@ const TYPES = [
   { label: 'Storage Accounts', icon: 'storage',     count: 2,    pct: 1,  color: '#C4C4C4' },
 ];
 
+// Compliance score thresholds mirrored from AssessmentDrawer's rating tooltip copy
+function ratingFromPct(pct) {
+  if (pct >= 100) return 'Compliant';
+  if (pct > 75) return 'Strong';
+  if (pct > 50) return 'Moderate';
+  return 'Weak';
+}
+function insightToAssessmentNode(r, i) {
+  const pct = 100 - r.failPct;
+  return {
+    id: `insight_${i}`,
+    name: r.text,
+    pct,
+    open: r.failPct,
+    closed: Math.max(0, 100 - r.failPct),
+    rating: ratingFromPct(pct),
+    scopeType: 'device',
+    scopeLabel: 'Host',
+    isLeaf: true,
+  };
+}
+
 const INSIGHTS = [
   { sev: 'high', text: 'Adaptive application controls for defining safe applications should be configured on your machines',           failPct: 100, cat: 'Control Gap' },
   { sev: 'high', text: 'Adaptive network hardening recommendations should be applied on internet facing virtual machines',             failPct: 100, cat: 'Control Gap' },
@@ -122,6 +191,25 @@ const ASSETS = [
   { name: 'VM-TSR17132.ACNA.CO...', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 998  },
   { name: 'VM-TSR37484.ACNA.C...',  type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Critical', score: 996  },
 ];
+
+// ── Single-assessment filtered snapshot (all widgets scope to just the one
+// assessment picked via the Key Security Insights row's filter icon) ───────
+const FILTERED_SOURCES_CHART_DATA = [{ name: 'MS Azure', Unique: 100, Corroborated: 0 }];
+const FILTERED_TYPES_DATA = [{ label: 'Server', icon: 'server', count: 1, pct: 100, color: 'var(--pai-indigo)' }];
+const FILTERED_CRITICALITY = [{ label: 'Medium', count: '1', pct: 100, color: 'var(--pai-med-fg)' }];
+const FILTERED_ASSET = { name: 'VM-PFSENSE-IN-CE', type: 'Server', os: 'Linux', deploy: 'Cloud', crit: 'Medium', score: 382 };
+
+// Deterministic UUID-shaped id per assessment (mock — no real backend id exists)
+function fakeAssessmentId(text) {
+  let h1 = 0x811c9dc5, h2 = 0x1000193;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+    h2 = Math.imul(h2 + c, 2654435761) >>> 0;
+  }
+  const hex = (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).toUpperCase();
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20,32).padEnd(12,'0')}`;
+}
 
 // ── Chart data ────────────────────────────────────────────────────
 
@@ -277,7 +365,12 @@ const IcLinux = () => (
     <path d="M16 2C9.37 2 4 7.37 4 14c0 3.69 1.58 7 4.09 9.33C9.3 24.4 10 25.7 10 27h12c0-1.3.7-2.6 1.91-3.67C26.42 21 28 17.69 28 14 28 7.37 22.63 2 16 2zm-3 17a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-5c0 2.5-1.5 4-3 4.5V18c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v.5C11.5 18 10 16.5 10 14c0-3.31 2.69-6 6-6s6 2.69 6 6z"/>
   </svg>
 );
-const IcExplore = () => <img src="assets/icons/icon-explore.svg" width="12" height="12" alt="" />;
+const IcExplore = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3.72222 13.5C3.39807 13.5 3.08719 13.3712 2.85798 13.142C2.62877 12.9128 2.5 12.6019 2.5 12.2778V8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5H3.72222Z" fill="currentColor"/>
+    <path d="M13.5 9.34636V12.2778C13.5 12.6019 13.3712 12.9128 13.142 13.142C12.9128 13.3712 12.6019 13.5 12.2778 13.5H8M6.69508 2.5H3.72222C3.39807 2.5 3.08719 2.62877 2.85798 2.85798C2.62877 3.08719 2.5 3.39807 2.5 3.72222V8M13.5 2.5L9.36629 6.63371M13.5 6.62568V2.5H9.36629M2.5 8V12.2778C2.5 12.6019 2.62877 12.9128 2.85798 13.142C3.08719 13.3712 3.39807 13.5 3.72222 13.5H8M2.5 8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 const IcNewlyAdded = () => (
   <svg width="10" height="10" viewBox="0 0 8.99512 8.98682" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
     <path d="M0.5 8.48682H5.48074"/><path d="M8.49512 0.5L8.49512 5.48074"/><path d="M2.49414 2.51758L6.46736 6.4908"/>
@@ -310,6 +403,15 @@ const IcSevMed = () => (
   </svg>
 );
 
+const IcInsightFilter = () => (
+  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.91113 5.25H13.089M4.60744 8.64262H11.3927M6.64301 12.0352H9.35711" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10.4072 2.375C12.1844 2.375 13.625 3.81565 13.625 5.59277C13.625 7.3699 12.1844 8.81055 10.4072 8.81055C8.6301 8.81055 7.18945 7.3699 7.18945 5.59277C7.18945 3.81565 8.6301 2.375 10.4072 2.375Z" fill="currentColor" stroke="var(--card-bg, #fff)" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9.02637 5.59277H11.788" stroke="var(--card-bg, #fff)" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10.4072 4.21198V6.97358" stroke="var(--card-bg, #fff)" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ── Dashboard-mode widget controls overlay ────────────────────────
 function DdbControls({ canMove = true, onEdit }) {
   return (
@@ -331,7 +433,7 @@ function DdbControls({ canMove = true, onEdit }) {
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverDevicePage({ dashboardMode = false, typeColors, kpiCardHeight = 360, onEditWidget, onAddWidget }) {
+export default function DiscoverDevicePage({ dashboardMode = false, typeColors, kpiCardHeight = 360, onEditWidget, onAddWidget, onNav, onFilterAssessment, resetToken }) {
   const statValueSize = Math.max(20, Math.min(40, kpiCardHeight * 0.15))
   const typesData     = TYPES.map(t => ({ ...t, color: typeColors?.[t.label] || t.color }))
   const typesPieData  = typesData.slice(0, 6).map(t => ({
@@ -340,6 +442,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
   }))
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
+  const [filteredInsight, setFilteredInsight] = useState(null);
   const [assetSearch,   setAssetSearch]   = useState('');
   const [newOnly,       setNewOnly]       = useState(false);
   const [insightPage,   setInsightPage]   = useState(1);
@@ -347,6 +450,8 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
   const [rowsPer,       setRowsPer]       = useState(10);
   const [hoveredCrit,   setHoveredCrit]   = useState(null);
   const [critTooltip,   setCritTooltip]   = useState(null);
+  const [insightDrawerNode, setInsightDrawerNode] = useState(null);
+  const [assetDrawer, setAssetDrawer] = useState(null);
   const [showDrawer,    setShowDrawer]    = useState(false);
   const [drawerClosing, setDrawerClosing] = useState(false);
   const [drawerRange,   setDrawerRange]   = useState('1 M');
@@ -423,13 +528,35 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
     );
   }, []);
 
-  const filteredInsights = INSIGHTS.filter(r =>
-    r.text.toLowerCase().includes(insightSearch.toLowerCase())
-  );
-  const filteredAssets = ASSETS.filter(r =>
-    r.name.toLowerCase().includes(assetSearch.toLowerCase()) && (!newOnly || r.isNew)
-  );
+  useEffect(() => { setFilteredInsight(null); }, [resetToken]);
+
+  const isFiltered = !!filteredInsight;
+
+  const toggleAssessmentFilter = (r) => {
+    if (filteredInsight === r) {
+      setFilteredInsight(null);
+      onFilterAssessment?.(null);
+    } else {
+      setFilteredInsight(r);
+      onFilterAssessment?.({ attrId: 'assessment-id', key: 'Assessment ID', value: fakeAssessmentId(r.text) });
+      setInsightPage(1);
+      setAssetPage(1);
+    }
+  };
+
+  const filteredInsights = isFiltered
+    ? [filteredInsight]
+    : INSIGHTS.filter(r => r.text.toLowerCase().includes(insightSearch.toLowerCase()));
+  const filteredAssets = isFiltered
+    ? [FILTERED_ASSET]
+    : ASSETS.filter(r => r.name.toLowerCase().includes(assetSearch.toLowerCase()) && (!newOnly || r.isNew));
   const newAssetCount = ASSETS.filter(r => r.isNew).length;
+
+  const activeSourcesChartData = isFiltered ? FILTERED_SOURCES_CHART_DATA : SOURCES_CHART_DATA;
+  const activeTypesData        = isFiltered ? FILTERED_TYPES_DATA : typesData;
+  const activeTypesPieData     = isFiltered ? FILTERED_TYPES_DATA.map(t => ({ label: t.label, count: `${t.count}`, value: t.count, pct: `${t.pct}%`, color: t.color })) : typesPieData;
+  const activeCriticality      = isFiltered ? FILTERED_CRITICALITY : CRITICALITY;
+  const activeChartData        = isFiltered ? currentTrendData.map(d => ({ ...d, value: 1 })) : currentTrendData;
 
   const TH = ({ children }) => (
     <th className="ds-th">
@@ -487,10 +614,12 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
 
             <div className="dev-stat-value-row">
               <div>
-                <div className="dev-stat-value" style={{ fontSize: `${statValueSize}px` }}>12,382</div>
+                <div className="dev-stat-value" style={{ fontSize: `${statValueSize}px` }}>{isFiltered ? '1' : '12,382'}</div>
                 <div className="dev-stat-meta">
-                  <IcTrendUp size={13} color="var(--pai-crit-fg)" />
-                  <span className="dev-stat-change up">2%</span>
+                  {isFiltered
+                    ? <IcTrendDown size={13} color="var(--shell-text-muted)" />
+                    : <IcTrendUp size={13} color="var(--pai-crit-fg)" />}
+                  <span className="dev-stat-change up">{isFiltered ? '0%' : '2%'}</span>
                   <span className="dev-stat-from">from last month</span>
                 </div>
               </div>
@@ -498,7 +627,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
 
             <div className="dev-chart-area">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={currentTrendData} margin={{ top: 16, right: 16, bottom: 0, left: 8 }}>
+                <AreaChart data={activeChartData} margin={{ top: 16, right: 16, bottom: 0, left: 8 }}>
                   <defs>
                     <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor="var(--pai-indigo)" stopOpacity={0.25} />
@@ -514,7 +643,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                     dy={6}
                   />
                   <YAxis hide />
-                  <Tooltip content={makeTrendTooltip(currentTrendData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
+                  <Tooltip content={makeTrendTooltip(activeChartData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
                   <Area
                     type="monotone"
                     dataKey="value"
@@ -522,8 +651,8 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                     stroke="var(--pai-indigo)"
                     strokeWidth={2}
                     fill="url(#trendFill)"
-                    dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
+                    dot={isFiltered ? false : { r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
+                    activeDot={isFiltered ? false : { r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -549,7 +678,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={SOURCES_CHART_DATA}
+                    data={activeSourcesChartData}
                     layout="vertical"
                     margin={{ top: 4, right: 44, bottom: 4, left: 0 }}
                     barSize={10}
@@ -574,7 +703,8 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                       onMouseEnter={() => { hoveredBarRef.current = 'Unique'; }}
                       onMouseLeave={() => { hoveredBarRef.current = null; }}
                       label={({ x, y, width, height, index }) => {
-                        const total = SOURCES_CHART_DATA[index].Corroborated + SOURCES_CHART_DATA[index].Unique
+                        const row = activeSourcesChartData[index]
+                        const total = row ? row.Corroborated + row.Unique : 0
                         return (
                           <text
                             x={x + width + 16}
@@ -613,7 +743,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={typesPieData}
+                      data={activeTypesPieData}
                       cx="50%"
                       cy="50%"
                       innerRadius="46%"
@@ -626,7 +756,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                       endAngle={-270}
                       cornerRadius={4}
                     >
-                      {typesPieData.map((entry, index) => (
+                      {activeTypesPieData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
@@ -635,11 +765,11 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 </ResponsiveContainer>
                 <div className="dev-donut-center">
                   <div className="dev-donut-center__label">Total</div>
-                  <div className="dev-donut-center__value">6</div>
+                  <div className="dev-donut-center__value">{isFiltered ? '1' : '6'}</div>
                 </div>
               </div>
               <div className="dev-type-list">
-                {typesData.map((t, i) => (
+                {activeTypesData.map((t, i) => (
                   <div key={i} className="dev-type-row">
                     <div className="dev-type-row-left">
                       <span className="dev-type-icon" style={{ '--type-color': t.color }}>{TYPE_ICONS[t.icon]}</span>
@@ -679,26 +809,29 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
           {dashboardMode && hoveredWidget === 'insights' && <DdbControls onEdit={() => onEditWidget?.('insights')} />}
           <div className="card dev-card dev-insights-card">
             <div className="dev-card-hdr">
-              <span className="dev-card-title">Key Security Insights — Top 5</span>
+              <span className="dev-card-title">Key Security Insights</span>
               <DSPillSearch
                 value={insightSearch}
                 onChange={v => { setInsightSearch(v); setInsightPage(1); }}
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="ds-table-wrap">
-              <table className="ds-table">
+            <div className="ds-table-wrap dev-no-hscroll">
+              <table className="ds-table dev-insights-table">
                 <thead>
                   <tr>
                     <th className="ds-th dev-th-icon" />
                     <TH>Assessment</TH>
                     <TH>Findings Failed</TH>
                     <TH>Exposure Category</TH>
+                    <th className="ds-th cfp-th-actions">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => (
-                    <tr key={i}>
+                  {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => {
+                    const globalIdx = (insightPage - 1) * rowsPer + i;
+                    return (
+                    <tr key={i} className="kg-tr--clickable" onClick={() => setInsightDrawerNode(insightToAssessmentNode(r, globalIdx))}>
                       <td className="ds-td dev-td-icon">
                         {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
                       </td>
@@ -714,8 +847,19 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                       <td className="ds-td">
                         {r.cat}
                       </td>
+                      <td className="ds-td" onClick={e => e.stopPropagation()}>
+                        <div className="cfp-td-actions">
+                          <span className="dc-tip dc-tip--end" data-tip="Filter dashboard by this assessment">
+                            <button
+                              className={`comp-drawer-action-icon comp-drawer-action-icon--filter${filteredInsight === r ? ' comp-drawer-action-icon--active' : ''}`}
+                              onClick={() => toggleAssessmentFilter(r)}
+                            ><IcInsightFilter /></button>
+                          </span>
+                        </div>
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -743,7 +887,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
 
             <div className="dev-crit-bar-section">
               <div className="dev-stacked-bar">
-                {CRITICALITY.map((c, i) => (
+                {activeCriticality.map((c, i) => (
                   <div
                     key={i}
                     className="dev-crit-seg"
@@ -756,7 +900,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 ))}
               </div>
               <div className="dev-crit-legend">
-                {CRITICALITY.map((c, i) => (
+                {activeCriticality.map((c, i) => (
                   <div key={i} className="dev-crit-leg-item" style={{ '--crit-color': c.color }}>
                     <span className="dev-crit-leg-label">{c.label}</span>
                     <div className="dev-crit-leg-bottom">
@@ -793,7 +937,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               />
             </div>
 
-            <div className="ds-table-wrap">
+            <div className="ds-table-wrap dev-no-hscroll">
               <table className="ds-table">
                 <thead>
                   <tr>
@@ -807,14 +951,14 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 </thead>
                 <tbody>
                   {filteredAssets.slice((assetPage-1)*10, assetPage*10).map((a, i) => (
-                    <tr key={i}>
+                    <tr key={i} className="kg-tr--clickable" onClick={() => setAssetDrawer(a)}>
                       <td className="ds-td dev-td-name">
                         {a.name}
                         {a.isNew && <span className="dev-td-new-badge">New</span>}
                       </td>
                       <td className="ds-td">{a.type}</td>
                       <td className="ds-td">{a.deploy}</td>
-                      <td className="ds-td"><span className="pai-chip pai-chip--crit">{a.crit}</span></td>
+                      <td className="ds-td"><span className={`pai-chip pai-chip--${a.crit.toLowerCase()}`}>{a.crit}</span></td>
                       <td className="ds-td dev-td-score">{a.score.toLocaleString()}</td>
                       <td className="ds-td"><span className="dev-cell-icon-text"><IcLinux />{a.os}</span></td>
                     </tr>
@@ -881,7 +1025,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                       ))}
                     </div>
                   </div>
-                  <DSDropdown
+                  <SelectDropdown
                     value={drawerFilter}
                     onChange={setDrawerFilter}
                     options={['All','Type','Origin','Deployment Type','Environment','Asset Criticality','OS Family']}
@@ -1023,7 +1167,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
         );
       })()}
       {critTooltip !== null && (() => {
-        const c = CRITICALITY[critTooltip.i];
+        const c = activeCriticality[critTooltip.i];
         return (
           <div
             className="dev-crit-tooltip"
@@ -1041,6 +1185,12 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
           </div>
         );
       })()}
+      {insightDrawerNode && (
+        <AssessmentDrawer node={insightDrawerNode} onClose={() => setInsightDrawerNode(null)} onNav={onNav} />
+      )}
+      {assetDrawer && (
+        <AssetDetailDrawer asset={assetDrawer} entityType="device" onClose={() => setAssetDrawer(null)} />
+      )}
     </div>
   );
 }

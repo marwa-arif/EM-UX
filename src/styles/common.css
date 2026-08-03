@@ -19,11 +19,11 @@
   justify-content: space-between;
 }
 
-/* ── Section title (13px semibold) ─────────────────────────────── */
+/* ── Section title (14px semibold) ─────────────────────────────── */
 .dev-card-title,
 .fin-chart-title,
 .fin-posture-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--shell-text);
 }

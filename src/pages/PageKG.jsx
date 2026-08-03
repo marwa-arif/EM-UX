@@ -6,6 +6,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { PAI, Icons, Ic } from '../ui.jsx';
 import TablePagination from '../components/TablePagination.jsx';
+import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx';
 
 function useDark() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
@@ -1732,7 +1733,7 @@ function EntityKpiGrid() {
 // ─────────────────────────────────────────────────────────────────────
 // PageKG — composes graph + table + selection state
 // ─────────────────────────────────────────────────────────────────────
-function PageKG() {
+function PageKG({ focusEntity } = {}) {
   const [summaryTab, setSummaryTab] = useState('Relationships');
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -1782,6 +1783,16 @@ function PageKG() {
     }
     return INITIAL_EDGES.map(e => [...e]);
   });
+
+  // "Explore in Knowledge Graph" deep-link — pre-select the node a caller
+  // navigated in for (by entity-type key, falling back to a label match).
+  useEffect(() => {
+    if (!focusEntity) return;
+    const id = ENTITY_TYPES[focusEntity.type]
+      ? focusEntity.type
+      : Object.keys(ENTITY_TYPES).find(k => ENTITY_TYPES[k].label.toLowerCase() === (focusEntity.label || '').toLowerCase());
+    if (id) setSelected(id);
+  }, [focusEntity]);
 
   // Expose edge editing API + entity list to the Tweaks panel
   useEffect(() => {
@@ -2302,55 +2313,35 @@ function PageKG() {
                   </div>
                 </div>
 
-                {/* Entity relationship mini-graph */}
-                <div className="kg-dp-rel-card">
-                  <div className="kg-dp-rel-header">Entity Relationship Summary</div>
-                  <div className="kg-dp-rel-body">
-                    <svg width="280" height="150" className="kg-dp-rel-svg">
-                      <line x1="90" y1="44" x2="190" y2="44" stroke="var(--shell-border)" strokeWidth="1.5"/>
-                      <text x="140" y="38" textAnchor="middle" fontSize="9" fill="var(--shell-text-muted)" fontFamily="inherit">Has</text>
-                      <circle cx="60" cy="44" r="28" fill={ent.tint || 'var(--pai-bg-raised)'} stroke={ent.stroke || 'var(--shell-border)'} strokeWidth="1.5"/>
-                      <foreignObject x="44" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
-                          <EntityGlyph kind={meta.glyph} size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="60" y="82" textAnchor="middle" fontSize="9" fill="var(--shell-text-sub)" fontWeight="600" fontFamily="inherit">
-                        {(meta.type || panelRow.type).slice(0, 12)}
-                      </text>
-                      <circle cx="220" cy="44" r="22" fill={ENTITY_TYPES.finding.tint} stroke={ENTITY_TYPES.finding.stroke} strokeWidth="1.5"/>
-                      <foreignObject x="204" y="30" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                        <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
-                          <EntityGlyph kind="finding" size={20} />
-                        </div>
-                      </foreignObject>
-                      <text x="220" y="82" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.finding.icon} fontWeight="600" fontFamily="inherit">Finding</text>
-                      <circle cx="244" cy="20" r="9" fill="var(--pai-indigo)"/>
-                      <text x="244" y="23" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">
-                        {(ent.count || 0) > 999 ? fmtN(ent.count).slice(0, 4) : fmtN(ent.count || 0)}
-                      </text>
-
-                      {/* Identity node — click to reveal the Identity tab */}
-                      <line x1="60" y1="72" x2="60" y2="92" stroke="var(--shell-border)" strokeWidth="1.5"/>
-                      <g
-                        onClick={() => { setIdentityTabUnlocked(true); setPanelTab('identity'); }}
-                        style={{ cursor: 'pointer' }}
-                        data-testid="mini-graph-identity-node"
-                      >
-                        <rect x="30" y="72" width="60" height="68" fill="transparent"/>
-                        <circle cx="60" cy="110" r="18" fill={ENTITY_TYPES.identity.tint} stroke={ENTITY_TYPES.identity.stroke} strokeWidth="1.5"/>
-                        <foreignObject x="44" y="94" width="32" height="32" style={{ pointerEvents: 'none' }}>
-                          <div xmlns="http://www.w3.org/1999/xhtml" className="kg-dp-rel-icon-wrap">
-                            <EntityGlyph kind="identity" size={20} />
-                          </div>
-                        </foreignObject>
-                        <text x="60" y="140" textAnchor="middle" fontSize="9" fill={ENTITY_TYPES.identity.icon} fontWeight="600" fontFamily="inherit">Identity</text>
-                        <circle cx="76" cy="96" r="8" fill="var(--pai-indigo)"/>
-                        <text x="76" y="99" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700" fontFamily="inherit">1</text>
-                      </g>
-                    </svg>
-                  </div>
-                </div>
+                <EntityRelSummaryGraph
+                  center={{
+                    label: panelRow.label,
+                    icon: <EntityGlyph kind={meta.glyph} size={16} />,
+                    accent: ent.icon || 'var(--pai-indigo)',
+                  }}
+                  leaves={[
+                    {
+                      key: 'finding',
+                      label: 'Finding',
+                      icon: <EntityGlyph kind="finding" size={16} />,
+                      tint: ENTITY_TYPES.finding.tint,
+                      stroke: ENTITY_TYPES.finding.stroke,
+                      accent: ENTITY_TYPES.finding.icon,
+                      count: fmtN(ent.count || 0),
+                    },
+                    {
+                      key: 'identity',
+                      label: 'Identity',
+                      icon: <EntityGlyph kind="identity" size={16} />,
+                      tint: ENTITY_TYPES.identity.tint,
+                      stroke: ENTITY_TYPES.identity.stroke,
+                      accent: ENTITY_TYPES.identity.icon,
+                      count: 1,
+                      onClick: () => { setIdentityTabUnlocked(true); setPanelTab('identity'); },
+                      testId: 'mini-graph-identity-node',
+                    },
+                  ]}
+                />
               </div>
 
               {/* Tabs */}
