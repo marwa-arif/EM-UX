@@ -197,6 +197,15 @@
   font-size: 12.5px; font-family: inherit;
 }
 .admin-input:focus { outline: none; border-color: var(--shell-accent); box-shadow: 0 0 0 3px rgba(99,96,216,0.15); }
+
+/* Modal-standard overrides: field label 14px/500 (not uppercase/muted), input 14px — scoped to
+   modal bodies only so the admin-page (non-modal) security-card usage of the same classes is untouched. */
+.ds-modal-body .admin-field-label {
+  font-size: 14px; font-weight: 500; color: var(--shell-text);
+  text-transform: none; letter-spacing: normal;
+}
+.ds-modal-body .admin-input { font-size: 14px; }
+
 .admin-textarea {
   padding: 8px 10px;
   border: 1px solid var(--shell-border-2); border-radius: 8px;
@@ -246,8 +255,7 @@
 /* ── Generic confirmation / form modal ──────────────────────────────── */
 .ds-modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(2px);
+  background: rgba(0,0,0,0.25);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
 }
@@ -264,9 +272,10 @@
 .ds-modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px;
+  background: var(--shell-raised);
   border-bottom: 1px solid var(--shell-border);
 }
-.ds-modal-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+.ds-modal-title { font-size: 16px; font-weight: 500; color: var(--shell-text); }
 .ds-modal-close {
   width: 24px; height: 24px;
   border: none; background: transparent;
@@ -283,6 +292,7 @@
   color: var(--shell-text-2);
   line-height: 1.5;
 }
+.ds-modal-body strong { font-weight: 600; color: var(--shell-text); }
 .ds-modal-footer {
   display: flex; justify-content: flex-end; gap: 12px;
   padding: 16px 20px;
@@ -373,3 +383,8 @@
 /* Permission matrix */
 .admin-matrix-table th:not(:first-child), .admin-matrix-table td:not(:first-child) { text-align: center; }
 .admin-matrix-cell { text-align: center; }
+
+/* Compound selector: .ds-modal-title{color} is defined in this file and library.css,
+   either of which may load after this rule. */
+.ds-modal-title.admin-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
+.admin-delete-modal-title svg { flex-shrink: 0; }

@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
 import '../styles/kg.css'
+import '../styles/active-filter-panel.css'
 
 // ── Icons ──────────────────────────────────────────────────────────
 const IcRemediation = () => (
@@ -23,6 +25,18 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <polyline points="7 10 12 15 17 10"/>
     <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
   </svg>
 )
 
@@ -373,6 +387,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin')
   const [toast, setToast]                           = useState(null) // { type, msg }
   const downloadRef = useRef(null)
+  const { addDownload } = useDownloads()
 
   // Reset to page 1 whenever filter changes
   useEffect(() => { setPage(1) }, [filter])
@@ -461,8 +476,18 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                 </button>
                 {downloadOpen && (
                   <div className="comp-sort-menu comp-sort-menu--right">
-                    {['Export as CSV', 'Export as PDF', 'Export as Excel'].map(opt => (
-                      <button key={opt} className="comp-sort-item" onClick={() => setDownloadOpen(false)}>{opt}</button>
+                    {[
+                      { label: 'Export as CSV', ext: 'csv' },
+                      { label: 'Export as PDF', ext: 'pdf' },
+                      { label: 'Export as Excel', ext: 'xlsx' },
+                    ].map(opt => (
+                      <button
+                        key={opt.label}
+                        className="comp-sort-item"
+                        onClick={(e) => { addDownload(`Compliance-Findings.${opt.ext}`, e.currentTarget); setDownloadOpen(false); }}
+                      >
+                        {opt.label}
+                      </button>
                     ))}
                   </div>
                 )}
@@ -610,15 +635,18 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+        <>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown
                   value={ctAssignee}
                   onChange={setCtAssignee}
@@ -626,16 +654,16 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                   fullWidth
                 />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input cfp-input-readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="cfp-rec-title">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="cfp-rec-steps">
@@ -648,13 +676,13 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                   </ol>
                 </div>
               </div>
-            </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
+        </>
       )}
 
       {/* Toast notification */}

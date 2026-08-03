@@ -3169,15 +3169,26 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     </div>
 
     {deletePending && (
-      <div className="afp-modal-overlay" onClick={() => setDeletePending(null)}>
-        <div className="afp-modal" onClick={e => e.stopPropagation()}>
-          <p className="afp-modal-title">Delete widget</p>
-          <p className="afp-modal-body">
-            Delete <strong>"{deletePending.label}"</strong>? This widget will be permanently removed from the dashboard.
-          </p>
-          <div className="afp-modal-actions">
-            <button className="afp-modal-cancel" onClick={() => setDeletePending(null)}>Cancel</button>
-            <button className="afp-modal-confirm" onClick={() => { deleteWidget(deletePending.id); setDeletePending(null); }}>Delete widget</button>
+      <div className="ds-modal-overlay">
+        <div className="ds-modal">
+          <div className="ds-modal-header">
+            <span className="ds-modal-title dc-delete-modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              Delete widget
+            </span>
+            <button className="ds-modal-close" onClick={() => setDeletePending(null)} aria-label="Close">✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <span>Delete <strong>"{deletePending.label}"</strong>? This widget will be permanently removed from the dashboard.</span>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setDeletePending(null)}>Cancel</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => { deleteWidget(deletePending.id); setDeletePending(null); }}>Delete widget</button>
           </div>
         </div>
       </div>
@@ -3187,11 +3198,19 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay">
         <div className="ds-modal">
           <div className="ds-modal-header">
-            <span className="ds-modal-title">Delete dashboard</span>
+            <span className="ds-modal-title dc-delete-modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              Delete dashboard
+            </span>
             <button className="ds-modal-close" onClick={() => setDeleteDashboardConfirm(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
-            Delete <strong>"{name || 'Untitled Dashboard'}"</strong>? This dashboard and all of its widgets will be permanently removed.
+            <span>Delete <strong>"{name || 'Untitled Dashboard'}"</strong>? This dashboard and all of its widgets will be permanently removed.</span>
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setDeleteDashboardConfirm(false)}>Cancel</button>
@@ -3203,16 +3222,21 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
     {stopScheduleOpen && (
       <div className="ds-modal-overlay">
-        <div className="ds-modal" style={{ maxWidth: 600 }}>
+        <div className="ds-modal dc-modal--wide">
           <div className="ds-modal-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-red-critical, #d12329)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="15" y2="19"/><line x1="15" y1="15" x2="9" y2="19"/>
-            </svg>
-            <span className="ds-modal-title">Stop Report Schedule</span>
+            <span className="ds-modal-title dc-delete-modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              Stop Report Schedule
+            </span>
             <button className="ds-modal-close" onClick={() => setStopScheduleOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
-            Are you sure you want to stop the automatic generation for <strong style={{ display: 'inline' }}>"{name || 'this dashboard'}"</strong>? The report will be saved and no longer be generated automatically.
+            <span>Are you sure you want to stop the automatic generation for <strong>"{name || 'this dashboard'}"</strong>? The report will be saved and no longer be generated automatically.</span>
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setStopScheduleOpen(false)}>Cancel</button>
@@ -3224,7 +3248,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
     {downloadOpen && (
       <div className="ds-modal-overlay" onClick={() => setDownloadOpen(false)}>
-        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 563 }}>
+        <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
@@ -3269,7 +3293,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
     {shareOpen && (
       <div className="ds-modal-overlay" onClick={() => setShareOpen(false)}>
-        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+        <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
             <span className="ds-modal-title">Share Report</span>
             <button className="ds-modal-close" onClick={() => setShareOpen(false)}>✕</button>
@@ -3319,7 +3343,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
     {scheduleOpen && (
       <div className="ds-modal-overlay" onClick={() => setScheduleOpen(false)}>
-        <div className="ds-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 563 }}>
+        <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>

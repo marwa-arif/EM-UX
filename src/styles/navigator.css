@@ -6,10 +6,8 @@
 .ds-btn.t-success { background: rgba(31,105,69,0.25); color: #4eca8b; border: 1px solid transparent; }
 .ds-btn.t-success:hover { background: rgba(31,105,69,0.35); }
 html.theme-light .ds-btn.t-success { background: var(--pai-low-bg); color: var(--pai-low-fg); }
-.ds-btn.t-danger { background: rgba(105,31,31,0.25); color: #e87c7c; border: 1px solid transparent; }
-.ds-btn.t-danger:hover { background: rgba(105,31,31,0.35); }
-html.theme-light .ds-btn.t-danger { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
-html.theme-light .ds-btn.t-danger:hover { background: var(--pai-crit-bg-hover); }
+.ds-btn.t-danger { background: var(--pai-crit-fg); color: var(--pai-on-primary); border: 1px solid transparent; }
+.ds-btn.t-danger:hover { filter: brightness(0.9); }
 .ds-btn.t-filled { background: var(--shell-accent); color: var(--pai-surface); }
 .ds-btn.t-filled:hover { background: var(--pai-indigo-hover); }
 .ds-btn.t-outline-accent { background: transparent; border: 1px solid var(--shell-accent); color: var(--shell-accent); }
@@ -764,6 +762,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-kpi.high .np-kpi-n     { color: var(--pai-high-fg); }
 .np-kpi.low .np-kpi-n      { color: var(--shell-text-muted); }
 .np-kpi-l { font-size: 10px; color: var(--shell-text-muted); }
+.np-findings-scope { font-size: 11px; font-weight: 600; color: var(--shell-text-muted); margin-top: 4px; }
 .np-findings { display: flex; flex-direction: column; gap: 0; }
 .np-finding-row {
   display: flex; align-items: center; gap: 8px;
@@ -3126,3 +3125,8 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 }
 .agp-td-delete { color: var(--pai-crit-fg); }
 .agp-td-delete:hover { background: var(--pai-crit-bg); color: var(--pai-crit-fg); }
+
+/* Compound selector: .ds-modal-title{color} is defined in admin.css/library.css, either of
+   which may load after this file. */
+.ds-modal-title.nav-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
+.nav-delete-modal-title svg { flex-shrink: 0; }

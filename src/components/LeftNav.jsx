@@ -153,10 +153,6 @@ function LeftNav({ current, onNav, collapsed, onToggleCollapse, mode = 'em', onM
         { id: 'data-quality/overview', label: 'Overview',  icon: 'nav-overview' },
         { id: 'data-quality/in-depth', label: 'In-Depth',  icon: 'nav-dq-indepth' },
     ]},
-    { id: 'remediation',label: 'Remediation',     icon: 'navbar-remediation', children: [
-        { id: 'remediation/queue',  label: 'Queue',  icon: 'nav-remediation-queue' },
-        { id: 'remediation/closed', label: 'Closed', icon: 'nav-remediation-closed' },
-    ]},
   ];
 
   const activeParent = current?.split('/')[0];
@@ -320,6 +316,7 @@ function NavItem({ item, collapsed, isActiveParent, activeChild, isOpen, onToggl
 
   const handleClick = () => {
     if (treatAsLeaf) onNav(item.navigateId ?? item.id);
+    else if (collapsed) onNav(item.children[0].id);
     else onToggle();
   };
 

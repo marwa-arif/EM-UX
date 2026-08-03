@@ -21,12 +21,15 @@
 
 /* ── Stacked bar chart card ─────────────────────────────────────── */
 .fin-chart-card { padding: 16px 20px 14px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
-.fin-sbc-rows { display: flex; flex-direction: column; gap: 12px; }
+/* Sized to the tallest possible content (3 rows, 2-line labels) so filtering down to fewer
+   rows doesn't shrink the card — the freed space stays blank instead of collapsing. */
+.fin-sbc-rows { display: flex; flex-direction: column; gap: 12px; min-height: 116px; }
 .fin-sbc-row { display: flex; align-items: center; gap: 12px; }
 .fin-sbc-label { width: 72px; flex-shrink: 0; font-size: 11px; color: var(--shell-text-2); line-height: 1.35; display: flex; flex-direction: column; text-align: left; }
 .fin-sbc-track { flex: 1; height: 10px; border-radius: 3px; display: flex; overflow: hidden; background: var(--shell-border); gap: 1px; }
 .fin-sbc-seg { height: 100%; cursor: default; transition: opacity 0.12s; width: var(--fin-seg-w); background: var(--fin-seg-bg); }
 .fin-sbc-seg:hover { opacity: 0.78; }
+.fin-sbc-seg--clickable { cursor: pointer; }
 .fin-sbc-bottom { display: flex; gap: 12px; margin-top: -6px; }
 .fin-sbc-label-spacer { width: 72px; flex-shrink: 0; }
 .fin-sbc-axis { flex: 1; display: flex; justify-content: space-between; font-size: 10px; color: var(--shell-text-muted); }
@@ -36,7 +39,7 @@
 
 /* ── Security Posture card ──────────────────────────────────────── */
 .fin-posture-card { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
-.fin-posture-groupby { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--shell-text); }
+.fin-posture-groupby { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-text-muted); }
 .fin-posture-groupby .comp-sort-btn { height: 32px; width: 200px; justify-content: space-between; font-size: 12px; color: var(--shell-text); }
 .fin-posture-groupby .comp-sort-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fin-groupby-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border: 1px solid var(--shell-border); border-radius: 44px; background: var(--ctrl-bg); font-size: 11px; font-family: inherit; color: var(--shell-text); cursor: pointer; transition: border-color 0.12s; }
@@ -49,8 +52,10 @@
 .fin-donut-title { font-size: 12px; font-weight: 500; color: var(--shell-text-2); flex-shrink: 0; }
 .fin-donut-body { display: flex; flex-direction: column; align-items: center; gap: 20px; flex: 1; min-height: 0; }
 .fin-donut-svg-wrap { width: 100%; height: 224px; flex-shrink: 0; position: relative; }
-.fin-donut-list { width: 100%; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-.fin-donut-row { display: flex; align-items: center; gap: 8px; }
+/* Sized to the tallest possible content (5 items, the max any Group By option produces) so
+   filtering down to fewer items doesn't shrink the donut card — space stays blank instead. */
+.fin-donut-list { width: 100%; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; min-height: 124px; }
+.fin-donut-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fin-donut-row--no-pointer { cursor: default; }
 .fin-donut-center {
   position: absolute; top: 50%; left: 50%;
@@ -61,9 +66,9 @@
 .fin-donut-center__value { font-size: 20px; font-weight: 700; color: var(--shell-text); line-height: 1; margin-top: 2px; }
 .fin-donut-tip { width: 200px; }
 .fin-donut-asset-icon { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--fin-donut-icon-bg); }
-.fin-donut-label { flex: 1; font-size: 12px; color: var(--shell-text-2); }
-.fin-donut-val { font-size: 12px; color: var(--shell-text); font-weight: 500; }
-.fin-donut-pct { width: 32px; text-align: right; font-size: 12px; font-weight: 600; color: var(--shell-text-muted); }
+.fin-donut-label { flex: 1; min-width: 0; font-size: 12px; color: var(--shell-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-donut-val { font-size: 12px; color: var(--shell-text); font-weight: 500; flex-shrink: 0; }
+.fin-donut-pct { width: 42px; text-align: right; font-size: 12px; font-weight: 600; color: var(--shell-text-muted); flex-shrink: 0; }
 
 /* ── Table section ──────────────────────────────────────────────── */
 .fin-table-section { display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
@@ -109,6 +114,7 @@ html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-td-entity { color: var(--shell-text); }
 .fin-td-clickable { cursor: pointer; }
 .fin-td-clickable:hover .fin-td-entity { color: var(--pai-indigo); }
+.fin-rel-row-link { display: inline-flex; align-items: center; justify-content: center; color: var(--pai-indigo); margin-right: 4px; vertical-align: middle; }
 .fin-sev-badge { display: inline-block; padding: 2px 10px; border-radius: 44px; border: 1px solid var(--fin-sev-fg); background: var(--fin-sev-bg); color: var(--fin-sev-fg); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .fin-td-actions { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .fin-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); transition: background 100ms; }

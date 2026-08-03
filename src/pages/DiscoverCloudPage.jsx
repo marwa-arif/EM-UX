@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import TablePagination from '../components/TablePagination.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { AssessmentDrawer } from './CompliancePage.jsx'
 import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
+import { useChartFilters } from '../hooks/useChartFilters.js'
+import { makeDiscoverRecords, aggregateBySource, aggregateByType, aggregateByCriticality, fakeAssessmentId } from '../data/discoverRecords.js'
 import '../styles/device.css'
 import '../styles/compliance.css'
 import '../styles/dashboard.css'
@@ -151,6 +153,7 @@ function ratingFromPct(pct) {
   if (pct > 50) return 'Moderate';
   return 'Weak';
 }
+const SEV_TO_CRITICALITY = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
 function insightToAssessmentNode(r, i) {
   const pct = 100 - r.failPct;
   return {
@@ -160,6 +163,7 @@ function insightToAssessmentNode(r, i) {
     open: r.failPct,
     closed: Math.max(0, 100 - r.failPct),
     rating: ratingFromPct(pct),
+    criticality: SEV_TO_CRITICALITY[r.sev] || 'Medium',
     scopeType: 'cloud',
     scopeLabel: 'Cloud Resource',
     isLeaf: true,
@@ -186,42 +190,7 @@ const CRITICALITY = [
   { label: 'Low',      count: '3,265', pct: 27.76, color: 'var(--pai-green)'     },
 ];
 
-const ASSETS = [
-  { name: 'DATA-TRANSFORMATION-PL...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-  { name: 'UI-COMPONENT-LIBRARY-V3',   type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-  { name: 'CONTENT-FILTERING-SERVIC...', type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-  { name: 'ML-EXPERIMENT-TRACKING-V1',  type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-  { name: 'WEB-UI-DESIGN-SYSTEM-V1',    type: 'Kubernetes Container', crit: 'Critical', score: 1000 },
-];
-
-// ── Single-assessment filtered snapshot (all widgets scope to just the one
-// assessment picked via the Key Security Insights row's filter icon) ───────
-const FILTERED_SOURCES_CHART_DATA = [{ name: 'AWS', Unique: 100, Corroborated: 0 }];
-const FILTERED_TYPES_DATA = [{ label: 'Server', icon: 'server', count: 1, pct: 100, color: 'var(--pai-indigo)' }];
-const FILTERED_CRITICALITY = [{ label: 'Medium', count: '1', pct: 100, color: 'var(--pai-med-fg)' }];
-const FILTERED_ASSET = { name: 'K8S-PFSENSE-IN-CE', type: 'Kubernetes Container', crit: 'Medium', score: 382 };
-
-// Deterministic UUID-shaped id per assessment (mock — no real backend id exists)
-function fakeAssessmentId(text) {
-  let h1 = 0x811c9dc5, h2 = 0x1000193;
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
-    h2 = Math.imul(h2 + c, 2654435761) >>> 0;
-  }
-  const hex = (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).toUpperCase();
-  return `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20,32).padEnd(12,'0')}`;
-}
-
 // ── Chart data ────────────────────────────────────────────────────
-
-const TYPES_PIE_DATA = TYPES.slice(0, 6).map(t => ({
-  label: t.label,
-  count: t.count.toLocaleString(),
-  value: t.count,
-  pct: t.pct <= 1 ? '<1%' : `${t.pct}%`,
-  color: t.color,
-}));
 
 const TREND_DATA_BY_RANGE = {
   '1 W': [
@@ -279,12 +248,6 @@ const TREND_DATA_BY_RANGE = {
     { name: '8 Aug',  value: 11763 },
   ],
 };
-
-const SOURCES_CHART_DATA = SOURCES.map(s => ({
-  name: s.name,
-  Unique: s.total - s.corr,
-  Corroborated: s.corr,
-}));
 
 const TYPE_TREND_DATA_BY_RANGE = {
   '1 W': [
@@ -411,10 +374,9 @@ const IcInsightFilter = () => (
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToken } = {}) {
+export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFilter } = {}) {
   const [timeRange,     setTimeRange]     = useState('1 Y');
   const [insightSearch, setInsightSearch] = useState('');
-  const [filteredInsight, setFilteredInsight] = useState(null);
   const [assetSearch,   setAssetSearch]   = useState('');
   const [insightPage,   setInsightPage]   = useState(1);
   const [assetPage,     setAssetPage]     = useState(1);
@@ -469,34 +431,44 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
     );
   }, []);
 
-  useEffect(() => { setFilteredInsight(null); }, [resetToken]);
-
-  const isFiltered = !!filteredInsight;
+  // Real per-record population every widget below recomputes from — replaces the old
+  // single-scenario "isFiltered" canned snapshot, which couldn't represent arbitrary or
+  // stacking chart filters (only ever one fixed fake result).
+  const records = useMemo(() => makeDiscoverRecords({
+    key: 'cloud', count: 240, sources: SOURCES, types: TYPES, criticalities: CRITICALITY, insights: INSIGHTS, namePrefix: 'CLD-RES',
+  }), []);
+  const { matches } = useChartFilters(crossFilters);
+  const RECORD_FIELDS = {
+    'data-source':              r => r.source,
+    'origin-contribution-type': r => r.corrType,
+    'type-host':                r => r.type,
+    'asset-criticality':        r => r.criticality,
+    'assessment-id':            r => r.assessmentId,
+  };
+  const filteredRecords = records.filter(r => matches(r, RECORD_FIELDS));
 
   const toggleAssessmentFilter = (r) => {
-    if (filteredInsight === r) {
-      setFilteredInsight(null);
-      onFilterAssessment?.(null);
-    } else {
-      setFilteredInsight(r);
-      onFilterAssessment?.({ attrId: 'assessment-id', key: 'Assessment ID', value: fakeAssessmentId(r.text) });
-      setInsightPage(1);
-      setAssetPage(1);
-    }
+    onToggleFilter?.([{ attrId: 'assessment-id', key: 'Assessment ID', value: fakeAssessmentId(r.text) }]);
+    setInsightPage(1);
+    setAssetPage(1);
   };
 
-  const filteredInsights = isFiltered
-    ? [filteredInsight]
-    : INSIGHTS.filter(r => r.text.toLowerCase().includes(insightSearch.toLowerCase()));
-  const filteredAssets = isFiltered
-    ? [FILTERED_ASSET]
-    : ASSETS.filter(r => r.name.toLowerCase().includes(assetSearch.toLowerCase()));
+  const activeAssessmentIds = new Set(crossFilters.filter(c => c.attrId === 'assessment-id').map(c => c.value));
+  const filteredInsights = INSIGHTS.filter(r =>
+    (activeAssessmentIds.size === 0 || activeAssessmentIds.has(fakeAssessmentId(r.text))) &&
+    r.text.toLowerCase().includes(insightSearch.toLowerCase())
+  );
+  const filteredAssets = [...filteredRecords]
+    .sort((a, b) => b.score - a.score)
+    .filter(a => a.name.toLowerCase().includes(assetSearch.toLowerCase()))
+    .map(a => ({ name: a.name, type: a.type, crit: a.criticality, score: a.score }));
 
-  const activeSourcesChartData = isFiltered ? FILTERED_SOURCES_CHART_DATA : SOURCES_CHART_DATA;
-  const activeTypesData        = isFiltered ? FILTERED_TYPES_DATA : TYPES;
-  const activeTypesPieData     = isFiltered ? FILTERED_TYPES_DATA.map(t => ({ label: t.label, count: `${t.count}`, value: t.count, pct: `${t.pct}%`, color: t.color })) : TYPES_PIE_DATA;
-  const activeCriticality      = isFiltered ? FILTERED_CRITICALITY : CRITICALITY;
-  const activeChartData        = isFiltered ? currentTrendData.map(d => ({ ...d, value: 1 })) : currentTrendData;
+  const activeSourcesChartData = aggregateBySource(filteredRecords, SOURCES);
+  const activeTypesComputed    = aggregateByType(filteredRecords, TYPES);
+  const activeTypesData        = activeTypesComputed;
+  const activeTypesPieData     = activeTypesComputed.map(t => ({ label: t.label, count: `${t.count}`, value: t.count, pct: t.pct <= 1 ? '<1%' : `${t.pct}%`, color: t.color }));
+  const activeCriticality      = aggregateByCriticality(filteredRecords, CRITICALITY);
+  const activeChartData        = currentTrendData;
 
   const TH = ({ children }) => (
     <th className="ds-th">
@@ -539,12 +511,10 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
 
             <div className="dev-stat-value-row">
               <div>
-                <div className="dev-stat-value">{isFiltered ? '1' : '11,763'}</div>
+                <div className="dev-stat-value">{filteredRecords.length.toLocaleString()}</div>
                 <div className="dev-stat-meta">
-                  {isFiltered
-                    ? <IcTrendDown size={13} color="var(--shell-text-muted)" />
-                    : <IcTrendUp size={13} color="var(--pai-crit-fg)" />}
-                  <span className="dev-stat-change up">{isFiltered ? '0%' : '65.12%'}</span>
+                  <IcTrendUp size={13} color="var(--pai-crit-fg)" />
+                  <span className="dev-stat-change up">65.12%</span>
                   <span className="dev-stat-from">from last week</span>
                 </div>
               </div>
@@ -576,8 +546,8 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                     stroke="var(--pai-indigo)"
                     strokeWidth={2}
                     fill="url(#trendFillCloud)"
-                    dot={isFiltered ? false : { r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
-                    activeDot={isFiltered ? false : { r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
+                    dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -610,7 +580,13 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                     <Tooltip content={SourceTooltip} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
                     <Bar dataKey="Corroborated" stackId="a" fill="var(--pai-chart-teal)" radius={[2, 0, 0, 2]}
                       onMouseEnter={() => { hoveredBarRef.current = 'Corroborated'; }}
-                      onMouseLeave={() => { hoveredBarRef.current = null; }} />
+                      onMouseLeave={() => { hoveredBarRef.current = null; }}
+                      cursor={onToggleFilter ? 'pointer' : 'default'}
+                      onClick={(data) => onToggleFilter?.([
+                        { attrId: 'data-source', key: 'Data Source', value: data.name },
+                        { attrId: 'origin-contribution-type', key: 'Origin Contribution Type', value: 'Corroborated' },
+                      ])}
+                    />
                     <Bar
                       dataKey="Unique"
                       stackId="a"
@@ -618,6 +594,11 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                       radius={[0, 2, 2, 0]}
                       onMouseEnter={() => { hoveredBarRef.current = 'Unique'; }}
                       onMouseLeave={() => { hoveredBarRef.current = null; }}
+                      cursor={onToggleFilter ? 'pointer' : 'default'}
+                      onClick={(data) => onToggleFilter?.([
+                        { attrId: 'data-source', key: 'Data Source', value: data.name },
+                        { attrId: 'origin-contribution-type', key: 'Origin Contribution Type', value: 'Unique' },
+                      ])}
                       label={({ x, y, width, height, index }) => {
                         const row = activeSourcesChartData[index]; const total = row ? row.Corroborated + row.Unique : 0;
                         return (
@@ -660,6 +641,8 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                       startAngle={90}
                       endAngle={-270}
                       cornerRadius={4}
+                      cursor={onToggleFilter ? 'pointer' : 'default'}
+                      onClick={(entry) => onToggleFilter?.([{ attrId: 'type-host', key: 'Type', value: entry.label }])}
                     >
                       {activeTypesPieData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
@@ -670,9 +653,11 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                 </ResponsiveContainer>
                 <div className="dev-donut-center">
                   <div className="dev-donut-center__label">Total</div>
-                  <div className="dev-donut-center__value">{isFiltered ? '1' : '11,763'}</div>
+                  <div className="dev-donut-center__value">{filteredRecords.length.toLocaleString()}</div>
                 </div>
               </div>
+              {/* Legend is a display-only key — no click-to-filter here, only the donut's own
+                  slices filter, matching every other dashboard's pre-existing behavior. */}
               <div className="dev-type-list">
                 {activeTypesData.map((t, i) => (
                   <div key={i} className="dev-type-row">
@@ -738,7 +723,7 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                         <div className="cfp-td-actions">
                           <span className="dc-tip dc-tip--end" data-tip="Filter dashboard by this assessment">
                             <button
-                              className={`comp-drawer-action-icon comp-drawer-action-icon--filter${filteredInsight === r ? ' comp-drawer-action-icon--active' : ''}`}
+                              className={`comp-drawer-action-icon comp-drawer-action-icon--filter${activeAssessmentIds.has(fakeAssessmentId(r.text)) ? ' comp-drawer-action-icon--active' : ''}`}
                               onClick={() => toggleAssessmentFilter(r)}
                             ><IcInsightFilter /></button>
                           </span>
@@ -776,9 +761,12 @@ export default function DiscoverCloudPage({ onNav, onFilterAssessment, resetToke
                     onMouseEnter={(e) => { setHoveredCrit(i); setCritTooltip({ i, x: e.clientX, y: e.clientY }); }}
                     onMouseMove={(e) => setCritTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                     onMouseLeave={() => { setHoveredCrit(null); setCritTooltip(null); }}
+                    onClick={() => onToggleFilter?.([{ attrId: 'asset-criticality', key: 'Asset Criticality', value: c.label }])}
                   />
                 ))}
               </div>
+              {/* Legend is a display-only key — no click-to-filter here, only the bar's own
+                  segments filter, matching every other dashboard's pre-existing behavior. */}
               <div className="dev-crit-legend">
                 {activeCriticality.map((c, i) => (
                   <div key={i} className="dev-crit-leg-item" style={{ '--crit-color': c.color }}>

@@ -6,6 +6,9 @@
 html, body, #root { height: 100%; margin: 0; }
 body { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
 svg text { font-family: 'Inter', system-ui; }
+.recharts-wrapper:focus,
+.recharts-wrapper *:focus,
+.recharts-surface:focus { outline: none; }
 body { background: #F7F9FC; color: #101010; }
 
 :root {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import TablePagination from './TablePagination'
 import {
@@ -6,6 +6,7 @@ import {
   LineChart, Line,
   BarChart, Bar, Cell,
   PieChart, Pie,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   CartesianGrid,
   XAxis, YAxis,
   Tooltip, ResponsiveContainer,
@@ -27,6 +28,15 @@ export const DEFAULT_VERT_BAR = [
   { label: 'Network Device', value: 4478  },
   { label: 'Mobile',         value: 2407  },
   { label: 'Virtual',        value: 1     },
+]
+
+export const DEFAULT_RADAR = [
+  { label: 'Completeness', value: 70 },
+  { label: 'Accuracy',     value: 65 },
+  { label: 'Integrity',    value: 60 },
+  { label: 'Timeliness',   value: 55 },
+  { label: 'Validity',     value: 62 },
+  { label: 'Uniqueness',   value: 68 },
 ]
 
 // Origins palette — matches screenshot legend colors
@@ -210,10 +220,12 @@ function PieTooltip({ active, payload }) {
 // ── Stacked vertical bar (extracted so it can own activeOrigin state) ──
 const COMPACT_LEGEND_PAGE_SIZE = 7
 
-function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
+function StackVertChart({ data, showLegend, chartColors, printMode = false, seriesKeys }) {
   const [activeOrigin, setActiveOrigin] = useState(null)
   const [legendPage, setLegendPage] = useState(0)
   const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
+
+  const SERIES = seriesKeys || STACK_ORIGINS
 
   const toggleOrigin = (key) => {
     setHiddenOrigins(prev => {
@@ -224,20 +236,20 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
   }
   const rows = data || DEFAULT_STACK_VERT
   const chartData = rows.map(r => ({ ...r, name: r.type }))
-  const originTotals = STACK_ORIGINS.map(o => ({
+  const originTotals = SERIES.map(o => ({
     ...o,
     total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
   }))
   const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
 
-  const totalPages = Math.ceil(STACK_ORIGINS.length / COMPACT_LEGEND_PAGE_SIZE)
-  const pageItems = STACK_ORIGINS.slice(
+  const totalPages = Math.ceil(SERIES.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = SERIES.slice(
     legendPage * COMPACT_LEGEND_PAGE_SIZE,
     (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
   )
 
   return (
-    <div className="cr-vert-root">
+    <div className="cr-vert-root" onMouseLeave={() => setActiveOrigin(null)}>
       <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -257,7 +269,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
               tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
             />
             {!printMode && <Tooltip content={(props) => <StackTooltip {...props} activeOrigin={activeOrigin} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} wrapperStyle={{ zIndex: 9999 }} />}
-            {STACK_ORIGINS.map((o, i) => (
+            {SERIES.map((o, i) => (
               <Bar
                 key={o.key}
                 dataKey={o.key}
@@ -265,7 +277,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
                 fill={chartColors?.[o.key] || o.color}
                 fillOpacity={activeOrigin && activeOrigin !== o.key ? 0.15 : 1}
                 hide={hiddenOrigins.has(o.key)}
-                radius={i === STACK_ORIGINS.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                radius={i === SERIES.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
                 isAnimationActive={false}
                 onMouseEnter={() => setActiveOrigin(o.key)}
                 onMouseLeave={() => setActiveOrigin(null)}
@@ -279,7 +291,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
           {originTotals.map((o, i) => (
             <div key={i} className="cr-bar-legend-row">
               <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
-              <span className="cr-bar-legend-name">{o.key}</span>
+              <span className="cr-bar-legend-name">{o.label || o.key}</span>
               <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
               <span className="cr-bar-legend-pct">
                 {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
@@ -298,7 +310,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
                 onClick={() => toggleOrigin(o.key)}
               >
                 <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
-                <span className="cr-compact-legend-label">{o.key}</span>
+                <span className="cr-compact-legend-label">{o.label || o.key}</span>
               </div>
             ))}
           </div>
@@ -324,12 +336,14 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false }) {
 }
 
 // ── Stacked horizontal bar ────────────────────────────────────────
-function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
+function StackHorChart({ data, showLegend, chartColors, printMode = false, seriesKeys, onSegmentClick }) {
   const [activeOrigin, setActiveOrigin] = useState(null)
   const [legendPage, setLegendPage] = useState(0)
   const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
   const [tipPos, setTipPos] = useState({ x: 0, y: 0 })
   const rafRef = useRef(null)
+
+  const SERIES = seriesKeys || STACK_ORIGINS
 
   const toggleOrigin = (key) => {
     setHiddenOrigins(prev => {
@@ -350,14 +364,14 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
 
   const rows = data || DEFAULT_STACK_VERT
   const chartData = rows.map(r => ({ ...r, name: r.type }))
-  const originTotals = STACK_ORIGINS.map(o => ({
+  const originTotals = SERIES.map(o => ({
     ...o,
     total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
   }))
   const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
 
-  const totalPages = Math.ceil(STACK_ORIGINS.length / COMPACT_LEGEND_PAGE_SIZE)
-  const pageItems = STACK_ORIGINS.slice(
+  const totalPages = Math.ceil(SERIES.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = SERIES.slice(
     legendPage * COMPACT_LEGEND_PAGE_SIZE,
     (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
   )
@@ -390,7 +404,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
   }, [activeOrigin, tipPos])
 
   return (
-    <div className="cr-vert-root" onMouseMove={handleMouseMove}>
+    <div className="cr-vert-root" onMouseMove={handleMouseMove} onMouseLeave={() => setActiveOrigin(null)}>
       <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -417,7 +431,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
               cursor={printMode ? false : { fill: 'rgba(255,255,255,0.04)' }}
               wrapperStyle={{ display: 'none' }}
             />
-            {STACK_ORIGINS.map((o, i) => (
+            {SERIES.map((o, i) => (
               <Bar
                 key={o.key}
                 dataKey={o.key}
@@ -425,10 +439,12 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
                 fill={chartColors?.[o.key] || o.color}
                 fillOpacity={activeOrigin && activeOrigin !== o.key ? 0.15 : 1}
                 hide={hiddenOrigins.has(o.key)}
-                radius={i === STACK_ORIGINS.length - 1 ? [0, 3, 3, 0] : [0, 0, 0, 0]}
+                radius={i === SERIES.length - 1 ? [0, 3, 3, 0] : [0, 0, 0, 0]}
                 isAnimationActive={false}
                 onMouseEnter={() => setActiveOrigin(o.key)}
                 onMouseLeave={() => setActiveOrigin(null)}
+                cursor={onSegmentClick ? 'pointer' : 'default'}
+                onClick={onSegmentClick ? (barData) => onSegmentClick(barData.payload?.type ?? barData.type, o.key) : undefined}
               />
             ))}
           </BarChart>
@@ -439,7 +455,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
           {originTotals.map((o, i) => (
             <div key={i} className="cr-bar-legend-row">
               <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
-              <span className="cr-bar-legend-name">{o.key}</span>
+              <span className="cr-bar-legend-name">{o.label || o.key}</span>
               <span className="cr-bar-legend-count">{o.total.toLocaleString()}</span>
               <span className="cr-bar-legend-pct">
                 {grandTotal > 0 ? `${((o.total / grandTotal) * 100).toFixed(2)}%` : '0%'}
@@ -458,7 +474,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
                 onClick={() => toggleOrigin(o.key)}
               >
                 <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
-                <span className="cr-compact-legend-label">{o.key}</span>
+                <span className="cr-compact-legend-label">{o.label || o.key}</span>
               </div>
             ))}
           </div>
@@ -479,6 +495,110 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false }) {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Semicircle gauge (self-measuring — needs pixel cx/cy/radius so the ──
+// gradient can be anchored with gradientUnits="userSpaceOnUse"; a % based
+// gradient would rescale to each arc's own bounding box, so a low value
+// would show the full red-to-green range instead of just the red end.
+function GaugeArc({ value, markerValue }) {
+  const gradId = useId()
+  const wrapRef = useRef(null)
+  const [size, setSize] = useState({ w: 280, h: 150 })
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const r = entries[0]?.contentRect
+      if (r && r.width > 0 && r.height > 0) setSize({ w: r.width, h: r.height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const { w, h } = size
+  const labelPad = 20
+  // Reference gauge measures 325×171.5 (outerR 162.5, ring 18px) — cap at
+  // that intrinsic size rather than stretching to fill a larger card, but
+  // still shrink proportionally (same ratio) if the container is smaller.
+  const REF_OUTER_R = 162.5
+  const REF_RING_RATIO = 18 / 162.5
+  const outerR  = Math.max(24, Math.min(w / 2 - 4, h - labelPad, REF_OUTER_R))
+  const ringW   = outerR * REF_RING_RATIO
+  const innerR  = outerR - ringW
+  const cx = w / 2
+  // Center the whole gauge block (arc + end labels) in the available
+  // height instead of pinning it to the bottom — a tall body would
+  // otherwise leave the arc looking bottom-heavy with dead space above it.
+  const blockH = outerR + labelPad
+  const topOffset = Math.max(0, (h - blockH) / 2)
+  const cy = topOffset + outerR
+
+  return (
+    <div ref={wrapRef} style={{ flex: 1, width: '100%', minHeight: 0, position: 'relative' }}>
+      <PieChart width={w} height={h}>
+        <defs>
+          <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={cx - outerR} y1="0" x2={cx + outerR} y2="0">
+            <stop offset="0%"   stopColor="var(--pai-crit-fg)" />
+            <stop offset="35%"  stopColor="var(--pai-med-fg)" />
+            <stop offset="70%"  stopColor="var(--pai-caution-fg)" />
+            <stop offset="100%" stopColor="var(--pai-green)" />
+          </linearGradient>
+        </defs>
+        <Pie
+          data={[{ value: 100 }]}
+          dataKey="value"
+          cx={cx} cy={cy}
+          startAngle={180} endAngle={0}
+          innerRadius={innerR} outerRadius={outerR}
+          stroke="none"
+          cornerRadius={ringW / 2}
+          isAnimationActive={false}
+        >
+          <Cell fill="var(--shell-raised)" />
+        </Pie>
+        {value > 0 && (
+          <Pie
+            data={[{ value }]}
+            dataKey="value"
+            cx={cx} cy={cy}
+            startAngle={180}
+            endAngle={180 - (value / 100) * 180}
+            innerRadius={innerR} outerRadius={outerR}
+            stroke="none"
+            cornerRadius={ringW / 2}
+            isAnimationActive={false}
+          >
+            <Cell fill={`url(#${gradId})`} />
+          </Pie>
+        )}
+      </PieChart>
+      {markerValue != null && (() => {
+        // Rendered as a separate overlay svg (not a PieChart child) — Recharts
+        // buckets unrecognized children into its own z-index layering system,
+        // which put a raw <line> inside <PieChart> behind the Pie sectors
+        // regardless of JSX order. An absolutely-positioned sibling svg is
+        // unambiguously painted on top.
+        const rad = ((180 - (Math.max(0, Math.min(100, markerValue)) / 100) * 180) * Math.PI) / 180
+        const cosT = Math.cos(rad), sinT = Math.sin(rad)
+        const tickIn = innerR - 5, tickOut = outerR + 5
+        const x1 = cx + tickIn * cosT, y1 = cy - tickIn * sinT
+        const x2 = cx + tickOut * cosT, y2 = cy - tickOut * sinT
+        return (
+          <svg width={w} height={h} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#fff" strokeWidth={10} strokeLinecap="round" />
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--pai-caution-fg)" strokeWidth={3} strokeLinecap="round" />
+          </svg>
+        )
+      })()}
+      <div style={{ position: 'absolute', left: cx, top: cy - 14, transform: 'translate(-50%, -100%)', pointerEvents: 'none' }}>
+        <span style={{ fontSize: 32, fontWeight: 700, color: 'var(--shell-text)', fontFamily: 'Inter,system-ui', lineHeight: 1, whiteSpace: 'nowrap' }}>{Math.round(value)}%</span>
+      </div>
+      <span style={{ position: 'absolute', left: cx - outerR, top: cy + 6, fontSize: 11, color: TG, fontFamily: 'Inter,system-ui' }}>0</span>
+      <span style={{ position: 'absolute', left: cx + outerR - 20, top: cy + 6, fontSize: 11, color: TG, fontFamily: 'Inter,system-ui' }}>100</span>
     </div>
   )
 }
@@ -522,10 +642,14 @@ export function ChartRender({
   legendDesc,
   columns,
   chartColors,
+  seriesKeys,
+  radarSeries,
   description,
   cardHeight = 260,
   printMode = false,
   reportTotal = 0,
+  compact = false,
+  onSegmentClick,
 }) {
   // ── SVG tooltip state ──────────────────────────────────────────
   const [svgTip, setSvgTip] = useState(null)
@@ -549,47 +673,51 @@ export function ChartRender({
     if (data.trendData) {
       return (
         <div className="cr-kpi-root" style={{ '--cr-kpi-accent': accent, '--kpi-val-size': `${valSize}px`, '--kpi-label-size': `${labelSize}px` }}>
-          <div className="cr-kpi-meta">
-            <span className="cr-kpi-label">{data.label}</span>
-            <span className="cr-kpi-value">{data.value}</span>
-            {data.trend && (
-              <span
-                className="cr-kpi-badge"
-                style={{ '--cr-trend-bg': trendBg, '--cr-trend-color': trendColor }}
-              >
-                <span className="cr-kpi-badge__trend">
-                  {data.trendUp
-                    ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 4.84669L6.10893 8.44976L8.51098 6.04771L13.3151 10.8518" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  }
-                  {data.trend}
+          {!compact && (
+            <div className="cr-kpi-meta">
+              <span className="cr-kpi-label">{data.label}</span>
+              <span className="cr-kpi-value">{data.value}</span>
+              {data.trend && (
+                <span
+                  className="cr-kpi-badge"
+                  style={{ '--cr-trend-bg': trendBg, '--cr-trend-color': trendColor }}
+                >
+                  <span className="cr-kpi-badge__trend">
+                    {data.trendUp
+                      ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 4.84669L6.10893 8.44976L8.51098 6.04771L13.3151 10.8518" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    }
+                    {data.trend}
+                  </span>
+                  <span className="cr-kpi-badge__suffix"> {data.trendSuffix || 'from last month'}</span>
                 </span>
-                <span className="cr-kpi-badge__suffix"> {data.trendSuffix || 'from last month'}</span>
-              </span>
-            )}
-          </div>
+              )}
+            </div>
+          )}
           <div className="cr-kpi-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.trendData} margin={{ top: 8, right: 8, bottom: 0, left: -30 }}>
+              <AreaChart data={data.trendData} margin={compact ? { top: 2, right: 2, bottom: 2, left: 2 } : { top: 8, right: 8, bottom: 0, left: -30 }}>
                 <defs>
                   <linearGradient id="crKpiFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor={accent} stopOpacity={0.25} />
                     <stop offset="100%" stopColor={accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 9, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}
-                  axisLine={false} tickLine={false} dy={4}
-                />
+                {!compact && (
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 9, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }}
+                    axisLine={false} tickLine={false} dy={4}
+                  />
+                )}
                 <YAxis hide />
-                <Tooltip {...RECHARTS_TIP} cursor={{ stroke: 'var(--shell-border)', strokeWidth: 1 }} />
+                {!compact && <Tooltip {...RECHARTS_TIP} cursor={{ stroke: 'var(--shell-border)', strokeWidth: 1 }} />}
                 <Area
                   type="monotone" dataKey="value"
                   stroke={accent} strokeWidth={2}
                   fill="url(#crKpiFill)"
-                  dot={{ r: 3, fill: accent, strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: accent, strokeWidth: 0 }}
+                  dot={false}
+                  activeDot={compact ? false : { r: 4, fill: accent, strokeWidth: 0 }}
                   isAnimationActive={false}
                 />
               </AreaChart>
@@ -614,7 +742,7 @@ export function ChartRender({
 
   // ── Stacked horizontal bar ──────────────────────────────────────
   if (chartId === 'stack-hor') {
-    return <StackHorChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} />
+    return <StackHorChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} onSegmentClick={onSegmentClick} />
   }
 
   // ── Pie / Donut ─────────────────────────────────────────────────
@@ -691,6 +819,55 @@ export function ChartRender({
                     ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: 'var(--pai-green)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>↗ {d.change}%</span>
                     : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Semicircle gauge — red→amber→yellow→green gradient, proportional fill ──
+  if (chartId === 'gauge-arc') {
+    const raw = typeof data === 'number' ? data : (data?.value ?? 0)
+    const value = Math.max(0, Math.min(100, raw))
+    const markerValue = typeof data === 'object' ? data?.markerValue : undefined
+    return <GaugeArc value={value} markerValue={markerValue} />
+  }
+
+  // ── Radar / spider chart ──────────────────────────────────────────
+  if (chartId === 'radar') {
+    const rows = data || DEFAULT_RADAR
+    const rSeries = radarSeries || [{ key: 'value', color: 'var(--pai-indigo)', label: 'Value' }]
+    return (
+      <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={rows} outerRadius="72%">
+              <PolarGrid stroke={GRID} />
+              <PolarAngleAxis dataKey="label" tick={{ fontSize: 10, fill: TG, fontFamily: 'Inter,system-ui' }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+              {rSeries.map(s => (
+                <Radar
+                  key={s.key}
+                  dataKey={s.key}
+                  stroke={s.color}
+                  fill={s.color}
+                  fillOpacity={0.2}
+                  isAnimationActive={false}
+                  dot={{ r: 3, fill: s.color, strokeWidth: 0 }}
+                />
+              ))}
+              {!printMode && <Tooltip {...RECHARTS_TIP} />}
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+        {rSeries.length > 1 && (
+          <div className="cr-radar-legend">
+            {rSeries.map(s => (
+              <div key={s.key} className="cr-radar-legend-item">
+                <span className="cr-radar-legend-dot" style={{ '--cr-dot-bg': s.color }} />
+                <span>{s.label}</span>
               </div>
             ))}
           </div>
@@ -903,7 +1080,7 @@ export function ChartRender({
 
   // ── Stacked vertical bar chart ────────────────────────────────
   if (chartId === 'stack-vert') {
-    return <StackVertChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} />
+    return <StackVertChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} />
   }
 
   // ── Vertical bar chart ─────────────────────────────────────────

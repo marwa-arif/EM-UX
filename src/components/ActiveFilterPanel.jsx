@@ -4,15 +4,27 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import '../styles/active-filter-panel.css'
 
 const ATTR_ENTITY = {
-  'type-host':         'Host',
-  'infra-type':        'Host',
-  'data-source':       'Host',
-  'score':             'Host',
-  'asset-criticality': 'Host',
-  'business-unit':     'Host',
-  'type-assessment':   'Assessment',
-  'saved-filter':      'Saved',
-  'assessment-id':     'Finding',
+  'type-host':                 'Host',
+  'infra-type':                'Host',
+  'data-source':               'Host',
+  'origin-contribution-type':  'Host',
+  'score':                     'Host',
+  'asset-criticality':         'Host',
+  'business-unit':             'Host',
+  'type-assessment':           'Assessment',
+  'saved-filter':              'Saved',
+  'assessment-id':             'Finding',
+  'attack-surface':            'Host',
+  'severity':                  'Finding',
+  'exposure-category':         'Finding',
+  // Data Quality Overview's "Entity Distribution" chart uses the group-by dimension name
+  // itself as the attrId (Origin/Type/Business Unit/Activity Status), plus a synthetic
+  // quality-bucket dimension for the Low/Medium/High segment — all bucketed under 'Entity'.
+  'Origin':                    'Entity',
+  'Type':                      'Entity',
+  'Business Unit':             'Entity',
+  'Activity Status':           'Entity',
+  'quality-bucket':            'Entity',
 }
 
 const IcClose = () => (
@@ -102,6 +114,11 @@ const PAGE_AFP_CONFIG = {
       { entity: 'Identity', relation: 'Identity Has Finding' },
       { entity: 'Person',   relation: null },
       { entity: 'Account',  relation: null },
+      // Chart-click chips reuse the same 'Host'-bucketed attrIds as the other Discover
+      // pages (data-source, type-host, asset-criticality, origin-contribution-type) —
+      // simplest to just include Host here too rather than fork attrId→entity mapping
+      // per page.
+      { entity: 'Host',     relation: null },
     ],
     implicitEntityFilters: [],
     implicitFindingFilters: [
@@ -111,6 +128,11 @@ const PAGE_AFP_CONFIG = {
   },
   'workspace/report': {
     entityTree: [{ entity: 'Host', relation: null }],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+  'data-quality/overview': {
+    entityTree: [{ entity: 'Entity', relation: null }],
     implicitEntityFilters: [],
     implicitFindingFilters: [],
   },
@@ -237,7 +259,7 @@ export function SaveFilterModal({ onClose, onSave }) {
 
         <div className="sfm-header">
           <div className="sfm-icon-wrap">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--pai-indigo)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
               <path d="M13.5 5.207V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5h7.793l2.207 2.207Z"/>
               <path d="M5 13.5V9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v4"/>
               <path d="M9.5 4.5H6"/>
@@ -462,15 +484,25 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       )}
 
       {showResetConfirm && (
-        <div className="afp-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setShowResetConfirm(false) }}>
-          <div className="afp-modal">
-            <h3 className="afp-modal-title">Reset All Filters</h3>
-            <p className="afp-modal-body">
+        <div className="ds-modal-overlay afp-reset-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title afp-reset-modal-title">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 7.2561C8.84388 7.2562 9.5127 7.92682 9.5127 8.76978C9.5126 9.61265 8.84382 10.2824 8 10.2825C7.15609 10.2825 6.48642 9.61271 6.48633 8.76978C6.48633 7.92676 7.15603 7.2561 8 7.2561Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
+                  <path d="M3.26953 8.76914C3.26953 9.70481 3.54697 10.6195 4.06676 11.3974C4.58655 12.1754 5.32534 12.7818 6.18972 13.1399C7.05409 13.4979 8.00523 13.5916 8.92285 13.4091C9.84047 13.2265 10.6834 12.776 11.3449 12.1143C12.0065 11.4527 12.457 10.6098 12.6395 9.69208C12.8221 8.77439 12.7284 7.82317 12.3704 6.95873C12.0123 6.09428 11.406 5.35543 10.6281 4.8356C9.87356 4.3314 8.99047 4.05522 8.08433 4.03906" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7.80005 5.6189L5.68774 4.02417L7.80005 2.42944V5.6189Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
+                </svg>
+                Reset All Filters
+              </span>
+              <button className="ds-modal-close" onClick={() => setShowResetConfirm(false)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body">
               This will remove all explicit filters from your current view. Implicit filters will remain active. This action cannot be undone.
-            </p>
-            <div className="afp-modal-actions">
-              <button className="afp-modal-cancel" onClick={() => setShowResetConfirm(false)}>Cancel</button>
-              <button className="afp-modal-confirm" onClick={() => { setShowResetConfirm(false); onClear?.(); onClose() }}>Reset Filters</button>
+            </div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setShowResetConfirm(false)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={() => { setShowResetConfirm(false); onClear?.(); onClose() }}>Reset Filters</button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import TablePagination from '../components/TablePagination.jsx'
 import AssessmentBuilder from '../components/AssessmentBuilder.jsx'
 import '../styles/compliance.css'
 import '../styles/assessments.css'
+import '../styles/active-filter-panel.css'
 
 // ── Entity icons ──────────────────────────────────────────────────
 const ENTITY_ICONS = {
@@ -52,33 +53,45 @@ const IcSearch = () => (
   </svg>
 )
 
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
+  </svg>
+)
+
 // ── Assessment data ───────────────────────────────────────────────
 const ASSESSMENTS = [
-  { id: 'a01', name: 'Machine identities have MFA enabled',                                                     entity: 'identity', entityLabel: 'Identity', closed: 15,     open: 88810, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800'] },
-  { id: 'a02', name: 'Devices are synchronised in CMDB within the last 1 day',                                  entity: 'device',   entityLabel: 'Host',     closed: 2,      open: 54682, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_800','nist_csf'] },
-  { id: 'a03', name: 'Devices follow approved naming conventions',                                               entity: 'device',   entityLabel: 'Host',     closed: 155,    open: 54529, pct: 0,  rating: 'Weak',     frameworks: ['scf'] },
-  { id: 'a04', name: 'Devices do not have end of life operating systems',                                        entity: 'device',   entityLabel: 'Host',     closed: 2041,   open: 52645, pct: 3,  rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cmmc_2'] },
-  { id: 'a05', name: 'Devices have file integrity monitoring enabled',                                           entity: 'device',   entityLabel: 'Host',     closed: 0,      open: 47799, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_800','nist_csf','pci_dss'] },
-  { id: 'a06', name: 'Devices have host firewall protection enabled',                                            entity: 'device',   entityLabel: 'Host',     closed: 192,    open: 47607, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_800','nist_csf','pci_dss'] },
-  { id: 'a07', name: 'Devices enforce blocking of known malware',                                                entity: 'device',   entityLabel: 'Host',     closed: 518,    open: 47281, pct: 1,  rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss'] },
-  { id: 'a08', name: 'Devices have fully functional endpoint protection agent',                                  entity: 'device',   entityLabel: 'Host',     closed: 10263,  open: 37536, pct: 21, rating: 'Weak',     frameworks: ['scf','nist_csf','nist_800','pci_dss'] },
-  { id: 'a09', name: 'Non-Human identities in Active Directory have had their password rotated within the last 45 days', entity: 'identity', entityLabel: 'Identity', closed: 4284, open: 35886, pct: 10, rating: 'Weak', frameworks: ['scf','nist_csf','pci_dss','nist_800','cmmc_2'] },
-  { id: 'a10', name: 'Devices have Active Blocking enabled',                                                     entity: 'device',   entityLabel: 'Host',     closed: 19028,  open: 35658, pct: 34, rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
-  { id: 'a11', name: 'Devices have an active owner',                                                             entity: 'device',   entityLabel: 'Host',     closed: 20260,  open: 34426, pct: 37, rating: 'Weak',     frameworks: ['scf','nist_800','nist_csf'] },
-  { id: 'a12', name: 'Devices are scanned for malicious code within the last 7 days',                           entity: 'device',   entityLabel: 'Host',     closed: 14867,  open: 32932, pct: 31, rating: 'Weak',     frameworks: ['scf','nist_800','nist_csf'] },
-  { id: 'a13', name: 'Devices have AV coverage',                                                                entity: 'device',   entityLabel: 'Host',     closed: 14873,  open: 32926, pct: 31, rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
-  { id: 'a14', name: 'Human identities are configured to require a password',                                   entity: 'identity', entityLabel: 'Identity', closed: 152,    open: 31316, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
-  { id: 'a15', name: 'Active Human identities have at least one authentication factor',                         entity: 'identity', entityLabel: 'Identity', closed: 157,    open: 31311, pct: 0,  rating: 'Weak',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
-  { id: 'a16', name: 'Devices have EDR agent installed',                                                        entity: 'device',   entityLabel: 'Host',     closed: 8412,   open: 28940, pct: 22, rating: 'Weak',     frameworks: ['scf','nist_csf','cis'] },
-  { id: 'a17', name: 'Cloud resources have monitoring and logging enabled',                                     entity: 'cloud',    entityLabel: 'Cloud',    closed: 3211,   open: 19870, pct: 13, rating: 'Weak',     frameworks: ['nist_csf','pci_dss','cmmc_2'] },
-  { id: 'a18', name: 'Vulnerability scans are performed on a regular cadence',                                  entity: 'device',   entityLabel: 'Host',     closed: 12450,  open: 14200, pct: 46, rating: 'Moderate', frameworks: ['scf','nist_csf','pci_dss'] },
-  { id: 'a19', name: 'Software assets are inventoried and patched within defined SLAs',                        entity: 'multi',    entityLabel: 'Multi',    closed: 21880,  open: 12300, pct: 64, rating: 'Moderate', frameworks: ['nist_csf','nist_800','cis'] },
-  { id: 'a20', name: 'Security event logs are retained for the required duration',                              entity: 'cloud',    entityLabel: 'Cloud',    closed: 38200,  open: 6100,  pct: 86, rating: 'Strong',   frameworks: ['nist_csf','pci_dss','hipaa'] },
-  { id: 'a21', name: 'Privileged access is reviewed and recertified on a regular basis',                       entity: 'identity', entityLabel: 'Identity', closed: 5100,   open: 1280,  pct: 79, rating: 'Moderate', frameworks: ['nist_csf','nist_800','cmmc_2','pci_dss'] },
-  { id: 'a22', name: 'Multi-factor authentication is enforced for all administrative access',                  entity: 'identity', entityLabel: 'Identity', closed: 44200,  open: 3800,  pct: 92, rating: 'Strong',   frameworks: ['nist_csf','pci_dss','cmmc_2','cis'] },
-  { id: 'a23', name: 'EC2 Instances have health monitoring enabled',                                           entity: 'cloud',    entityLabel: 'Cloud',    closed: 9800,   open: 740,   pct: 93, rating: 'Strong',   frameworks: ['nist_csf','nist_800'] },
-  { id: 'a24', name: 'Storage resources have Secure File Transfer Protocol (SFTP) enabled',                   entity: 'storage',  entityLabel: 'Storage',  closed: 280,    open: 1721,  pct: 14, rating: 'Weak',     frameworks: ['nist_csf','pci_dss','nist_800'] },
-  { id: 'a25', name: 'Devices have a single assigned owner',                                                   entity: 'device',   entityLabel: 'Host',     closed: 19991,  open: 18740, pct: 51, rating: 'Moderate', frameworks: ['scf','nist_csf'] },
+  { id: 'a01', name: 'Machine identities have MFA enabled',                                                     entity: 'identity', entityLabel: 'Identity', closed: 15,     open: 88810, pct: 0,  rating: 'Weak',     criticality: 'Critical', frameworks: ['scf','nist_csf','pci_dss','nist_800'] },
+  { id: 'a02', name: 'Devices are synchronised in CMDB within the last 1 day',                                  entity: 'device',   entityLabel: 'Host',     closed: 2,      open: 54682, pct: 0,  rating: 'Weak',     criticality: 'Medium',   frameworks: ['scf','nist_800','nist_csf'] },
+  { id: 'a03', name: 'Devices follow approved naming conventions',                                               entity: 'device',   entityLabel: 'Host',     closed: 155,    open: 54529, pct: 0,  rating: 'Weak',     criticality: 'Low',      frameworks: ['scf'] },
+  { id: 'a04', name: 'Devices do not have end of life operating systems',                                        entity: 'device',   entityLabel: 'Host',     closed: 2041,   open: 52645, pct: 3,  rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cmmc_2'] },
+  { id: 'a05', name: 'Devices have file integrity monitoring enabled',                                           entity: 'device',   entityLabel: 'Host',     closed: 0,      open: 47799, pct: 0,  rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_800','nist_csf','pci_dss'] },
+  { id: 'a06', name: 'Devices have host firewall protection enabled',                                            entity: 'device',   entityLabel: 'Host',     closed: 192,    open: 47607, pct: 0,  rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_800','nist_csf','pci_dss'] },
+  { id: 'a07', name: 'Devices enforce blocking of known malware',                                                entity: 'device',   entityLabel: 'Host',     closed: 518,    open: 47281, pct: 1,  rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','pci_dss'] },
+  { id: 'a08', name: 'Devices have fully functional endpoint protection agent',                                  entity: 'device',   entityLabel: 'Host',     closed: 10263,  open: 37536, pct: 21, rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','nist_800','pci_dss'] },
+  { id: 'a09', name: 'Non-Human identities in Active Directory have had their password rotated within the last 45 days', entity: 'identity', entityLabel: 'Identity', closed: 4284, open: 35886, pct: 10, rating: 'Weak', criticality: 'Critical', frameworks: ['scf','nist_csf','pci_dss','nist_800','cmmc_2'] },
+  { id: 'a10', name: 'Devices have Active Blocking enabled',                                                     entity: 'device',   entityLabel: 'Host',     closed: 19028,  open: 35658, pct: 34, rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
+  { id: 'a11', name: 'Devices have an active owner',                                                             entity: 'device',   entityLabel: 'Host',     closed: 20260,  open: 34426, pct: 37, rating: 'Weak',     criticality: 'Medium',   frameworks: ['scf','nist_800','nist_csf'] },
+  { id: 'a12', name: 'Devices are scanned for malicious code within the last 7 days',                           entity: 'device',   entityLabel: 'Host',     closed: 14867,  open: 32932, pct: 31, rating: 'Weak',     criticality: 'Medium',   frameworks: ['scf','nist_800','nist_csf'] },
+  { id: 'a13', name: 'Devices have AV coverage',                                                                entity: 'device',   entityLabel: 'Host',     closed: 14873,  open: 32926, pct: 31, rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
+  { id: 'a14', name: 'Human identities are configured to require a password',                                   entity: 'identity', entityLabel: 'Identity', closed: 152,    open: 31316, pct: 0,  rating: 'Weak',     criticality: 'Critical', frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
+  { id: 'a15', name: 'Active Human identities have at least one authentication factor',                         entity: 'identity', entityLabel: 'Identity', closed: 157,    open: 31311, pct: 0,  rating: 'Weak',     criticality: 'Critical', frameworks: ['scf','nist_csf','pci_dss','nist_800','cis'] },
+  { id: 'a16', name: 'Devices have EDR agent installed',                                                        entity: 'device',   entityLabel: 'Host',     closed: 8412,   open: 28940, pct: 22, rating: 'Weak',     criticality: 'High',     frameworks: ['scf','nist_csf','cis'] },
+  { id: 'a17', name: 'Cloud resources have monitoring and logging enabled',                                     entity: 'cloud',    entityLabel: 'Cloud',    closed: 3211,   open: 19870, pct: 13, rating: 'Weak',     criticality: 'Medium',   frameworks: ['nist_csf','pci_dss','cmmc_2'] },
+  { id: 'a18', name: 'Vulnerability scans are performed on a regular cadence',                                  entity: 'device',   entityLabel: 'Host',     closed: 12450,  open: 14200, pct: 46, rating: 'Moderate', criticality: 'High',     frameworks: ['scf','nist_csf','pci_dss'] },
+  { id: 'a19', name: 'Software assets are inventoried and patched within defined SLAs',                        entity: 'multi',    entityLabel: 'Multi',    closed: 21880,  open: 12300, pct: 64, rating: 'Moderate', criticality: 'Medium',   frameworks: ['nist_csf','nist_800','cis'] },
+  { id: 'a20', name: 'Security event logs are retained for the required duration',                              entity: 'cloud',    entityLabel: 'Cloud',    closed: 38200,  open: 6100,  pct: 86, rating: 'Strong',   criticality: 'Medium',   frameworks: ['nist_csf','pci_dss','hipaa'] },
+  { id: 'a21', name: 'Privileged access is reviewed and recertified on a regular basis',                       entity: 'identity', entityLabel: 'Identity', closed: 5100,   open: 1280,  pct: 79, rating: 'Moderate', criticality: 'Critical', frameworks: ['nist_csf','nist_800','cmmc_2','pci_dss'] },
+  { id: 'a22', name: 'Multi-factor authentication is enforced for all administrative access',                  entity: 'identity', entityLabel: 'Identity', closed: 44200,  open: 3800,  pct: 92, rating: 'Strong',   criticality: 'Critical', frameworks: ['nist_csf','pci_dss','cmmc_2','cis'] },
+  { id: 'a23', name: 'EC2 Instances have health monitoring enabled',                                           entity: 'cloud',    entityLabel: 'Cloud',    closed: 9800,   open: 740,   pct: 93, rating: 'Strong',   criticality: 'Low',      frameworks: ['nist_csf','nist_800'] },
+  { id: 'a24', name: 'Storage resources have Secure File Transfer Protocol (SFTP) enabled',                   entity: 'storage',  entityLabel: 'Storage',  closed: 280,    open: 1721,  pct: 14, rating: 'Weak',     criticality: 'Medium',   frameworks: ['nist_csf','pci_dss','nist_800'] },
+  { id: 'a25', name: 'Devices have a single assigned owner',                                                   entity: 'device',   entityLabel: 'Host',     closed: 19991,  open: 18740, pct: 51, rating: 'Moderate', criticality: 'Medium',   frameworks: ['scf','nist_csf'] },
 ]
 
 const RATING_ORDER = { Weak: 0, Moderate: 1, Strong: 2, Compliant: 3 }
@@ -365,19 +378,22 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
 
       {/* Create Ticket modal */}
       {ticketRow !== null && (
-        <div className="ct-overlay" onClick={closeTicket}>
-          <div className="ct-modal" onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__title">Create Ticket</div>
-              <div className="ct-modal__subtitle">A ticket is being added to your board to track finding</div>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Title</label>
-                <input className="ct-input" type="text" value={ctTitle} onChange={e => setCtTitle(e.target.value)} />
+        <>
+        <div className="sfm-overlay" onMouseDown={closeTicket} />
+        <div className="sfm-dialog" onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">A ticket is being added to your board to track finding</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Title</label>
+                <input type="text" value={ctTitle} onChange={e => setCtTitle(e.target.value)} className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown
                   value={ctAssignee}
                   onChange={setCtAssignee}
@@ -385,9 +401,9 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
                   fullWidth
                 />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description</label>
-                <textarea className="ct-textarea" rows={3} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={3} className="sfm-textarea" />
               </div>
               <div className="ct-warning">
                 <span className="ct-warning-dot" />
@@ -405,13 +421,13 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket} disabled={!ctTitle.trim()}>Create</button>
-            </div>
+          </div>
+          <div className="sfm-footer">
+            <button onClick={closeTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} disabled={!ctTitle.trim()} className={`sfm-create${!ctTitle.trim() ? ' sfm-create--disabled' : ''}`}>Create</button>
           </div>
         </div>
+        </>
       )}
 
       {/* Toast */}

@@ -336,10 +336,18 @@ function HistoryPage({ activeLabel, onBack, onSelect }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.label}"?</span>
+              <span className="ds-modal-title nav-delete-modal-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Conversation
+              </span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
-            <div className="ds-modal-body">This conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-body"><span>Are you sure you want to delete <strong>{confirmDelete.label}</strong>? This action cannot be undone.</span></div>
             <div className="ds-modal-footer">
               <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
               <button className="ds-btn sz-md t-danger" onClick={() => handleDelete(confirmDelete.id)}>Delete</button>
@@ -981,10 +989,18 @@ function ChatView({ query, mode = 'ask', onToggleHistory, onGoHome, onNav, runni
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{threadTitle}"?</span>
+              <span className="ds-modal-title nav-delete-modal-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Thread
+              </span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteThread(false)} aria-label="Close">×</button>
             </div>
-            <div className="ds-modal-body">This thread and its conversation will be removed. This can't be undone.</div>
+            <div className="ds-modal-body"><span>Are you sure you want to delete <strong>{threadTitle}</strong>? This action cannot be undone.</span></div>
             <div className="ds-modal-footer">
               <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDeleteThread(false)}>Cancel</button>
               <button className="ds-btn sz-md t-danger" onClick={() => { setConfirmDeleteThread(false); onGoHome(); }}>Delete</button>
@@ -1562,10 +1578,18 @@ function BuildView({ initialQuery, onToggleHistory, onGoHome, onNav }) {
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDeleteWidget.label}"?</span>
+              <span className="ds-modal-title nav-delete-modal-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Widget
+              </span>
               <button className="ds-modal-close" onClick={() => setConfirmDeleteWidget(null)} aria-label="Close">×</button>
             </div>
-            <div className="ds-modal-body">This widget will be removed from the dashboard. This can't be undone.</div>
+            <div className="ds-modal-body"><span>Are you sure you want to delete <strong>{confirmDeleteWidget.label}</strong>? This action cannot be undone.</span></div>
             <div className="ds-modal-footer">
               <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDeleteWidget(null)}>Cancel</button>
               <button className="ds-btn sz-md t-danger" onClick={() => { handleRemoveWidget(confirmDeleteWidget.id); setConfirmDeleteWidget(null); }}>Delete</button>
@@ -2004,10 +2028,18 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
         <div className="ds-modal-overlay">
           <div className="ds-modal" role="dialog" aria-modal="true">
             <div className="ds-modal-header">
-              <span className="ds-modal-title">Delete "{confirmDelete.name}"?</span>
+              <span className="ds-modal-title nav-delete-modal-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Agent
+              </span>
               <button className="ds-modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">×</button>
             </div>
-            <div className="ds-modal-body">This agent will be permanently removed. This can't be undone.</div>
+            <div className="ds-modal-body"><span>Are you sure you want to delete <strong>{confirmDelete.name}</strong>? This action cannot be undone.</span></div>
             <div className="ds-modal-footer">
               <button className="ds-btn sz-md t-outline" onClick={() => setConfirmDelete(null)}>Cancel</button>
               <button className="ds-btn sz-md t-danger" onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}>Delete</button>
