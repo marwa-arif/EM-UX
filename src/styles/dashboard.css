@@ -296,6 +296,15 @@
 .ds-modal-title.dc-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
 .dc-delete-modal-title svg { flex-shrink: 0; }
 
+.ds-modal-title.dc-schedule-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-schedule-modal-title svg { flex-shrink: 0; }
+
+.ds-modal-title.dc-share-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-share-modal-title svg { flex-shrink: 0; }
+
+.ds-modal-title.dc-download-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-download-modal-title svg { flex-shrink: 0; }
+
 /* Modal-standard overrides: field label 14px/500, field input 14px — scoped to modal
    bodies only, since .dc-field-label is also used outside modals (widget settings panel). */
 .ds-modal-body .dc-field-label { font-size: 14px; font-weight: 500; }
@@ -339,6 +348,7 @@
   background: var(--shell-hover);
   font-size: 12px;
   color: var(--shell-text-muted);
+  box-sizing: border-box;
 }
 
 .dc-field-label--no-hint {
@@ -825,6 +835,11 @@
 .dc-toolbar--stacked {
   flex-direction: column;
   gap: 0;
+}
+.dc-toolbar--flat {
+  height: 48px;
+  align-items: center;
+  padding: 0 16px;
 }
 .dc-toolbar-row {
   height: 48px;
@@ -2070,17 +2085,12 @@
   margin-top: 8px;
 }
 
-.dc-share-access-select {
+.dc-share-access-dropdown .comp-sort-btn.comp-select-btn {
   height: 24px;
-  box-sizing: border-box;
-  border: 1px solid var(--shell-border);
-  border-radius: 4px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-family: inherit;
-  color: var(--dc-fg1, var(--shell-text));
-  background: var(--card-bg);
-  cursor: pointer;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 44px;
 }
 
 .dc-chip-access-select {

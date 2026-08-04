@@ -49,6 +49,11 @@
     exp-orbit-grow-lg  3s ease-out forwards;
 }
 
+@keyframes exp-gauge-glow-blink {
+  0%, 100% { box-shadow: 0 0 40px -5px rgba(225,82,82,0.18); }
+  50%      { box-shadow: 0 0 40px -5px rgba(225,82,82,0.34); }
+}
+
 /* ── Exposure Overview page layout ───────────────────────────────── */
 .exp-main { gap: 16px; }
 .exp-content-col .subheader { border-right: 1px solid var(--shell-border); border-bottom-right-radius: 8px; }
@@ -71,8 +76,44 @@
 .exp-trend-pct-val { font-size: 12px; font-weight: 600; color: var(--pai-teal); }
 .exp-trend-from { font-size: 11px; color: var(--shell-text-muted); }
 
-/* Collapse button */
-.exp-collapse-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--card-border, #E6E6E6); border-radius: 44px; padding: 6px 12px; background: var(--pai-indigo-tint); cursor: pointer; font-size: 12px; color: var(--shell-text-muted); font-family: inherit; }
+/* Exposure score insight — hover popover with score-range legend + calculation flow */
+.exp-insight-wrap { position: relative; display: inline-flex; }
+.exp-insight-popover {
+  /* Outer hoverable hit area — top:100% with no gap plus this invisible
+     padding-top bridges the icon-to-card distance so the pointer is always
+     over a descendant of .exp-insight-wrap, never a dead zone that would
+     fire onMouseLeave and close the popover before the mouse arrives. */
+  position: absolute; top: 100%; right: 0; padding-top: 8px;
+  box-sizing: border-box;
+  /* 1300x610 target — shrinks proportionally (never clipped) on narrower viewports,
+     where the left nav + page padding leave less than 1300px of room. */
+  width: min(1300px, calc(100vw - 260px));
+  z-index: 200;
+}
+.exp-insight-card {
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1300 / 610;
+  display: flex; flex-direction: column;
+  background: var(--card-bg); color: var(--shell-text, #101010);
+  border-radius: 8px; padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.exp-insight-title { font-size: 12px; font-weight: 600; color: var(--shell-text, #101010); margin-bottom: 12px; }
+.exp-insight-scale-bar { display: flex; height: 8px; border-radius: 44px; overflow: hidden; }
+.exp-insight-scale-seg { flex: 1; }
+.exp-insight-scale-seg--low { background: var(--pai-low-fg); }
+.exp-insight-scale-seg--medium { background: var(--pai-med-fg); }
+.exp-insight-scale-seg--high { background: var(--pai-high-fg); }
+.exp-insight-scale-seg--critical { background: var(--pai-crit-fg); }
+.exp-insight-scale-labels { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 11px; }
+.exp-insight-scale-num { color: var(--shell-text-muted); }
+.exp-insight-scale-cat { font-weight: 600; }
+.exp-insight-scale-cat--low { color: var(--pai-low-fg); }
+.exp-insight-scale-cat--medium { color: var(--pai-med-fg); }
+.exp-insight-scale-cat--high { color: var(--pai-high-fg); }
+.exp-insight-scale-cat--critical { color: var(--pai-crit-fg); }
+.exp-insight-divider { height: 1px; background: var(--card-border, #E6E6E6); margin: 16px 0; }
+.exp-insight-gif { display: block; flex: 1; min-height: 0; width: 100%; object-fit: contain; border-radius: 4px; }
 
 /* Body grid */
 .exp-ov-body { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; min-height: 380px; }
@@ -157,7 +198,7 @@
 /* ── Exposure Score gauge ───────────────────────────────────────── */
 .exp-gauge-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
 .exp-gauge { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; }
-.exp-gauge-outer { position: absolute; inset: 0; border-radius: 50%; border: 0.5px solid var(--card-border); background: var(--card-bg); box-shadow: 0 0 40px -5px rgba(225,82,82,0.18); }
+.exp-gauge-outer { position: absolute; inset: 0; border-radius: 50%; border: 0.5px solid var(--card-border); background: var(--card-bg); box-shadow: 0 0 40px -5px rgba(225,82,82,0.18); animation: exp-gauge-glow-blink 8s ease-in-out infinite; }
 .exp-gauge-ticks { position: absolute; inset: 0; opacity: 0.35; }
 .exp-gauge-inner { position: relative; border-radius: 50%; background: var(--card-bg); box-shadow: 0 0 15px rgba(202,56,56,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
 .exp-gauge-score { font-weight: 700; font-size: 48px; color: var(--pai-red-high); line-height: 1; }

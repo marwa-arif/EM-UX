@@ -5,6 +5,7 @@ import { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE, WidgetCard }
 import { USER_FULL_NAME } from '../currentUser.js'
 import { useWorkspace } from '../context/WorkspaceCtx.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 import '../styles/active-filter-panel.css'
@@ -381,7 +382,7 @@ function ScheduleReportModal({ onClose, onConfirm }) {
 }
 
 // ── Share Report modal ────────────────────────────────────────────────
-function ShareReportModal({ reportTitle, onClose, onConfirm }) {
+function ShareReportModal({ reportTitle, onClose, onConfirm, onCopyLink }) {
   const [recipients, setRecipients] = useState('')
   const [sendCopy, setSendCopy]     = useState(true)
   const defaultMessage = `Hi,\n\nI'm sharing "${reportTitle}" with you. Please find the report attached/linked below.\n\nBest regards`
@@ -426,11 +427,11 @@ function ShareReportModal({ reportTitle, onClose, onConfirm }) {
             <input type="checkbox" checked={sendCopy} onChange={e => setSendCopy(e.target.checked)} />
             Send me a copy
           </label>
-          <p className="sfm-info-note">Report will be shared via link and attachment in email.</p>
+          <p className="sfm-info-note">Report will be shared as attachment/link in email.</p>
         </div>
 
         <div className="sfm-footer sfm-footer--split">
-          <button className="sfm-copy-link-btn">
+          <button className="sfm-copy-link-btn" onClick={onCopyLink}>
             Copy link
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -516,6 +517,7 @@ function WidgetRow({ row }) {
 // ── Main ──────────────────────────────────────────────────────────────
 export default function ReportPreviewPage({ reportTitle, reportFilters = [], onBack, template = EXEC_SUMMARY_TEMPLATE }) {
   const { onNav, addSavedReport } = useWorkspace()
+  const { showToast } = useToast()
   const widgets = template.widgets
   const widgetPages = paginateRows(buildWidgetRows(widgets))
   const [isSaved, setIsSaved]             = useState(false)
@@ -527,7 +529,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
 
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
 
-  const navigateToSaved = (name, status) => {
+  const navigateToSaved = (name, status, toastMsg) => {
     addSavedReport({
       id: `r-${Date.now()}`, name, isNew: true,
       type: 'REPORT', template: template.name,
@@ -535,6 +537,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
       lastUpdated: today,
       ...(status === 'Scheduled' ? { hasCalendar: true, recipients: 0 } : {}),
     })
+    showToast({ type: 'success', msg: toastMsg ?? `"${name}" has been saved.` })
     onNav('workspace/saved')
   }
 
@@ -546,15 +549,25 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
   }
 
   const handleSaved = (name) => {
-    setSavedName(name); setIsSaved(true); setSaveOpen(false)
-    if (pendingAction === 'schedule') setScheduleOpen(true)
-    else if (pendingAction === 'share') setShareOpen(true)
-    else navigateToSaved(name, 'Saved')
+    setSaveOpen(false)
+    if (Math.random() < 0.2) {
+      showToast({ type: 'error', msg: 'Failed to save report. Please try again.' })
+      setPendingAction(null)
+      return
+    }
+    setSavedName(name); setIsSaved(true)
+    if (pendingAction === 'schedule' || pendingAction === 'share') {
+      showToast({ type: 'success', msg: `"${name}" has been saved.` })
+      if (pendingAction === 'schedule') setScheduleOpen(true)
+      else setShareOpen(true)
+    } else {
+      navigateToSaved(name, 'Saved')
+    }
     setPendingAction(null)
   }
 
-  const handleScheduleConfirm = () => { setScheduleOpen(false); navigateToSaved(savedName, 'Scheduled') }
-  const handleShareConfirm    = () => { setShareOpen(false);    navigateToSaved(savedName, 'Saved') }
+  const handleScheduleConfirm = () => { setScheduleOpen(false); navigateToSaved(savedName, 'Scheduled', `"${savedName}" has been scheduled.`) }
+  const handleShareConfirm    = () => { setShareOpen(false);    navigateToSaved(savedName, 'Saved', `"${savedName}" has been shared.`) }
 
   return (
     <div
@@ -565,7 +578,7 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
         <div className="dc-canvas-wrap">
 
           {/* Toolbar */}
-          <div className="dc-toolbar">
+          <div className="dc-toolbar dc-toolbar--flat">
             <button className="dc-toolbar-back-btn" onClick={onBack}>
               <Ic size={13} path={<polyline points="15 18 9 12 15 6"/>} />
             </button>
@@ -594,7 +607,10 @@ export default function ReportPreviewPage({ reportTitle, reportFilters = [], onB
 
       {saveOpen     && <SaveReportModal reportTitle={reportTitle} onClose={() => setSaveOpen(false)} onSaved={handleSaved} />}
       {scheduleOpen && <ScheduleReportModal onClose={() => setScheduleOpen(false)} onConfirm={handleScheduleConfirm} />}
-      {shareOpen    && <ShareReportModal reportTitle={reportTitle} onClose={() => setShareOpen(false)} onConfirm={handleShareConfirm} />}
+      {shareOpen    && <ShareReportModal reportTitle={reportTitle} onClose={() => setShareOpen(false)} onConfirm={handleShareConfirm} onCopyLink={() => {
+        navigator.clipboard?.writeText(window.location.href)
+        showToast({ type: 'success', msg: 'Link copied to clipboard.' })
+      }} />}
     </div>
   )
 }

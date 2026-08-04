@@ -3,6 +3,7 @@ import { AssessmentDrawer, FW_DISPLAY, FW_CONTROLS, SelectDropdown } from './Com
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import AssessmentBuilder from '../components/AssessmentBuilder.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/compliance.css'
 import '../styles/assessments.css'
 import '../styles/active-filter-panel.css'
@@ -159,17 +160,16 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
   const [ctTitle, setCtTitle]           = useState('')
   const [ctDescription, setCtDescription] = useState('')
   const [ctAssignee, setCtAssignee]     = useState('Patch Admin')
-  const [toast, setToast]               = useState(null)
+  const { showToast } = useToast()
 
   const handleDeploy = useCallback((newAssessment) => {
     setShowBuilder(false)
     setAssessments(prev => [{ ...newAssessment, _new: true }, ...prev])
-    setToast({ type: 'success', msg: 'Assessment deployed. It will run with the next pipeline.' })
-    setTimeout(() => setToast(null), 4000)
+    showToast({ type: 'success', msg: 'Assessment deployed. It will run with the next pipeline.', duration: 4000 })
     setTimeout(() => {
       setAssessments(prev => prev.map(a => a.id === newAssessment.id ? { ...a, pending: false } : a))
     }, 6000)
-  }, [])
+  }, [showToast])
 
   const openTicket = useCallback((row, e) => {
     e.stopPropagation()
@@ -182,9 +182,8 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
   const handleCreateTicket = useCallback(() => {
     closeTicket()
     const success = Math.random() > 0.15
-    setToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.' })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeTicket])
+    showToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.', duration: 3000 })
+  }, [closeTicket, showToast])
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -428,16 +427,6 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
           </div>
         </div>
         </>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 /* ── Topbar ──────────────────────────────────────────────────────── */
 .topbar {
-  height: 48px;
+  height: var(--topbar-height);
   background: var(--shell-topbar-bg);
   display: flex;
   align-items: center;
@@ -76,22 +76,6 @@
   color: var(--shell-text-muted); background: var(--shell-raised);
   border-radius: 4px; padding: 2px 6px;
 }
-.ds-toast-container.dl-toast-container { top: 64px; }
-.ds-toast.dl-toast {
-  animation: dlToastIn 280ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.ds-toast.dl-toast.dl-toast--leaving {
-  animation: dlToastOut 280ms cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-@keyframes dlToastIn {
-  from { transform: translateX(40px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-@keyframes dlToastOut {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(40px); opacity: 0; }
-}
-
 .dl-fly-icon {
   position: fixed;
   width: 24px; height: 24px;

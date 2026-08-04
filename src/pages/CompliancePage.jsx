@@ -5,6 +5,7 @@ import TablePagination from '../components/TablePagination.jsx'
 import '../styles/compliance.css'
 import '../styles/active-filter-panel.css'
 import { useDownloads } from '../DownloadsContext.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IcSearch = () => (
@@ -128,14 +129,25 @@ const FW_ICONS = {
   cobit:      null,
 }
 
-function FwLogo({ icon, meta }) {
+const FW_ICONS_DARK = {
+  nist_csf:   'assets/icons/frameworks/nist_dark.svg',
+  nist_800:   'assets/icons/frameworks/nist_dark.svg',
+  nist_priv:  'assets/icons/frameworks/nist_dark.svg',
+}
+
+function FwLogo({ icon, darkIcon, meta }) {
   return (
     <div
       className={icon ? 'comp-fw-logo-wrap comp-fw-logo-wrap--icon' : 'comp-fw-logo-wrap'}
       style={icon ? undefined : { '--comp-fw-ring': meta.ring }}
     >
       {icon
-        ? <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
+        ? darkIcon
+          ? <>
+              <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img comp-fw-logo-img--light" />
+              <img src={darkIcon} width={24} height={24} alt="" className="comp-fw-logo-img comp-fw-logo-img--dark" />
+            </>
+          : <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
         : <span className="comp-fw-logo-abbr" style={{ '--comp-fw-abbr-color': meta.fg }}>{meta.abbr}</span>
       }
     </div>
@@ -827,7 +839,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
   const [ctTitle, setCtTitle]           = useState('')
   const [ctDescription, setCtDescription] = useState('')
   const [ctAssignee, setCtAssignee] = useState('Patch Admin')
-  const [toast, setToast] = useState(null) // { type: 'success'|'error', msg }
+  const { showToast } = useToast()
   const trendMenuRef = useRef(null)
   const downloadMenuRef = useRef(null)
 
@@ -844,9 +856,8 @@ function AssessmentDrawer({ node, onClose, onNav }) {
     const success = Math.random() > 0.2
     const type = success ? 'success' : 'error'
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.'
-    setToast({ type, msg })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type, msg, duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   useEffect(() => {
     if (!trendMenuOpen) return
@@ -1375,16 +1386,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
         </div>
         </>
       )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -1407,7 +1408,7 @@ function FunctionDrawer({ node, level, onClose }) {
   const [ctTitle, setCtTitle]                     = useState('')
   const [ctDescription, setCtDescription]         = useState('')
   const [ctAssignee, setCtAssignee]               = useState('Patch Admin')
-  const [toast, setToast]                         = useState(null)
+  const { showToast } = useToast()
   const trendMenuRef    = useRef(null)
   const downloadMenuRef = useRef(null)
 
@@ -1430,9 +1431,8 @@ function FunctionDrawer({ node, level, onClose }) {
     closeCreateTicket()
     setRemediationRow(null)
     const success = Math.random() > 0.2
-    setToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.' })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.', duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   const handleClose = useCallback(() => {
     setClosing(true)
@@ -1887,16 +1887,6 @@ function FunctionDrawer({ node, level, onClose }) {
         </div>
         </>
       )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -2253,7 +2243,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                   } : undefined}
                   onClick={() => setSelectedFw(fw.id)}
                 >
-                  <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
+                  <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} darkIcon={FW_ICONS_DARK[fw.id]} />
                   <span className="comp-fw-mini-pct" style={{ '--comp-fw-mini-pct-color': barColor(fw.pct) }}>{fw.pct}%</span>
                 </div>
               )
@@ -2270,7 +2260,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
               >
                 <div className="comp-fw-card__top">
                   <div className="comp-fw-card__id">
-                    <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
+                    <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} darkIcon={FW_ICONS_DARK[fw.id]} />
                     <span className={isSelected ? 'comp-fw-name' : 'comp-fw-name comp-fw-name--muted'}>
                       {fw.name}
                     </span>

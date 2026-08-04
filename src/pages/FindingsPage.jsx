@@ -10,6 +10,7 @@ import DonutChart from '../components/DonutChart.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
+import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Group-by select dropdown (comp-sort pattern, matches other dashboards) ──
 const IcChevron = () => (
@@ -1581,7 +1582,7 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
   const [createTicketEntity, setCreateTicketEntity] = useState(null); // null = closed, string = entity pre-fill
   const [ctDescription, setCtDescription]           = useState('');
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin');
-  const [toast, setToast]                           = useState(null); // { type: 'success'|'error', msg }
+  const { showToast } = useToast()
   const [downloadOpen, setDownloadOpen]             = useState(false);
   // Drawer navigation history — { history: [{kind:'finding',row}|{kind:'entity',entity,type}|{kind:'record',...}, ...], index }.
   // `index` points at the currently-shown entry; jumping to an earlier entry (DrawerTrail) only
@@ -1644,8 +1645,7 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
     const success = Math.random() > 0.2;
     const type = success ? 'success' : 'error';
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.';
-    setToast({ type, msg });
-    if (success) setTimeout(() => setToast(null), 3000);
+    showToast({ type, msg, duration: 3000 });
   }
 
   return (
@@ -1881,16 +1881,6 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
           </div>
         </div>
       </>
-    )}
-
-    {/* Toast notification */}
-    {toast && (
-      <div className="ds-toast-container">
-        <div className={`ds-toast ${toast.type}`}>
-          <span>{toast.msg}</span>
-          <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-        </div>
-      </div>
     )}
 
     {/* Finding / Entity / Record Details drawer — a single persistent shell (DrawerShell) whose

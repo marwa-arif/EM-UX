@@ -29,6 +29,7 @@ import SplashScreen           from './components/SplashScreen.jsx'
 import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
 import { DownloadsProvider }  from './DownloadsContext.jsx'
+import { ToastProvider }      from './context/ToastCtx.jsx'
 import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
@@ -1111,11 +1112,13 @@ function App() {
 
 function AppWithBoundary() {
   return (
-    <DownloadsProvider>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </DownloadsProvider>
+    <ToastProvider>
+      <DownloadsProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </DownloadsProvider>
+    </ToastProvider>
   );
 }
 

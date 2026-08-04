@@ -13,6 +13,7 @@ body { background: #F7F9FC; color: #101010; }
 
 :root {
   /* Shell tokens */
+  --topbar-height:            48px;
   --shell-topbar-bg:          #131313;
   --shell-topbar-text:        #D1D1D1;
   --shell-topbar-text-muted:  #9A9A9A;
