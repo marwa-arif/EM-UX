@@ -32,6 +32,15 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.16.0] — 2026-08-04
+### Added
+- `insights.svg` icon and NIST dark-mode framework icon
+- Exposure Score calculation walkthrough gif
+### Changed
+- Toast notifications unified under a shared `ToastCtx`/`useToastExit` hook, replacing bespoke implementations on Saved, Dashboard, Compliance, Compliance Findings, Assessments, Findings, and Report Preview pages
+
+---
+
 ## [0.15.1] — 2026-08-03
 ### Fixed
 - Trend Explore: removed the surge/plunge legend chip and redundant "See what changed" button on the Enterprise Score card (duplicated the chart-dot click affordance); fixed Attack Surface bubble tooltip label wrapping.
