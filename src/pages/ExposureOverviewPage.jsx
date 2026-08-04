@@ -271,11 +271,6 @@ const IcChevron = () => (
     <path d="m6 9 6 6 6-6"/>
   </svg>
 );
-const IcChevronUp = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m18 15-6-6-6 6"/>
-  </svg>
-);
 const IcInfo = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="exp-icon-muted">
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
@@ -289,6 +284,55 @@ function InfoTooltip({ children, align = 'left' }) {
       <IcInfo />
       <div className={`exp-info-tip-card${align === 'right' ? ' exp-info-tip-card--right' : ''}`}>{children}</div>
     </span>
+  );
+}
+
+// ── Exposure score insight — hover reveals the score-range legend
+// and the score-calculation flow (rendered on demand so the flow GIF
+// isn't fetched until someone actually hovers) ─────────────────────
+function ExposureScoreInsight() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="exp-insight-wrap"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button className="ds-icon-btn" aria-label="How the exposure score is calculated">
+        <img src="assets/icons/insights.svg" width={16} height={16} alt="" />
+      </button>
+      {open && (
+        <div className="exp-insight-popover">
+          <div className="exp-insight-card">
+            <div className="exp-insight-title">Exposure Score Range</div>
+            <div className="exp-insight-scale-bar">
+              <span className="exp-insight-scale-seg exp-insight-scale-seg--low" />
+              <span className="exp-insight-scale-seg exp-insight-scale-seg--medium" />
+              <span className="exp-insight-scale-seg exp-insight-scale-seg--high" />
+              <span className="exp-insight-scale-seg exp-insight-scale-seg--critical" />
+            </div>
+            <div className="exp-insight-scale-labels">
+              <span className="exp-insight-scale-num">0</span>
+              <span className="exp-insight-scale-cat exp-insight-scale-cat--low">Low</span>
+              <span className="exp-insight-scale-num">250</span>
+              <span className="exp-insight-scale-cat exp-insight-scale-cat--medium">Medium</span>
+              <span className="exp-insight-scale-num">500</span>
+              <span className="exp-insight-scale-cat exp-insight-scale-cat--high">High</span>
+              <span className="exp-insight-scale-num">750</span>
+              <span className="exp-insight-scale-cat exp-insight-scale-cat--critical">Critical</span>
+              <span className="exp-insight-scale-num">1000</span>
+            </div>
+            <div className="exp-insight-divider" />
+            <div className="exp-insight-title">Exposure Score Calculation</div>
+            <img
+              src="assets/media/exposure-score-calculation.gif"
+              alt="Exposure score calculation flow"
+              className="exp-insight-gif"
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -492,9 +536,6 @@ function EnterpriseScore({ onOpenTrend }) {
                   </div>
                 </div>
               </div>
-              <button className="exp-bubble-explore-btn exp-bubble-explore-btn--full" style={{ borderColor: 'var(--pai-indigo)', color: 'var(--pai-indigo)' }} onClick={() => onOpenTrend && onOpenTrend()}>
-                <IcExplore /> See what changed
-              </button>
             </div>
           </div>
         )}
@@ -505,7 +546,6 @@ function EnterpriseScore({ onOpenTrend }) {
 
 // ── Exposure Overview Section ─────────────────────────────────────
 function ExposureOverviewSection({ onNav }) {
-  const [collapsed, setCollapsed] = useState(false);
   const [trendDrawerOpen, setTrendDrawerOpen] = useState(false);
 
   // The drawer takes over the right side — if Navigator is already open
@@ -553,7 +593,7 @@ function ExposureOverviewSection({ onNav }) {
   return (
     <>
     <div className="card exp-card">
-      <div className={`exp-ov-hdr${collapsed ? '' : ' exp-ov-hdr--open'}`}>
+      <div className="exp-ov-hdr exp-ov-hdr--open">
         <div className="exp-ov-hdr-left">
           <span className="exp-ov-hdr-title">Exposure Overview</span>
           <InfoTooltip>The Exposure Overview provides a centralized, near-real-time view of an organization's security exposures across Attack Surface and Exposure Categories. Designed to support informed decision-making, the dashboard enables security teams and leadership to track progress, prioritize efforts, and reduce overall risk to the organization.</InfoTooltip>
@@ -577,49 +617,44 @@ function ExposureOverviewSection({ onNav }) {
           <IcExplore />
         </button>
 
-        <button onClick={() => setCollapsed(c => !c)} className="ds-btn sz-sm t-outline exp-collapse-btn">
-          {collapsed ? <IcChevron /> : <IcChevronUp />}
-          {collapsed ? 'Expand' : 'Collapse'}
-        </button>
+        <ExposureScoreInsight />
       </div>
 
-      {!collapsed && (
-        <div className="exp-ov-body">
-          {['33.33%', '66.66%'].map((left, i) => (
-            <div key={left} className="exp-sep" style={{ left }}>
-              <svg width="237" height="100%" viewBox="0 0 237 468" fill="none" preserveAspectRatio="none">
-                <path d="M0.170503 -49.3912C62.2392 -44.96 120.585 -16.5504 164.06 30.4098C207.535 77.37 233.092 139.588 235.847 205.177C238.601 270.765 218.361 335.126 178.994 385.961C139.626 436.797 83.8908 470.543 22.437 480.752L22.0436 478.115C82.8828 468.007 138.061 434.599 177.035 384.272C216.009 333.945 236.046 270.228 233.319 205.295C230.592 140.362 205.291 78.7663 162.251 32.2757C119.21 -14.2149 61.4477 -42.3405 -0.000254112 -46.7273L0.170503 -49.3912Z"
-                  fill={`url(#sep-grad-${i})`} />
-                <defs>
-                  <linearGradient id={`sep-grad-${i}`} x1="53.58" y1="217" x2="236.095" y2="217" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#FFFADC" stopOpacity="0" />
-                    <stop offset="1" stopColor="#EF8B55" stopOpacity="0.2" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          ))}
+      <div className="exp-ov-body">
+        {['33.33%', '66.66%'].map((left, i) => (
+          <div key={left} className="exp-sep" style={{ left }}>
+            <svg width="237" height="100%" viewBox="0 0 237 468" fill="none" preserveAspectRatio="none">
+              <path d="M0.170503 -49.3912C62.2392 -44.96 120.585 -16.5504 164.06 30.4098C207.535 77.37 233.092 139.588 235.847 205.177C238.601 270.765 218.361 335.126 178.994 385.961C139.626 436.797 83.8908 470.543 22.437 480.752L22.0436 478.115C82.8828 468.007 138.061 434.599 177.035 384.272C216.009 333.945 236.046 270.228 233.319 205.295C230.592 140.362 205.291 78.7663 162.251 32.2757C119.21 -14.2149 61.4477 -42.3405 -0.000254112 -46.7273L0.170503 -49.3912Z"
+                fill={`url(#sep-grad-${i})`} />
+              <defs>
+                <linearGradient id={`sep-grad-${i}`} x1="53.58" y1="217" x2="236.095" y2="217" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FFFADC" stopOpacity="0" />
+                  <stop offset="1" stopColor="#EF8B55" stopOpacity="0.2" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        ))}
 
-          <div className="exp-ov-col">
-            <EnterpriseScore onOpenTrend={openTrendDrawer} />
-            {colLabel('Enterprise Score', 'The Enterprise Score represents the overall exposure level of the organization. It is calculated based on the scores of all findings across the organization. The calculation uses a root mean square (RMS) method, which gives more weight to higher-risk findings, ensuring that critical issues have a greater impact on the overall score.')}
-          </div>
-          <div className="exp-ov-col">
-            <BubbleTriangle items={attackSurface} indexOffset={0} />
-            {colLabel('Attack Surface', 'The attack surface score is derived as the root mean square (RMS) of the asset exposure scores across each asset within an attack surface, enabling security teams to pinpoint high-risk areas and prioritize remediation efforts more effectively.')}
-          </div>
-          <div className="exp-ov-col">
-            <BubbleTriangle items={expCategories} indexOffset={3} />
-            {colLabel('Exposure Categories', (
-              <>
-                <p>An exposure category's score is the root mean square (RMS) of all findings within each exposure category, considering factors like exploitability, ease of exploit, internet accessibility, open ports, and more.</p>
-                <p><strong>Software Vulnerability</strong> - Vulnerabilities reported by Vulnerability Management tools.</p>
-                <p><strong>Control Gap</strong> - Scenarios where a security control is missing, misconfigured, or not functioning as intended.</p>
-              </>
-            ), 'right')}
-          </div>
+        <div className="exp-ov-col">
+          <EnterpriseScore onOpenTrend={openTrendDrawer} />
+          {colLabel('Enterprise Score', 'The Enterprise Score represents the overall exposure level of the organization. It is calculated based on the scores of all findings across the organization. The calculation uses a root mean square (RMS) method, which gives more weight to higher-risk findings, ensuring that critical issues have a greater impact on the overall score.')}
         </div>
-      )}
+        <div className="exp-ov-col">
+          <BubbleTriangle items={attackSurface} indexOffset={0} />
+          {colLabel('Attack Surface', 'The attack surface score is derived as the root mean square (RMS) of the asset exposure scores across each asset within an attack surface, enabling security teams to pinpoint high-risk areas and prioritize remediation efforts more effectively.')}
+        </div>
+        <div className="exp-ov-col">
+          <BubbleTriangle items={expCategories} indexOffset={3} />
+          {colLabel('Exposure Categories', (
+            <>
+              <p>An exposure category's score is the root mean square (RMS) of all findings within each exposure category, considering factors like exploitability, ease of exploit, internet accessibility, open ports, and more.</p>
+              <p><strong>Software Vulnerability</strong> - Vulnerabilities reported by Vulnerability Management tools.</p>
+              <p><strong>Control Gap</strong> - Scenarios where a security control is missing, misconfigured, or not functioning as intended.</p>
+            </>
+          ), 'right')}
+        </div>
+      </div>
     </div>
     {trendDrawerOpen && <TrendExploreDrawer onClose={() => setTrendDrawerOpen(false)} onNav={onNav} />}
     </>
@@ -722,9 +757,9 @@ function buildDotQuestion(chartKind, data, pointLabel, metricLabel) {
 
 // ── Trend Explore: peak-annotated chart dot ───────────────────────
 // Purely visual — the point where the series moved the most is color-coded
-// (surge/plunge, see ChangeLegend above the chart) instead of an on-chart
-// label that used to cover the line. Click handling lives on the chart
-// itself (see AreaChart's onClick below): Recharts renders its own
+// (surge/plunge) instead of an on-chart label that used to cover the line.
+// Click handling lives on the chart itself (see AreaChart's onClick below):
+// Recharts renders its own
 // hover/"active" dot on top of whatever we return here, and that overlay
 // has no click handler of its own, so a per-dot onClick silently loses the
 // race against it on the exact click that follows a hover. Reading
@@ -744,22 +779,6 @@ function makeExpTrendDot(color, peakIdx, peakColor) {
       </g>
     );
   };
-}
-
-// ── Trend Explore: surge/plunge legend ────────────────────────────
-// Replaces the old on-chart "Biggest change" label (it covered the line) with
-// a small legend chip in the card header. Clicking it selects the same point
-// a dot-click would.
-function ChangeLegend({ data, peakIdx, onSelect }) {
-  if (peakIdx <= 0) return null;
-  const surge = isSurge(data, peakIdx);
-  const color = surge ? 'var(--pai-crit-fg)' : 'var(--pai-teal)';
-  return (
-    <button className="exp-trend-legend" style={{ color }} onClick={() => onSelect(data[peakIdx].name)}>
-      {surge ? <IcTrendUp color={color} size={11} /> : <IcTrendDown color={color} size={11} />}
-      {surge ? 'Surge' : 'Plunge'} — biggest change
-    </button>
-  );
 }
 
 // ── "Ask Navigator" — Figma node 55698:155001 ─────────────────────
@@ -978,7 +997,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
               <span className="exp-trend-card-badge exp-trend-card-badge--red">
                 {metric === 'sum' ? fmtCompact(scoreCurrent) : Math.round(scoreCurrent)}
               </span>
-              <ChangeLegend data={scoreData} peakIdx={scorePeakIdx} onSelect={askAboutScorePoint} />
               <span className="exp-trend-card-spacer" />
               <ExpMetricToggle value={metric} onChange={setMetric} />
             </div>
@@ -1021,7 +1039,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
             <div className="exp-trend-card">
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Risk/Asset <InfoTooltip>This metric measures the average risk burden per device in your environment. It is derived by combining the total exposure score with the number of affected devices across all findings. A higher value suggests that risk is concentrated across fewer assets or that individual assets carry a disproportionate level of risk, helping you prioritise asset-level remediation.</InfoTooltip></span>
-                <ChangeLegend data={riskData} peakIdx={riskPeakIdx} onSelect={askAboutRiskPoint} />
               </div>
               <TrendDriverSummary data={riskData} offset={1} entity={exposureBy} />
               <div className="exp-trend-card-chart">
@@ -1053,7 +1070,6 @@ function TrendExploreDrawer({ onClose, onNav }) {
               <div className="exp-trend-card-hdr">
                 <span className="exp-trend-card-title">Total Findings <InfoTooltip>This represents the total count of distinct findings identified across all finding categories (e.g., vulnerabilities, misconfigurations, compliance gaps). The trend reflects how your finding landscape is evolving over time — an upward trend may indicate newly discovered issues or expanded scan coverage, while a downward trend signals active remediation progress.</InfoTooltip></span>
                 <span className="exp-trend-card-badge exp-trend-card-badge--muted">{fmtCompact(findingsCurrent)}</span>
-                <ChangeLegend data={findingsData} peakIdx={findingsPeakIdx} onSelect={askAboutFindingsPoint} />
               </div>
               <TrendDriverSummary data={findingsData} offset={3} entity={exposureBy} />
               <div className="exp-trend-card-chart">

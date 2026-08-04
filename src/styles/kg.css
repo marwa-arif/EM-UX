@@ -1599,7 +1599,7 @@
 .kg-tr--clickable { cursor: pointer; }
 
 .kg-panel-backdrop {
-  position: fixed; inset: 0;
+  position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0;
   background: rgba(0,0,0,0.25);
   z-index: 299;
   display: none;
@@ -1607,7 +1607,7 @@
 .kg-panel-backdrop--open { display: block; }
 
 .kg-detail-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; width: 80vw; max-width: 80vw;
+  position: fixed; top: var(--topbar-height); right: 0; bottom: 0; width: 76vw; max-width: 76vw;
   background: var(--card-bg, #fff);
   border-left: 1px solid var(--shell-border, #E6E6E6);
   border-radius: 12px 0 0 12px;
@@ -1624,7 +1624,7 @@
 /* External close button — sits to the left of the panel, matching the
    Assessment drawer's comp-drawer-close-ext pattern. */
 .kg-dp-close-ext {
-  position: fixed; top: 16px; right: calc(80vw + 8px);
+  position: fixed; top: calc(var(--topbar-height) + 16px); right: calc(76vw + 8px);
   width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--card-border, #E6E6E6);
   background: var(--card-bg, #fff);

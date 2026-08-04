@@ -447,6 +447,13 @@
 .dev-crit-card { display: flex; flex-direction: column; }
 .dev-crit-card .ds-table-wrap { flex: 1; overflow-y: auto; }
 
+.dev-insights-card .ds-table-wrap thead th,
+.dev-crit-card .ds-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 .dev-crit-bar-section { margin-bottom: 16px; }
 
 .dev-stacked-bar {
@@ -517,7 +524,10 @@
 
 .dev-drawer-overlay {
   position: fixed;
-  inset: 0;
+  top: var(--topbar-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(0, 0, 0, 0.28);
   z-index: 200;
   animation: devOverlayIn 0.22s ease forwards;
@@ -526,10 +536,10 @@
 
 .dev-drawer {
   position: fixed;
-  top: 0;
+  top: var(--topbar-height);
   right: 0;
   bottom: 0;
-  width: 70%;
+  width: 76vw;
   background: var(--card-bg, #fff);
   box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
   border-radius: 12px 0 0 12px;
@@ -549,7 +559,7 @@
 .dev-drawer-close-ext {
   position: fixed;
   top: 16px;
-  right: calc(70% + 8px);
+  right: calc(76vw + 8px);
   width: 28px;
   height: 28px;
   border-radius: 8px;

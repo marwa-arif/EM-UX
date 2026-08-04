@@ -4,12 +4,16 @@ import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import { GF_ENTITIES } from '../components/FilterPanel.jsx'
+import { SelectDropdown } from './CompliancePage.jsx'
 import { INITIAL_DATA_SOURCES } from './admin/DataIntegrations.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
 import GridLayout from 'react-grid-layout/legacy'
 import 'react-grid-layout/css/styles.css'
+import { useToast } from '../context/ToastCtx.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
+import '../styles/active-filter-panel.css'
 
 // ── Color helpers ────────────────────────────────────────────────────
 function hsvToRgb(h, s, v) {
@@ -2695,6 +2699,13 @@ function MomEditIcon() {
   )
 }
 
+const SaveIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+    <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+  </svg>
+)
+
 const RANGE_OPTS        = ['1 M', '3 M', '6 M', '1 Y', 'Custom']
 const RANGE_MONTH_COUNT = { '1 M': 0, '3 M': 2, '6 M': 5, '1 Y': 11 }
 
@@ -3038,7 +3049,9 @@ function DashboardCreateHero({ onSubmit, onCreateManually }) {
 }
 
 const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '', backTarget = 'workspace/saved' }, ref) {
-  const { addSavedDashboard, setJustSavedName, editDashboardSeed } = useWorkspace()
+  const { addSavedDashboard, editDashboardSeed } = useWorkspace()
+  const { addDownload } = useDownloads()
+  const { showToast } = useToast()
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
     : templateId === 'executive-summary' ? EXEC_SUMMARY_TEMPLATE
     : templateId === 'vulnerabilities'   ? VULN_DETAIL_TEMPLATE
@@ -3111,6 +3124,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
   const openSaveModal = (mode) => { setSaveModalMode(mode); setSaveNameDraft(name); setSaveModalOpen(true) }
   const handleDashboardSaved = (savedName) => {
+    setSaveModalOpen(false)
+    if (Math.random() < 0.2) {
+      showToast({ type: 'error', msg: 'Failed to save dashboard. Please try again.' })
+      return
+    }
     const id = saveModalMode === 'save-as' ? `d-${Date.now()}` : (dashboardId ?? `d-${Date.now()}`)
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
     addSavedDashboard({
@@ -3121,8 +3139,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     setDashboardId(id)
     setName(savedName)
     lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScope })
-    setSaveModalOpen(false)
-    setJustSavedName(savedName)
+    showToast({ type: 'success', msg: `"${savedName}" has been saved.` })
     onNav('workspace/saved')
   }
   const isDirty = !reportMode && !(widgets.length === 0 && !name.trim())
@@ -3804,34 +3821,48 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setDeleteDashboardConfirm(false)}>Cancel</button>
-            <button className="ds-btn sz-md t-danger" onClick={() => { setDeleteDashboardConfirm(false); onNav(backTarget) }}>Delete dashboard</button>
+            <button className="ds-btn sz-md t-danger" onClick={() => {
+              setDeleteDashboardConfirm(false)
+              showToast({ type: 'success', msg: `"${name || 'Untitled Dashboard'}" has been deleted.` })
+              onNav(backTarget)
+            }}>Delete dashboard</button>
           </div>
         </div>
       </div>
     )}
 
     {saveModalOpen && (
-      <div className="ds-modal-overlay">
-        <div className="ds-modal">
-          <div className="ds-modal-header">
-            <span className="ds-modal-title">{saveModalMode === 'save-as' ? 'Save Dashboard As' : 'Save Dashboard'}</span>
-            <button className="ds-modal-close" onClick={() => setSaveModalOpen(false)}>✕</button>
+      <>
+        <div className="sfm-overlay" onMouseDown={() => setSaveModalOpen(false)} />
+        <div className="sfm-dialog" onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap">
+              <SaveIcon />
+            </div>
+            <span className="sfm-title">{saveModalMode === 'save-as' ? 'Save Dashboard As' : 'Save Dashboard'}</span>
+            <button className="sfm-close" onClick={() => setSaveModalOpen(false)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
-          <div className="ds-modal-body">
-            <FieldRow label="Dashboard Name">
-              <TextInput placeholder="Enter dashboard name..." value={saveNameDraft} onChange={e => setSaveNameDraft(e.target.value)} />
-            </FieldRow>
+          <div className="sfm-body">
+            <p className="sfm-desc">Give your dashboard a name so you can find it later in your Saved list.</p>
+            <div className="sfm-form-field">
+              <label className="sfm-form-label">Dashboard Name</label>
+              <input className="sfm-form-input" placeholder="Enter dashboard name..." value={saveNameDraft} onChange={e => setSaveNameDraft(e.target.value)} autoFocus />
+            </div>
           </div>
-          <div className="ds-modal-footer">
-            <button className="ds-btn sz-md t-outline" onClick={() => setSaveModalOpen(false)}>Cancel</button>
+          <div className="sfm-footer">
+            <button className="sfm-cancel" onClick={() => setSaveModalOpen(false)}>Cancel</button>
             <button
-              className="ds-btn sz-md t-primary"
+              className="sfm-create"
               disabled={!saveNameDraft.trim()}
               onClick={() => handleDashboardSaved(saveNameDraft.trim())}
             >Save</button>
           </div>
         </div>
-      </div>
+      </>
     )}
 
     {leaveConfirmOpen && (
@@ -3859,11 +3890,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pai-med-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="15" y2="19"/><line x1="15" y1="15" x2="9" y2="19"/>
             </svg>
-            <span className="ds-modal-title warning">Stop Report Schedule</span>
+            <span className="ds-modal-title warning">Stop Dashboard Schedule</span>
             <button className="ds-modal-close" onClick={() => setStopScheduleOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
-            <span>Stop automatic generation for <strong>"{name || 'this dashboard'}"</strong>? The report stays saved but won't regenerate.</span>
+            <span>Stop automatic generation for <strong>"{name || 'this dashboard'}"</strong>? The dashboard stays saved but won't regenerate.</span>
           </div>
           <div className="ds-modal-footer">
             <button className="ds-btn sz-md t-outline" onClick={() => setStopScheduleOpen(false)}>Cancel</button>
@@ -3877,10 +3908,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay" onClick={() => setDownloadOpen(false)}>
         <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
-            </svg>
-            <span className="ds-modal-title">Download as Excel</span>
+            <span className="ds-modal-title dc-download-modal-title">
+              <Ic path={<><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/><path d="M5 21h14"/></>} size={18} />
+              Download as Excel
+            </span>
             <button className="ds-modal-close" onClick={() => setDownloadOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
@@ -3911,7 +3942,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               className="ds-btn sz-md t-primary"
               disabled={!Object.values(downloadTables).some(Boolean)}
               style={{ '--dc-aw-save-opacity': Object.values(downloadTables).some(Boolean) ? 1 : 0.4 }}
-              onClick={() => setDownloadOpen(false)}
+              onClick={(e) => {
+                DOWNLOAD_TABLE_OPTIONS.filter(t => downloadTables[t.id]).forEach(t => addDownload(`${t.label}.xlsx`, e.currentTarget))
+                setDownloadOpen(false)
+              }}
             >Download</button>
           </div>
         </div>
@@ -3922,7 +3956,13 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay" onClick={() => setShareOpen(false)}>
         <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
-            <span className="ds-modal-title">Share Report</span>
+            <span className="ds-modal-title dc-share-modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              Share Dashboard
+            </span>
             <button className="ds-modal-close" onClick={() => setShareOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
@@ -3944,14 +3984,13 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   />
                 </div>
                 <div className="dc-share-add-row">
-                  <select
-                    className="dc-share-access-select"
-                    value={shareAccessDraft}
-                    onChange={e => setShareAccessDraft(e.target.value)}
-                  >
-                    <option value="view">Can view</option>
-                    <option value="edit">Can edit</option>
-                  </select>
+                  <div className="dc-share-access-dropdown">
+                    <SelectDropdown
+                      value={shareAccessDraft}
+                      onChange={setShareAccessDraft}
+                      options={[{ value: 'view', label: 'Can view' }, { value: 'edit', label: 'Can edit' }]}
+                    />
+                  </div>
                   <button
                     type="button"
                     className="ds-btn sz-sm t-outline"
@@ -3988,7 +4027,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 <div className="dc-field-label">Message</div>
                 <TextArea
                   rows={6}
-                  value={shareMessage || `Hi,\n\nI'm sharing "${name || 'this dashboard'}" with you. Please find the report attached/linked below.\n\nBest regards`}
+                  value={shareMessage || `Hi,\n\nI'm sharing "${name || 'this dashboard'}" with you. Please find the dashboard linked below.\n\nBest regards`}
                   onChange={e => setShareMessage(e.target.value)}
                 />
               </div>
@@ -3996,12 +4035,15 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 <input type="checkbox" checked={shareSendCopy} onChange={e => setShareSendCopy(e.target.checked)} className="dc-gf-checkbox" id="share-send-copy" />
                 <label htmlFor="share-send-copy">Send me a copy</label>
               </div>
-              <div className="dc-modal-note">Report will be shared via link and attachment in email.</div>
+              <div className="dc-modal-note">Dashboard will be shared as link via email.</div>
             </div>
           </div>
           <div className="ds-modal-footer">
             <div className="dc-modal-footer-split">
-              <button className="ds-btn sz-md t-outline" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
+              <button className="ds-btn sz-md t-outline" onClick={() => {
+                navigator.clipboard?.writeText(window.location.href)
+                showToast({ type: 'success', msg: 'Link copied to clipboard.' })
+              }}>
                 Copy link
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -4010,7 +4052,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               </button>
               <div style={{ display: 'flex', gap: 12 }}>
                 <button className="ds-btn sz-md t-outline" onClick={() => setShareOpen(false)}>Cancel</button>
-                <button className="ds-btn sz-md t-primary" onClick={() => setShareOpen(false)}>Share</button>
+                <button className="ds-btn sz-md t-primary" onClick={() => {
+                  setShareOpen(false)
+                  showToast({ type: 'success', msg: `"${name || 'Dashboard'}" has been shared.` })
+                }}>Share</button>
               </div>
             </div>
           </div>
@@ -4022,10 +4067,12 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       <div className="ds-modal-overlay" onClick={() => setScheduleOpen(false)}>
         <div className="ds-modal dc-modal--wide" onClick={e => e.stopPropagation()}>
           <div className="ds-modal-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>
-            </svg>
-            <span className="ds-modal-title">Schedule Report</span>
+            <span className="ds-modal-title dc-schedule-modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>
+              </svg>
+              Schedule Dashboard
+            </span>
             <button className="ds-modal-close" onClick={() => setScheduleOpen(false)}>✕</button>
           </div>
           <div className="ds-modal-body">
@@ -4059,11 +4106,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
               <div className="dc-modal-radio-row">
                 <input type="radio" name="scheduleMode" id="schedule-mode-daily" checked={scheduleMode === 'daily'} onChange={() => setScheduleMode('daily')} />
-                <label htmlFor="schedule-mode-daily">Send an email after each day's run to receive the latest report.</label>
+                <label htmlFor="schedule-mode-daily">Send an email after each day's run to receive the latest dashboard.</label>
               </div>
               <div className="dc-modal-radio-row">
                 <input type="radio" name="scheduleMode" id="schedule-mode-specific" checked={scheduleMode === 'specific'} onChange={() => setScheduleMode('specific')} />
-                <label htmlFor="schedule-mode-specific">Schedule the report for a specific time. It will include data from the latest available run.</label>
+                <label htmlFor="schedule-mode-specific">Schedule the dashboard for a specific time. It will include data from the latest available run.</label>
               </div>
 
               <div className="dc-modal-field-row">
@@ -4104,7 +4151,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               </div>
 
               {formatNextReport() && (
-                <div className="dc-modal-note">Next report will be on <strong style={{ display: 'inline', marginBottom: 0 }}>{formatNextReport()}</strong></div>
+                <div className="dc-modal-note">Next dashboard update will be on <strong style={{ display: 'inline', marginBottom: 0 }}>{formatNextReport()}</strong></div>
               )}
               <div className="dc-modal-note">* Please note that all time details shown are in Coordinated Universal Time (UTC).</div>
             </div>
@@ -4115,7 +4162,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               className="ds-btn sz-md t-primary"
               disabled={!scheduleRecipients.trim() || !scheduleStartDate}
               style={{ '--dc-aw-save-opacity': (scheduleRecipients.trim() && scheduleStartDate) ? 1 : 0.4 }}
-              onClick={() => { setScheduleActive(true); setScheduleOpen(false) }}
+              onClick={() => {
+                setScheduleActive(true)
+                setScheduleOpen(false)
+                showToast({ type: 'success', msg: `"${name || 'Dashboard'}" has been scheduled.` })
+              }}
             >Schedule</button>
           </div>
         </div>

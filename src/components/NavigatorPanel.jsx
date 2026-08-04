@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Ic } from '../ui.jsx'
 import { createExchange } from './ReasoningEngine.jsx'
 import { BuildExchangeTurn, parseWidgetIntent, buildWidgetSpec, detectChartId, cleanWidgetTitle } from '../pages/NavigatorPage.jsx'
+import { useToastExit } from '../hooks/useToastExit.js'
 
 // ── Static data ───────────────────────────────────────────────────────
 const AGENTS = [
@@ -60,7 +61,7 @@ const IcX         = () => <Ic size={15} path={<><path d="M18 6 6 18M6 6l12 12"/>
 const IcArrow     = () => <Ic size={12} path={<><path d="M5 12h14M12 5l7 7-7 7"/></>} />
 const IcMenu      = () => <Ic size={16} path={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>} />
 const IcEdit      = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />
-const IcSidebar   = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></>} />
+const IcSidebar   = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></>} />
 const IcFloat     = () => <Ic size={14} path={<><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M3 9h2M3 12h2M3 15h2"/></>} />
 const IcFullscr   = () => <Ic size={14} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />
 const IcDots      = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></>} />
@@ -434,11 +435,12 @@ function ErrorCard({ onRetry }) {
 
 // ── Copy friction toast ───────────────────────────────────────────────
 function CopyToast({ message, onDismiss }) {
-  if (!message) return null
+  const { displayed, leaving } = useToastExit(message, 180)
+  if (!displayed) return null
   return (
-    <div className="np-copy-toast" role="alert" aria-live="assertive">
+    <div className={`np-copy-toast${leaving ? ' np-copy-toast--leaving' : ''}`} role="alert" aria-live="assertive">
       <span className="np-copy-toast-icon" aria-hidden="true"><IcAlert /></span>
-      <span className="np-copy-toast-text">{message}</span>
+      <span className="np-copy-toast-text">{displayed}</span>
       <button className="np-copy-toast-dismiss" onClick={onDismiss} aria-label="Dismiss">×</button>
     </div>
   )

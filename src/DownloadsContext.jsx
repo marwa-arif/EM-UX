@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import { createPortal } from 'react-dom'
 import { Icons } from './ui.jsx'
 import { initialDownloads } from './components/NotificationPanel.jsx'
+import { useToast } from './context/ToastCtx.jsx'
 import './styles/navigator.css'
 
 const DownloadsContext = createContext(null);
@@ -10,8 +11,6 @@ let nextDownloadId = 1;
 let nextFlightId = 1;
 const FLIGHT_MS = 650;
 const FAILURE_RATE = 0.2;
-const TOAST_MS = { success: 3500 };
-const TOAST_EXIT_MS = 280;
 
 function FlyingDownloadIcon({ fromRect, toRect, onDone }) {
   const [moving, setMoving] = useState(false);
@@ -43,62 +42,16 @@ function FlyingDownloadIcon({ fromRect, toRect, onDone }) {
   );
 }
 
-function DownloadToast({ toast, onDismiss }) {
-  const [displayed, setDisplayed] = useState(null);
-  const [leaving, setLeaving] = useState(false);
-
-  useEffect(() => {
-    if (toast) {
-      setDisplayed(toast);
-      setLeaving(false);
-      return;
-    }
-    if (!displayed) return;
-    setLeaving(true);
-    const t = setTimeout(() => setDisplayed(null), TOAST_EXIT_MS);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]);
-
-  if (!displayed) return null;
-
-  return createPortal(
-    <div className="ds-toast-container dl-toast-container">
-      <div className={`ds-toast dl-toast ${displayed.type}${leaving ? ' dl-toast--leaving' : ''}`}>
-        <span>{displayed.msg}</span>
-        {displayed.type !== 'success' && (
-          <button className="ds-toast-dismiss" onClick={onDismiss}>×</button>
-        )}
-      </div>
-    </div>,
-    document.body
-  );
-}
-
 export function DownloadsProvider({ children }) {
   const [downloads, setDownloads] = useState(initialDownloads);
   const [flights, setFlights] = useState([]);
   const [bellPulse, setBellPulse] = useState(0);
-  const [toast, setToast] = useState(null);
+  const { showToast } = useToast();
   const bellTargetRef = useRef(null);
   const namesRef = useRef(Object.fromEntries(initialDownloads.map(d => [d.id, d.name])));
-  const toastTimerRef = useRef(null);
 
   const setStatus = useCallback((id, patch) => {
     setDownloads(ds => ds.map(d => d.id === id ? { ...d, ...patch } : d));
-  }, []);
-
-  const showToast = useCallback((type, msg) => {
-    if (toastTimerRef.current) { clearTimeout(toastTimerRef.current); toastTimerRef.current = null; }
-    setToast({ type, msg });
-    if (TOAST_MS[type]) {
-      toastTimerRef.current = setTimeout(() => setToast(null), TOAST_MS[type]);
-    }
-  }, []);
-
-  const dismissToast = useCallback(() => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast(null);
   }, []);
 
   const runDownload = useCallback((id) => {
@@ -113,9 +66,9 @@ export function DownloadsProvider({ children }) {
           setStatus(id, succeeded
             ? { status: 'completed', progress: 100 }
             : { status: 'failed', progress: 0 });
-          showToast(succeeded ? 'success' : 'error', succeeded
+          showToast({ type: succeeded ? 'success' : 'error', msg: succeeded
             ? `${name} downloaded successfully`
-            : `${name} failed to download`);
+            : `${name} failed to download` });
         }, 600);
       }, 600);
     }, 1000);
@@ -159,7 +112,6 @@ export function DownloadsProvider({ children }) {
           onDone={() => removeFlight(f.id)}
         />
       ))}
-      <DownloadToast toast={toast} onDismiss={dismissToast} />
     </DownloadsContext.Provider>
   );
 }

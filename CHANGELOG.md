@@ -22,12 +22,28 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-07-21 16:32 | branch: feature/ui-updates | 2cd785f Merge pull request #5 from marwa-arif/feature/studio-workspace -->
 <!-- pull: 2026-07-22 17:30 | branch: develop | daa8ebc Merge remote-tracking branch 'origin/develop' into develop -->
 <!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
+<!-- pull: 2026-08-03 18:03 | branch: feature/ui-updates | bf4d4b0 Merge remote-tracking branch 'origin/feature/ui-updates' into develop -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.16.0] — 2026-08-04
+### Added
+- `insights.svg` icon and NIST dark-mode framework icon
+- Exposure Score calculation walkthrough gif
+### Changed
+- Toast notifications unified under a shared `ToastCtx`/`useToastExit` hook, replacing bespoke implementations on Saved, Dashboard, Compliance, Compliance Findings, Assessments, Findings, and Report Preview pages
+
+---
+
+## [0.15.1] — 2026-08-03
+### Fixed
+- Trend Explore: removed the surge/plunge legend chip and redundant "See what changed" button on the Enterprise Score card (duplicated the chart-dot click affordance); fixed Attack Surface bubble tooltip label wrapping.
 
 ---
 

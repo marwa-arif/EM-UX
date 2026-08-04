@@ -952,8 +952,8 @@ html.theme-dark .dqid-entity-badge {
 /* ── Attribute detail drawer ──────────────────────────────────────────── */
 .dqid-drawer { width: 480px; max-width: 480px; }
 
-/* .comp-drawer-close-ext's shared position assumes the standard 80vw-wide
-   drawer (right: calc(80vw + 8px)) — this page's drawer is a fixed 480px, so
+/* .comp-drawer-close-ext's shared position assumes the standard 76vw-wide
+   drawer (right: calc(76vw + 8px)) — this page's drawer is a fixed 480px, so
    the close button needs its own offset instead of floating over the canvas. */
 .dqid-drawer-close-ext { right: calc(480px + 8px); }
 

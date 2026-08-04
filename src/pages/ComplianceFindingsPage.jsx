@@ -3,6 +3,7 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
 import '../styles/kg.css'
@@ -31,6 +32,32 @@ const IcDownload = () => (
 const IcClose = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcChevronDown = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m6 9 6 6 6-6"/>
+  </svg>
+)
+const IcFileCsv = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">CSV</text>
+  </svg>
+)
+const IcFilePdf = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">PDF</text>
+  </svg>
+)
+const IcFileExcel = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">XLS</text>
   </svg>
 )
 const IcTicket = () => (
@@ -385,7 +412,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
   const [createTicketEntity, setCreateTicketEntity] = useState(null) // null | string
   const [ctDescription, setCtDescription]           = useState('')
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin')
-  const [toast, setToast]                           = useState(null) // { type, msg }
+  const { showToast } = useToast()
   const downloadRef = useRef(null)
   const { addDownload } = useDownloads()
 
@@ -412,9 +439,8 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
     const success = Math.random() > 0.2
     const type = success ? 'success' : 'error'
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.'
-    setToast({ type, msg })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type, msg, duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   // Apply matrix filter: match rows whose entity type loosely maps to the selected column/row
   const filteredRows = (() => {
@@ -463,32 +489,15 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                 </label>
               )}
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
-              <div ref={downloadRef} className="cfp-download-wrap">
-                <button
-                  className={`ds-btn sz-sm t-outline${downloadOpen ? ' comp-sort-btn--active' : ''}`}
-                  onClick={() => setDownloadOpen(o => !o)}
-                >
-                  <IcDownload />
-                  Download
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
+              <div ref={downloadRef} className="comp-dl-wrap">
+                <button className="comp-dl-btn" onClick={() => setDownloadOpen(o => !o)}>
+                  <IcDownload /> Download <IcChevronDown />
                 </button>
                 {downloadOpen && (
-                  <div className="comp-sort-menu comp-sort-menu--right">
-                    {[
-                      { label: 'Export as CSV', ext: 'csv' },
-                      { label: 'Export as PDF', ext: 'pdf' },
-                      { label: 'Export as Excel', ext: 'xlsx' },
-                    ].map(opt => (
-                      <button
-                        key={opt.label}
-                        className="comp-sort-item"
-                        onClick={(e) => { addDownload(`Compliance-Findings.${opt.ext}`, e.currentTarget); setDownloadOpen(false); }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                  <div className="comp-dl-menu">
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.csv', e.currentTarget); setDownloadOpen(false); }}><IcFileCsv /> CSV</button>
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.pdf', e.currentTarget); setDownloadOpen(false); }}><IcFilePdf /> PDF</button>
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.xlsx', e.currentTarget); setDownloadOpen(false); }}><IcFileExcel /> Excel</button>
                   </div>
                 )}
               </div>
@@ -683,16 +692,6 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
           </div>
         </div>
         </>
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
       )}
     </>
   )
