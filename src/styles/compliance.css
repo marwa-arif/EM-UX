@@ -708,6 +708,15 @@
   text-align: right;
 }
 
+.comp-domain-table tbody td.comp-tree-empty {
+  text-align: center;
+  color: var(--shell-text-muted);
+  font-size: 12px;
+  padding: 32px 16px;
+  white-space: normal;
+  overflow: visible;
+}
+
 .comp-domain-table tr:hover td {
   background: var(--shell-hover);
 }
@@ -1107,48 +1116,10 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 /* ── Assessment drawer ───────────────────────────────────────────── */
-.comp-drawer-backdrop {
-  position: fixed;
-  top: var(--topbar-height);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: rgba(0,0,0,0.22);
-  z-index: 200;
-}
-
-.comp-drawer {
-  position: fixed;
-  top: var(--topbar-height);
-  right: 0;
-  width: 76vw;
-  max-width: 76vw;
-  height: calc(100vh - var(--topbar-height));
-  background: var(--card-bg);
-  border-left: 1px solid var(--shell-border);
-  border-radius: 12px 0 0 12px;
-  overflow: hidden;
-  z-index: 201;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -4px 0 32px rgba(0,0,0,0.14);
-  animation: comp-drawer-in 180ms ease;
-}
-
-@keyframes comp-drawer-in {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
-}
-
-@keyframes comp-drawer-out {
-  from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
-}
-
-.comp-drawer--closing {
-  animation: comp-drawer-out 180ms ease forwards;
-}
-
+/* Shell chrome (.comp-drawer / .comp-drawer-backdrop / .comp-drawer-close-ext /
+   .comp-drawer--closing + keyframes) moved to src/styles/drawer.css, imported by the
+   shared src/components/DrawerShell.jsx. Everything below is CompliancePage/DataQuality
+   drawer *content* styling that still lives here. */
 .comp-drawer-header {
   display: flex;
   align-items: flex-start;
@@ -1194,27 +1165,6 @@ html.theme-dark .comp-fw-card--selected {
   white-space: nowrap;
   flex-shrink: 0;
 }
-
-.comp-drawer-close-ext {
-  position: fixed;
-  top: calc(var(--topbar-height) + 16px);
-  right: calc(76vw + 8px);
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border, #E6E6E6);
-  background: var(--card-bg, #fff);
-  box-shadow: -2px 2px 8px rgba(0,0,0,0.10);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--shell-text-muted);
-  z-index: 202;
-  transition: background 120ms;
-}
-
-.comp-drawer-close-ext:hover { background: var(--shell-raised, #E6E6E6); }
 
 .comp-drawer-body {
   flex: 1;

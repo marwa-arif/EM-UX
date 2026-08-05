@@ -92,7 +92,7 @@ function SortMenuButton({ value, onChange, options }) {
 }
 
 // ── Dimension tab strip — reuses the app's SegmentedTabs visual (sliding ──
-// thumb, single connected bar; see PageKG.jsx/DashboardCanvas.jsx) with
+// thumb, single connected bar; see KGPage.jsx/DashboardCanvas.jsx) with
 // added support for disabled options + a tooltip, which the shared
 // component doesn't need elsewhere.
 function DimensionTabs({ value, options, disabledOptions, onChange }) {
@@ -152,7 +152,7 @@ const IcTrendDown = () => (
     <path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
-// Same glyph→file mapping PageKG.jsx uses for its entity-type icons —
+// Same glyph→file mapping KGPage.jsx uses for its entity-type icons —
 // keeps every entity icon on this page visually identical to the KG.
 const GLYPH_TO_FILE = {
   account: 'entity-account.svg',
@@ -174,7 +174,7 @@ const GLYPH_TO_FILE = {
   storage: 'entity-storage.svg',
 }
 
-// Same per-type node colors as the Knowledge Graph (PageKG.jsx's ENTITY_TYPES
+// Same per-type node colors as the Knowledge Graph (KGPage.jsx's ENTITY_TYPES
 // tint/stroke/tintDark/strokeDark/icon fields) — every entity icon on this
 // page is a colored circle badge matching its KG node exactly, border and
 // all, not a flat neutral glyph.
@@ -374,7 +374,7 @@ function makeTrend(score) {
   }))
 }
 
-// Same 16 entity types as the Knowledge Graph (PageKG.jsx's ENTITY_TYPES) —
+// Same 16 entity types as the Knowledge Graph (KGPage.jsx's ENTITY_TYPES) —
 // this page tracks quality for every entity type the KG ingests, not a
 // separate, invented set of business objects.
 function hashInt(str) {
@@ -423,7 +423,7 @@ const OVERALL_DIMENSIONS = DIMENSIONS.map((label, i) => ({
 
 const ENTITY_BY_ID = Object.fromEntries(KG_ENTITY_TYPES.map(e => [e.id, e]))
 
-// Same relationship edges as the Knowledge Graph (PageKG.jsx's INITIAL_EDGES) —
+// Same relationship edges as the Knowledge Graph (KGPage.jsx's INITIAL_EDGES) —
 // [srcEntityId, tgtEntityId, verb], trimmed of the hidden/alias fields that
 // page uses for its graph layout, which this list doesn't need.
 const KG_RELATIONSHIPS = [

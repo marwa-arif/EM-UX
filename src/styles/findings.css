@@ -1,19 +1,17 @@
 /* ── Findings page layout ───────────────────────────────────────── */
 .fin-page { flex: 1; min-height: 0; overflow-y: auto; }
 
-/* Finding Details panel — kg-dp-* extensions specific to this drawer's density */
-.kg-dp-grid--4 { grid-template-columns: repeat(4, 1fr); }
-.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(even) { border-right: 1px solid var(--shell-raised, #F5F5F5); }
-.kg-dp-grid--4 .kg-dp-grid-cell:nth-child(4n) { border-right: none; }
-.kg-dp-grid--4 .kg-dp-grid-cell:nth-last-child(-n+2) { border-bottom: 1px solid var(--shell-raised, #F5F5F5); }
-.kg-dp-rel-header--flex { display: flex; align-items: center; justify-content: space-between; }
-
 /* Related-node tabs (Cloud Account / Finding / Vulnerability) — ring + legend blocks */
 .fin-ring-summary { display: flex; gap: 32px; padding: 14px; flex-wrap: wrap; }
 .fin-ring-block { display: flex; flex-direction: column; gap: 10px; min-width: 160px; }
 .fin-ring-block-title { font-size: 11px; font-weight: 600; color: var(--fg-1, #101010); }
 .fin-ring-row { display: flex; align-items: center; gap: 14px; }
 .fin-ring-legend { display: flex; flex-direction: column; gap: 4px; }
+/* Sized to match the Discover dashboard's Type donut (.dev-donut-wrap) — scoped to this
+   section only so PageKG's identity rings (same shared .kg-dp-ring-wrap class) keep their
+   own smaller size. */
+.fin-ring-summary .kg-dp-ring-wrap { width: 106px; height: 106px; }
+.fin-ring-summary .kg-dp-ring-num { font-size: 20px; }
 .fin-intel-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-top-row { display: flex; gap: 12px; flex-shrink: 0; }
 .fin-left-col { display: flex; flex-direction: column; flex: 1; gap: 12px; min-width: 0; }
@@ -114,7 +112,8 @@ html.theme-dark .fin-td { border-bottom-color: var(--shell-border); }
 .fin-td-entity { color: var(--shell-text); }
 .fin-td-clickable { cursor: pointer; }
 .fin-td-clickable:hover .fin-td-entity { color: var(--pai-indigo); }
-.fin-rel-row-link { display: inline-flex; align-items: center; justify-content: center; color: var(--pai-indigo); margin-right: 4px; vertical-align: middle; }
+.fin-rel-row-link { color: var(--shell-text, #101010); transition: color 120ms; }
+.kg-tr--clickable:hover .fin-rel-row-link { color: var(--pai-indigo); }
 .fin-sev-badge { display: inline-block; padding: 2px 10px; border-radius: 44px; border: 1px solid var(--fin-sev-fg); background: var(--fin-sev-bg); color: var(--fin-sev-fg); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .fin-td-actions { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .fin-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: var(--shell-text-muted); transition: background 100ms; }

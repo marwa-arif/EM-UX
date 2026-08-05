@@ -4,7 +4,7 @@ import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
-import { PageKG } from './pages/PageKG.jsx'
+import KGPage from './pages/KGPage.jsx'
 import { FilterPanel } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
@@ -131,7 +131,7 @@ function ComingSoon() {
 }
 
 // ── Edge editor ──────────────────────────────────────────────────────────
-// Subscribes to PageKG's edge state via window.__kgGetEdges + 'kg-edges-changed'
+// Subscribes to KGPage's edge state via window.__kgGetEdges + 'kg-edges-changed'
 // event, edits via window.__kgSetEdges.
 function EdgeEditor({ onSaveDefault, savedEdges }) {
   const [edges, setLocalEdges] = useState([]);
@@ -152,7 +152,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     };
     sync();
     window.addEventListener('kg-edges-changed', sync);
-    // Poll briefly in case PageKG mounts after this component
+    // Poll briefly in case KGPage mounts after this component
     const id = setInterval(sync, 250);
     const stop = setTimeout(() => clearInterval(id), 2000);
     return () => {
@@ -666,7 +666,7 @@ function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
-  // Set BEFORE first render of children so PageKG can read persisted edges synchronously
+  // Set BEFORE first render of children so KGPage can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
     window.__floatTweaks = tweaks;
   }
@@ -1074,7 +1074,7 @@ function App() {
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
-                {isKG && <PageKG focusEntity={kgFocusEntity} />}
+                {isKG && <KGPage focusEntity={kgFocusEntity} />}
               </div>
             </div>
             {sharedRightPanel}

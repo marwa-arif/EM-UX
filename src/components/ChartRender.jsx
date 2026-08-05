@@ -589,7 +589,7 @@ function GaugeArc({ value, markerValue }) {
         const x2 = cx + tickOut * cosT, y2 = cy - tickOut * sinT
         return (
           <svg width={w} height={h} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#fff" strokeWidth={10} strokeLinecap="round" />
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--card-bg)" strokeWidth={10} strokeLinecap="round" />
             <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--pai-caution-fg)" strokeWidth={3} strokeLinecap="round" />
           </svg>
         )

@@ -3,6 +3,7 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 import '../styles/kg.css'
+import '../styles/drawer.css'
 import '../styles/data-quality.css'
 
 // ── Small icon set — same glyph language as DataQualityOverviewPage.jsx ────
@@ -1073,7 +1074,7 @@ export default function DataQualityInDepthPage() {
     fitView()
   }, [fitView, selectedId])
 
-  // Drag-to-pan — same model as PageKG's GraphCanvas: a mousedown that starts
+  // Drag-to-pan — same model as KGPage's GraphCanvas: a mousedown that starts
   // on the canvas surface itself (not a node) tracks the cursor via window
   // listeners so the drag keeps working even if the pointer leaves the canvas.
   const panDrag = useRef({ active: false, sx: 0, sy: 0, ox: 0, oy: 0 })
