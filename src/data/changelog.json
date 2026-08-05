@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.17.0",
+    "date": "2026-08-05",
+    "changes": {
+      "Added": [
+        "Shared `DrawerShell`, `SegmentedTabs`, and `entityTypes` components extracted from the Knowledge Graph page"
+      ],
+      "Changed": [
+        "AssetDetailDrawer, Compliance Findings, Compliance, and Findings drawers now reuse the shared drawer chrome/tab-toggle instead of page-local implementations",
+        "`PageKG.jsx` renamed to `KGPage.jsx` to match the other `Page*.jsx` naming convention"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.16.0",
     "date": "2026-08-04",
     "changes": {

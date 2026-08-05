@@ -32,6 +32,15 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.17.0] — 2026-08-05
+### Added
+- Shared `DrawerShell`, `SegmentedTabs`, and `entityTypes` components extracted from the Knowledge Graph page
+### Changed
+- AssetDetailDrawer, Compliance Findings, Compliance, and Findings drawers now reuse the shared drawer chrome/tab-toggle instead of page-local implementations
+- `PageKG.jsx` renamed to `KGPage.jsx` to match the other `Page*.jsx` naming convention
+
+---
+
 ## [0.16.0] — 2026-08-04
 ### Added
 - `insights.svg` icon and NIST dark-mode framework icon
