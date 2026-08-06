@@ -404,12 +404,27 @@
 .dev-insights-table { table-layout: fixed; }
 .dev-insights-table th, .dev-insights-table td { box-sizing: border-box; }
 .dev-insights-table .ds-th { white-space: normal; }
-.dev-insights-table th:nth-child(1), .dev-insights-table td:nth-child(1) { width: 40px; }
-.dev-insights-table th:nth-child(2), .dev-insights-table td:nth-child(2) { width: auto; }
-.dev-insights-table th:nth-child(3), .dev-insights-table td:nth-child(3) { width: 130px; }
-.dev-insights-table th:nth-child(4), .dev-insights-table td:nth-child(4) { width: 110px; }
-.dev-insights-table th:nth-child(5), .dev-insights-table td:nth-child(5) { width: 80px; }
-.dev-insights-table .dev-td-name { max-width: none; white-space: normal; }
+.dev-insights-table th:nth-child(1), .dev-insights-table td:nth-child(1) { width: auto; }
+.dev-insights-table th:nth-child(2), .dev-insights-table td:nth-child(2) { width: 130px; }
+.dev-insights-table th:nth-child(3), .dev-insights-table td:nth-child(3) { width: 110px; }
+.dev-insights-table th:nth-child(4), .dev-insights-table td:nth-child(4) { width: 80px; }
+.dev-insights-table .dev-td-name { max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dev-insights-table .dev-cell-icon-text { display: flex; width: 100%; min-width: 0; }
+.dev-insights-table .dev-cell-icon-text svg { flex-shrink: 0; }
+.dev-insights-table .dev-td-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Assets by Criticality Score: fixed column widths (% of card) so every
+   column — including the trailing OS Family — fits without clipping.
+   Header text wraps instead of forcing nowrap width like the base .ds-th. */
+.dev-asset-table { table-layout: fixed; }
+.dev-asset-table th, .dev-asset-table td { box-sizing: border-box; }
+.dev-asset-table .ds-th { white-space: normal; }
+.dev-asset-table th:nth-child(1), .dev-asset-table td:nth-child(1) { width: 20%; }
+.dev-asset-table th:nth-child(2), .dev-asset-table td:nth-child(2) { width: 12%; }
+.dev-asset-table th:nth-child(3), .dev-asset-table td:nth-child(3) { width: 16%; }
+.dev-asset-table th:nth-child(4), .dev-asset-table td:nth-child(4) { width: 14%; }
+.dev-asset-table th:nth-child(5), .dev-asset-table td:nth-child(5) { width: 16%; }
+.dev-asset-table th:nth-child(6), .dev-asset-table td:nth-child(6) { width: 22%; }
 
 .dev-trend-cell {
   display: inline-flex;

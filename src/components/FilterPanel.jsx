@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
-import { SegmentedTabs } from '../pages/PageKG.jsx'
+import SegmentedTabs from './SegmentedTabs.jsx'
 import '../styles/filter-panel.css'
 
 const FP_DEFAULT_ATTRS = [

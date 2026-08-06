@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { SegmentedTabs } from './PageKG.jsx'
+import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import '../styles/compliance.css'
 
 // ── Helpers ───────────────────────────────────────────────────────

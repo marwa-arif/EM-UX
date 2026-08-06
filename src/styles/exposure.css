@@ -314,7 +314,7 @@
 
 /* ── Trend chart: clickable points + hint ─────────────────────────── */
 .exp-trend-card-chart .recharts-surface { cursor: pointer; }
-.exp-tip-hint { margin-top: 8px; font-size: 11px; color: var(--shell-text-muted); }
+.exp-tip-hint { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border); font-size: 11px; color: var(--shell-text-muted); }
 
 /* ── Ask Navigator: Figma node 55698:155001 ───────────────────────── */
 .exp-asknav { display: flex; flex-direction: column; gap: 12px; }

@@ -734,7 +734,6 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
               <table className="ds-table dev-insights-table">
                 <thead>
                   <tr>
-                    <th className="ds-th dev-th-icon" />
                     <TH>Assessment</TH>
                     <TH>Findings Failed</TH>
                     <TH>Exposure Category</TH>
@@ -746,10 +745,12 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
                     const globalIdx = (insightPage - 1) * rowsPer + i;
                     return (
                     <tr key={i} className="kg-tr--clickable" onClick={() => setInsightDrawerNode(insightToAssessmentNode(r, globalIdx))}>
-                      <td className="ds-td dev-td-icon">
-                        {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
+                      <td className="ds-td dev-td-name">
+                        <span className="dev-cell-icon-text">
+                          {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
+                          <span className="dev-td-name-text">{r.text}</span>
+                        </span>
                       </td>
-                      <td className="ds-td dev-td-name">{r.text}</td>
                       <td className="ds-td dev-td-findings">
                         <div className="dev-findings-bar">
                           <div className="dev-findings-bar__track">

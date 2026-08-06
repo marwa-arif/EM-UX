@@ -4,6 +4,7 @@ import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import { GF_ENTITIES } from '../components/FilterPanel.jsx'
+import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import { SelectDropdown } from './CompliancePage.jsx'
 import { INITIAL_DATA_SOURCES } from './admin/DataIntegrations.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
@@ -2621,34 +2622,6 @@ const DASHBOARD_EDIT_SEED_BY_TEMPLATE = {
   'Client Subsidiary':     { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'account' },
 }
 const DASHBOARD_EDIT_SEED_DEFAULT = { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'host' }
-
-// ── Segmented tabs (same pattern as KG) ─────────────────────────────
-function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
-  const btnRefs = useRef([])
-  const [thumb, setThumb] = useState({ left: 3, width: 0 })
-
-  useEffect(() => {
-    const idx = options.indexOf(value)
-    const btn = btnRefs.current[idx]
-    if (btn) setThumb({ left: btn.offsetLeft, width: btn.offsetWidth })
-  }, [value, options.join('|')])
-
-  return (
-    <div className={fullWidth ? 'kg-seg-tabs kg-seg-tabs--full' : 'kg-seg-tabs'} style={{ '--kg-seg-height': `${height}px` }}>
-      <div className="kg-seg-thumb" style={{ left: thumb.left, width: thumb.width, opacity: thumb.width ? 1 : 0 }} />
-      {options.map((o, i) => (
-        <button
-          key={o}
-          ref={el => { btnRefs.current[i] = el }}
-          onClick={() => onChange && onChange(o)}
-          className={['kg-seg-btn', o === value ? 'kg-seg-btn--active' : '', fullWidth ? 'kg-seg-btn--full' : ''].filter(Boolean).join(' ')}
-        >
-          {o}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 // ── Month-over-Month timeline modal ─────────────────────────────────
 const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']

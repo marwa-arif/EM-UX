@@ -1,12 +1,14 @@
-// PageKG — Knowledge Graph view.
+// KGPage — Knowledge Graph view.
 // Layout: Summary card (top, with view toggle + node search), graph canvas (SVG),
 // then the filtered Details table.
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { PAI, Icons, Ic } from '../ui.jsx';
 import TablePagination from '../components/TablePagination.jsx';
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx';
+import SegmentedTabs from '../components/SegmentedTabs.jsx';
+import { DrawerShell, DrawerLayout, RelNodeSection, fieldColor, groupCounts, useDrawerNav } from '../components/DrawerShell.jsx';
+import { ENTITY_TYPES, EntityGlyph, GLYPH_TO_FILE } from '../components/entityTypes.jsx';
 import { useDownloads } from '../DownloadsContext.jsx';
 
 function useDark() {
@@ -18,30 +20,6 @@ function useDark() {
   }, []);
   return isDark;
 }
-
-// ─────────────────────────────────────────────────────────────────────
-// Entity type catalog — colors + icon glyph (drawn inline, no SVG file)
-// Colors are muted/desaturated chip-tints matching the screenshot.
-// ─────────────────────────────────────────────────────────────────────
-const ENTITY_TYPES = {
-  account:        { label: 'Account',           tint: '#F1ECF9', stroke: '#D3C3EC', tintDark: '#1E1228', strokeDark: '#3D2558', icon: '#9269CF', count: 15301,    fragments: 15349,    group: 'identity', glyph: 'account' },
-  identity:       { label: 'Identity',          tint: '#F4E6F9', stroke: '#DCB3ED', tintDark: '#22102E', strokeDark: '#4D1E68', icon: '#A842D2', count: 71442,    fragments: 146922,   group: 'identity', glyph: 'identity' },
-  group:          { label: 'Group',             tint: '#E3F6F7', stroke: '#A9E5E7', tintDark: '#0D2A2B', strokeDark: '#1A5254', icon: '#27BDC2', count: 2,        fragments: 2,        group: 'identity', glyph: 'group' },
-  person:         { label: 'Person',            tint: '#E4EDF1', stroke: '#ABC8D3', tintDark: '#0E1F28', strokeDark: '#1D3E50', icon: '#2E7690', count: 304,      fragments: 1016,     group: 'identity', glyph: 'person' },
-  application:    { label: 'Application',       tint: '#F4EEE6', stroke: '#DECCB1', tintDark: '#261B0D', strokeDark: '#4E381A', icon: '#AD803D', count: 4376,     fragments: 42717,    group: 'cloud',    glyph: 'application' },
-  vulnerability:  { label: 'Vulnerability',     tint: '#F4E9E9', stroke: '#DFBCBC', tintDark: '#261313', strokeDark: '#4E2626', icon: '#AE5757', count: 55230,    fragments: 311397,   group: 'host',     glyph: 'vulnerability' },
-  assessment:     { label: 'Assessment',        tint: '#F4ECE5', stroke: '#DEC4AF', tintDark: '#241808', strokeDark: '#4A3018', icon: '#AC6C36', count: 497,      fragments: 497,      group: 'host',     glyph: 'assessment' },
-  cluster:        { label: 'Cluster',           tint: '#E5E5F5', stroke: '#AEAEE1', tintDark: '#0D0D28', strokeDark: '#1A1A50', icon: '#3434B4', count: 231,      fragments: 231,      group: 'cloud',    glyph: 'cluster' },
-  container:      { label: 'Container',         tint: '#EBE4F2', stroke: '#C2ADD7', tintDark: '#180C24', strokeDark: '#321848', icon: '#66329C', count: 358,      fragments: 358,      group: 'cloud',    glyph: 'container' },
-  cloudAccount:   { label: 'Cloud Account',     tint: '#E6E7F5', stroke: '#B1B4DF', tintDark: '#0D1028', strokeDark: '#1A2050', icon: '#3B43B0', count: 15,       fragments: 15,       group: 'cloud',    glyph: 'cloud' },
-  finding:        { label: 'Finding',           tint: '#E9E4F6', stroke: '#BCABE4', tintDark: '#130A2A', strokeDark: '#281455', icon: '#582DBB', count: 15518350, fragments: 15518350, group: 'host',     glyph: 'finding', primary: true },
-  ticket:         { label: 'Ticket',            tint: '#E6F6F4', stroke: '#B1E3DE', tintDark: '#0D2A27', strokeDark: '#1A524E', icon: '#3DBAAD', count: 10,       fragments: 10,       group: 'host',     glyph: 'ticket' },
-  host:           { label: 'Host',              tint: '#E3E9F1', stroke: '#AABBD3', tintDark: '#0A1520', strokeDark: '#163060', icon: '#2B5690', count: 58687,    fragments: 225709,   group: 'host',     glyph: 'host' },
-  network:        { label: 'Network',           tint: '#DEF0EA', stroke: '#99D0BF', tintDark: '#0A2018', strokeDark: '#143E30', icon: '#00895E', count: 77,       fragments: 77,       group: 'cloud',    glyph: 'network' },
-  netSvc:         { label: 'Network Services',  tint: '#F0F4E4', stroke: '#D0DCAD', tintDark: '#1C230D', strokeDark: '#38461A', icon: '#89A833', count: 253,      fragments: 253,      group: 'cloud',    glyph: 'netsvc' },
-  netIface:       { label: 'Network Interface', tint: '#F6E6F0', stroke: '#E3B1D1', tintDark: '#280D1E', strokeDark: '#50183A', icon: '#BA3D8C', count: 3303,     fragments: 3303,     group: 'cloud',    glyph: 'netiface' },
-  storage:        { label: 'Storage',           tint: '#E5F1F7', stroke: '#B0D5E7', tintDark: '#0C2030', strokeDark: '#184060', icon: '#3A96C4', count: 5541,     fragments: 5541,     group: 'cloud',    glyph: 'storage' },
-};
 
 // Node positions — calibrated against a 940×420 canvas to match reference.
 // Layout: finding at center, all other entities arranged ALPHABETICALLY
@@ -174,42 +152,6 @@ const EDGE_ENTITY_COUNTS = {
 function edgeCountsFor(a, b) {
   const k1 = `${a}|${b}`, k2 = `${b}|${a}`;
   return EDGE_ENTITY_COUNTS[k1] || EDGE_ENTITY_COUNTS[k2] || null;
-}
-
-// ── Inline entity glyphs (24x24 design-system icons via <img>) ───────
-// Maps a glyph kind to the design-system SVG filename. Colors are baked
-// into the SVG itself, so we don't tint via CSS — pass the file straight.
-const GLYPH_TO_FILE = {
-  account: 'entity-account.svg',
-  identity: 'entity-identity.svg',
-  group: 'entity-group.svg',
-  person: 'entity-person.svg',
-  application: 'entity-application.svg',
-  vulnerability: 'entity-vulnerability.svg',
-  assessment: 'entity-assessment.svg',
-  cluster: 'entity-cluster.svg',
-  container: 'entity-cloud-container.svg',
-  cloud: 'entity-cloud-account.svg',
-  finding: 'entity-finding.svg',
-  ticket: 'entity-ticket.svg',
-  host: 'entity-host.svg',
-  network: 'entity-network.svg',
-  netsvc: 'entity-network-services.svg',
-  netiface: 'entity-network-interface.svg',
-  storage: 'entity-storage.svg',
-};
-
-function EntityGlyph({ kind, size = 18 }) {
-  const file = GLYPH_TO_FILE[kind];
-  if (!file) return null;
-  return (
-    <img
-      src={`assets/icons/${file}`}
-      width={size} height={size}
-      className="kg-entity-glyph"
-      alt=""
-    />
-  );
 }
 
 // ── Number formatter (commas, exact value) ──────────────────────────
@@ -838,18 +780,6 @@ const TYPE_TO_TABLE_LABEL = {
 const SOURCE_NAMES = {
   ms: 'Microsoft Defender', crwd: 'CrowdStrike', azure: 'Microsoft Azure AD',
   aws: 'AWS', k8s: 'Kubernetes (EKS)', jira: 'Jira',
-};
-
-// ── Identity tab dummy data (uniform mock across all entity types) ────────
-const IDENTITY_RINGS = [
-  { key: 'Operational Status', color: 'var(--pai-green, #16A34A)', value: 'Active' },
-  { key: 'Identity Provider', color: 'var(--pai-indigo, #3B82F6)', value: 'Active Directory' },
-  { key: 'Successful Login Location', color: 'var(--fg-3, #8a8a8a)', value: '(empty)' },
-];
-const IDENTITY_RELATION_ROW = {
-  label: 'JANE LEWIS', activity: 'Active', operational: 'Active', ownership: 'Corp',
-  provider: 'Active Directory', loginLocation: '—', origin: 'MS Active Directory',
-  firstSeen: '—', duration: '—', recency: '0',
 };
 
 const ROWS = [
@@ -1732,18 +1662,67 @@ function EntityKpiGrid() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// PageKG — composes graph + table + selection state
-// ─────────────────────────────────────────────────────────────────────
-function PageKG({ focusEntity } = {}) {
-  const { addDownload } = useDownloads();
-  const [summaryTab, setSummaryTab] = useState('Relationships');
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [panelRow, setPanelRow] = useState(null);
-  const [panelTab, setPanelTab] = useState('summary');
-  const [identityTabUnlocked, setIdentityTabUnlocked] = useState(false);
+// Maps a trail item ({kind:'entity', row}, row being a ROWS entry) to what the shared
+// HeaderIconStack needs to render it — every kind this drawer ever pushes already carries a
+// full ROWS-shaped row, so this is simpler than the other three drawers' describe functions.
+function describeKgTrailItem(item) {
+  const meta = TYPE_TO_TABLE_LABEL[item.row.type] || {};
+  const ent = ENTITY_TYPES[item.row.type] || {};
+  // Unlike the other 3 drawers, this dataset has a real per-entity-type color palette
+  // (ENTITY_TYPES[type].icon) — the active trail node's ring uses that entity's actual color.
+  return { icon: <EntityGlyph kind={meta.glyph} size={16} />, label: item.row.label, typeLabel: meta.type || item.row.type, color: ent.icon };
+}
+
+function hashStr(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+const KG_REL_SEVERITIES = ['Critical', 'High', 'Medium', 'Low'];
+
+// Data for the Finding/Identity leaf's "opened" pie-chart + relationship table view — built
+// from REAL ROWS entries of that type (not fabricated), so clicking a row in the table
+// navigates to an entity that actually exists in the dataset.
+function buildKgRelData(nodeKey, row) {
+  const pool = ROWS.filter(r => r.type === nodeKey && r.label !== row.label);
+  if (nodeKey === 'identity') {
+    const rows = pool.map(r => ({ 'Display Label': r.label, 'Last Active': r.active }));
+    return {
+      rings: [{ title: 'Activity Status', segments: [{ label: 'Active', count: rows.length, color: fieldColor('Active') }] }],
+      columns: ['Display Label', 'Last Active'], rows,
+    };
+  }
+  // finding — ROWS carries no severity field for these, so derive one deterministically
+  // (same hashStr already used for identity drill-down) purely for the ring/table breakdown.
+  const rows = pool.map(r => ({
+    'Display Label': r.label,
+    'Severity': KG_REL_SEVERITIES[hashStr(r.label) % KG_REL_SEVERITIES.length],
+    'Last Active': r.active,
+  }));
+  return {
+    rings: [{ title: 'Severity', segments: groupCounts(rows, 'Severity').map(([label, c]) => ({ label, count: c, color: fieldColor(label) })) }],
+    columns: ['Display Label', 'Severity', 'Last Active'], rows,
+  };
+}
+
+function kgRelCell(col, val) {
+  if (col === 'Severity') return <strong style={{ color: fieldColor(val) }}>{val}</strong>;
+  return String(val);
+}
+
+// Entity detail content (header + relationship mini-graph + tabs) — the drawer's content
+// component, reused self-referentially every time the Identity leaf drills into another row.
+function KgEntityContent({ row, onNavigate, trail, activeIndex, onNavigateTrail }) {
+  const [tab, setTab] = useState('summary');
+  // Which relationship-graph leaf's "opened" (pie-chart + table) view is showing, if any —
+  // set by clicking a leaf; clicking a ROW inside that view is what actually navigates.
+  const [relTab, setRelTab] = useState(null);
+  const openRelTab = key => { setRelTab(key); setTab(key); };
+  const navigateFromRelRow = r => {
+    const full = ROWS.find(x => x.label === r['Display Label']);
+    if (full) onNavigate({ kind: 'entity', row: full });
+  };
   const [evoShowHidden, setEvoShowHidden] = useState(false);
   const [evoSourceFilterOpen, setEvoSourceFilterOpen] = useState(false);
   const [checkedSources, setCheckedSources] = useState(() => new Set());
@@ -1756,6 +1735,245 @@ function PageKG({ focusEntity } = {}) {
     ro.observe(evoSectionEl);
     return () => ro.disconnect();
   }, [evoSectionEl]);
+
+  const meta = TYPE_TO_TABLE_LABEL[row.type] || {};
+  const ent  = ENTITY_TYPES[row.type]        || {};
+
+  return (
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeKgTrailItem}>
+      {/* Panel header */}
+      <div className="kg-dp-header">
+        <div className="kg-dp-title-row">
+          <div className="kg-dp-title-body">
+            <div className="kg-dp-name-row">
+              <span className="kg-dp-name">{row.label}</span>
+              <span className="kg-dp-type-chip" style={{ '--dp-chip-border': ent.stroke || 'var(--shell-border)', '--dp-chip-color': ent.icon || 'var(--pai-indigo)' }}>
+                {meta.type || row.type}
+              </span>
+            </div>
+            <div className="kg-dp-meta-row">
+              <span className="kg-dp-meta-item">IP: <strong>{row.ip}</strong></span>
+              <span className="kg-dp-meta-item">OS: <strong>{meta.os}</strong></span>
+              <span className="kg-dp-meta-item">Last Active: <strong>{row.active}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <EntityRelSummaryGraph
+          center={{
+            label: row.label,
+            icon: <EntityGlyph kind={meta.glyph} size={16} />,
+            accent: ent.icon || 'var(--pai-indigo)',
+          }}
+          leaves={[
+            {
+              key: 'finding',
+              label: 'Finding',
+              icon: <EntityGlyph kind="finding" size={16} />,
+              tint: ENTITY_TYPES.finding.tint,
+              stroke: ENTITY_TYPES.finding.stroke,
+              accent: ENTITY_TYPES.finding.icon,
+              count: fmtN(ent.count || 0),
+              active: relTab === 'finding',
+              onClick: () => openRelTab('finding'),
+            },
+            {
+              key: 'identity',
+              label: 'Identity',
+              icon: <EntityGlyph kind="identity" size={16} />,
+              tint: ENTITY_TYPES.identity.tint,
+              stroke: ENTITY_TYPES.identity.stroke,
+              accent: ENTITY_TYPES.identity.icon,
+              count: 1,
+              active: relTab === 'identity',
+              onClick: () => openRelTab('identity'),
+              testId: 'mini-graph-identity-node',
+            },
+          ]}
+        />
+      </div>
+
+      {/* Tabs */}
+      <div className="kg-dp-tabs">
+        {['summary', 'evolution', ...(relTab ? [relTab] : []), 'derivation'].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
+          >
+            {t === relTab ? (t === 'finding' ? 'Finding' : 'Identity') : t}
+          </button>
+        ))}
+      </div>
+
+      {/* Panel body */}
+      <div className="kg-dp-body">
+        {tab === 'summary' && (
+          <>
+            <div className="kg-dp-section">
+              <div className="kg-dp-section-header">General Information</div>
+              <div className="kg-dp-grid">
+                {[
+                  ['Display Label', row.label],
+                  ['Type',          meta.type || row.type],
+                  ['OS Family',     meta.os],
+                  ['IP Address',    row.ip],
+                  ['Last Found',    row.last],
+                  ['Last Active',   row.active],
+                ].map(([k, v]) => (
+                  <div key={k} className="kg-dp-grid-cell">
+                    <div className="kg-dp-grid-key">{k}</div>
+                    <div className="kg-dp-grid-val">{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="kg-dp-section">
+              <div className="kg-dp-section-header">Data Sources</div>
+              <div className="kg-dp-sources-row">
+                {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
+              </div>
+            </div>
+
+            <div className="kg-dp-section">
+              <div className="kg-dp-section-header kg-dp-section-header--flex">
+                <span>Findings</span>
+                <span className="kg-dp-findings-count">({fmtN(ent.count || 0)})</span>
+              </div>
+              <div className="kg-dp-sev-list">
+                {[
+                  { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
+                  { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
+                  { label: 'Medium',   pct: 68, color: 'var(--pai-red-high)' },
+                  { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
+                ].map(s => (
+                  <div key={s.label} className="kg-dp-sev-row">
+                    <span className="kg-dp-sev-label">{s.label}</span>
+                    <div className="kg-dp-sev-track">
+                      <div className="kg-dp-sev-fill" style={{ '--sev-pct': `${s.pct}%`, '--sev-color': s.color }} />
+                    </div>
+                    <span className="kg-dp-sev-count">
+                      {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {tab === 'evolution' && (() => {
+          const sources = meta.sources || [];
+          const primarySource = sources.find(s => SOURCE_NAMES[s]);
+          const sourceLabel = SOURCE_NAMES[primarySource] || 'Unknown Source';
+          const sourceItems = sources.filter(s => SOURCE_NAMES[s]).map(s => ({ id: s, label: SOURCE_NAMES[s] }));
+          const evoRows = [
+            ['Display Label', row.label],
+            ['Type',          meta.type || row.type],
+            ['OS Family',     meta.os],
+            ['IP Address',    row.ip],
+            ['Last Found',    row.last],
+            ['Last Active',   row.active],
+          ];
+          return (
+            <div className="kg-dp-section" ref={evoSectionRef} style={{ position: 'relative' }}>
+              <div className="kg-dp-section-header kg-dp-section-header--flex">
+                <span>Evolution</span>
+                <button
+                  className="kg-dp-icon-btn"
+                  title="Data Source Filter"
+                  onClick={() => {
+                    setCheckedSources(new Set(primarySource ? [primarySource] : []));
+                    setEvoSourceFilterOpen(true);
+                  }}
+                >
+                  {Icons.filter}
+                </button>
+              </div>
+              <div className="ds-table-wrap">
+                <table className="ds-table">
+                  <thead>
+                    <tr>
+                      <th className="ds-th">Attribute</th>
+                      <th className="ds-th">
+                        <div className="kg-dp-evo-resolved-head">
+                          Resolved
+                          <button className="kg-dp-evo-hidden-btn" onClick={() => setEvoShowHidden(v => !v)}>
+                            {evoShowHidden ? 'Hide' : 'Show Hidden'}
+                          </button>
+                        </div>
+                      </th>
+                      <th className="ds-th">
+                        <div className="kg-dp-evo-src-head">
+                          <span>{sourceLabel}</span>
+                          <span className="kg-dp-evo-latest-badge">Latest</span>
+                        </div>
+                        <div className="kg-dp-evo-src-date">[{row.last}]</div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evoRows.map(([k, v]) => (
+                      <tr key={k}>
+                        <td className="ds-td">{k}</td>
+                        <td className="ds-td" style={{ fontWeight: 600 }}>
+                          {v}
+                          {evoShowHidden && primarySource && <span className="kg-dp-evo-hidden-tag">{primarySource}</span>}
+                        </td>
+                        <td className="ds-td">{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {evoSourceFilterOpen && (
+                <SankeyFilterPopup
+                  type="source"
+                  items={sourceItems}
+                  selected={checkedSources}
+                  onApply={(draft) => setCheckedSources(draft)}
+                  onClose={() => setEvoSourceFilterOpen(false)}
+                  anchorX={evoSectionW - 20}
+                  svgW={evoSectionW}
+                />
+              )}
+            </div>
+          );
+        })()}
+
+        {tab === 'derivation' && (
+          <div className="kg-dp-empty-tab">
+            Derivation graph for <strong>{row.label}</strong>.<br/>
+            Shows how this entity was resolved from source fragments.
+          </div>
+        )}
+
+        {relTab && tab === relTab && (
+          <RelNodeSection
+            title={relTab === 'finding' ? 'Finding' : 'Identity'}
+            data={buildKgRelData(relTab, row)}
+            renderCell={kgRelCell}
+            onRowClick={navigateFromRelRow}
+          />
+        )}
+      </div>
+    </DrawerLayout>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// KGPage — composes graph + table + selection state
+// ─────────────────────────────────────────────────────────────────────
+export default function KGPage({ focusEntity } = {}) {
+  const { addDownload } = useDownloads();
+  const [summaryTab, setSummaryTab] = useState('Relationships');
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+  const [selected, setSelected] = useState(null);
+  // Entity detail drawer — history items are always {kind:'entity', row}, `row` being a ROWS
+  // entry; drilling into the mini-graph's Identity leaf pushes a real identity row from ROWS
+  // as a new trail entry instead of just revealing a tab in place.
+  const drawer = useDrawerNav();
   // When `highlightOnly` is true, the selected node gets a visual ring
   // but does NOT dim other nodes/edges or filter the details table.
   // Set when selection comes from a tab switch (Host/Identity).
@@ -2268,380 +2486,22 @@ function PageKG({ focusEntity } = {}) {
 
       <DetailsTable rows={filteredRows} totalCount={totalCount}
                     search={tableSearch} onSearch={setTableSearch}
-                    onRowClick={(row) => {
-                      setPanelRow(row); setPanelOpen(true); setPanelTab('summary');
-                      setIdentityTabUnlocked(false); setCheckedSources(new Set());
-                    }}/>
+                    onRowClick={(row) => drawer.open({ kind: 'entity', row })}/>
 
-      {/* ── Panel backdrop ── */}
-      <div
-        className={panelOpen ? 'kg-panel-backdrop kg-panel-backdrop--open' : 'kg-panel-backdrop'}
-        onClick={() => setPanelOpen(false)}
-      />
-
-      {/* ── External close button — sits to the left of the panel, matching the Assessment drawer ── */}
-      {panelOpen && (
-        <button className="kg-dp-close-ext" onClick={() => setPanelOpen(false)}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-            <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-          </svg>
-        </button>
+      {/* ── Entity detail drawer — shared shell/layout, same as FindingsPage/AssetDetailDrawer/
+          ComplianceFindingsPage's FindingDrawer ── */}
+      {drawer.index >= 0 && (
+        <DrawerShell onClose={drawer.close} closing={drawer.closing}>
+          <KgEntityContent
+            key={drawer.index}
+            row={drawer.history[drawer.index].row}
+            onNavigate={drawer.navigate}
+            trail={drawer.history}
+            activeIndex={drawer.index}
+            onNavigateTrail={drawer.goToIndex}
+          />
+        </DrawerShell>
       )}
-
-      {/* ── Detail slide-over panel ── */}
-      <div className={panelOpen ? 'kg-detail-panel kg-detail-panel--open' : 'kg-detail-panel'}>
-        {panelRow && (() => {
-          const meta = TYPE_TO_TABLE_LABEL[panelRow.type] || {};
-          const ent  = ENTITY_TYPES[panelRow.type]        || {};
-          return (
-            <>
-              {/* Panel header */}
-              <div className="kg-dp-header">
-                <div className="kg-dp-title-row">
-                  <div className="kg-dp-icon-circle" style={{ '--dp-tint': ent.tint || 'var(--pai-bg-raised)', '--dp-stroke': ent.stroke || 'var(--shell-border)' }}>
-                    <EntityGlyph kind={meta.glyph} size={16} />
-                  </div>
-                  <div className="kg-dp-title-body">
-                    <div className="kg-dp-name-row">
-                      <span className="kg-dp-name">{panelRow.label}</span>
-                      <span className="kg-dp-type-chip" style={{ '--dp-chip-border': ent.stroke || 'var(--shell-border)', '--dp-chip-color': ent.icon || 'var(--pai-indigo)' }}>
-                        {meta.type || panelRow.type}
-                      </span>
-                    </div>
-                    <div className="kg-dp-meta-row">
-                      <span className="kg-dp-meta-item">IP: <strong>{panelRow.ip}</strong></span>
-                      <span className="kg-dp-meta-item">OS: <strong>{meta.os}</strong></span>
-                      <span className="kg-dp-meta-item">Last Active: <strong>{panelRow.active}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <EntityRelSummaryGraph
-                  center={{
-                    label: panelRow.label,
-                    icon: <EntityGlyph kind={meta.glyph} size={16} />,
-                    accent: ent.icon || 'var(--pai-indigo)',
-                  }}
-                  leaves={[
-                    {
-                      key: 'finding',
-                      label: 'Finding',
-                      icon: <EntityGlyph kind="finding" size={16} />,
-                      tint: ENTITY_TYPES.finding.tint,
-                      stroke: ENTITY_TYPES.finding.stroke,
-                      accent: ENTITY_TYPES.finding.icon,
-                      count: fmtN(ent.count || 0),
-                    },
-                    {
-                      key: 'identity',
-                      label: 'Identity',
-                      icon: <EntityGlyph kind="identity" size={16} />,
-                      tint: ENTITY_TYPES.identity.tint,
-                      stroke: ENTITY_TYPES.identity.stroke,
-                      accent: ENTITY_TYPES.identity.icon,
-                      count: 1,
-                      onClick: () => { setIdentityTabUnlocked(true); setPanelTab('identity'); },
-                      testId: 'mini-graph-identity-node',
-                    },
-                  ]}
-                />
-              </div>
-
-              {/* Tabs */}
-              <div className="kg-dp-tabs">
-                {['summary', 'evolution', ...(identityTabUnlocked ? ['identity'] : []), 'derivation'].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setPanelTab(t)}
-                    className={panelTab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              {/* Panel body */}
-              <div className="kg-dp-body">
-                {panelTab === 'summary' && (
-                  <>
-                    <div className="kg-dp-section">
-                      <div className="kg-dp-section-header">General Information</div>
-                      <div className="kg-dp-grid">
-                        {[
-                          ['Display Label', panelRow.label],
-                          ['Type',          meta.type || panelRow.type],
-                          ['OS Family',     meta.os],
-                          ['IP Address',    panelRow.ip],
-                          ['Last Found',    panelRow.last],
-                          ['Last Active',   panelRow.active],
-                        ].map(([k, v]) => (
-                          <div key={k} className="kg-dp-grid-cell">
-                            <div className="kg-dp-grid-key">{k}</div>
-                            <div className="kg-dp-grid-val">{v}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="kg-dp-section">
-                      <div className="kg-dp-section-header">Data Sources</div>
-                      <div className="kg-dp-sources-row">
-                        {(meta.sources || []).map((s, i) => <SourceBadge key={i} src={s} />)}
-                      </div>
-                    </div>
-
-                    <div className="kg-dp-section">
-                      <div className="kg-dp-section-header kg-dp-section-header--flex">
-                        <span>Findings</span>
-                        <span className="kg-dp-findings-count">({fmtN(ent.count || 0)})</span>
-                      </div>
-                      <div className="kg-dp-sev-list">
-                        {[
-                          { label: 'Critical', pct: 4,  color: 'var(--pai-crit-fg)' },
-                          { label: 'High',     pct: 21, color: 'var(--pai-red-high)' },
-                          { label: 'Medium',   pct: 68, color: 'var(--pai-red-high)' },
-                          { label: 'Low',      pct: 7,  color: 'var(--pai-green)' },
-                        ].map(s => (
-                          <div key={s.label} className="kg-dp-sev-row">
-                            <span className="kg-dp-sev-label">{s.label}</span>
-                            <div className="kg-dp-sev-track">
-                              <div className="kg-dp-sev-fill" style={{ '--sev-pct': `${s.pct}%`, '--sev-color': s.color }} />
-                            </div>
-                            <span className="kg-dp-sev-count">
-                              {Math.floor((ent.count || 0) * s.pct / 100).toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {panelTab === 'evolution' && (() => {
-                  const sources = meta.sources || [];
-                  const primarySource = sources.find(s => SOURCE_NAMES[s]);
-                  const sourceLabel = SOURCE_NAMES[primarySource] || 'Unknown Source';
-                  const sourceItems = sources.filter(s => SOURCE_NAMES[s]).map(s => ({ id: s, label: SOURCE_NAMES[s] }));
-                  const evoRows = [
-                    ['Display Label', panelRow.label],
-                    ['Type',          meta.type || panelRow.type],
-                    ['OS Family',     meta.os],
-                    ['IP Address',    panelRow.ip],
-                    ['Last Found',    panelRow.last],
-                    ['Last Active',   panelRow.active],
-                  ];
-                  return (
-                    <div className="kg-dp-section" ref={evoSectionRef} style={{ position: 'relative' }}>
-                      <div className="kg-dp-section-header kg-dp-section-header--flex">
-                        <span>Evolution</span>
-                        <button
-                          className="kg-dp-icon-btn"
-                          title="Data Source Filter"
-                          onClick={() => {
-                            setCheckedSources(new Set(primarySource ? [primarySource] : []));
-                            setEvoSourceFilterOpen(true);
-                          }}
-                        >
-                          {Icons.filter}
-                        </button>
-                      </div>
-                      <div className="ds-table-wrap">
-                        <table className="ds-table">
-                          <thead>
-                            <tr>
-                              <th className="ds-th">Attribute</th>
-                              <th className="ds-th">
-                                <div className="kg-dp-evo-resolved-head">
-                                  Resolved
-                                  <button className="kg-dp-evo-hidden-btn" onClick={() => setEvoShowHidden(v => !v)}>
-                                    {evoShowHidden ? 'Hide' : 'Show Hidden'}
-                                  </button>
-                                </div>
-                              </th>
-                              <th className="ds-th">
-                                <div className="kg-dp-evo-src-head">
-                                  <span>{sourceLabel}</span>
-                                  <span className="kg-dp-evo-latest-badge">Latest</span>
-                                </div>
-                                <div className="kg-dp-evo-src-date">[{panelRow.last}]</div>
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {evoRows.map(([k, v]) => (
-                              <tr key={k}>
-                                <td className="ds-td">{k}</td>
-                                <td className="ds-td" style={{ fontWeight: 600 }}>
-                                  {v}
-                                  {evoShowHidden && primarySource && <span className="kg-dp-evo-hidden-tag">{primarySource}</span>}
-                                </td>
-                                <td className="ds-td">{v}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      {evoSourceFilterOpen && (
-                        <SankeyFilterPopup
-                          type="source"
-                          items={sourceItems}
-                          selected={checkedSources}
-                          onApply={(draft) => setCheckedSources(draft)}
-                          onClose={() => setEvoSourceFilterOpen(false)}
-                          anchorX={evoSectionW - 20}
-                          svgW={evoSectionW}
-                        />
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {panelTab === 'identity' && (
-                  <>
-                    <div className="kg-dp-section">
-                      <div className="kg-dp-section-header">Identity Summary</div>
-                      <div className="kg-dp-identity-rings">
-                        {IDENTITY_RINGS.map(ring => (
-                          <div key={ring.key} className="kg-dp-ring-col">
-                            <div className="kg-dp-ring-wrap">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={[{ v: 1 }]}
-                                    dataKey="v"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius="68%"
-                                    outerRadius="90%"
-                                    startAngle={90}
-                                    endAngle={450}
-                                    cornerRadius={4}
-                                    strokeWidth={0}
-                                  >
-                                    <Cell fill={ring.color} />
-                                  </Pie>
-                                </PieChart>
-                              </ResponsiveContainer>
-                              <div className="kg-dp-ring-num">1</div>
-                            </div>
-                            <div className="kg-dp-ring-label">{ring.key}</div>
-                            <div className="kg-dp-ring-value">
-                              <span className="kg-dp-ring-dot" style={{ background: ring.color }} />
-                              {ring.value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="kg-dp-section">
-                      <div className="kg-dp-section-header kg-dp-section-header--flex">
-                        <span>Relationship Summary (1)</span>
-                        <button className="ds-btn sz-sm t-primary" onClick={(e) => addDownload('Relationship-Summary.csv', e.currentTarget)}>
-                          Download {Icons.chevron}
-                        </button>
-                      </div>
-                      <div className="ds-table-wrap">
-                        <table className="ds-table">
-                          <thead>
-                            <tr>
-                              {['Display Label', 'Activity Status', 'Operational Status', 'Ownership', 'Identity Provider', 'Successful Login Location', 'Origin', 'First Seen', 'Duration', 'Recency'].map(h => (
-                                <th key={h} className="ds-th">{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.label}</td>
-                              <td className="ds-td"><span className="ds-badge success">{IDENTITY_RELATION_ROW.activity}</span></td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.operational}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.ownership}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.provider}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.loginLocation}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.origin}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.firstSeen}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.duration}</td>
-                              <td className="ds-td">{IDENTITY_RELATION_ROW.recency}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {panelTab === 'derivation' && (
-                  <div className="kg-dp-empty-tab">
-                    Derivation graph for <strong>{panelRow.label}</strong>.<br/>
-                    Shows how this entity was resolved from source fragments.
-                  </div>
-                )}
-              </div>
-            </>
-          );
-        })()}
-      </div>
-    </div>
-  );
-}
-
-// ── Segmented tabs (large) ───────────────────────────────────────────
-// Visual style adapted from the design system's dual-toggle: pill track
-// with a sliding indigo thumb and label color that flips on the active
-// segment.
-function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
-  const containerRef = useRef(null);
-  const btnRefs = useRef([]);
-  const labelRefs = useRef([]);
-  const [thumb, setThumb] = useState({ left: 3, width: 0 });
-
-  useEffect(() => {
-    const idx = options.indexOf(value);
-    const btn = btnRefs.current[idx];
-    if (btn) {
-      // Thumb fills the active tab exactly — container has no padding,
-      // so the pill spans the full button bounds.
-      setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
-    }
-  }, [value, options.join('|')]);
-
-  return (
-    <div
-      ref={containerRef}
-      className={fullWidth ? 'kg-seg-tabs kg-seg-tabs--full' : 'kg-seg-tabs'}
-      style={{ '--kg-seg-height': `${height}px` }}
-    >
-      {/* sliding white thumb — sized to match active segment */}
-      <div
-        className="kg-seg-thumb"
-        style={{
-          left: thumb.left,
-          width: thumb.width,
-          opacity: thumb.width ? 1 : 0,
-        }}
-      />
-      {options.map((o, i) => {
-        const active = o === value;
-        // Dividers between segments are hidden — the sliding thumb already
-        // indicates active state clearly enough on its own.
-        const showDivider = false;
-        return (
-          <button
-            key={o}
-            ref={el => btnRefs.current[i] = el}
-            onClick={() => onChange && onChange(o)}
-            className={[
-              'kg-seg-btn',
-              active ? 'kg-seg-btn--active' : '',
-              !onChange ? 'kg-seg-btn--no-change' : '',
-              fullWidth ? 'kg-seg-btn--full' : '',
-            ].filter(Boolean).join(' ')}
-          >
-            {showDivider && <span className="kg-seg-divider" />}
-            <span ref={el => labelRefs.current[i] = el}>{o}</span>
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -2811,7 +2671,6 @@ function FilterChipBar({ chips, deselected, reversed = new Set(), selectedLabel,
   );
 }
 
-export { PageKG, SegmentedTabs };
 
 // ── HoverTooltip ─────────────────────────────────────────────────────
 function HoverTooltip({ nodeId, edgeKey, mousePos, edges }) {

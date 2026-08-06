@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import '../styles/findings.css'
 import '../styles/kg.css'
 import '../styles/compliance.css'
@@ -8,6 +7,8 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import DonutChart from '../components/DonutChart.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
+import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldColor, groupCounts, useDrawerNav } from '../components/DrawerShell.jsx'
+import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
 import { useToast } from '../context/ToastCtx.jsx'
@@ -597,39 +598,8 @@ function ExposureFactorsPanel({ entity, type, data }) {
   );
 }
 
-const IcExternalLink = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-  </svg>
-);
-
-const IcRefresh = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-  </svg>
-);
-
 // ── Related-node tabs (Cloud Account / Finding / Vulnerability) — opened by clicking a graph node ──
 const REL_LABELS = { cloudAccount: 'Cloud Account', finding: 'Finding', vulnerability: 'Vulnerability' };
-
-function fieldColor(value) {
-  if (value === 'true') return 'var(--pai-low-fg)';
-  if (value === 'false') return 'var(--pai-crit-fg)';
-  if (SEV_COLORS[value]) return SEV_COLORS[value].fg;
-  if (value === '' || value == null) return 'var(--shell-text-muted)';
-  const palette = ['#2E84D4', '#6360D8', '#31A56D', '#D98B1D', '#66329C', '#0EA5A5'];
-  let h = 0;
-  for (const ch of String(value)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return palette[h % palette.length];
-}
-
-function groupCounts(rows, field) {
-  const m = new Map();
-  rows.forEach(r => m.set(r[field], (m.get(r[field]) || 0) + 1));
-  return [...m.entries()].sort((a, b) => b[1] - a[1]);
-}
 
 const VULN_POOL = [
   { id: 'CVE-2007-2930',  title: 'DNS Server Processes Remote Code Execution', severity: 'Medium',   exploit: 'false', patch: 'false' },
@@ -724,80 +694,8 @@ function buildFindingRelData(nodeKey, row) {
   };
 }
 
-function MiniRing({ title, segments }) {
-  const total = segments.reduce((s, x) => s + x.count, 0);
-  const pieData = segments.map(s => ({ ...s, value: s.count === 0 ? 0.001 : s.count }));
-  return (
-    <div className="fin-ring-block">
-      <div className="fin-ring-block-title">{title}</div>
-      <div className="fin-ring-row">
-        <div className="kg-dp-ring-wrap">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius="68%" outerRadius="90%" startAngle={90} endAngle={450} cornerRadius={4} strokeWidth={0}>
-                {pieData.map((seg, i) => <Cell key={i} fill={seg.color} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="kg-dp-ring-num">{total}</div>
-        </div>
-        <div className="fin-ring-legend">
-          {segments.map((s, i) => (
-            <div key={i} className="kg-dp-ring-value"><span className="kg-dp-ring-dot" style={{ background: s.color }} />{s.label}</div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RelNodeSection({ title, data, onRowClick }) {
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const visible = data.rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
-
-  return (
-    <div className="kg-dp-section">
-      <div className="kg-dp-section-header kg-dp-section-header--flex">
-        <span>{title} Summary</span>
-        <button className="comp-drawer-action-icon" title="Refresh"><IcRefresh /></button>
-      </div>
-      <div className="fin-ring-summary">
-        {data.rings.map(r => <MiniRing key={r.title} title={r.title} segments={r.segments} />)}
-      </div>
-      <div className="kg-dp-section-header kg-dp-section-header--flex">
-        <span>Relationship Summary ({data.rows.length})</span>
-        <button className="ds-btn sz-sm t-primary"><IcDownload /> Download <IcChevronDown /></button>
-      </div>
-      <div className="ds-table-wrap">
-        <table className="ds-table">
-          <thead>
-            <tr>{data.columns.map(c => <th key={c} className="ds-th">{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {visible.map((r, i) => (
-              <tr key={i} className={onRowClick ? 'kg-tr kg-tr--clickable' : undefined} onClick={onRowClick ? () => onRowClick(r, (page - 1) * rowsPerPage + i) : undefined}>
-                {data.columns.map(c => (
-                  <td key={c} className="ds-td">
-                    {c === 'Display Label' && onRowClick && <span className="fin-rel-row-link"><IcExternalLink /></span>}
-                    {ENTITY_BADGE_FIELDS.has(c) || SEV_COLORS[r[c]] ? <SevBadge level={r[c]} /> : String(r[c])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <TablePagination
-        total={data.rows.length}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
-      />
-    </div>
-  );
-}
+// renderCell for this page's RelNodeSection tables — badges for severity-like fields, plain text otherwise.
+const findingsRelCell = (col, val) => (ENTITY_BADGE_FIELDS.has(col) || SEV_COLORS[val] ? <SevBadge level={val} /> : String(val));
 
 // Breadcrumb rail for a drilled-into drawer stack — one icon per level, oldest at top,
 // current (last) highlighted; clicking an earlier icon pops back to that level.
@@ -805,19 +703,25 @@ function RelNodeSection({ title, data, onRowClick }) {
 // dedicated entity type of its own — shared by DrawerTrail and RecordDetailContent.
 // Icon for a mock leaf record (Assessment / Cloud Account / Vulnerability) that has no
 // dedicated entity type of its own — shared by DrawerTrail and RecordDetailContent.
+// A record leaf's ENTITY_TYPES key — 'cloudAccount'/'vulnerability' map directly, anything else
+// (e.g. an Assessment) falls back to 'assessment'.
+function recordEntityKey(nodeKey) {
+  if (nodeKey === 'cloudAccount' || nodeKey === 'vulnerability') return nodeKey;
+  return 'assessment';
+}
+
 function recordIcon(nodeKey, size) {
-  if (nodeKey === 'cloudAccount') return <img src={ENTITY_ICON_SRCS.cloud} width={size} height={size} alt="" />;
-  if (nodeKey === 'vulnerability') return <img src={ENTITY_ICON_SRCS.vulnerability} width={size} height={size} alt="" />;
-  return <img src={ENTITY_ICON_SRCS.assessment} width={size} height={size} alt="" />;
+  return <EntityGlyph kind={ENTITY_TYPES[recordEntityKey(nodeKey)].glyph} size={size} />;
 }
 
 // A Finding is represented by the same dedicated "finding" entity icon everywhere — header,
 // mini-graph, relationship rows — never the severity/alert triangle; severity is its own
 // meta-row field, not baked into the icon.
 function drawerItemIcon(item, size) {
-  if (item.kind === 'finding') return <img src={ENTITY_ICON_SRCS.finding} width={size} height={size} alt="" />;
+  if (item.kind === 'finding') return <EntityGlyph kind="finding" size={size} />;
   if (item.kind === 'record') return recordIcon(item.nodeKey, size);
-  return <img src={ENTITY_ICON_SRCS[item.type] || ENTITY_ICON_SRCS.device} width={size} height={size} alt="" />;
+  const ent = ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[item.type] || 'host'];
+  return <EntityGlyph kind={ent.glyph} size={size} />;
 }
 
 function drawerItemLabel(item) {
@@ -832,93 +736,24 @@ function drawerItemTypeLabel(item) {
   return ENTITY_TYPE_LABEL[item.type] || item.type;
 }
 
-// Header icon stack — lives inside the drawer header in place of a single icon. Every
-// entity/finding/record visited in this session stays stacked here (newest on top, oldest
-// pushed to the bottom), connected by lines; navigating to an earlier node only changes which
-// one is highlighted active — it never removes later nodes, only closing the drawer does.
-function HeaderIconStack({ history, activeIndex, onNavigate }) {
-  const order = history.map((_, i) => i).reverse(); // [newest, ..., oldest]
-  return (
-    <div className="kg-dp-icon-stack">
-      {order.map((i, pos) => {
-        const item = history[i];
-        const isActive = i === activeIndex;
-        return (
-          <React.Fragment key={i}>
-            {pos > 0 && (
-              <span
-                className="kg-dp-icon-stack-line"
-                title={`${drawerItemTypeLabel(history[order[pos - 1]])} associated with ${drawerItemTypeLabel(item)}`}
-              />
-            )}
-            <button
-              className={`kg-dp-icon-stack-node${isActive ? ' kg-dp-icon-stack-node--active' : ''}`}
-              onClick={() => !isActive && onNavigate(i)}
-              disabled={isActive}
-              title={drawerItemLabel(item)}
-            >
-              {drawerItemIcon(item, 16)}
-            </button>
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
+// Maps a trail item to the shape the shared HeaderIconStack/DrawerLayout (src/components/
+// DrawerShell.jsx) needs to render it, without that shared component knowing this page's
+// 'finding'|'entity'|'record' kind vocabulary.
+function describeDrawerItem(item) {
+  const color = item.kind === 'finding' ? ENTITY_TYPES.finding.icon
+    : item.kind === 'record' ? ENTITY_TYPES[recordEntityKey(item.nodeKey)].icon
+    : ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[item.type] || 'host'].icon;
+  return { icon: drawerItemIcon(item, 16), label: drawerItemLabel(item), typeLabel: drawerItemTypeLabel(item), color };
 }
 
-// Shared drawer chrome (backdrop, close button, sliding panel) mounted once per drawer
-// session — swapping `children` on navigation just replaces content in place, it never
-// remounts this shell, so only the very first open animates in.
-function DrawerShell({ children, onClose, closing }) {
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  return (
-    <>
-      <div className="comp-drawer-backdrop" onClick={onClose} />
-      <button className="comp-drawer-close-ext" onClick={onClose}><IcDrawerClose /></button>
-      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
-        {children}
-      </div>
-    </>
-  );
-}
-
-// Generic detail content for a leaf record that has no dedicated entity type of its own
-// (Assessment / Cloud Account / Vulnerability) — renders whatever fields the row carries,
-// so every Relationship Summary row has somewhere to go, not just Host/Identity/Finding rows.
-function RecordDetailContent({ nodeKey, title, record, trail, activeIndex, onNavigateTrail }) {
-  return (
-    <>
-      <div className="kg-dp-header">
-        <div className="kg-dp-title-row">
-          <HeaderIconStack history={trail} activeIndex={activeIndex} onNavigate={onNavigateTrail} />
-          <div className="kg-dp-title-body">
-            <div className="kg-dp-name-row">
-              <span className="kg-dp-name">{record['Display Label']}</span>
-              <span className="kg-dp-type-chip">{title}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="kg-dp-body">
-        <div className="kg-dp-section">
-          <div className="kg-dp-section-header">General Information</div>
-          <div className="kg-dp-grid">
-            {Object.entries(record).map(([k, v]) => (
-              <div key={k} className="kg-dp-grid-cell">
-                <div className="kg-dp-grid-key">{k}</div>
-                <div className="kg-dp-grid-val">{SEV_COLORS[v] ? <SevBadge level={v} /> : String(v)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+// Adapts a raw record (arbitrary key/value pairs, e.g. { 'Display Label': ..., ... }) into the
+// normalized { label, chipText, fields } shape the shared RecordDetailContent expects.
+function toSharedRecord(title, record) {
+  return {
+    label: record['Display Label'],
+    chipText: title,
+    fields: Object.entries(record).map(([k, v]) => [k, SEV_COLORS[v] ? <SevBadge level={v} /> : String(v)]),
+  };
 }
 
 function EntityCell({ name, type, onClick }) {
@@ -930,12 +765,6 @@ function EntityCell({ name, type, onClick }) {
     </div>
   );
 }
-
-const IcDrawerClose = () => (
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-    <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-  </svg>
-);
 
 // ── Finding Details panel — opened from row click / Explore, same comp-drawer shell as the Assessment/Trend Explore drawers ──
 function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateTrail }) {
@@ -962,10 +791,9 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
   );
 
   return (
-    <>
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeDrawerItem}>
         <div className="kg-dp-header">
           <div className="kg-dp-title-row">
-            <HeaderIconStack history={trail} activeIndex={activeIndex} onNavigate={onNavigateTrail} />
             <div className="kg-dp-title-body">
               <div className="kg-dp-name-row">
                 <span className="kg-dp-name">{row.title}</span>
@@ -984,17 +812,17 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
             onToggle={() => setRelOpen(o => !o)}
             center={{
               label: row.title.length > 26 ? row.title.slice(0, 24) + '…' : row.title,
-              icon: <img src={ENTITY_ICON_SRCS.finding} width={16} height={16} alt="" />,
-              accent: 'var(--pai-indigo)',
+              icon: <EntityGlyph kind="finding" size={16} />,
+              accent: ENTITY_TYPES.finding.icon,
             }}
             leaves={[
               {
                 key: 'assessment',
                 label: 'Assessment',
-                icon: <img src={ENTITY_ICON_SRCS.assessment} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="assessment" size={16} />,
+                tint: ENTITY_TYPES.assessment.tint,
+                stroke: ENTITY_TYPES.assessment.stroke,
+                accent: ENTITY_TYPES.assessment.icon,
                 count: 1,
                 active: relTab === 'assessment',
                 onClick: () => openRelTab('assessment'),
@@ -1003,10 +831,10 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
               {
                 key: 'scopeEntity',
                 label: scope.label,
-                icon: <img src={ENTITY_ICON_SRCS[scope.icon] || ENTITY_ICON_SRCS.device} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind={ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].glyph} size={16} />,
+                tint: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].tint,
+                stroke: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].stroke,
+                accent: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].icon,
                 count: 1,
                 active: relTab === 'scopeEntity',
                 onClick: () => openRelTab('scopeEntity'),
@@ -1053,6 +881,7 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
             <RelNodeSection
               title={relTabLabels[relTab]}
               data={buildFindingRelData(relTab, row)}
+              renderCell={findingsRelCell}
               onRowClick={
                 relTab === 'scopeEntity' ? () => onNavigate({ kind: 'entity', entity: row.entity, type: row.entityType })
                 : relTab === 'assessment' ? r => onNavigate({ kind: 'record', nodeKey: 'assessment', title: 'Assessment', record: r })
@@ -1100,7 +929,7 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
             </div>
           )}
         </div>
-    </>
+    </DrawerLayout>
   );
 }
 
@@ -1144,10 +973,9 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
   );
 
   return (
-    <>
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeDrawerItem}>
         <div className="kg-dp-header">
           <div className="kg-dp-title-row">
-            <HeaderIconStack history={trail} activeIndex={activeIndex} onNavigate={onNavigateTrail} />
             <div className="kg-dp-title-body">
               <div className="kg-dp-name-row">
                 <span className="kg-dp-name">{entity}</span>
@@ -1177,17 +1005,17 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
             onToggle={() => setRelOpen(o => !o)}
             center={{
               label: entity.length > 22 ? entity.slice(0, 20) + '…' : entity,
-              icon: <img src={ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.device} width={16} height={16} alt="" />,
-              accent: 'var(--pai-indigo)',
+              icon: <EntityGlyph kind={ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[type] || 'host'].glyph} size={16} />,
+              accent: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[type] || 'host'].icon,
             }}
             leaves={[
               {
                 key: 'cloudAccount',
                 label: 'Cloud Account',
-                icon: <img src={ENTITY_ICON_SRCS.cloud} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="cloud" size={16} />,
+                tint: ENTITY_TYPES.cloudAccount.tint,
+                stroke: ENTITY_TYPES.cloudAccount.stroke,
+                accent: ENTITY_TYPES.cloudAccount.icon,
                 count: 1,
                 active: relTab === 'cloudAccount',
                 onClick: () => openRelTab('cloudAccount'),
@@ -1196,10 +1024,10 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
               {
                 key: 'finding',
                 label: 'Finding',
-                icon: <img src={ENTITY_ICON_SRCS.finding} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="finding" size={16} />,
+                tint: ENTITY_TYPES.finding.tint,
+                stroke: ENTITY_TYPES.finding.stroke,
+                accent: ENTITY_TYPES.finding.icon,
                 count: rows.length,
                 active: relTab === 'finding',
                 onClick: () => openRelTab('finding'),
@@ -1208,10 +1036,10 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
               {
                 key: 'vulnerability',
                 label: 'Vulnerability',
-                icon: <img src={ENTITY_ICON_SRCS.vulnerability} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="vulnerability" size={16} />,
+                tint: ENTITY_TYPES.vulnerability.tint,
+                stroke: ENTITY_TYPES.vulnerability.stroke,
+                accent: ENTITY_TYPES.vulnerability.icon,
                 count: vulnCount,
                 active: relTab === 'vulnerability',
                 onClick: () => openRelTab('vulnerability'),
@@ -1244,6 +1072,7 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
             <RelNodeSection
               title={REL_LABELS[relTab]}
               data={buildRelData(relTab, entity, type, rows)}
+              renderCell={findingsRelCell}
               onRowClick={
                 relTab === 'finding' ? (r, i) => onNavigate({ kind: 'finding', row: rows[i] })
                 : relTab === 'cloudAccount' ? r => onNavigate({ kind: 'record', nodeKey: 'cloudAccount', title: 'Cloud Account', record: r })
@@ -1292,7 +1121,7 @@ function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeInde
             </div>
           )}
         </div>
-    </>
+    </DrawerLayout>
   );
 }
 
@@ -1584,15 +1413,14 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin');
   const { showToast } = useToast()
   const [downloadOpen, setDownloadOpen]             = useState(false);
-  // Drawer navigation history — { history: [{kind:'finding',row}|{kind:'entity',entity,type}|{kind:'record',...}, ...], index }.
-  // `index` points at the currently-shown entry; jumping to an earlier entry (DrawerTrail) only
-  // moves the pointer, it never drops later entries — the trail only shrinks when fully closed.
-  const [drawerNav, setDrawerNav]                   = useState({ history: [], index: -1 });
-  const [drawerClosing, setDrawerClosing]           = useState(false);
-  const openDrawer = item => setDrawerNav({ history: [item], index: 0 });
-  const navigateDrawer = item => setDrawerNav(({ history, index }) => ({ history: [...history.slice(0, index + 1), item], index: index + 1 }));
-  const goToDrawerIndex = i => setDrawerNav(nav => ({ ...nav, index: i }));
-  const closeDrawer = () => { setDrawerClosing(true); setTimeout(() => { setDrawerClosing(false); setDrawerNav({ history: [], index: -1 }); }, 180); };
+  // Drawer navigation — history items: {kind:'finding',row} | {kind:'entity',entity,type} |
+  // {kind:'record',nodeKey,title,record}. Jumping to an earlier entry only moves the pointer,
+  // it never drops later entries — the trail only shrinks when the drawer fully closes.
+  const drawer = useDrawerNav();
+  const openDrawer = drawer.open;
+  const navigateDrawer = drawer.navigate;
+  const goToDrawerIndex = drawer.goToIndex;
+  const closeDrawer = drawer.close;
   const downloadRef = useRef(null);
   const { addDownload } = useDownloads();
 
@@ -1884,18 +1712,18 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
     )}
 
     {/* Finding / Entity / Record Details drawer — a single persistent shell (DrawerShell) whose
-        content swaps based on drawerNav.index; navigating never remounts the shell, so only the
+        content swaps based on drawer.index; navigating never remounts the shell, so only the
         very first open slides in and every Relationship Summary click just replaces content.
         The header's icon stack (trail/activeIndex/onNavigateTrail) lives inside each content
         component's own header, not the shell, since it sits beside that content's title. */}
-    {drawerNav.index >= 0 && (() => {
-      const top = drawerNav.history[drawerNav.index];
-      const trailProps = { trail: drawerNav.history, activeIndex: drawerNav.index, onNavigateTrail: goToDrawerIndex };
+    {drawer.index >= 0 && (() => {
+      const top = drawer.history[drawer.index];
+      const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: goToDrawerIndex, describe: describeDrawerItem };
       const content = top.kind === 'finding' ? (
-        <FindingDetailContent key={drawerNav.index} row={top.row} onNavigate={navigateDrawer} {...trailProps} />
+        <FindingDetailContent key={drawer.index} row={top.row} onNavigate={navigateDrawer} {...trailProps} />
       ) : top.kind === 'entity' ? (
         <EntityDetailContent
-          key={drawerNav.index}
+          key={drawer.index}
           entity={top.entity}
           type={top.type}
           rows={TABLE_ROWS.filter(r => r.entity === top.entity)}
@@ -1903,10 +1731,10 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
           {...trailProps}
         />
       ) : (
-        <RecordDetailContent key={drawerNav.index} nodeKey={top.nodeKey} title={top.title} record={top.record} {...trailProps} />
+        <RecordDetailContent key={drawer.index} record={toSharedRecord(top.title, top.record)} {...trailProps} />
       );
       return (
-        <DrawerShell onClose={closeDrawer} closing={drawerClosing}>
+        <DrawerShell onClose={closeDrawer} closing={drawer.closing}>
           {content}
         </DrawerShell>
       );
