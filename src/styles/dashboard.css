@@ -1331,10 +1331,12 @@
 }
 
 /* ── Live preview placeholder ──────────────────────────────────────────── */
-/* Rendered below the RGL grid in normal document flow (not a grid item) —
-   width is set inline (matches the selected widget size's column span). */
+/* A real (static) grid item, sized by RGL itself to match the selected
+   widget size — this just fills that cell. */
 .dc-preview-col {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .dc-preview-card {
@@ -1342,7 +1344,7 @@
   border: 1.5px dashed var(--dc-indigo);
   border-radius: 4px;
   padding: 12px;
-  height: var(--dc-preview-height);
+  height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1560,14 +1562,29 @@
   background: var(--shell-border);
 }
 
-/* ── Add Widget button ─────────────────────────────────────────────────── */
-/* Rendered below the RGL grid in normal document flow; width/height are set
-   inline to match a 3-column, 13-row slot (this button's original grid
-   footprint) now that there's no CSS grid to derive them from. */
-.dc-add-widget-btn {
+/* ── Add Widget tile ───────────────────────────────────────────────────── */
+/* A real (static) grid item — RGL sizes this wrapper to a 3-column, 13-row
+   slot (or the next free gap of that size), this just fills it. Split in
+   two: the dashed area opens the manual panel, the footer opens the AI
+   builder — the only way to add a widget with AI once the canvas already
+   has at least one (DashboardCreateHero, with the same two paths, only
+   shows on a still-empty canvas). */
+.dc-add-widget-tile {
+  width: 100%;
+  height: 100%;
   background: var(--card-bg);
   border: 1.5px dashed var(--dc-indigo);
   border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dc-add-widget-main {
+  flex: 1;
+  min-height: 0;
+  background: none;
+  border: none;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1578,10 +1595,37 @@
   transition: background 150ms;
 }
 
+.dc-add-widget-main:hover {
+  background: var(--dc-indigo-tint);
+}
+
 .dc-add-widget-btn-label {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
+}
+
+.dc-add-widget-ai {
+  flex-shrink: 0;
+  width: 100%;
+  height: 32px;
+  background: none;
+  border: none;
+  border-top: 1.5px dashed var(--dc-indigo);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--dc-indigo);
+  transition: background 150ms;
+}
+
+.dc-add-widget-ai:hover {
+  background: var(--dc-indigo-tint);
 }
 
 

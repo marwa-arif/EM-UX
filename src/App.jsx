@@ -12,6 +12,7 @@ import WorkspacePage from './pages/WorkspacePage.jsx'
 import NavigatorPage from './pages/NavigatorPage.jsx'
 import UX3Page from './pages/UX3Page.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import { useAdminPanelState, AdminSettingsNav, AdminPanelContent, AdminConfirmModal } from './pages/admin/AdminPanelBody.jsx'
 import StudioHomePage from './pages/StudioHomePage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
@@ -597,13 +598,19 @@ function App() {
     if (path.startsWith('/workspace/')) return path.slice(1);
     if (path === '/knowledge-graph') return 'kg';
     if (path === '/') return 'navigator';
+    if (path === '/admin') return 'navigator';
     return path.slice(1) || 'navigator';
   });
   const [appMode, setAppMode] = useState(() => {
     const path = stripBase(window.location.pathname);
     return path.startsWith('/studio') ? 'studio' : 'em';
   }); // 'em' | 'studio'
-  const [adminPrevPage, setAdminPrevPage] = useState('exposure/overview');
+  // Settings/Admin nests inside whatever shell (classic EM, Studio, UX3) was
+  // already active rather than replacing it — this tracks whether that nested
+  // panel is open, independent of `current`, so closing it lands exactly back
+  // where the user was.
+  const [settingsOpen, setSettingsOpen] = useState(() => stripBase(window.location.pathname) === '/admin');
+  const adminState = useAdminPanelState();
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
@@ -687,6 +694,8 @@ function App() {
     const onPop = () => {
       const path = stripBase(window.location.pathname);
       setAppMode(path.startsWith('/studio') ? 'studio' : 'em');
+      if (path === '/admin') { setSettingsOpen(true); return; }
+      setSettingsOpen(false);
       if (path === '/workspace') setCurrent('workspace');
       else if (path.startsWith('/workspace/')) setCurrent(path.slice(1));
       else if (path === '/knowledge-graph') setCurrent('kg');
@@ -728,6 +737,10 @@ function App() {
 
   const handleNav = (id, data) => {
     setNavExpandOverride(false);
+    // Any navigation other than opening/closing Settings itself should back
+    // it out first — clicking a primary-nav item while Settings is nested
+    // beside it is a normal "go here instead" action.
+    if (settingsOpen && id !== 'admin-page' && id !== 'admin-exit') setSettingsOpen(false);
     if (id === 'navigator') {
       setNavigatorViewMode('floating');
       setNavigatorFloating(true);
@@ -797,8 +810,8 @@ function App() {
     }
     if (id === 'ux3-page') {
       setRightPanel(null);
-      setCurrent('ux3/client/servers');
-      history.pushState(null, '', navPath('/ux3/client/servers'));
+      setCurrent('ux3/home');
+      history.pushState(null, '', navPath('/ux3/home'));
       return;
     }
     if (id === 'ux3-exit') {
@@ -815,14 +828,19 @@ function App() {
       return;
     }
     if (id === 'admin-page') {
-      if (current !== 'admin') setAdminPrevPage(current);
       setRightPanel(null);
-      setCurrent('admin');
+      setSettingsOpen(true);
       history.pushState(null, '', navPath('/admin'));
       return;
     }
     if (id === 'admin-exit') {
-      handleNav(adminPrevPage);
+      setSettingsOpen(false);
+      let url;
+      if (current === 'workspace') url = '/workspace';
+      else if (current.startsWith('workspace/')) url = `/${current}`;
+      else if (current === 'kg') url = '/knowledge-graph';
+      else url = `/${current}`;
+      history.pushState(null, '', navPath(url));
       return;
     }
     if (id === 'kg') {
@@ -913,18 +931,24 @@ function App() {
             <PasswordGate onUnlock={unlock} />
           </div>
         )}
-        <WorkspacePage
-          onNav={handleNav}
-          initialRoute={current}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onBuilderApiReady={setDashboardBuilderApi}
-          onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
-          rightPanelSlot={sharedRightPanel}
-          rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
-          navigatorActive={rightPanel === 'navigator'}
-          seedDashboard={dashboardSeed}
-        />
+        {settingsOpen ? (
+          <AdminPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
+        ) : (
+          <WorkspacePage
+            onNav={handleNav}
+            initialRoute={current}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onBuilderApiReady={setDashboardBuilderApi}
+            onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
+            rightPanelSlot={sharedRightPanel}
+            rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
+            navigatorActive={rightPanel === 'navigator'}
+            seedDashboard={dashboardSeed}
+            appMode={appMode}
+            onModeChange={handleModeChange}
+          />
+        )}
       </>
     );
   }
@@ -938,21 +962,15 @@ function App() {
             <PasswordGate onUnlock={unlock} />
           </div>
         )}
-        <UX3Page onNav={handleNav} initialRoute={current} theme={theme} onToggleTheme={toggleTheme} />
-      </>
-    );
-  }
-
-  if (current === 'admin') {
-    return (
-      <>
-        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
-        {!showSplash && locked && (
-          <div className="pw-lock-overlay">
-            <PasswordGate onUnlock={unlock} />
-          </div>
-        )}
-        <AdminPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} />
+        <UX3Page
+          onNav={handleNav}
+          initialRoute={current}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          settingsOpen={settingsOpen}
+          adminState={adminState}
+          onCloseSettings={() => handleNav('admin-exit')}
+        />
       </>
     );
   }
@@ -990,7 +1008,7 @@ function App() {
         <LeftNav
           current={current}
           onNav={handleNav}
-          collapsed={collapsed}
+          collapsed={settingsOpen || collapsed}
           onToggleCollapse={() => {
             if (isNavigatorRoute) {
               setNavExpandOverride((o) => !o);
@@ -1004,7 +1022,16 @@ function App() {
           onModeChange={handleModeChange}
         />
 
-        {appMode === 'studio' ? (
+        {settingsOpen ? (
+          <>
+            <aside className="settings-panel">
+              <AdminSettingsNav activeSection={adminState.activeSection} onSelect={adminState.setActiveSection} />
+            </aside>
+            <main className="exp-main exp-main--col admin-main">
+              <AdminPanelContent state={adminState} onNav={handleNav} onClose={() => handleNav('admin-exit')} />
+            </main>
+          </>
+        ) : appMode === 'studio' ? (
           <main className="exp-main exp-main--row studio-main">
             <div className="exp-content-col">
               {!isNavigatorRoute && (
@@ -1106,6 +1133,8 @@ function App() {
           />
         </TweaksPanel>
       )}
+
+      <AdminConfirmModal confirmAction={adminState.confirmAction} onClose={() => adminState.setConfirmAction(null)} />
     </div>
   );
 }

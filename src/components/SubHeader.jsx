@@ -18,6 +18,9 @@ const EXPLORE_GROUPS = [
     { label: 'Compliance Matrix',   id: 'report/compliance-matrix',   icon: 'nav-report-matrix' },
     { label: 'Compliance Findings', id: 'report/compliance-findings', icon: 'nav-findings' },
   ]},
+  { label: 'Knowledge Graph', icon: 'navbar-kg', items: [
+    { label: 'Knowledge Graph',     id: 'kg',                         icon: 'navbar-kg' },
+  ]},
 ];
 
 function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId }) {
@@ -187,7 +190,11 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
 
           <div className="subheader__vdivider" />
 
-          <button onClick={onFilter} className="subheader__filter-btn">
+          <button
+            onClick={onFilter}
+            aria-pressed={!!filterActive}
+            className={`subheader__filter-btn${filterActive ? ' subheader__filter-btn--open' : ''}`}
+          >
             Filter
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>

@@ -35,12 +35,12 @@
 }
 .topbar__avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: var(--pai-indigo); color: #fff;
+  background: rgba(255,255,255,0.12); color: var(--shell-topbar-text);
   border: none; padding: 0; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600; font-family: inherit;
 }
-.topbar__avatar:hover { background: var(--pai-indigo-hover); }
+.topbar__avatar:hover { background: rgba(255,255,255,0.18); }
 
 .topbar__account { position: relative; }
 .topbar__account-menu {
@@ -232,6 +232,43 @@
 .topbar__navigator.active {
   box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
 }
+
+.topbar__logo-divider {
+  width: 1px; height: 20px;
+  background: rgba(255,255,255,0.20);
+}
+.topbar__switcher { position: relative; }
+.topbar__switcher-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 32px; padding: 0 8px;
+  border: none; background: transparent; border-radius: 6px;
+  font-size: 13px; font-weight: 500; font-family: 'Urbanist', sans-serif;
+  color: var(--shell-topbar-text);
+  cursor: pointer;
+}
+.topbar__switcher-btn:hover,
+.topbar__switcher-btn--open { background: rgba(255,255,255,0.10); }
+.topbar__switcher-menu {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  width: 200px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-popup, 0 8px 24px rgba(16,16,16,0.16));
+  padding: 8px;
+  z-index: 60;
+  display: flex; flex-direction: column;
+}
+.topbar__switcher-item {
+  display: flex; align-items: center;
+  width: 100%; height: 32px; padding: 0 8px;
+  border: none; background: transparent; border-radius: 6px;
+  font-size: 12px; font-weight: 500; font-family: 'Urbanist', sans-serif;
+  color: var(--shell-text-2);
+  cursor: pointer; text-align: left;
+}
+.topbar__switcher-item:hover { background: var(--shell-hover); }
+.topbar__switcher-item--active { color: var(--shell-text); font-weight: 600; }
 
 /* ── LeftNav ─────────────────────────────────────────────────────── */
 .leftnav {
@@ -872,11 +909,14 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 .subheader__filter-btn {
   height: 28px; padding: 0 12px;
   background: var(--pai-indigo-secondary); color: var(--pai-indigo-secondary-fg);
-  border: none; border-radius: 44px;
+  border: 1px solid transparent; border-radius: 44px;
   font-size: 12px; font-weight: 500; font-family: inherit;
   cursor: pointer;
   display: inline-flex; align-items: center; gap: 8px;
   flex-shrink: 0;
+}
+.subheader__filter-btn--open {
+  background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); color: var(--pai-indigo);
 }
 
 /* ── Version badge & changelog modal ────────────────────────────── */
@@ -1008,7 +1048,10 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--shell-border);
+  /* Border is a CSS var (default none), same as --rp-shell-border in
+     App.jsx — a hardcoded border-left renders as a 1px hairline at the
+     right edge even at width:0 (content-box adds it outside the box). */
+  border-left: var(--wp-filter-drawer-border, none);
   background: var(--card-bg);
   transition: width 300ms cubic-bezier(0.4,0,0.2,1);
 }

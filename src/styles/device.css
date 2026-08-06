@@ -841,6 +841,20 @@
   justify-content: center;
 }
 
+.dev-drawer-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  margin-bottom: 16px;
+}
+
+.dev-drawer-summary strong {
+  color: var(--shell-text);
+  font-weight: 600;
+}
+
 /* ── Baseline toggle ─────────────────────────────────────────── */
 
 .dev-baseline-row {
