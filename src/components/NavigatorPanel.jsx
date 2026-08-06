@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Ic } from '../ui.jsx'
 import { createExchange } from './ReasoningEngine.jsx'
 import { BuildExchangeTurn, parseWidgetIntent, buildWidgetSpec, detectChartId, cleanWidgetTitle } from '../pages/NavigatorPage.jsx'
+import { useToastExit } from '../hooks/useToastExit.js'
 
 // ── Static data ───────────────────────────────────────────────────────
 const AGENTS = [
@@ -60,7 +61,7 @@ const IcX         = () => <Ic size={15} path={<><path d="M18 6 6 18M6 6l12 12"/>
 const IcArrow     = () => <Ic size={12} path={<><path d="M5 12h14M12 5l7 7-7 7"/></>} />
 const IcMenu      = () => <Ic size={16} path={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>} />
 const IcEdit      = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />
-const IcSidebar   = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></>} />
+const IcSidebar   = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></>} />
 const IcFloat     = () => <Ic size={14} path={<><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M3 9h2M3 12h2M3 15h2"/></>} />
 const IcFullscr   = () => <Ic size={14} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />
 const IcDots      = () => <Ic size={15} path={<><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></>} />
@@ -272,11 +273,20 @@ function ThinkingCard() {
 }
 
 // ── Response card ─────────────────────────────────────────────────────
-function ResponseCard({ onCopy, onExplore }) {
+// The rest of this response is a fixed demo scenario (vm-prod-42) — but a
+// date-scoped question ("What changed on 26 July 2024?") should at least
+// come back scoped to the date that was actually asked about, not read as
+// generic and disconnected from the question.
+function extractQueryDate(query) {
+  return query?.match(/\b\d{1,2} [A-Z][a-z]+ \d{4}\b/)?.[0] ?? null
+}
+
+function ResponseCard({ query, onCopy, onExplore }) {
   const [feedback, setFeedback]       = useState(null)
   const [showSources, setShowSources] = useState(false)
   const [feedbackNote, setNote]       = useState('')
   const [showNoteBox, setNoteBox]     = useState(false)
+  const queryDate = extractQueryDate(query)
 
   const handleFeedback = (val) => {
     const next = feedback === val ? null : val
@@ -307,6 +317,7 @@ function ResponseCard({ onCopy, onExplore }) {
         </div>
 
         {/* Findings list */}
+        {queryDate && <div className="np-findings-scope">Findings for {queryDate}</div>}
         <div className="np-findings">
           {DEMO_FINDINGS.map((f, i) => (
             <div key={i} className="np-finding-row">
@@ -424,11 +435,12 @@ function ErrorCard({ onRetry }) {
 
 // ── Copy friction toast ───────────────────────────────────────────────
 function CopyToast({ message, onDismiss }) {
-  if (!message) return null
+  const { displayed, leaving } = useToastExit(message, 180)
+  if (!displayed) return null
   return (
-    <div className="np-copy-toast" role="alert" aria-live="assertive">
+    <div className={`np-copy-toast${leaving ? ' np-copy-toast--leaving' : ''}`} role="alert" aria-live="assertive">
       <span className="np-copy-toast-icon" aria-hidden="true"><IcAlert /></span>
-      <span className="np-copy-toast-text">{message}</span>
+      <span className="np-copy-toast-text">{displayed}</span>
       <button className="np-copy-toast-dismiss" onClick={onDismiss} aria-label="Dismiss">×</button>
     </div>
   )
@@ -482,6 +494,11 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [taRef])
 
+  // Growing only on the textarea's own onChange misses a prefilled value set
+  // programmatically (e.g. a chart-point "ask Navigator" question) — that
+  // still needs the box to expand, not just user keystrokes.
+  useEffect(() => { grow() }, [value, grow])
+
   const pickAgent = (a) => {
     setAgent(a)
     setAgentMenu(false)
@@ -497,7 +514,7 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
           rows={1}
           placeholder={placeholder}
           value={value}
-          onChange={e => { onChange(e); grow() }}
+          onChange={onChange}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend() } }}
           aria-label="Type your message. Press Enter to send, Shift+Enter for new line."
           aria-multiline="true"
@@ -742,11 +759,15 @@ function FirstRunHero({ onSend, suggestions = FIRSTRUN_SUGGESTIONS, pageLabel, c
 }
 
 // ── Home view ─────────────────────────────────────────────────────────
-function PanelHome({ onSend, isFirstRun, pageId, pageLabel }) {
-  const [query, setQuery]   = useState('')
+function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', draftToken = 0 }) {
+  const [query, setQuery]   = useState(draftQuery)
   const [activeCtx, setCtx] = useState(new Set())
   const taRef               = useRef(null)
   const pageCtx              = PAGE_CONTEXT[pageId]
+
+  // Re-seed the composer whenever a new draft arrives (e.g. clicking a
+  // different chart point), even if this view never unmounted.
+  useEffect(() => { if (draftToken) setQuery(draftQuery) }, [draftToken])
 
   const toggleCtx = (id) => setCtx(prev => {
     const next = new Set(prev)
@@ -914,7 +935,7 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
           <div className="np-msg-bubble user">{query}</div>
         </div>
         {responseState === 'thinking' && <ThinkingCard />}
-        {responseState === 'done'     && <ResponseCard onCopy={onCopy} onExplore={onExplore} />}
+        {responseState === 'done'     && <ResponseCard query={query} onCopy={onCopy} onExplore={onExplore} />}
         {responseState === 'error'    && <ErrorCard onRetry={onRetry} />}
       </div>
 
@@ -1283,7 +1304,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, dockSide = 'right', forceFloatToken = 0 }) {
   const [view, setView]             = useState('home')
 
   // Enter the scripted assessment-builder chat when triggered externally
@@ -1296,8 +1317,39 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [showMoreMenu, setMoreMenu] = useState(false)
   const [panelWidth, setPanelWidth] = useState(400)
   const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
-    ? { x: window.innerWidth - 400 - 16, y: 60 }
+    ? { x: dockSide === 'left' ? 16 : window.innerWidth - 400 - 16, y: 60 }
     : { x: 0, y: 0 })
+
+  // A fresh "ask about X" request (e.g. clicking a trend chart point) bumps
+  // draftToken — drop back to the composer with the new draft loaded, and
+  // re-anchor a floating panel to the requested side instead of wherever it
+  // was left, since the caller (e.g. a right-side drawer) may need the panel
+  // out of its way on the opposite edge.
+  const viewModeRef = useRef(viewMode)
+  useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
+  useEffect(() => {
+    if (!draftToken) return
+    setView('home')
+    setRespSt('done')
+    if (viewModeRef.current === 'floating') {
+      setFloatPos({ x: dockSide === 'left' ? 16 : window.innerWidth - panelWidth - 16, y: 60 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftToken])
+
+  // Something occupying the right side (e.g. the Trend Explore drawer) just
+  // opened while this panel is docked as a sidebar — switch it to floating
+  // and out of the way, without touching the conversation already in view
+  // (unlike the draftToken effect above, this must NOT reset `view`).
+  useEffect(() => {
+    if (!forceFloatToken) return
+    if (viewModeRef.current !== 'floating') {
+      setFloatPos({ x: dockSide === 'left' ? 16 : window.innerWidth - panelWidth - 16, y: 60 })
+      setViewMode('floating')
+      onViewModeChange?.('floating')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceFloatToken])
   const [isDragging, setIsDragging] = useState(false)
   const [copyToast, setCopyToast]   = useState(null)
   const [isFirstRun, setFirstRun]   = useState(true)
@@ -1672,7 +1724,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 ? <PromptDashboardBuilder key={`prompt:${builderContext.initialPrompt}`} builderApi={builderApi} initialPrompt={builderContext.initialPrompt} />
                 : <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />)
             : view === 'home'
-            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} />
+            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} draftQuery={draftQuery} draftToken={draftToken} />
             : <PanelChat
                 query={activeQuery}
                 onNewChat={handleNew}

@@ -4,7 +4,7 @@ import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import LeftNav from './components/LeftNav.jsx'
 import SubHeader from './components/SubHeader.jsx'
-import { PageKG } from './pages/PageKG.jsx'
+import KGPage from './pages/KGPage.jsx'
 import { FilterPanel } from './components/FilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
@@ -24,9 +24,14 @@ import CompliancePage       from './pages/CompliancePage.jsx'
 import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
+import DataQualityOverviewPage from './pages/DataQualityOverviewPage.jsx'
+import DataQualityInDepthPage from './pages/DataQualityInDepthPage.jsx'
 import SplashScreen           from './components/SplashScreen.jsx'
 import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
+import { DownloadsProvider }  from './DownloadsContext.jsx'
+import { ToastProvider }      from './context/ToastCtx.jsx'
+import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
 // so pushState-based routing and window.location.pathname parsing work the
@@ -127,7 +132,7 @@ function ComingSoon() {
 }
 
 // ── Edge editor ──────────────────────────────────────────────────────────
-// Subscribes to PageKG's edge state via window.__kgGetEdges + 'kg-edges-changed'
+// Subscribes to KGPage's edge state via window.__kgGetEdges + 'kg-edges-changed'
 // event, edits via window.__kgSetEdges.
 function EdgeEditor({ onSaveDefault, savedEdges }) {
   const [edges, setLocalEdges] = useState([]);
@@ -148,7 +153,7 @@ function EdgeEditor({ onSaveDefault, savedEdges }) {
     };
     sync();
     window.addEventListener('kg-edges-changed', sync);
-    // Poll briefly in case PageKG mounts after this component
+    // Poll briefly in case KGPage mounts after this component
     const id = setInterval(sync, 250);
     const stop = setTimeout(() => clearInterval(id), 2000);
     return () => {
@@ -357,6 +362,10 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               builderContext={navigatorProps?.builderContext}
               pageId={navigatorProps?.pageId}
               pageLabel={navigatorProps?.pageLabel}
+              draftQuery={navigatorProps?.draftQuery}
+              draftToken={navigatorProps?.draftToken}
+              dockSide={navigatorProps?.dockSide}
+              forceFloatToken={navigatorProps?.forceFloatToken}
             />
           )}
         </div>
@@ -606,7 +615,6 @@ function App() {
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
-  const [findingsCategoryFilter, setFindingsCategoryFilter] = useState(null);
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
@@ -621,15 +629,22 @@ function App() {
   // Home screen even when `current` is already 'navigator' (mid-chat) — a
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
-  // Bumped whenever "Reset Filters" is used on a Discover page, so that page's
-  // local per-row filtered-dashboard state can clear even though it lives
-  // outside filtersByPage (which only tracks the chip shown in Active Filters).
-  const [discoverFilterReset, setDiscoverFilterReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
   const [navigatorBuilderKind, setNavigatorBuilderKind] = useState('assessment');
   const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
+  // "Ask Navigator" prefill — set by a prompt chip or a trend-chart point
+  // click; draftToken bumps on every ask so the panel re-seeds its composer
+  // even if it's already open on a different draft.
+  const [navigatorDraftQuery, setNavigatorDraftQuery] = useState('');
+  const [navigatorDraftToken, setNavigatorDraftToken] = useState(0);
+  const [navigatorDock, setNavigatorDock] = useState('right');
+  // Bumped whenever something that occupies the right side (e.g. the Trend
+  // Explore drawer) opens while Navigator is docked as a sidebar — forces it
+  // to switch to floating so the two don't fight over the same space,
+  // without resetting whatever conversation is already in progress.
+  const [navigatorForceFloatToken, setNavigatorForceFloatToken] = useState(0);
   const [assessmentBuilderApi, setAssessmentBuilderApi] = useState(null);
   const [dashboardBuilderApi, setDashboardBuilderApi] = useState(null);
   // Populated by Navigator's Build mode (and Ask/Research's "Add to Workspace")
@@ -658,7 +673,7 @@ function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
-  // Set BEFORE first render of children so PageKG can read persisted edges synchronously
+  // Set BEFORE first render of children so KGPage can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
     window.__floatTweaks = tweaks;
   }
@@ -730,6 +745,10 @@ function App() {
       setNavigatorViewMode('floating');
       setNavigatorFloating(true);
       setNavigatorBuilderMode(false);
+      // Left-dock only applies to the Trend Explore drawer's own "ask" flow —
+      // every other entry point (this one included) must fall back to the
+      // normal right side, not inherit a 'left' left over from that drawer.
+      setNavigatorDock('right');
       openRightTab('navigator');
       return;
     }
@@ -743,8 +762,29 @@ function App() {
         : data?.initialPrompt ? { initialPrompt: data.initialPrompt }
         : null
       );
+      setNavigatorDock('right');
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       setRightPanel('navigator');
+      return;
+    }
+    if (id === 'navigator-ask') {
+      setNavigatorViewMode('floating');
+      setNavigatorFloating(true);
+      setNavigatorBuilderMode(false);
+      setNavigatorDock(data?.dock === 'left' ? 'left' : 'right');
+      setNavigatorDraftQuery(data?.query || '');
+      setNavigatorDraftToken(n => n + 1);
+      setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
+      setRightPanel('navigator');
+      return;
+    }
+    if (id === 'navigator-ensure-floating') {
+      if (rightPanel === 'navigator' && navigatorViewMode === 'sidebar') {
+        setNavigatorViewMode('floating');
+        setNavigatorFloating(true);
+        setNavigatorDock(data?.dock === 'left' ? 'left' : 'right');
+        setNavigatorForceFloatToken(n => n + 1);
+      }
       return;
     }
     if (id === 'navigator-page') {
@@ -808,11 +848,10 @@ function App() {
     }
     if (id === 'exposure/findings') {
       const category = data?.category || null;
-      setFindingsCategoryFilter(category);
       setFiltersByPage(prev => ({
         ...prev,
         'exposure/findings': category
-          ? { count: 1, chips: [{ attrId: 'exposure-category', key: 'Exposure Category', value: category }] }
+          ? toChipsState([{ attrId: 'exposure-category', key: 'Exposure Category', value: category }])
           : { count: 0, chips: [] },
       }));
     }
@@ -833,17 +872,12 @@ function App() {
   const setPageFilters = (pageId, count, chips) =>
     setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
 
-  // Sets (or clears) the single "assessment-id" chip an insight-row filter icon
-  // adds, merging with whatever other chips are already applied on that page
-  // instead of replacing the whole array (which used to silently drop any
-  // filters applied via the Filter side-panel).
-  const setAssessmentFilterChip = (pageId, chip) =>
-    setFiltersByPage(prev => {
-      const cur = prev[pageId] || { count: 0, chips: [] };
-      const rest = cur.chips.filter(c => c.attrId !== 'assessment-id');
-      const nextChips = chip ? [...rest, chip] : rest;
-      return { ...prev, [pageId]: { count: new Set(nextChips.map(c => c.attrId)).size, chips: nextChips } };
-    });
+  // Toggles the chip(s) behind one chart-segment click (1 chip for a single-dimension
+  // mark, 2 for a stacked-segment intersection) — the single entry point every dashboard's
+  // click-to-filter charts call. filtersByPage is the only copy of "what's active"; pages
+  // read it back via the `crossFilters` prop and re-derive their own filtering from it.
+  const toggleCrossFilterChip = (pageId, newChips) =>
+    setFiltersByPage(prev => ({ ...prev, [pageId]: toChipsState(toggleChipGroup(prev[pageId]?.chips ?? [], newChips)) }));
 
   // Explore in: navigate to destId carrying the current page's filters
   const handleExplore = (destId) => {
@@ -867,19 +901,22 @@ function App() {
           });
         } else {
           setPageFilters(current, c, chips || []);
-          if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
         }
       }}}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
-        onViewModeChange: (mode) => setNavigatorFloating(mode === 'floating'),
+        onViewModeChange: (mode) => { setNavigatorFloating(mode === 'floating'); setNavigatorViewMode(mode); },
         builderMode: navigatorBuilderMode && !!activeBuilderSurface?.matchRoute(current),
         builderApi: activeBuilderSurface?.api ?? null,
         builderKind: navigatorBuilderKind,
         builderContext: navigatorBuilderContext,
         pageId: current,
         pageLabel: PAGE_META[current]?.title || null,
+        draftQuery: navigatorDraftQuery,
+        draftToken: navigatorDraftToken,
+        dockSide: navigatorDock,
+        forceFloatToken: navigatorForceFloatToken,
       }}
       navigatorFloating={navigatorFloating}
     />
@@ -936,6 +973,10 @@ function App() {
         />
       </>
     );
+  }
+
+  if (current === 'error') {
+    return <ErrorPage type="error" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
 
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
@@ -1032,13 +1073,9 @@ function App() {
                       const updated = cur.chips.filter((_, i) => i !== idx);
                       return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
-                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
-                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
                   }}
                   onClearFilters={() => {
                     setPageFilters(current, 0, []);
-                    if (current === 'exposure/findings') setFindingsCategoryFilter(null);
-                    if (DISCOVER_PAGES.has(current)) setDiscoverFilterReset(n => n + 1);
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}
@@ -1053,16 +1090,18 @@ function App() {
               <div className="page-scroll">
                 {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
-                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} categoryFilter={findingsCategoryFilter} />}
-                {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/device', chip)} resetToken={discoverFilterReset} />}
-                {current === 'discover/cloud'      && <DiscoverCloudPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/cloud', chip)} resetToken={discoverFilterReset} />}
-                {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} onFilterAssessment={chip => setAssessmentFilterChip('discover/identity', chip)} resetToken={discoverFilterReset} />}
+                {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
+                {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}
+                {current === 'discover/cloud'      && <DiscoverCloudPage onNav={handleNav} crossFilters={filtersByPage['discover/cloud']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/cloud', chips)} />}
+                {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} crossFilters={filtersByPage['discover/identity']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/identity', chips)} />}
                 {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
                 {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
-                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && <ComingSoon />}
-                {isKG && <PageKG focusEntity={kgFocusEntity} />}
+                {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
+                {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
+                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
+                {isKG && <KGPage focusEntity={kgFocusEntity} />}
               </div>
             </div>
             {sharedRightPanel}
@@ -1102,9 +1141,13 @@ function App() {
 
 function AppWithBoundary() {
   return (
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <ToastProvider>
+      <DownloadsProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </DownloadsProvider>
+    </ToastProvider>
   );
 }
 

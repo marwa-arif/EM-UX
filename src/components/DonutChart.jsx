@@ -3,6 +3,15 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const DONUT_COLORS = ['#EC4899', '#8B5CF6', '#06B6D4', '#3B82F6', '#94A3B8'];
 
+// Assigns each slice's color from its label, not its position in the (possibly filtered)
+// items array — otherwise a slice's color changes as filtering shrinks the list (e.g. the
+// sole remaining slice always landing on DONUT_COLORS[0]/pink regardless of which one it is).
+function colorForLabel(label) {
+  let h = 0;
+  for (let i = 0; i < label.length; i++) h = (h * 31 + label.charCodeAt(i)) >>> 0;
+  return DONUT_COLORS[h % DONUT_COLORS.length];
+}
+
 const TIP_WRAP = { animation: 'dsTooltipFade 0.15s ease', overflow: 'visible', zIndex: 100 };
 
 export function ChartTooltip({ content, mousePos }) {
@@ -61,12 +70,13 @@ function DonutTooltip({ active, payload }) {
   );
 }
 
-export default function DonutChart({ data }) {
-  const pieData = data.items.map((item, i) => ({
+export default function DonutChart({ data, onSliceClick }) {
+  const pieData = data.items.map((item) => ({
     ...item,
     value: item.pct < 1 ? 0.5 : item.pct,
-    color: DONUT_COLORS[i],
+    color: colorForLabel(item.label),
   }));
+  const clickable = !!onSliceClick;
 
   return (
     <div className="fin-donut-panel">
@@ -88,6 +98,8 @@ export default function DonutChart({ data }) {
                 startAngle={90}
                 endAngle={-270}
                 cornerRadius={4}
+                onClick={clickable ? (entry) => onSliceClick(entry) : undefined}
+                cursor={clickable ? 'pointer' : 'default'}
               >
                 {pieData.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
@@ -101,10 +113,12 @@ export default function DonutChart({ data }) {
             <div className="fin-donut-center__value">{data.total}</div>
           </div>
         </div>
+        {/* Legend is a display-only key — no click-to-filter here, only the chart's own
+            slices/bars filter, matching every other dashboard's pre-existing behavior. */}
         <div className="fin-donut-list">
           {data.items.map((item, i) => (
             <div key={i} className="fin-donut-row fin-donut-row--no-pointer">
-              <AssetIcon type={item.icon} color={DONUT_COLORS[i]} />
+              <AssetIcon type={item.icon} color={colorForLabel(item.label)} />
               <span className="fin-donut-label">{item.label}</span>
               <span className="fin-donut-val">{item.val}</span>
               <span className="fin-donut-pct">{item.pct < 1 ? '<1%' : `${item.pct}%`}</span>

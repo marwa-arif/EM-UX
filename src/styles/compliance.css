@@ -11,7 +11,7 @@
 
 /* ── Left panel (framework list) ─────────────────────────────────── */
 .comp-left {
-  width: 412px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -708,6 +708,15 @@
   text-align: right;
 }
 
+.comp-domain-table tbody td.comp-tree-empty {
+  text-align: center;
+  color: var(--shell-text-muted);
+  font-size: 12px;
+  padding: 32px 16px;
+  white-space: normal;
+  overflow: visible;
+}
+
 .comp-domain-table tr:hover td {
   background: var(--shell-hover);
 }
@@ -825,7 +834,7 @@
 
 .comp-sort-btn:hover,
 .comp-sort-btn--active {
-  border-color: var(--pai-indigo);
+  border-color: var(--shell-text);
   color: var(--shell-text);
 }
 
@@ -896,8 +905,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 8px;
+  height: 32px;
+  padding: 0 12px;
   border-radius: 44px;
   border: none;
   background: var(--pai-indigo);
@@ -1107,45 +1116,10 @@ html.theme-dark .comp-fw-card--selected {
 }
 
 /* ── Assessment drawer ───────────────────────────────────────────── */
-.comp-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.22);
-  z-index: 200;
-}
-
-.comp-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 80vw;
-  max-width: 80vw;
-  height: 100vh;
-  background: var(--card-bg);
-  border-left: 1px solid var(--shell-border);
-  border-radius: 12px 0 0 12px;
-  overflow: hidden;
-  z-index: 201;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -4px 0 32px rgba(0,0,0,0.14);
-  animation: comp-drawer-in 180ms ease;
-}
-
-@keyframes comp-drawer-in {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
-}
-
-@keyframes comp-drawer-out {
-  from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
-}
-
-.comp-drawer--closing {
-  animation: comp-drawer-out 180ms ease forwards;
-}
-
+/* Shell chrome (.comp-drawer / .comp-drawer-backdrop / .comp-drawer-close-ext /
+   .comp-drawer--closing + keyframes) moved to src/styles/drawer.css, imported by the
+   shared src/components/DrawerShell.jsx. Everything below is CompliancePage/DataQuality
+   drawer *content* styling that still lives here. */
 .comp-drawer-header {
   display: flex;
   align-items: flex-start;
@@ -1191,27 +1165,6 @@ html.theme-dark .comp-fw-card--selected {
   white-space: nowrap;
   flex-shrink: 0;
 }
-
-.comp-drawer-close-ext {
-  position: fixed;
-  top: 16px;
-  right: calc(80vw + 8px);
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border, #E6E6E6);
-  background: var(--card-bg, #fff);
-  box-shadow: -2px 2px 8px rgba(0,0,0,0.10);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--shell-text-muted);
-  z-index: 202;
-  transition: background 120ms;
-}
-
-.comp-drawer-close-ext:hover { background: var(--shell-raised, #E6E6E6); }
 
 .comp-drawer-body {
   flex: 1;
@@ -2357,12 +2310,25 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 }
 
 .comp-fw-logo-wrap--icon {
-  background: transparent;
+  background: var(--card-bg);
   border: none;
+  box-shadow: inset 0 2px 4px var(--shell-border);
 }
 
 .comp-fw-logo-img {
   object-fit: contain;
+}
+
+.comp-fw-logo-img--dark {
+  display: none;
+}
+
+html.theme-dark .comp-fw-logo-img--light {
+  display: none;
+}
+
+html.theme-dark .comp-fw-logo-img--dark {
+  display: block;
 }
 
 .comp-fw-logo-abbr {
@@ -2605,20 +2571,32 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
   margin-left: -6px;
 }
 
-.comp-criticality-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 44px;
-  font-size: 10px;
-  font-weight: 600;
+/* Criticality badge shares the rating badge's shape (.comp-rating-badge
+   .comp-rating-badge--small) — only the color tier is defined here, so the
+   two never drift apart in size/padding again. Same 4-tier severity palette
+   used app-wide (FilterPanel/DiscoverDevicePage's Asset Criticality, etc). */
+.comp-criticality-badge--low {
+  background: var(--pai-low-bg);
+  color: var(--pai-low-fg);
+  border: 1px solid rgba(49,165,109,0.3);
 }
 
 .comp-criticality-badge--medium {
+  background: var(--pai-med-bg);
+  color: var(--pai-med-fg);
+  border: 1px solid rgba(217,139,29,0.3);
+}
+
+.comp-criticality-badge--high {
   background: var(--pai-high-bg);
   color: var(--pai-high-fg);
-  border: 1px solid rgba(217,139,29,0.3);
+  border: 1px solid rgba(225,82,82,0.3);
+}
+
+.comp-criticality-badge--critical {
+  background: var(--pai-crit-bg);
+  color: var(--pai-crit-fg);
+  border: 1px solid rgba(209,35,41,0.3);
 }
 
 /* ── Drawer score / finding details ── */
@@ -2638,7 +2616,10 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 
 .comp-rating-badge--small {
   cursor: default;
-  font-size: 11px;
+  height: 20px;
+  width: auto;
+  padding: 0 8px;
+  font-size: 10px;
 }
 
 .comp-rating-tooltip {
@@ -3017,8 +2998,6 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
   gap: 8px;
 }
 
-.cfp-download-wrap { position: relative; }
-
 .comp-sort-menu--right {
   right: 0;
   left: auto;
@@ -3077,6 +3056,12 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 .cfp-table-wrap {
   flex: 1;
   overflow-y: auto;
+}
+
+.cfp-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 /* `.ds-th` (navigator.css) is a single class, same specificity as `.cfp-th-actions`

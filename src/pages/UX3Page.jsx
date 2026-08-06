@@ -5,7 +5,7 @@ import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import ClientServersV3 from './ux3/ClientServersV3.jsx'
 import UX3Home from './ux3/UX3Home.jsx'
-import { PageKG } from './PageKG.jsx'
+import KGPage from './KGPage.jsx'
 import { AdminSettingsNav, AdminPanelContent } from './admin/AdminPanelBody.jsx'
 
 const PAGE_LABELS = {
@@ -140,7 +140,7 @@ function UX3Page({ onNav, initialRoute, theme, onToggleTheme, settingsOpen, admi
                 <div className="page-scroll">
                   {subRoute === 'home' ? <UX3Home onNav={handleSubNav} />
                     : subRoute === 'client/servers' ? <ClientServersV3 />
-                    : subRoute === 'kg' ? <div className="ux3-kg"><PageKG /></div>
+                    : subRoute === 'kg' ? <div className="ux3-kg"><KGPage /></div>
                     : <UX3Placeholder pageLabel={label} onExploreCurrent={() => handleSubNav('ux3-exit', subRoute)} />}
                 </div>
               </div>

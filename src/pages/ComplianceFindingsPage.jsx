@@ -2,9 +2,15 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
+import { AssetEntityContent, describeAssetTrailItem } from '../components/AssetDetailDrawer.jsx'
+import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldColor, useDrawerNav } from '../components/DrawerShell.jsx'
+import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
 import '../styles/kg.css'
+import '../styles/active-filter-panel.css'
 
 // ── Icons ──────────────────────────────────────────────────────────
 const IcRemediation = () => (
@@ -23,6 +29,44 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <polyline points="7 10 12 15 17 10"/>
     <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcChevronDown = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m6 9 6 6 6-6"/>
+  </svg>
+)
+const IcFileCsv = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">CSV</text>
+  </svg>
+)
+const IcFilePdf = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">PDF</text>
+  </svg>
+)
+const IcFileExcel = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.4"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <text x="12" y="17" textAnchor="middle" fontSize="5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">XLS</text>
+  </svg>
+)
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
   </svg>
 )
 
@@ -50,15 +94,6 @@ function EntityBadge({ type }) {
       <img src={src} width={14} height={14} alt="" />
     </span>
   )
-}
-
-// ── Finding detail drawer ───────────────────────────────────────────
-// Colors/glyphs mirror the Knowledge Graph entity palette (PageKG.jsx ENTITY_TYPES)
-// so a Finding's detail drawer reads as the same entity type everywhere in the app.
-const KG_ENT = {
-  finding:    { tint: '#E9E4F6', stroke: '#BCABE4', icon: '#582DBB', glyph: 'entity-finding.svg' },
-  host:       { tint: '#E3E9F1', stroke: '#AABBD3', icon: '#2B5690', glyph: 'entity-host.svg' },
-  assessment: { tint: '#F4ECE5', stroke: '#DEC4AF', icon: '#AC6C36', glyph: 'entity-assessment.svg' },
 }
 
 const SEV_COLORS = {
@@ -96,27 +131,83 @@ function mockEntityId(seed) {
   return (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).padEnd(32, '0')
 }
 
-function KgGlyph({ file, size = 20 }) {
-  return <img src={`assets/icons/${file}`} width={size} height={size} className="kg-entity-glyph" alt="" />
+// Trail can hold this drawer's own 'finding' items plus 'assetEntity'/'record' items produced
+// by drilling into the Host/Assessment leaves — delegate those two kinds to AssetDetailDrawer's
+// own describe function instead of re-deriving the same icon/label logic here.
+function describeCfpTrailItem(item) {
+  if (item.kind === 'finding') {
+    return { icon: <EntityGlyph kind="finding" size={16} />, label: item.row.title, typeLabel: 'Finding', color: ENTITY_TYPES.finding.icon }
+  }
+  return describeAssetTrailItem(item)
 }
 
-function FindingDrawer({ row, onClose }) {
-  const [closing, setClosing] = useState(false)
+// The Host leaf has a real underlying entity (row.entity/row.type, already shown in the
+// Affected Resources table) — reuse AssetDetailDrawer's own entity content for it instead of
+// building a second host-detail view, seeded with deterministic mock criticality/score fields
+// (this app has no real per-host record to look up here, same as everywhere else in this file).
+function buildHostAssetFromRow(row) {
+  const seed = parseInt(mockEntityId(`${row.entity}|score`).slice(0, 4), 16)
+  const crits = ['Critical', 'High', 'Medium', 'Low']
+  return {
+    name: row.entity,
+    type: ENTITY_TYPE_LABEL[row.type] || 'Host',
+    crit: crits[seed % crits.length],
+    score: 300 + (seed % 650),
+  }
+}
+
+// Assessment has no dedicated content model at this scope (that's CompliancePage's
+// AssessmentDrawer, a different content shape) — fall back to the generic record view.
+function buildAssessmentRecord(row, meta) {
+  return {
+    label: `${meta.domain} Assessment`,
+    chipText: 'Assessment',
+    fields: [
+      ['Entity ID', mockEntityId(`${row.title}|assessment`)],
+      ['Domain', meta.domain],
+      ['Category', meta.category],
+      ['Related Finding', row.title],
+    ],
+  }
+}
+
+// Data for the Host/Assessment leaf's "opened" pie-chart + relationship table view — the row
+// clicked there is what actually navigates (see navigateFromRelRow below), not the leaf itself.
+function buildCfpRelData(nodeKey, row, meta) {
+  if (nodeKey === 'host') {
+    const asset = buildHostAssetFromRow(row)
+    const rec = { 'Display Label': asset.name, 'Type': asset.type, 'Criticality': asset.crit, 'Score': asset.score }
+    return {
+      rings: [{ title: 'Criticality', segments: [{ label: asset.crit, count: 1, color: fieldColor(asset.crit) }] }],
+      columns: Object.keys(rec), rows: [rec],
+    }
+  }
+  const rec = { 'Display Label': `${meta.domain} Assessment`, 'Domain': meta.domain, 'Category': meta.category, 'Related Finding': row.title }
+  return {
+    rings: [{ title: 'Category', segments: [{ label: meta.category, count: 1, color: fieldColor(meta.category) }] }],
+    columns: Object.keys(rec), rows: [rec],
+  }
+}
+
+function cfpRelCell(col, val) {
+  if (col === 'Criticality' && SEV_COLORS[val]) return <strong style={{ color: SEV_COLORS[val] }}>{val}</strong>
+  return String(val)
+}
+
+function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateTrail }) {
   const [tab, setTab] = useState('summary')
-
-  const handleClose = useCallback(() => {
-    setClosing(true)
-    setTimeout(onClose, 180)
-  }, [onClose])
-
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') handleClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [handleClose])
-
+  const [relTab, setRelTab] = useState(null)
+  const openRelTab = key => { setRelTab(key); setTab(key) }
   const meta = FINDING_META[row.title] || DEFAULT_FINDING_META
   const entityId = mockEntityId(`${row.title}|${row.entity}`)
+
+  const navigateFromRelRow = () => {
+    if (relTab === 'host') {
+      onNavigate({ kind: 'assetEntity', asset: buildHostAssetFromRow(row), entityType: row.type || 'device' })
+    } else {
+      onNavigate({ kind: 'record', entityTypeKey: 'assessment', record: buildAssessmentRecord(row, meta) })
+    }
+  }
 
   const infoFields = [
     ['Entity ID',              entityId],
@@ -140,130 +231,159 @@ function FindingDrawer({ row, onClose }) {
   ]
 
   return (
-    <>
-      <div className="comp-drawer-backdrop" onClick={handleClose} />
-      <button className="comp-drawer-close-ext" onClick={handleClose}>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-          <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-        </svg>
-      </button>
-
-      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
-        <div className="kg-dp-header">
-          <div className="kg-dp-title-row">
-            <div className="kg-dp-icon-circle" style={{ '--dp-tint': KG_ENT.finding.tint, '--dp-stroke': KG_ENT.finding.stroke }}>
-              <KgGlyph file={KG_ENT.finding.glyph} size={22} />
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeCfpTrailItem}>
+      <div className="kg-dp-header">
+        <div className="kg-dp-title-row">
+          <div className="kg-dp-title-body">
+            <div className="kg-dp-name-row">
+              <span className="kg-dp-name">{row.title}</span>
+              <span className="kg-dp-type-chip" style={{ '--dp-chip-border': ENTITY_TYPES.finding.stroke, '--dp-chip-color': ENTITY_TYPES.finding.icon }}>
+                Finding
+              </span>
             </div>
-            <div className="kg-dp-title-body">
-              <div className="kg-dp-name-row">
-                <span className="kg-dp-name">{row.title}</span>
-                <span className="kg-dp-type-chip" style={{ '--dp-chip-border': KG_ENT.finding.stroke, '--dp-chip-color': KG_ENT.finding.icon }}>
-                  Finding
-                </span>
-              </div>
-              <div className="kg-dp-meta-row">
-                <span className="kg-dp-meta-item">
-                  Exposure Severity <strong style={{ color: SEV_COLORS[meta.severity] }}>{meta.severity}</strong>
-                </span>
-              </div>
+            <div className="kg-dp-meta-row">
+              <span className="kg-dp-meta-item">
+                Exposure Severity <strong style={{ color: SEV_COLORS[meta.severity] }}>{meta.severity}</strong>
+              </span>
             </div>
           </div>
-
-          <EntityRelSummaryGraph
-            center={{ label: row.title, icon: <KgGlyph file={KG_ENT.finding.glyph} size={16} />, accent: KG_ENT.finding.icon }}
-            leaves={[
-              { key: 'host', label: 'Host', icon: <KgGlyph file={KG_ENT.host.glyph} size={16} />, tint: KG_ENT.host.tint, stroke: KG_ENT.host.stroke, accent: KG_ENT.host.icon, count: 1 },
-              { key: 'assessment', label: 'Assessment', icon: <KgGlyph file={KG_ENT.assessment.glyph} size={16} />, tint: KG_ENT.assessment.tint, stroke: KG_ENT.assessment.stroke, accent: KG_ENT.assessment.icon, count: 1 },
-            ]}
-          />
         </div>
 
-        {/* Tabs */}
-        <div className="kg-dp-tabs">
-          {['summary', 'evolution'].map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <EntityRelSummaryGraph
+          center={{ label: row.title, icon: <EntityGlyph kind="finding" size={16} />, accent: ENTITY_TYPES.finding.icon }}
+          leaves={[
+            {
+              key: 'host', label: ENTITY_TYPE_LABEL[row.type] || 'Host',
+              icon: <EntityGlyph kind={ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[row.type] || 'host'].glyph} size={16} />,
+              tint: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[row.type] || 'host'].tint,
+              stroke: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[row.type] || 'host'].stroke,
+              accent: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[row.type] || 'host'].icon,
+              count: 1,
+              active: relTab === 'host',
+              onClick: () => openRelTab('host'),
+            },
+            {
+              key: 'assessment', label: 'Assessment',
+              icon: <EntityGlyph kind="assessment" size={16} />, tint: ENTITY_TYPES.assessment.tint, stroke: ENTITY_TYPES.assessment.stroke, accent: ENTITY_TYPES.assessment.icon, count: 1,
+              active: relTab === 'assessment',
+              onClick: () => openRelTab('assessment'),
+            },
+          ]}
+        />
+      </div>
 
-        {/* Body */}
-        <div className="kg-dp-body">
-          {tab === 'summary' && (
-            <>
-              <div className="kg-dp-section">
-                <div className="kg-dp-section-header">General Information</div>
-                <div className="kg-dp-grid kg-dp-grid--4">
-                  {infoFields.map(([k, v]) => (
-                    <div key={k} className="kg-dp-grid-cell">
-                      <div className="kg-dp-grid-key">{k}</div>
-                      <div className="kg-dp-grid-val">{v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Tabs */}
+      <div className="kg-dp-tabs">
+        {['summary', 'evolution', ...(relTab ? [relTab] : [])].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}
+          >
+            {t === relTab ? (t === 'host' ? (ENTITY_TYPE_LABEL[row.type] || 'Host') : 'Assessment') : t}
+          </button>
+        ))}
+      </div>
 
-              <div className="kg-dp-section">
-                <div className="kg-dp-section-header">Affected Resources</div>
-                <div className="ds-table-wrap">
-                  <table className="ds-table">
-                    <thead>
-                      <tr>
-                        <th className="ds-th">Associated Entities Display Label</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="ds-td">
-                          <div className="cfp-entity-cell">
-                            <EntityBadge type={row.type} />
-                            <span>{row.entity}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {tab === 'evolution' && (
+      {/* Body */}
+      <div className="kg-dp-body">
+        {tab === 'summary' && (
+          <>
             <div className="kg-dp-section">
-              <div className="kg-dp-section-header">Evolution</div>
+              <div className="kg-dp-section-header">General Information</div>
+              <div className="kg-dp-grid kg-dp-grid--4">
+                {infoFields.map(([k, v]) => (
+                  <div key={k} className="kg-dp-grid-cell">
+                    <div className="kg-dp-grid-key">{k}</div>
+                    <div className="kg-dp-grid-val">{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="kg-dp-section">
+              <div className="kg-dp-section-header">Affected Resources</div>
               <div className="ds-table-wrap">
                 <table className="ds-table">
                   <thead>
                     <tr>
-                      <th className="ds-th">Attribute</th>
-                      <th className="ds-th">
-                        <div className="kg-dp-evo-src-head">
-                          <span>Knowledge Graph</span>
-                          <span className="kg-dp-evo-latest-badge">Latest</span>
-                        </div>
-                        <div className="kg-dp-evo-src-date">[2024-08-08]</div>
-                      </th>
+                      <th className="ds-th">Associated Entities Display Label</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {infoFields.map(([k, v]) => (
-                      <tr key={k}>
-                        <td className="ds-td">{k}</td>
-                        <td className="ds-td" style={{ fontWeight: 600 }}>{v}</td>
-                      </tr>
-                    ))}
+                    <tr>
+                      <td className="ds-td">
+                        <div className="cfp-entity-cell">
+                          <EntityBadge type={row.type} />
+                          <span>{row.entity}</span>
+                        </div>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
+
+        {tab === 'evolution' && (
+          <div className="kg-dp-section">
+            <div className="kg-dp-section-header">Evolution</div>
+            <div className="ds-table-wrap">
+              <table className="ds-table">
+                <thead>
+                  <tr>
+                    <th className="ds-th">Attribute</th>
+                    <th className="ds-th">
+                      <div className="kg-dp-evo-src-head">
+                        <span>Knowledge Graph</span>
+                        <span className="kg-dp-evo-latest-badge">Latest</span>
+                      </div>
+                      <div className="kg-dp-evo-src-date">[2024-08-08]</div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {infoFields.map(([k, v]) => (
+                    <tr key={k}>
+                      <td className="ds-td">{k}</td>
+                      <td className="ds-td" style={{ fontWeight: 600 }}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {relTab && tab === relTab && (
+          <RelNodeSection
+            title={relTab === 'host' ? (ENTITY_TYPE_LABEL[row.type] || 'Host') : 'Assessment'}
+            data={buildCfpRelData(relTab, row, meta)}
+            renderCell={cfpRelCell}
+            onRowClick={navigateFromRelRow}
+          />
+        )}
       </div>
-    </>
+    </DrawerLayout>
+  )
+}
+
+function FindingDrawer({ row, onClose }) {
+  const drawer = useDrawerNav({ kind: 'finding', row })
+  const top = drawer.history[drawer.index]
+  const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: drawer.goToIndex }
+
+  return (
+    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing}>
+      {top.kind === 'finding' ? (
+        <FindingDetailContent key={drawer.index} row={top.row} onNavigate={drawer.navigate} {...trailProps} />
+      ) : top.kind === 'assetEntity' ? (
+        <AssetEntityContent key={drawer.index} asset={top.asset} entityType={top.entityType} onNavigate={drawer.navigate} describe={describeCfpTrailItem} {...trailProps} />
+      ) : (
+        <RecordDetailContent key={drawer.index} record={top.record} describe={describeCfpTrailItem} {...trailProps} />
+      )}
+    </DrawerShell>
   )
 }
 
@@ -371,8 +491,9 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
   const [createTicketEntity, setCreateTicketEntity] = useState(null) // null | string
   const [ctDescription, setCtDescription]           = useState('')
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin')
-  const [toast, setToast]                           = useState(null) // { type, msg }
+  const { showToast } = useToast()
   const downloadRef = useRef(null)
+  const { addDownload } = useDownloads()
 
   // Reset to page 1 whenever filter changes
   useEffect(() => { setPage(1) }, [filter])
@@ -397,9 +518,8 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
     const success = Math.random() > 0.2
     const type = success ? 'success' : 'error'
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.'
-    setToast({ type, msg })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type, msg, duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   // Apply matrix filter: match rows whose entity type loosely maps to the selected column/row
   const filteredRows = (() => {
@@ -448,22 +568,15 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                 </label>
               )}
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
-              <div ref={downloadRef} className="cfp-download-wrap">
-                <button
-                  className={`ds-btn sz-sm t-outline${downloadOpen ? ' comp-sort-btn--active' : ''}`}
-                  onClick={() => setDownloadOpen(o => !o)}
-                >
-                  <IcDownload />
-                  Download
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
+              <div ref={downloadRef} className="comp-dl-wrap">
+                <button className="comp-dl-btn" onClick={() => setDownloadOpen(o => !o)}>
+                  <IcDownload /> Download <IcChevronDown />
                 </button>
                 {downloadOpen && (
-                  <div className="comp-sort-menu comp-sort-menu--right">
-                    {['Export as CSV', 'Export as PDF', 'Export as Excel'].map(opt => (
-                      <button key={opt} className="comp-sort-item" onClick={() => setDownloadOpen(false)}>{opt}</button>
-                    ))}
+                  <div className="comp-dl-menu">
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.csv', e.currentTarget); setDownloadOpen(false); }}><IcFileCsv /> CSV</button>
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.pdf', e.currentTarget); setDownloadOpen(false); }}><IcFilePdf /> PDF</button>
+                    <button className="comp-dl-item" onClick={(e) => { addDownload('Compliance-Findings.xlsx', e.currentTarget); setDownloadOpen(false); }}><IcFileExcel /> Excel</button>
                   </div>
                 )}
               </div>
@@ -610,18 +723,18 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__header-text">
-                <div className="ct-modal__title">Create Ticket</div>
-                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-              </div>
-              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+        <>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown
                   value={ctAssignee}
                   onChange={setCtAssignee}
@@ -629,16 +742,16 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                   fullWidth
                 />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input cfp-input-readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="cfp-rec-title">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="cfp-rec-steps">
@@ -651,23 +764,13 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
                   </ol>
                 </div>
               </div>
-            </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
+        </>
       )}
     </>
   )

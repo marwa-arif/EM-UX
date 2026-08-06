@@ -176,6 +176,8 @@
 .dc-share-link-row .dc-text-input-wrap { flex: 1; min-width: 0; }
 
 /* ── Modal form fields (Share / Schedule / Stop / Download) ───────────── */
+.dc-modal--wide { max-width: 560px; }
+
 .dc-modal-field {
   display: flex;
   flex-direction: column;
@@ -289,8 +291,29 @@
   cursor: pointer;
 }
 
+/* Compound selector needed: .ds-modal-title{color:var(--shell-text)} is defined
+   in both admin.css and library.css, either of which can load after this file. */
+.ds-modal-title.dc-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
+.dc-delete-modal-title svg { flex-shrink: 0; }
+
+.ds-modal-title.dc-schedule-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-schedule-modal-title svg { flex-shrink: 0; }
+
+.ds-modal-title.dc-share-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-share-modal-title svg { flex-shrink: 0; }
+
+.ds-modal-title.dc-download-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-download-modal-title svg { flex-shrink: 0; }
+
+/* Modal-standard overrides: field label 14px/500, field input 14px — scoped to modal
+   bodies only, since .dc-field-label is also used outside modals (widget settings panel). */
+.ds-modal-body .dc-field-label { font-size: 14px; font-weight: 500; }
+.ds-modal-body .dc-modal-input,
+.ds-modal-body .dc-modal-select,
+.ds-modal-body .dc-modal-to-field input { font-size: 14px; }
+
 .dc-modal-note {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--shell-text-muted);
 }
 .dc-modal-note strong {
@@ -325,6 +348,7 @@
   background: var(--shell-hover);
   font-size: 12px;
   color: var(--shell-text-muted);
+  box-sizing: border-box;
 }
 
 .dc-field-label--no-hint {
@@ -812,6 +836,11 @@
   flex-direction: column;
   gap: 0;
 }
+.dc-toolbar--flat {
+  height: 48px;
+  align-items: center;
+  padding: 0 16px;
+}
 .dc-toolbar-row {
   height: 48px;
   flex-shrink: 0;
@@ -1050,18 +1079,18 @@
 }
 
 /* ── Wide sfm-dialog variant for Schedule modal ─────────────────────────── */
-.sfm-dialog--lg { width: 520px; }
+.sfm-dialog--lg { width: 560px; }
 
 /* Schedule / Share modal form elements */
 /* Fields within a section: 12px gap. Section-to-section: 16px (12 base + 4 top margin on divider) */
 .sfm-body--compact { gap: 12px; }
 .sfm-body--compact .sfm-section-divider { margin-top: 4px; }
 .sfm-form-field { display: flex; flex-direction: column; gap: 4px; }
-.sfm-form-label { font-size: 13px; font-weight: 600; color: var(--pai-fg1); }
+.sfm-form-label { font-size: 14px; font-weight: 500; color: var(--pai-fg1); }
 .sfm-form-input {
   width: 100%; height: 38px; padding: 0 12px; box-sizing: border-box;
   border: 1px solid var(--pai-border-strong); border-radius: 8px;
-  font-size: 13px; color: var(--pai-fg1); font-family: inherit;
+  font-size: 14px; color: var(--pai-fg1); font-family: inherit;
   outline: none; background: var(--card-bg);
 }
 .sfm-form-input:focus { border-color: var(--pai-indigo); }
@@ -1071,17 +1100,17 @@
 .sfm-checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--pai-fg2); cursor: pointer; line-height: 1.4; }
 .sfm-checkbox-row input[type="checkbox"] { accent-color: var(--pai-indigo); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; margin-top: 1px; }
 .sfm-section-divider { display: flex; align-items: center; gap: 8px; }
-.sfm-section-divider-label { font-size: 13px; font-weight: 700; color: var(--pai-fg1); white-space: nowrap; }
+.sfm-section-divider-label { font-size: 12px; font-weight: 600; color: var(--pai-fg1); white-space: nowrap; }
 .sfm-section-divider-line { flex: 1; height: 1px; background: var(--shell-border); }
 .sfm-radio-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--pai-fg2); cursor: pointer; line-height: 1.4; }
 .sfm-radio-row input[type="radio"] { accent-color: var(--pai-indigo); margin-top: 3px; cursor: pointer; flex-shrink: 0; }
-.sfm-next-run { font-size: 13px; color: var(--pai-fg2); }
+.sfm-next-run { font-size: 12px; color: var(--pai-fg2); }
 .sfm-next-run strong { color: var(--pai-fg1); }
 .sfm-utc-note { font-size: 12px; color: var(--pai-fg3); line-height: 1.5; }
 .sfm-textarea-field {
   width: 100%; box-sizing: border-box; padding: 12px;
   border: 1px solid var(--pai-border-strong); border-radius: 8px;
-  font-size: 13px; color: var(--pai-fg1); font-family: inherit;
+  font-size: 14px; color: var(--pai-fg1); font-family: inherit;
   outline: none; background: var(--card-bg); resize: vertical; line-height: 1.6;
 }
 .sfm-textarea-field:focus { border-color: var(--pai-indigo); }
@@ -1090,9 +1119,9 @@
 .sfm-footer--split { justify-content: space-between; }
 .sfm-copy-link-btn {
   display: inline-flex; align-items: center; gap: 8px;
-  height: 36px; padding: 0 16px; border-radius: 44px;
+  height: 32px; padding: 0 16px; border-radius: 44px;
   border: 1px solid var(--pai-border-strong); background: var(--card-bg);
-  font-size: 13px; font-weight: 500; color: var(--pai-indigo);
+  font-size: 14px; font-weight: 500; color: var(--pai-indigo);
   cursor: pointer; font-family: inherit;
 }
 .sfm-copy-link-btn:hover { background: var(--pai-indigo-tint); }
@@ -1818,14 +1847,14 @@
 .cr-findings-bar__fill {
   height: 100%;
   border-radius: 4px;
-  background: var(--pai-crit-fg);
+  background: var(--fb-color, var(--pai-crit-fg));
   width: var(--cr-pct);
 }
 
 .cr-findings-pct {
   font-size: 11px;
   font-weight: 600;
-  color: var(--pai-crit-fg);
+  color: var(--fb-color, var(--pai-crit-fg));
   white-space: nowrap;
 }
 
@@ -1906,6 +1935,34 @@
   font-size: 11px;
   color: var(--pai-fg1);
   font-family: Inter, system-ui;
+}
+
+/* ── ChartRender: radar overlay-series legend ─────────────────────────── */
+.cr-radar-legend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.cr-radar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shell-text);
+  font-family: Inter, system-ui;
+}
+
+.cr-radar-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--cr-dot-bg);
 }
 
 .cr-bar-legend-count {
@@ -2072,17 +2129,12 @@
   margin-top: 8px;
 }
 
-.dc-share-access-select {
+.dc-share-access-dropdown .comp-sort-btn.comp-select-btn {
   height: 24px;
-  box-sizing: border-box;
-  border: 1px solid var(--shell-border);
-  border-radius: 4px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-family: inherit;
-  color: var(--dc-fg1, var(--shell-text));
-  background: var(--card-bg);
-  cursor: pointer;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 44px;
 }
 
 .dc-chip-access-select {
@@ -2510,7 +2562,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;

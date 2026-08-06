@@ -3,6 +3,10 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import '../styles/compliance.css'
+import '../styles/drawer.css'
+import '../styles/active-filter-panel.css'
+import { useDownloads } from '../DownloadsContext.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IcSearch = () => (
@@ -46,6 +50,18 @@ const IcDownload = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <polyline points="7 10 12 15 17 10"/>
     <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
   </svg>
 )
 
@@ -114,14 +130,25 @@ const FW_ICONS = {
   cobit:      null,
 }
 
-function FwLogo({ icon, meta }) {
+const FW_ICONS_DARK = {
+  nist_csf:   'assets/icons/frameworks/nist_dark.svg',
+  nist_800:   'assets/icons/frameworks/nist_dark.svg',
+  nist_priv:  'assets/icons/frameworks/nist_dark.svg',
+}
+
+function FwLogo({ icon, darkIcon, meta }) {
   return (
     <div
       className={icon ? 'comp-fw-logo-wrap comp-fw-logo-wrap--icon' : 'comp-fw-logo-wrap'}
       style={icon ? undefined : { '--comp-fw-ring': meta.ring }}
     >
       {icon
-        ? <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
+        ? darkIcon
+          ? <>
+              <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img comp-fw-logo-img--light" />
+              <img src={darkIcon} width={24} height={24} alt="" className="comp-fw-logo-img comp-fw-logo-img--dark" />
+            </>
+          : <img src={icon} width={24} height={24} alt="" className="comp-fw-logo-img" />
         : <span className="comp-fw-logo-abbr" style={{ '--comp-fw-abbr-color': meta.fg }}>{meta.abbr}</span>
       }
     </div>
@@ -423,26 +450,26 @@ const FINDINGS_ROWS = [
 // ── Function tree data ────────────────────────────────────────────
 const TREE_DATA = [
   {
-    id: 'gv', name: 'GV: Govern', closed: 56163, open: 53185, pct: 51, rating: 'Moderate',
+    id: 'gv', name: 'GV: Govern', closed: 56163, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
     children: [
       {
-        id: 'gv_rr', name: 'GV.RR: Roles, Responsibilities, and Authorities', closed: 56162, open: 53185, pct: 51, rating: 'Moderate',
+        id: 'gv_rr', name: 'GV.RR: Roles, Responsibilities, and Authorities', closed: 56162, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
         children: [
           {
-            id: 'gv_rr_02', name: 'GV.RR-02: Roles, responsibilities, and authorities related to cybersecurity risk management', closed: 56162, open: 53185, pct: 51, rating: 'Moderate',
+            id: 'gv_rr_02', name: 'GV.RR-02: Roles, responsibilities, and authorities related to cybersecurity risk management', closed: 56162, open: 53185, pct: 51, rating: 'Moderate', criticality: 'High',
             children: [
-              { id: 'gv_rr_02_a', name: 'Devices have a single assigned owner',   closed: 19991, open: 18740, pct: 51, rating: 'Moderate', isLeaf: true },
-              { id: 'gv_rr_02_b', name: 'Users have their role inventoried',       closed: 15910, open: 19,    pct: 99, rating: 'Strong',   isLeaf: true },
-              { id: 'gv_rr_02_c', name: 'Devices have an active owner',            closed: 20261, open: 34426, pct: 37, rating: 'Weak',     isLeaf: true },
+              { id: 'gv_rr_02_a', name: 'Devices have a single assigned owner',   closed: 19991, open: 18740, pct: 51, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
+              { id: 'gv_rr_02_b', name: 'Users have their role inventoried',       closed: 15910, open: 19,    pct: 99, rating: 'Strong',   criticality: 'Low',    isLeaf: true },
+              { id: 'gv_rr_02_c', name: 'Devices have an active owner',            closed: 20261, open: 34426, pct: 37, rating: 'Weak',     criticality: 'High',   isLeaf: true },
             ],
           },
         ],
       },
       {
-        id: 'gv_po', name: 'GV.PO: Policy', closed: 1, open: 0, pct: 100, rating: 'Compliant',
+        id: 'gv_po', name: 'GV.PO: Policy', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Medium',
         children: [
           {
-            id: 'gv_po_01', name: 'GV.PO-01: Policy for managing cybersecurity risks is established based on organizational requirements', closed: 1, open: 0, pct: 100, rating: 'Compliant',
+            id: 'gv_po_01', name: 'GV.PO-01: Policy for managing cybersecurity risks is established based on organizational requirements', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Medium',
             children: [],
           },
         ],
@@ -450,37 +477,450 @@ const TREE_DATA = [
     ],
   },
   {
-    id: 'id', name: 'ID: Identify', closed: 219945, open: 119600, pct: 64, rating: 'Moderate',
+    id: 'id', name: 'ID: Identify', closed: 219945, open: 119600, pct: 64, rating: 'Moderate', criticality: 'Critical',
     children: [
       {
-        id: 'id_am', name: 'ID.AM: Asset Management', closed: 189570, open: 102110, pct: 64, rating: 'Moderate',
+        id: 'id_am', name: 'ID.AM: Asset Management', closed: 189570, open: 102110, pct: 64, rating: 'Moderate', criticality: 'Critical',
         children: [
-          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', children: [] },
-          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', children: [] },
-          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', children: [] },
-          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     children: [] },
-          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', children: [] },
+          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', criticality: 'High',     children: [] },
+          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', criticality: 'Medium',   children: [] },
+          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', criticality: 'Low',    children: [] },
+          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     criticality: 'Critical', children: [] },
+          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', criticality: 'Medium',   children: [] },
         ],
       },
       {
-        id: 'id_ra', name: 'ID.RA: Risk Assessment', closed: 30375, open: 17490, pct: 63, rating: 'Moderate',
+        id: 'id_ra', name: 'ID.RA: Risk Assessment', closed: 30375, open: 17490, pct: 63, rating: 'Moderate', criticality: 'High',
         children: [],
       },
     ],
   },
   {
-    id: 'pr', name: 'PR: Protect', closed: 7123443, open: 393013, pct: 94, rating: 'Strong',
+    id: 'pr', name: 'PR: Protect', closed: 7123443, open: 393013, pct: 94, rating: 'Strong', criticality: 'Medium',
     children: [],
   },
   {
-    id: 'de', name: 'DE: Detect', closed: 284102, open: 198430, pct: 58, rating: 'Moderate',
+    id: 'de', name: 'DE: Detect', closed: 284102, open: 198430, pct: 58, rating: 'Moderate', criticality: 'High',
     children: [],
   },
   {
-    id: 'rs', name: 'RS: Respond', closed: 71245, open: 28910, pct: 71, rating: 'Moderate',
+    id: 'rs', name: 'RS: Respond', closed: 71245, open: 28910, pct: 71, rating: 'Moderate', criticality: 'Medium',
     children: [],
   },
 ]
+
+// ── Dummy control trees for non-NIST frameworks ────────────────────
+// Deterministic (hash-seeded) so counts/ratings stay stable across renders,
+// mirroring the shape of TREE_DATA above (function -> category -> leaves,
+// with parent closed/open always the sum of its children's).
+function hash32(str) {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 16777619)
+  }
+  return h >>> 0
+}
+
+function deriveLeafMetrics(id) {
+  const h = hash32(id)
+  const pct = 35 + (h % 65)
+  const total = 200 + (h % 12000)
+  const closed = Math.round(total * pct / 100)
+  const open = total - closed
+  const rating = open === 0 ? 'Compliant' : pct >= 85 ? 'Strong' : pct >= 55 ? 'Moderate' : 'Weak'
+  const criticality = pct < 55 ? 'Critical' : pct < 70 ? 'High' : pct < 85 ? 'Medium' : 'Low'
+  return { closed, open, pct, rating, criticality }
+}
+
+const CRITICALITY_RANK = { Low: 0, Medium: 1, High: 2, Critical: 3 }
+
+function aggregateMetrics(nodes) {
+  const closed = nodes.reduce((s, n) => s + n.closed, 0)
+  const open = nodes.reduce((s, n) => s + n.open, 0)
+  const pct = closed + open ? Math.round((closed / (closed + open)) * 100) : 100
+  const rating = open === 0 ? 'Compliant' : pct >= 85 ? 'Strong' : pct >= 55 ? 'Moderate' : 'Weak'
+  const criticality = nodes.reduce(
+    (worst, n) => (CRITICALITY_RANK[n.criticality] > CRITICALITY_RANK[worst] ? n.criticality : worst),
+    'Low'
+  )
+  return { closed, open, pct, rating, criticality }
+}
+
+function buildFrameworkTree(fwId, taxonomy) {
+  return taxonomy.map(fn => {
+    const fnId = `${fwId}_${fn.key}`
+    const children = fn.categories.map(cat => {
+      const catId = `${fnId}_${cat.key}`
+      const leaves = cat.leaves.map((leafName, li) => {
+        const leafId = `${catId}_${li}`
+        return { id: leafId, name: leafName, isLeaf: true, ...deriveLeafMetrics(leafId) }
+      })
+      return { id: catId, name: cat.name, children: leaves, ...aggregateMetrics(leaves) }
+    })
+    return { id: fnId, name: fn.name, children, ...aggregateMetrics(children) }
+  })
+}
+
+// Only a handful of frameworks get their own taxonomy for now — others fall
+// back to an explicit "not mapped yet" state rather than silently reusing
+// NIST CSF data (see FRAMEWORK_TREES below).
+const FRAMEWORK_TAXONOMY = {
+  iso_27001: [
+    { key: 'org', name: 'A.5: Organizational Controls', categories: [
+        { key: 'policies', name: 'A.5.1: Policies for Information Security', leaves: [
+            'Information security policy is documented and approved by management',
+            'Policies are reviewed at planned intervals or upon major change',
+          ]},
+        { key: 'assets', name: 'A.5.9: Inventory of Information and Other Associated Assets', leaves: [
+            'Information assets are inventoried and classified by sensitivity',
+          ]},
+      ]},
+    { key: 'people', name: 'A.6: People Controls', categories: [
+        { key: 'training', name: 'A.6.3: Information Security Awareness, Education and Training', leaves: [
+            'Personnel complete security awareness training annually',
+            'Role-specific security training is tracked to completion',
+          ]},
+      ]},
+    { key: 'physical', name: 'A.7: Physical Controls', categories: [
+        { key: 'entry', name: 'A.7.2: Physical Entry', leaves: [
+            'Physical access to secure areas is restricted to authorized personnel',
+          ]},
+      ]},
+    { key: 'tech', name: 'A.8: Technological Controls', categories: [
+        { key: 'config', name: 'A.8.9: Configuration Management', leaves: [
+            'Secure configuration baselines are defined and enforced',
+            'Configuration drift is detected and remediated',
+          ]},
+        { key: 'monitoring', name: 'A.8.16: Monitoring Activities', leaves: [
+            'Security events are monitored and logged centrally',
+          ]},
+      ]},
+  ],
+  pci_dss: [
+    { key: 'network', name: 'Build and Maintain a Secure Network', categories: [
+        { key: 'req1', name: 'Requirement 1: Install and Maintain Network Security Controls', leaves: [
+            'Firewall and router rules restrict traffic to the cardholder data environment',
+          ]},
+      ]},
+    { key: 'protect', name: 'Protect Account Data', categories: [
+        { key: 'req3', name: 'Requirement 3: Protect Stored Account Data', leaves: [
+            'Primary account numbers are rendered unreadable wherever stored',
+          ]},
+        { key: 'req4', name: 'Requirement 4: Protect Cardholder Data with Strong Cryptography During Transmission', leaves: [
+            'Strong cryptography protects PAN during transmission over open networks',
+          ]},
+      ]},
+    { key: 'vuln', name: 'Maintain a Vulnerability Management Program', categories: [
+        { key: 'req6', name: 'Requirement 6: Develop and Maintain Secure Systems and Software', leaves: [
+            'Critical vulnerabilities are remediated within defined SLAs',
+            'Change control procedures are followed for all system changes',
+          ]},
+      ]},
+    { key: 'access', name: 'Implement Strong Access Control Measures', categories: [
+        { key: 'req8', name: 'Requirement 8: Identify Users and Authenticate Access', leaves: [
+            'Multi-factor authentication is enforced for all access into the CDE',
+          ]},
+      ]},
+  ],
+  soc2: [
+    { key: 'security', name: 'Security (Common Criteria)', categories: [
+        { key: 'cc6', name: 'CC6: Logical and Physical Access Controls', leaves: [
+            'Access to systems is restricted to authorized users',
+            'Privileged access is reviewed on a recurring basis',
+          ]},
+        { key: 'cc7', name: 'CC7: System Operations', leaves: [
+            'Security incidents are detected, tracked, and resolved',
+          ]},
+      ]},
+    { key: 'availability', name: 'Availability', categories: [
+        { key: 'a1', name: 'A1: Availability Commitments', leaves: [
+            'System capacity is monitored against defined thresholds',
+          ]},
+      ]},
+    { key: 'confidentiality', name: 'Confidentiality', categories: [
+        { key: 'c1', name: 'C1: Confidential Information Protection', leaves: [
+            'Confidential data is encrypted at rest and in transit',
+          ]},
+      ]},
+    { key: 'integrity', name: 'Processing Integrity', categories: [
+        { key: 'pi1', name: 'PI1: Processing Integrity', leaves: [
+            'System processing is complete, accurate, and authorized',
+          ]},
+      ]},
+  ],
+  cis_csc: [
+    { key: 'assets', name: 'CIS 1: Inventory and Control of Enterprise Assets', categories: [
+        { key: 'inventory', name: '1.1: Establish and Maintain Detailed Enterprise Asset Inventory', leaves: [
+            'All enterprise assets are inventoried and reconciled on a recurring basis',
+          ]},
+      ]},
+    { key: 'config', name: 'CIS 4: Secure Configuration of Enterprise Assets and Software', categories: [
+        { key: 'baseline', name: '4.1: Establish and Maintain a Secure Configuration Process', leaves: [
+            'Secure configuration baselines are applied to all enterprise assets',
+          ]},
+      ]},
+    { key: 'accounts', name: 'CIS 5: Account Management', categories: [
+        { key: 'inactive', name: '5.3: Disable Dormant Accounts', leaves: [
+            'Inactive accounts are disabled within a defined SLA',
+          ]},
+      ]},
+    { key: 'accesscontrol', name: 'CIS 6: Access Control Management', categories: [
+        { key: 'mfa', name: '6.3: Require MFA for Externally-Exposed Applications', leaves: [
+            'Multi-factor authentication is required for all administrative access',
+          ]},
+      ]},
+    { key: 'auditlog', name: 'CIS 8: Audit Log Management', categories: [
+        { key: 'collect', name: '8.2: Collect Audit Logs', leaves: [
+            'Audit logs are collected, centrally stored, and retained per policy',
+          ]},
+      ]},
+  ],
+  hipaa: [
+    { key: 'admin', name: 'Administrative Safeguards', categories: [
+        { key: '164_308_a1', name: '164.308(a)(1): Security Management Process', leaves: [
+            'Risk analysis is performed and documented at planned intervals',
+            'A sanction policy exists for workforce members who fail to comply',
+          ]},
+      ]},
+    { key: 'physical', name: 'Physical Safeguards', categories: [
+        { key: '164_310_a1', name: '164.310(a)(1): Facility Access Controls', leaves: [
+            'Physical access to facilities housing ePHI is limited to authorized personnel',
+          ]},
+      ]},
+    { key: 'technical', name: 'Technical Safeguards', categories: [
+        { key: '164_312_a1', name: '164.312(a)(1): Access Control', leaves: [
+            'Unique user identification is enforced for systems containing ePHI',
+          ]},
+        { key: '164_312_e1', name: '164.312(e)(1): Transmission Security', leaves: [
+            'ePHI is encrypted during transmission over electronic networks',
+          ]},
+      ]},
+  ],
+  nist_800: [
+    { key: 'ac', name: 'AC: Access Control', categories: [
+        { key: 'ac2', name: 'AC-2: Account Management', leaves: [
+            'Accounts are provisioned, reviewed, and disabled per defined lifecycle procedures',
+          ]},
+        { key: 'ac6', name: 'AC-6: Least Privilege', leaves: [
+            'Privileged functions are restricted to explicitly authorized personnel',
+          ]},
+      ]},
+    { key: 'au', name: 'AU: Audit and Accountability', categories: [
+        { key: 'au6', name: 'AU-6: Audit Record Review, Analysis, and Reporting', leaves: [
+            'Audit records are reviewed and analyzed for indications of inappropriate activity',
+          ]},
+      ]},
+    { key: 'cm', name: 'CM: Configuration Management', categories: [
+        { key: 'cm6', name: 'CM-6: Configuration Settings', leaves: [
+            'Configuration settings are established and enforced against an approved baseline',
+          ]},
+      ]},
+    { key: 'ir', name: 'IR: Incident Response', categories: [
+        { key: 'ir4', name: 'IR-4: Incident Handling', leaves: [
+            'Incident handling capability includes preparation, detection, containment, and recovery',
+          ]},
+      ]},
+    { key: 'sc', name: 'SC: System and Communications Protection', categories: [
+        { key: 'sc7', name: 'SC-7: Boundary Protection', leaves: [
+            'System boundaries are monitored and controlled at key internal and external interfaces',
+          ]},
+      ]},
+  ],
+  cmmc_1: [
+    { key: 'ac', name: 'AC.L1: Access Control', categories: [
+        { key: 'ac_3_1_1', name: 'AC.L1-3.1.1: Authorized Access Control', leaves: [
+            'System access is limited to authorized users, processes, and devices',
+          ]},
+        { key: 'ac_3_1_2', name: 'AC.L1-3.1.2: Transaction & Function Control', leaves: [
+            'Authorized users are restricted to the transactions and functions they are permitted to execute',
+          ]},
+      ]},
+    { key: 'ia', name: 'IA.L1: Identification and Authentication', categories: [
+        { key: 'ia_3_5_1', name: 'IA.L1-3.5.1: Identification', leaves: [
+            'Users and processes are uniquely identified before system access is granted',
+          ]},
+      ]},
+    { key: 'mp', name: 'MP.L1: Media Protection', categories: [
+        { key: 'mp_3_8_3', name: 'MP.L1-3.8.3: Media Disposal', leaves: [
+            'System media containing FCI is sanitized or destroyed before disposal or reuse',
+          ]},
+      ]},
+    { key: 'pe', name: 'PE.L1: Physical Protection', categories: [
+        { key: 'pe_3_10_1', name: 'PE.L1-3.10.1: Limit Physical Access', leaves: [
+            'Physical access to organizational systems and facilities is limited to authorized individuals',
+          ]},
+      ]},
+    { key: 'sc', name: 'SC.L1: System and Communications Protection', categories: [
+        { key: 'sc_3_13_1', name: 'SC.L1-3.13.1: Boundary Protection', leaves: [
+            'Communications at external system boundaries are monitored, controlled, and protected',
+          ]},
+      ]},
+  ],
+  cmmc_2: [
+    { key: 'ac', name: 'AC.L2: Access Control', categories: [
+        { key: 'ac_3_1_3', name: 'AC.L2-3.1.3: Control CUI Flow', leaves: [
+            'Information flow is controlled in accordance with approved authorizations',
+          ]},
+        { key: 'ac_3_1_12', name: 'AC.L2-3.1.12: Control Remote Access', leaves: [
+            'Remote access sessions are monitored and controlled',
+          ]},
+      ]},
+    { key: 'at', name: 'AT.L2: Awareness and Training', categories: [
+        { key: 'at_3_2_1', name: 'AT.L2-3.2.1: Role-Based Risk Awareness', leaves: [
+            'Personnel are made aware of security risks associated with their role',
+          ]},
+      ]},
+    { key: 'au', name: 'AU.L2: Audit and Accountability', categories: [
+        { key: 'au_3_3_1', name: 'AU.L2-3.3.1: System Auditing', leaves: [
+            'Audit logs are created, protected, and retained to enable monitoring and investigation',
+          ]},
+      ]},
+    { key: 'cm', name: 'CM.L2: Configuration Management', categories: [
+        { key: 'cm_3_4_1', name: 'CM.L2-3.4.1: System Baselining', leaves: [
+            'Baseline configurations are established and maintained throughout the system lifecycle',
+          ]},
+      ]},
+    { key: 'ir', name: 'IR.L2: Incident Response', categories: [
+        { key: 'ir_3_6_1', name: 'IR.L2-3.6.1: Incident Handling', leaves: [
+            'An operational incident-handling capability is established for organizational systems',
+          ]},
+      ]},
+  ],
+  cmmc_3: [
+    { key: 'ac', name: 'AC.L3: Access Control (Enhanced)', categories: [
+        { key: 'ac_3_1_3e', name: 'AC.L3-3.1.3e: Enhanced Flow Control for APTs', leaves: [
+            'Information flow control mechanisms are enhanced to counter advanced persistent threats',
+          ]},
+      ]},
+    { key: 'cm', name: 'CM.L3: Configuration Management (Enhanced)', categories: [
+        { key: 'cm_3_4_2e', name: 'CM.L3-3.4.2e: Automated Configuration Monitoring', leaves: [
+            'Configuration changes are automatically monitored and reconciled against approved baselines',
+          ]},
+      ]},
+    { key: 'ir', name: 'IR.L3: Incident Response (Enhanced)', categories: [
+        { key: 'ir_3_6_2e', name: 'IR.L3-3.6.2e: Advanced Threat Hunting', leaves: [
+            'Threat hunting activities are performed to detect advanced persistent threats',
+          ]},
+      ]},
+    { key: 'ra', name: 'RA.L3: Risk Assessment (Enhanced)', categories: [
+        { key: 'ra_3_11_1e', name: 'RA.L3-3.11.1e: Advanced Risk Analysis', leaves: [
+            'Threat intelligence is incorporated into risk assessments on a recurring basis',
+          ]},
+      ]},
+    { key: 'si', name: 'SI.L3: System and Information Integrity (Enhanced)', categories: [
+        { key: 'si_3_14_1e', name: 'SI.L3-3.14.1e: Advanced Malware Defense', leaves: [
+            'Advanced malware protection capabilities are deployed against sophisticated threats',
+          ]},
+      ]},
+  ],
+  cis: [
+    { key: 'os', name: 'OS Hardening Benchmarks', categories: [
+        { key: 'os_baseline', name: 'Level 1: Baseline OS Hardening', leaves: [
+            'Operating systems are configured against CIS benchmark baseline settings',
+          ]},
+        { key: 'os_l2', name: 'Level 2: Defense-in-Depth OS Hardening', leaves: [
+            'Defense-in-depth hardening settings are applied for high-security environments',
+          ]},
+      ]},
+    { key: 'network', name: 'Network Device Benchmarks', categories: [
+        { key: 'network_baseline', name: 'Router & Firewall Baseline Configuration', leaves: [
+            'Network devices are configured per CIS benchmark recommendations',
+          ]},
+      ]},
+    { key: 'cloud', name: 'Cloud Provider Benchmarks', categories: [
+        { key: 'cloud_iam', name: 'IAM and Storage Baseline', leaves: [
+            'Cloud IAM policies and storage configurations follow CIS benchmark guidance',
+          ]},
+      ]},
+    { key: 'server', name: 'Server Application Benchmarks', categories: [
+        { key: 'server_db', name: 'Database & Web Server Hardening', leaves: [
+            'Server applications are hardened against CIS benchmark recommended settings',
+          ]},
+      ]},
+  ],
+  nist_priv: [
+    { key: 'identify_p', name: 'ID-P: Identify-P', categories: [
+        { key: 'id_im', name: 'ID.IM-P: Inventory and Mapping', leaves: [
+            'Data processing activities and data flows are inventoried and mapped',
+          ]},
+      ]},
+    { key: 'govern_p', name: 'GV-P: Govern-P', categories: [
+        { key: 'gv_po', name: 'GV.PO-P: Governance Policies', leaves: [
+            'Privacy values, policies, and organizational risk tolerance are established',
+          ]},
+      ]},
+    { key: 'control_p', name: 'CT-P: Control-P', categories: [
+        { key: 'ct_po', name: 'CT.PO-P: Data Processing Policies', leaves: [
+            "Policies for handling individuals' privacy preferences are established",
+          ]},
+      ]},
+    { key: 'communicate_p', name: 'CM-P: Communicate-P', categories: [
+        { key: 'cm_po', name: 'CM.PO-P: Transparency Policies', leaves: [
+            'Transparency of data processing practices is communicated to individuals',
+          ]},
+      ]},
+    { key: 'protect_p', name: 'PR-P: Protect-P', categories: [
+        { key: 'pr_ds', name: 'PR.DS-P: Data Protection Policies', leaves: [
+            'Data-at-rest and data-in-transit are protected in accordance with the data map',
+          ]},
+      ]},
+  ],
+  pci_pin: [
+    { key: 'keymgmt', name: 'Key Management', categories: [
+        { key: 'key_gen', name: 'Requirement 18: Key Generation', leaves: [
+            'Cryptographic keys are generated using approved random number generation methods',
+          ]},
+        { key: 'key_dist', name: 'Requirement 20: Key Distribution', leaves: [
+            'Keys are distributed and loaded using dual-control and split-knowledge procedures',
+          ]},
+      ]},
+    { key: 'pinproc', name: 'PIN Processing', categories: [
+        { key: 'pin_enc', name: 'Requirement 3: PIN Encryption', leaves: [
+            'PINs are encrypted at the point of entry and remain encrypted throughout processing',
+          ]},
+      ]},
+    { key: 'devsec', name: 'Device Security', categories: [
+        { key: 'dev_tamper', name: 'Requirement 29: Device Tamper Protection', leaves: [
+            'PIN entry devices are protected against tampering and substitution',
+          ]},
+      ]},
+  ],
+}
+
+// Frameworks with no hand-authored taxonomy above (mostly ones not yet
+// surfaced as sidebar cards — see FW_ICONS) still get a plausible generic
+// control taxonomy so none of them show up empty if/when they do appear.
+function genericTaxonomy(fw) {
+  return [
+    { key: 'governance', name: `${fw.name}: Governance & Risk Management`, categories: [
+        { key: 'risk', name: 'Risk Assessment & Treatment', leaves: [
+            `Risk assessments aligned to ${fw.name} are performed and documented at planned intervals`,
+          ]},
+      ]},
+    { key: 'access', name: `${fw.name}: Access Control`, categories: [
+        { key: 'accesscontrol', name: 'Identity & Access Management', leaves: [
+            'Access to in-scope systems is restricted to authorized users and reviewed periodically',
+          ]},
+      ]},
+    { key: 'data', name: `${fw.name}: Data Protection`, categories: [
+        { key: 'dataprotect', name: 'Data Classification & Encryption', leaves: [
+            'In-scope data is classified and protected with encryption at rest and in transit',
+          ]},
+      ]},
+    { key: 'monitoring', name: `${fw.name}: Security Monitoring & Incident Response`, categories: [
+        { key: 'monitor', name: 'Monitoring & Incident Handling', leaves: [
+            'Security events are monitored and incidents are handled per a defined response plan',
+          ]},
+      ]},
+  ]
+}
+
+const FRAMEWORK_TREES = { nist_csf: TREE_DATA }
+for (const fw of FRAMEWORKS) {
+  if (fw.id === 'nist_csf') continue
+  const taxonomy = FRAMEWORK_TAXONOMY[fw.id] ?? genericTaxonomy(fw)
+  FRAMEWORK_TREES[fw.id] = buildFrameworkTree(fw.id, taxonomy)
+}
 
 function ratingClass(r) {
   return {
@@ -489,6 +929,15 @@ function ratingClass(r) {
     Moderate:  'comp-rating-badge--moderate',
     Weak:      'comp-rating-badge--weak',
   }[r] || ''
+}
+
+function criticalityClass(c) {
+  return {
+    Low:      'comp-criticality-badge--low',
+    Medium:   'comp-criticality-badge--medium',
+    High:     'comp-criticality-badge--high',
+    Critical: 'comp-criticality-badge--critical',
+  }[c] || ''
 }
 
 function postureColor(pct) {
@@ -794,6 +1243,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
   const [trendMenuOpen, setTrendMenuOpen] = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip] = useState(false)
+  const { addDownload } = useDownloads()
 
   const [findingsPage, setFindingsPage]       = useState(1)
   const [findingsPerPage, setFindingsPerPage] = useState(10)
@@ -803,7 +1253,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
   const [ctTitle, setCtTitle]           = useState('')
   const [ctDescription, setCtDescription] = useState('')
   const [ctAssignee, setCtAssignee] = useState('Patch Admin')
-  const [toast, setToast] = useState(null) // { type: 'success'|'error', msg }
+  const { showToast } = useToast()
   const trendMenuRef = useRef(null)
   const downloadMenuRef = useRef(null)
 
@@ -820,9 +1270,8 @@ function AssessmentDrawer({ node, onClose, onNav }) {
     const success = Math.random() > 0.2
     const type = success ? 'success' : 'error'
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.'
-    setToast({ type, msg })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type, msg, duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   useEffect(() => {
     if (!trendMenuOpen) return
@@ -937,7 +1386,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
+                  <span className={`comp-rating-badge comp-rating-badge--small ${criticalityClass(node.criticality)}`}>{node.criticality}</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1138,8 +1587,8 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileCsv /> CSV</button>
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileExcel /> Excel</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.csv`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileCsv /> CSV</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.xlsx`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileExcel /> Excel</button>
                     </div>
                   )}
                 </div>
@@ -1302,18 +1751,18 @@ function AssessmentDrawer({ node, onClose, onNav }) {
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__header-text">
-                <div className="ct-modal__title">Create Ticket</div>
-                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-              </div>
-              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+<>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown
                   value={ctAssignee}
                   onChange={setCtAssignee}
@@ -1321,16 +1770,16 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                   fullWidth
                 />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="comp-ai-rec-list">
@@ -1344,22 +1793,12 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                 </div>
               </div>
             </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
+        </>
       )}
     </>
   )
@@ -1374,6 +1813,7 @@ function FunctionDrawer({ node, level, onClose }) {
   const [trendMenuOpen, setTrendMenuOpen]       = useState(false)
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
   const [ratingTooltip, setRatingTooltip]       = useState(false)
+  const { addDownload } = useDownloads()
   const [findingsPage, setFindingsPage]         = useState(1)
   const [findingsPerPage, setFindingsPerPage]   = useState(10)
   const [remediationRow, setRemediationRow]     = useState(null)
@@ -1382,7 +1822,7 @@ function FunctionDrawer({ node, level, onClose }) {
   const [ctTitle, setCtTitle]                     = useState('')
   const [ctDescription, setCtDescription]         = useState('')
   const [ctAssignee, setCtAssignee]               = useState('Patch Admin')
-  const [toast, setToast]                         = useState(null)
+  const { showToast } = useToast()
   const trendMenuRef    = useRef(null)
   const downloadMenuRef = useRef(null)
 
@@ -1405,9 +1845,8 @@ function FunctionDrawer({ node, level, onClose }) {
     closeCreateTicket()
     setRemediationRow(null)
     const success = Math.random() > 0.2
-    setToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.' })
-    if (success) setTimeout(() => setToast(null), 3000)
-  }, [closeCreateTicket])
+    showToast({ type: success ? 'success' : 'error', msg: success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.', duration: 3000 })
+  }, [closeCreateTicket, showToast])
 
   const handleClose = useCallback(() => {
     setClosing(true)
@@ -1508,7 +1947,7 @@ function FunctionDrawer({ node, level, onClose }) {
               <div className="comp-drawer-ov-item">
                 <span className="comp-drawer-ov-label">Criticality</span>
                 <span className="comp-drawer-ov-value">
-                  <span className="comp-criticality-badge comp-criticality-badge--medium">Medium</span>
+                  <span className={`comp-rating-badge comp-rating-badge--small ${criticalityClass(node.criticality)}`}>{node.criticality}</span>
                 </span>
               </div>
               <div className="comp-drawer-ov-item">
@@ -1667,8 +2106,8 @@ function FunctionDrawer({ node, level, onClose }) {
                   </button>
                   {downloadMenuOpen && (
                     <div className="comp-dl-menu">
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileCsv /> CSV</button>
-                      <button className="comp-dl-item" onClick={() => setDownloadMenuOpen(false)}><IcFileExcel /> Excel</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.csv`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileCsv /> CSV</button>
+                      <button className="comp-dl-item" onClick={(e) => { addDownload(`${node.name}-Findings.xlsx`, e.currentTarget); setDownloadMenuOpen(false); }}><IcFileExcel /> Excel</button>
                     </div>
                   )}
                 </div>
@@ -1818,30 +2257,30 @@ function FunctionDrawer({ node, level, onClose }) {
 
       {/* Create Ticket modal */}
       {createTicketEntity !== null && (
-        <div className="ct-overlay" onClick={closeCreateTicket}>
-          <div className="ct-modal" key={createTicketEntity} onClick={e => e.stopPropagation()}>
-            <div className="ct-modal__header">
-              <div className="ct-modal__header-text">
-                <div className="ct-modal__title">Create Ticket</div>
-                <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
-              </div>
-              <button className="ct-modal__close" onClick={closeCreateTicket} aria-label="Close">×</button>
-            </div>
-            <div className="ct-modal__body">
-              <div className="ct-field">
-                <label className="ct-label">Assignee</label>
+<>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" key={createTicketEntity} onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
+          </div>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Assignee</label>
                 <SelectDropdown value={ctAssignee} onChange={setCtAssignee} options={['Patch Admin', 'Security Admin', 'IT Operations']} fullWidth />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Associated Entities</label>
-                <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Associated Entities</label>
+                <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Description of Failed Finding</label>
-                <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+              <div className="sfm-field">
+                <label className="sfm-field-label">Description of Failed Finding</label>
+                <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
               </div>
-              <div className="ct-field">
-                <label className="ct-label">Remediation Recommendation</label>
+              <div className="sfm-field">
+                <label className="sfm-field-label">Remediation Recommendation</label>
                 <div className="ct-ai-content">
                   <p className="comp-ai-rec-heading">Recommendation: Register all unmanaged devices in Active Directory and establish ongoing device inventory management</p>
                   <ol className="comp-ai-rec-list">
@@ -1855,22 +2294,12 @@ function FunctionDrawer({ node, level, onClose }) {
                 </div>
               </div>
             </div>
-            <div className="ct-modal__footer">
-              <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-              <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
-            </div>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="ds-toast-container">
-          <div className={`ds-toast ${toast.type}`}>
-            <span>{toast.msg}</span>
-            <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-          </div>
-        </div>
+        </>
       )}
     </>
   )
@@ -2112,6 +2541,7 @@ const DL_FORMATS = [
 function DownloadButton() {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { addDownload } = useDownloads()
   useEffect(() => {
     if (!open) return
     const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -2126,7 +2556,7 @@ function DownloadButton() {
       {open && (
         <div className="comp-dl-menu">
           {DL_FORMATS.map(({ id, label, Icon }) => (
-            <button key={id} className="comp-dl-item" onClick={() => setOpen(false)}>
+            <button key={id} className="comp-dl-item" onClick={(e) => { addDownload(`Compliance-Overview.${id}`, e.currentTarget); setOpen(false); }}>
               <Icon /> {label}
             </button>
           ))}
@@ -2163,10 +2593,13 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
     else setFuncDrawerNode({ node, level })
   }, [])
 
-  const visibleFunctions = applySortToNodes(
-    TREE_DATA.filter(f => f.name.toLowerCase().includes(search.toLowerCase())),
-    sortBy
-  )
+  const activeTree = FRAMEWORK_TREES[selectedFw] ?? null
+  const visibleFunctions = activeTree
+    ? applySortToNodes(
+        activeTree.filter(f => f.name.toLowerCase().includes(search.toLowerCase())),
+        sortBy
+      )
+    : []
 
   const iconFrameworks = FRAMEWORKS.filter(fw => FW_ICONS[fw.id])
   const visibleFrameworks = applySortToNodes(
@@ -2227,7 +2660,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                   } : undefined}
                   onClick={() => setSelectedFw(fw.id)}
                 >
-                  <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
+                  <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} darkIcon={FW_ICONS_DARK[fw.id]} />
                   <span className="comp-fw-mini-pct" style={{ '--comp-fw-mini-pct-color': barColor(fw.pct) }}>{fw.pct}%</span>
                 </div>
               )
@@ -2244,7 +2677,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
               >
                 <div className="comp-fw-card__top">
                   <div className="comp-fw-card__id">
-                    <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} />
+                    <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} darkIcon={FW_ICONS_DARK[fw.id]} />
                     <span className={isSelected ? 'comp-fw-name' : 'comp-fw-name comp-fw-name--muted'}>
                       {fw.name}
                     </span>
@@ -2388,7 +2821,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
         {/* Function tree table */}
         <div className="card comp-domain-card">
           <div className="comp-domain-header">
-            <span className="comp-domain-title">Function ({TREE_DATA.length})</span>
+            <span className="comp-domain-title">Function ({(activeTree ?? []).length})</span>
             <div className="comp-domain-controls">
               <label className="comp-toggle-label">
                 Show Trend
@@ -2430,14 +2863,22 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                 </tr>
               </thead>
               <tbody>
-                <TreeRows
-                  nodes={visibleFunctions}
-                  expanded={expanded}
-                  onToggle={onToggle}
-                  onLeafClick={setDrawerNode}
-                  onExpand={onExpand}
-                  showTrend={showTrend}
-                />
+                {activeTree ? (
+                  <TreeRows
+                    nodes={visibleFunctions}
+                    expanded={expanded}
+                    onToggle={onToggle}
+                    onLeafClick={setDrawerNode}
+                    onExpand={onExpand}
+                    showTrend={showTrend}
+                  />
+                ) : (
+                  <tr>
+                    <td className="comp-tree-empty" colSpan={5}>
+                      No control data mapped yet for {FRAMEWORKS.find(f => f.id === selectedFw)?.name ?? 'this framework'}.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

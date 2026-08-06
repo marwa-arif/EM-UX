@@ -12,6 +12,7 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-05-25 09:39 | branch: feature/ui-updates | ffd274f fix: KG dark mode — entity node dark tints and SVG CSS variable fixes -->
 <!-- pull: 2026-05-25 11:06 | branch: feature/ui-updates | 17dc21e chore: bump to v0.3.0 -->
 <!-- pull: 2026-05-26 11:49 | branch: feature/ui-updates | ea7d844 Merge branch 'develop' into feature/ui-updates -->
+<!-- pull: 2026-05-26 12:02 | branch: develop | cd0c85d chore: bump to v0.4.4 -->
 <!-- pull: 2026-05-29 18:19 | branch: feature/ui-updates | 1ff149a chore: bump to v0.5.0 -->
 <!-- pull: 2026-06-01 10:58 | branch: feature/ui-updates | a2d3541 fix: DS 2.0 token compliance pass on dashboard.css, active-filter-panel.css, DashboardCanvas -->
 <!-- pull: 2026-06-01 10:59 | branch: subfeature | 801f882 Merge branch 'subfeature' of https://github.com/marwa-arif/EM-UI into subfeature -->
@@ -19,7 +20,9 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-06-23 11:03 | branch: develop | 3a6e66c Merge feature/ui-updates into develop (v0.6.6 — DS token pass and font scale audit) -->
 <!-- pull: 2026-06-23 11:28 | branch: feature/ui-updates | 06d642d chore: bump to v0.6.6 -->
 <!-- pull: 2026-07-21 16:32 | branch: feature/ui-updates | 2cd785f Merge pull request #5 from marwa-arif/feature/studio-workspace -->
+<!-- pull: 2026-07-22 17:30 | branch: develop | daa8ebc Merge remote-tracking branch 'origin/develop' into develop -->
 <!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
+<!-- pull: 2026-08-03 18:03 | branch: feature/ui-updates | bf4d4b0 Merge remote-tracking branch 'origin/feature/ui-updates' into develop -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
@@ -29,7 +32,7 @@ All notable UI changes are tracked here.
 
 ---
 
-## [0.15.0] — 2026-08-06
+## [0.18.0] — 2026-08-06
 ### Added
 - UX3: Home landing page (`ux3/home`), now the default route in place of Client Specific · Servers.
 - UX3: Knowledge Graph page embedded in the UX3 shell with its own filter drawer.
@@ -39,6 +42,39 @@ All notable UI changes are tracked here.
 - Settings/Admin now nests inline inside whichever shell (classic EM, Studio, UX3) was already open instead of replacing it, so closing it returns to the exact previous page; shared panel logic extracted into `src/pages/admin/AdminPanelBody.jsx`.
 ### Changed
 - DashboardCanvas: Add Widget tile is now a real static grid item placed via the same first-free-gap packing as other widgets, so it fills open gaps instead of always trailing below everything.
+
+---
+
+## [0.17.0] — 2026-08-05
+### Added
+- Shared `DrawerShell`, `SegmentedTabs`, and `entityTypes` components extracted from the Knowledge Graph page
+### Changed
+- AssetDetailDrawer, Compliance Findings, Compliance, and Findings drawers now reuse the shared drawer chrome/tab-toggle instead of page-local implementations
+- `PageKG.jsx` renamed to `KGPage.jsx` to match the other `Page*.jsx` naming convention
+
+---
+
+## [0.16.0] — 2026-08-04
+### Added
+- `insights.svg` icon and NIST dark-mode framework icon
+- Exposure Score calculation walkthrough gif
+### Changed
+- Toast notifications unified under a shared `ToastCtx`/`useToastExit` hook, replacing bespoke implementations on Saved, Dashboard, Compliance, Compliance Findings, Assessments, Findings, and Report Preview pages
+
+---
+
+## [0.15.1] — 2026-08-03
+### Fixed
+- Trend Explore: removed the surge/plunge legend chip and redundant "See what changed" button on the Enterprise Score card (duplicated the chart-dot click affordance); fixed Attack Surface bubble tooltip label wrapping.
+
+---
+
+## [0.15.0] — 2026-08-03
+### Added
+- DataQualityOverviewPage and DataQualityInDepthPage
+- NotificationPanel component
+- DownloadsContext for tracking downloadable exports
+- Shared `crossFilter` utils and `useChartFilters` hook, wired into chart drill-down and Navigator draft/dock state
 
 ---
 

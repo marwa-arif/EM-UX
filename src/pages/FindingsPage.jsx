@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import '../styles/findings.css'
 import '../styles/kg.css'
 import '../styles/compliance.css'
+import '../styles/active-filter-panel.css'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import DonutChart from '../components/DonutChart.jsx'
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx'
+import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldColor, groupCounts, useDrawerNav } from '../components/DrawerShell.jsx'
+import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
+import { useDownloads } from '../DownloadsContext.jsx'
+import { useChartFilters } from '../hooks/useChartFilters.js'
+import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Group-by select dropdown (comp-sort pattern, matches other dashboards) ──
 const IcChevron = () => (
@@ -59,174 +64,146 @@ const SEV = {
   Low:      'var(--pai-green)',
 };
 
-// ── Chart data ───────────────────────────────────────────────────
-const ASSET_CHART = [
-  { label: ['Device'],   segs: [{ pct: 44, count: 9856,  sev: 'Critical' }, { pct: 14, count: 3136,  sev: 'High' }, { pct: 10, count: 2240,  sev: 'Medium' }, { pct: 32, count: 7168,  sev: 'Low' }] },
-  { label: ['Cloud'],    segs: [{ pct: 14, count: 2744,  sev: 'Critical' }, { pct: 36, count: 7056,  sev: 'High' }, { pct: 10, count: 1960,  sev: 'Medium' }, { pct: 40, count: 7840,  sev: 'Low' }] },
-  { label: ['Identity'], segs: [{ pct:  5, count:  700,  sev: 'Critical' }, { pct:  4, count:  560,  sev: 'High' }, { pct:  3, count:  420,  sev: 'Medium' }, { pct: 88, count: 12320, sev: 'Low' }] },
+// ── Synthetic per-row dataset ──────────────────────────────────────
+// Every dashboard widget below (both stacked bars, both donuts, the table and its header
+// count) derives from this one real, filterable population instead of hand-tuned numbers —
+// required for click-to-filter cross-filtering to mean anything (clicking a segment filters
+// TABLE_ROWS itself, and every widget recomputes from whatever's left). `weight` stands in
+// for "how many real findings this row represents" so totals still read in the
+// thousands/millions despite a few hundred synthetic rows. Exact totals intentionally don't
+// match the previous hand-tuned figures — only the shape (categories, rough proportions)
+// carries over.
+const FINDING_ARCHETYPES = [
+  { title: 'Container has root access',           cat: 'Control Gap',            entityType: 'device',   evidence: 'Container Runs as Root: true',              entityPrefix: 'CONTAINER' },
+  { title: 'Secure File Transfer is not enabled',  cat: 'Control Gap',            entityType: 'storage',  evidence: 'Type: Storage Account',                     entityPrefix: 'STORAGE' },
+  { title: 'Unpatched Log4j Vulnerability',        cat: 'Software Vulnerability', entityType: 'device',   evidence: 'CVE-2021-44228 detected in dependency',     entityPrefix: 'SVC' },
+  { title: 'Public Storage Bucket Exposed',        cat: 'Control Gap',            entityType: 'storage',  evidence: 'Bucket ACL: public-read',                   entityPrefix: 'BUCKET' },
+  { title: 'Missing Network Segmentation',         cat: 'Control Gap',            entityType: 'device',   evidence: 'Flat network: true',                        entityPrefix: 'NET' },
+  { title: 'Outdated TLS Version',                 cat: 'Software Vulnerability', entityType: 'device',   evidence: 'TLS Version: 1.0',                          entityPrefix: 'GATEWAY' },
+  { title: 'Weak IAM Password Policy',              cat: 'Control Gap',            entityType: 'identity', evidence: 'Min Length: 6',                             entityPrefix: 'IDP' },
+  { title: 'Unused Security Group Rule',           cat: 'Control Gap',            entityType: 'device',   evidence: 'Rule 0.0.0.0/0:22 unused 90d',              entityPrefix: 'FIREWALL' },
+  { title: 'Anomalous Login Pattern Detected',     cat: 'Behavioural Indicator',  entityType: 'identity', evidence: 'Login velocity: 12x baseline',              entityPrefix: 'USER' },
 ];
 
-const FINDING_CHART = [
-  { label: ['Software', 'Vulnerability'], segs: [{ pct: 32, count: 779314,  sev: 'Critical' }, { pct: 16, count: 389657,  sev: 'High' }, { pct: 14, count: 340950,  sev: 'Medium' }, { pct: 38, count: 925437,  sev: 'Low' }] },
-  { label: ['Control Gap'],               segs: [{ pct: 22, count: 186343,  sev: 'Critical' }, { pct: 20, count: 169403,  sev: 'High' }, { pct: 15, count: 127052,  sev: 'Medium' }, { pct: 43, count: 364216,  sev: 'Low' }] },
-];
+const TYPE_POOL            = ['Server', 'Workstation', 'Network', 'Mobile', 'Others'];
+const CLOUD_PROVIDER_POOL  = ['AWS', 'Azure', 'GCP', 'On-Prem'];
+const OS_FAMILY_POOL       = ['Windows', 'Linux', 'macOS', 'Other'];
+const BUSINESS_UNIT_POOL   = ['Engineering', 'Finance', 'Sales', 'HR', 'Legal'];
+const DEPLOYMENT_TYPE_POOL = ['Public Cloud', 'Private Cloud', 'On-Premises', 'Hybrid'];
+const ATTACK_SURFACE_POOL  = ['Device', 'Cloud', 'Identity'];
+const SEVERITY_POOL        = ['Critical', 'High', 'Medium', 'Low'];
+const EXPOSURE_BY_SEV      = { Critical: 1000, High: 800, Medium: 550, Low: 300 };
 
-// ── Donut data (per Group By selection) ───────────────────────────
-const EXPOSURE_DONUT_BY_GROUP = {
-  'Type': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Server',      icon: 'server',  val: '27,440', pct: 49 },
-      { label: 'Workstation', icon: 'monitor', val: '21,840', pct: 39 },
-      { label: 'Network',     icon: 'network', val: '5,040',  pct:  9 },
-      { label: 'Mobile',      icon: 'mobile',  val: '1,120',  pct:  2 },
-      { label: 'Others',      icon: 'other',   val: '560',    pct:  1 },
-    ],
-  },
-  'Exposure Category': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Software Vulnerability', icon: 'server',  val: '28,560', pct: 51  },
-      { label: 'Control Gap',            icon: 'monitor', val: '27,440', pct: 49  },
-      { label: 'Behavioural Indicator',  icon: 'other',   val: '224',    pct: 0.4 },
-    ],
-  },
-  'Cloud Provider': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'AWS',     icon: 'server',  val: '23,520', pct: 42 },
-      { label: 'Azure',   icon: 'monitor', val: '15,680', pct: 28 },
-      { label: 'GCP',     icon: 'network', val: '10,080', pct: 18 },
-      { label: 'On-Prem', icon: 'other',   val: '6,720',  pct: 12 },
-    ],
-  },
-  'OS Family': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Windows', icon: 'server',  val: '25,760', pct: 46 },
-      { label: 'Linux',   icon: 'monitor', val: '18,480', pct: 33 },
-      { label: 'macOS',   icon: 'network', val: '7,840',  pct: 14 },
-      { label: 'Other',   icon: 'other',   val: '3,920',  pct:  7 },
-    ],
-  },
-  'Finding Exposure Severity': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Critical', icon: 'server',  val: '22,400', pct: 40 },
-      { label: 'High',     icon: 'monitor', val: '16,800', pct: 30 },
-      { label: 'Medium',   icon: 'network', val: '10,640', pct: 19 },
-      { label: 'Low',      icon: 'other',   val: '6,160',  pct: 11 },
-    ],
-  },
-  'Business Unit': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Engineering', icon: 'server',  val: '17,360', pct: 31 },
-      { label: 'Finance',     icon: 'monitor', val: '13,440', pct: 24 },
-      { label: 'Sales',       icon: 'network', val: '10,640', pct: 19 },
-      { label: 'HR',          icon: 'mobile',  val: '7,840',  pct: 14 },
-      { label: 'Legal',       icon: 'other',   val: '6,720',  pct: 12 },
-    ],
-  },
-  'Deployment Type': {
-    title: 'Total Exposure', total: '56k',
-    items: [
-      { label: 'Public Cloud',  icon: 'server',  val: '20,720', pct: 37 },
-      { label: 'Private Cloud', icon: 'monitor', val: '16,240', pct: 29 },
-      { label: 'On-Premises',   icon: 'network', val: '12,320', pct: 22 },
-      { label: 'Hybrid',        icon: 'other',   val: '6,720',  pct: 12 },
-    ],
-  },
+function pick(hash, offset, pool) {
+  return pool[parseInt(hash.slice(offset, offset + 4), 16) % pool.length];
+}
+function pickWeight(hash, offset, min, max) {
+  return min + (parseInt(hash.slice(offset, offset + 4), 16) % (max - min));
+}
+
+function buildTableRows() {
+  const rows = [];
+  const perArchetype = 22;
+  for (const arch of FINDING_ARCHETYPES) {
+    for (let i = 0; i < perArchetype; i++) {
+      const h = pseudoHash(`${arch.title}#${i}`);
+      const severity = pick(h, 24, SEVERITY_POOL);
+      rows.push({
+        cat: arch.cat,
+        title: arch.title,
+        entity: `${arch.entityPrefix}-${h.slice(32, 38).toUpperCase()}`,
+        entityType: arch.entityType,
+        evidence: arch.evidence,
+        impact: severity,
+        likelihood: severity,
+        exposure: EXPOSURE_BY_SEV[severity],
+        severity,
+        attackSurface:  pick(h, 0, ATTACK_SURFACE_POOL),
+        type:           pick(h, 4, TYPE_POOL),
+        cloudProvider:  pick(h, 8, CLOUD_PROVIDER_POOL),
+        osFamily:       pick(h, 12, OS_FAMILY_POOL),
+        businessUnit:   pick(h, 16, BUSINESS_UNIT_POOL),
+        deploymentType: pick(h, 20, DEPLOYMENT_TYPE_POOL),
+        weight: pickWeight(h, 28, 200, 6000),
+      });
+    }
+  }
+  return rows;
+}
+
+const TABLE_ROWS = buildTableRows();
+
+// ── Aggregation helpers — every widget recomputes from `filteredRows` through these ──
+function aggregateStackedBars(rows, groupField) {
+  const groups = new Map();
+  for (const r of rows) {
+    if (!groups.has(r[groupField])) groups.set(r[groupField], new Map());
+    const sevMap = groups.get(r[groupField]);
+    sevMap.set(r.severity, (sevMap.get(r.severity) || 0) + r.weight);
+  }
+  return [...groups.entries()].map(([value, sevMap]) => {
+    const groupTotal = [...sevMap.values()].reduce((a, b) => a + b, 0) || 1;
+    const segs = SEVERITY_POOL.filter(s => sevMap.has(s)).map(sev => ({
+      pct: Math.round((sevMap.get(sev) / groupTotal) * 100),
+      count: sevMap.get(sev),
+      sev,
+    }));
+    return { label: value.split(' '), value, segs };
+  });
+}
+
+function formatTotal(n) {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)}k`;
+  return String(Math.round(n));
+}
+
+const DONUT_ICONS = ['server', 'monitor', 'network', 'mobile', 'other'];
+
+function aggregateDonut(rows, groupField, titleLabel, valueFn) {
+  const groups = new Map();
+  let total = 0;
+  for (const r of rows) {
+    const v = valueFn(r);
+    total += v;
+    groups.set(r[groupField], (groups.get(r[groupField]) || 0) + v);
+  }
+  const items = [...groups.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([label, val], i) => ({
+      label,
+      icon: DONUT_ICONS[i % DONUT_ICONS.length],
+      val: Math.round(val).toLocaleString(),
+      pct: total ? Math.round((val / total) * 1000) / 10 : 0,
+    }));
+  return { title: titleLabel, total: formatTotal(total), items };
+}
+
+// Group By dropdown label -> row field it aggregates, and -> the ActiveFilterPanel attrId a
+// donut-slice click on that dimension should toggle.
+const GROUPBY_FIELD = {
+  'Type': 'type', 'Exposure Category': 'cat', 'Cloud Provider': 'cloudProvider',
+  'OS Family': 'osFamily', 'Finding Exposure Severity': 'severity',
+  'Business Unit': 'businessUnit', 'Deployment Type': 'deploymentType',
+};
+const GROUPBY_ATTR_ID = {
+  'Type': 'type-host', 'Exposure Category': 'exposure-category', 'Cloud Provider': 'cloud-provider',
+  'OS Family': 'os-family', 'Finding Exposure Severity': 'severity',
+  'Business Unit': 'business-unit', 'Deployment Type': 'deployment-type',
 };
 
-const FINDINGS_DONUT_BY_GROUP = {
-  'Type': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Workstation', icon: 'monitor', val: '1,730,006', pct: 54 },
-      { label: 'Server',      icon: 'server',  val: '1,425,134', pct: 44 },
-      { label: 'Network',     icon: 'network', val: '44,564',    pct:  1 },
-      { label: 'Mobile',      icon: 'mobile',  val: '19,264',    pct:  1 },
-      { label: 'Others',      icon: 'other',   val: '1',         pct:  0 },
-    ],
-  },
-  'Exposure Category': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Software Vulnerability', icon: 'server',  val: '1,771,200', pct: 54  },
-      { label: 'Control Gap',            icon: 'monitor', val: '1,508,800', pct: 46  },
-      { label: 'Behavioural Indicator',  icon: 'other',   val: '13,120',    pct: 0.4 },
-    ],
-  },
-  'Cloud Provider': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'AWS',     icon: 'server',  val: '1,279,200', pct: 39 },
-      { label: 'Azure',   icon: 'monitor', val: '1,016,800', pct: 31 },
-      { label: 'GCP',     icon: 'network', val: '557,600',   pct: 17 },
-      { label: 'On-Prem', icon: 'other',   val: '426,400',   pct: 13 },
-    ],
-  },
-  'OS Family': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Windows', icon: 'server',  val: '1,574,400', pct: 48 },
-      { label: 'Linux',   icon: 'monitor', val: '984,000',   pct: 30 },
-      { label: 'macOS',   icon: 'network', val: '492,000',   pct: 15 },
-      { label: 'Other',   icon: 'other',   val: '229,600',   pct:  7 },
-    ],
-  },
-  'Finding Exposure Severity': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Critical', icon: 'server',  val: '1,213,600', pct: 37 },
-      { label: 'High',     icon: 'monitor', val: '1,049,600', pct: 32 },
-      { label: 'Medium',   icon: 'network', val: '656,000',   pct: 20 },
-      { label: 'Low',      icon: 'other',   val: '360,800',   pct: 11 },
-    ],
-  },
-  'Business Unit': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Engineering', icon: 'server',  val: '951,200', pct: 29 },
-      { label: 'Finance',     icon: 'monitor', val: '852,800', pct: 26 },
-      { label: 'Sales',       icon: 'network', val: '590,400', pct: 18 },
-      { label: 'HR',          icon: 'mobile',  val: '492,000', pct: 15 },
-      { label: 'Legal',       icon: 'other',   val: '393,600', pct: 12 },
-    ],
-  },
-  'Deployment Type': {
-    title: 'Total Findings', total: '3.28M',
-    items: [
-      { label: 'Public Cloud',  icon: 'server',  val: '1,312,000', pct: 40 },
-      { label: 'Private Cloud', icon: 'monitor', val: '852,800',   pct: 26 },
-      { label: 'On-Premises',   icon: 'network', val: '688,800',   pct: 21 },
-      { label: 'Hybrid',        icon: 'other',   val: '426,400',   pct: 13 },
-    ],
-  },
+// attrId -> row field, for testing whether a row matches the page's active cross-filters.
+const CROSS_FILTER_FIELDS = {
+  'exposure-category': r => r.cat,
+  'attack-surface':    r => r.attackSurface,
+  'severity':          r => r.severity,
+  'type-host':         r => r.type,
+  'cloud-provider':    r => r.cloudProvider,
+  'os-family':         r => r.osFamily,
+  'business-unit':     r => r.businessUnit,
+  'deployment-type':   r => r.deploymentType,
 };
-
-// ── Table rows ───────────────────────────────────────────────────
-const FAILED_FINDINGS_TOTAL = 1422392;
-
-const TABLE_ROWS = [
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'UI-FRAMEWORK-V1',                entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'USER-INTERFACE-ENGINE-V2',       entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'DATA-AGGREGATION-SERVICE-V1',    entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'DATA-ENCRYPTION-CONTAINER-V1',   entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'UI-COMPONENT-LIBRARY-V3',        entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'CUSTOMER-RELATIONSHIP-MANAGEME', entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'UI-UX-PROTOTYPING-TOOL-V2',      entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'ML-MODEL-OPTIMIZATION-V1',       entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Misconfiguration',       title: 'Secure File Transfer is not enabled', entity: 'ABFSDATABRICKS',                 entityType: 'storage',  evidence: 'Type: Storage Account',        impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Control Gap',            title: 'Container has root access',           entity: 'DATA-TRANSFORMATION-PLATFORM-V2',entityType: 'device',   evidence: 'Container Runs as Root: true', impact: 'Critical', likelihood: 'Critical', exposure: 1000, severity: 'Critical' },
-  { cat: 'Software Vulnerability', title: 'Unpatched Log4j Vulnerability',       entity: 'PAYMENT-GATEWAY-SVC-V1',         entityType: 'device',   evidence: 'CVE-2021-44228 detected in dependency', impact: 'High',   likelihood: 'High',   exposure: 842, severity: 'High' },
-  { cat: 'Misconfiguration',       title: 'Public Storage Bucket Exposed',       entity: 'CUSTOMER-DATA-ARCHIVE',          entityType: 'storage',  evidence: 'Bucket ACL: public-read',      impact: 'High',     likelihood: 'Critical', exposure: 810, severity: 'High' },
-  { cat: 'Control Gap',            title: 'Missing Network Segmentation',        entity: 'PROD-DB-CLUSTER-V1',             entityType: 'device',   evidence: 'Flat network: true',           impact: 'Medium',   likelihood: 'High',   exposure: 650, severity: 'Medium' },
-  { cat: 'Software Vulnerability', title: 'Outdated TLS Version',                entity: 'LEGACY-API-GATEWAY-V1',          entityType: 'device',   evidence: 'TLS Version: 1.0',             impact: 'Medium',   likelihood: 'Medium', exposure: 540, severity: 'Medium' },
-  { cat: 'Control Gap',            title: 'Weak IAM Password Policy',            entity: 'IDENTITY-PROVIDER-CORE',         entityType: 'identity', evidence: 'Min Length: 6',                impact: 'Low',      likelihood: 'Medium', exposure: 320, severity: 'Low' },
-  { cat: 'Misconfiguration',       title: 'Unused Security Group Rule',          entity: 'NETWORK-EDGE-FIREWALL-V3',       entityType: 'device',   evidence: 'Rule 0.0.0.0/0:22 unused 90d', impact: 'Low',      likelihood: 'Low',    exposure: 210, severity: 'Low' },
-];
 
 function scoreColor(v) {
   if (v >= 750) return 'var(--pai-crit-fg)';
@@ -247,12 +224,14 @@ function SevBadge({ level }) {
 }
 
 const ENTITY_ICON_SRCS = {
-  device:     'assets/icons/entities/host.svg',
-  cloud:      'assets/icons/entities/cloud-account.svg',
-  identity:   'assets/icons/entities/identity.svg',
-  storage:    'assets/icons/entities/storage.svg',
-  container:  'assets/icons/entities/cloud-container.svg',
-  assessment: 'assets/icons/entities/assessment.svg',
+  device:        'assets/icons/entities/host.svg',
+  cloud:         'assets/icons/entities/cloud-account.svg',
+  identity:      'assets/icons/entities/identity.svg',
+  storage:       'assets/icons/entities/storage.svg',
+  container:     'assets/icons/entities/cloud-container.svg',
+  assessment:    'assets/icons/entities/assessment.svg',
+  finding:       'assets/icons/entities/finding.svg',
+  vulnerability: 'assets/icons/entities/vulnerability.svg',
 };
 
 // ── Finding Details panel — mock provenance/metadata ──────────────
@@ -619,44 +598,8 @@ function ExposureFactorsPanel({ entity, type, data }) {
   );
 }
 
-const IcSearchGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>
-);
-
-const IcShieldGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
-
-const IcRefresh = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-  </svg>
-);
-
 // ── Related-node tabs (Cloud Account / Finding / Vulnerability) — opened by clicking a graph node ──
 const REL_LABELS = { cloudAccount: 'Cloud Account', finding: 'Finding', vulnerability: 'Vulnerability' };
-
-function fieldColor(value) {
-  if (value === 'true') return 'var(--pai-low-fg)';
-  if (value === 'false') return 'var(--pai-crit-fg)';
-  if (SEV_COLORS[value]) return SEV_COLORS[value].fg;
-  if (value === '' || value == null) return 'var(--shell-text-muted)';
-  const palette = ['#2E84D4', '#6360D8', '#31A56D', '#D98B1D', '#66329C', '#0EA5A5'];
-  let h = 0;
-  for (const ch of String(value)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return palette[h % palette.length];
-}
-
-function groupCounts(rows, field) {
-  const m = new Map();
-  rows.forEach(r => m.set(r[field], (m.get(r[field]) || 0) + 1));
-  return [...m.entries()].sort((a, b) => b[1] - a[1]);
-}
 
 const VULN_POOL = [
   { id: 'CVE-2007-2930',  title: 'DNS Server Processes Remote Code Execution', severity: 'Medium',   exploit: 'false', patch: 'false' },
@@ -751,76 +694,66 @@ function buildFindingRelData(nodeKey, row) {
   };
 }
 
-function MiniRing({ title, segments }) {
-  const total = segments.reduce((s, x) => s + x.count, 0);
-  const pieData = segments.map(s => ({ ...s, value: s.count === 0 ? 0.001 : s.count }));
-  return (
-    <div className="fin-ring-block">
-      <div className="fin-ring-block-title">{title}</div>
-      <div className="fin-ring-row">
-        <div className="kg-dp-ring-wrap">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius="68%" outerRadius="90%" startAngle={90} endAngle={450} cornerRadius={4} strokeWidth={0}>
-                {pieData.map((seg, i) => <Cell key={i} fill={seg.color} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="kg-dp-ring-num">{total}</div>
-        </div>
-        <div className="fin-ring-legend">
-          {segments.map((s, i) => (
-            <div key={i} className="kg-dp-ring-value"><span className="kg-dp-ring-dot" style={{ background: s.color }} />{s.label}</div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+// renderCell for this page's RelNodeSection tables — badges for severity-like fields, plain text otherwise.
+const findingsRelCell = (col, val) => (ENTITY_BADGE_FIELDS.has(col) || SEV_COLORS[val] ? <SevBadge level={val} /> : String(val));
+
+// Breadcrumb rail for a drilled-into drawer stack — one icon per level, oldest at top,
+// current (last) highlighted; clicking an earlier icon pops back to that level.
+// Icon for a mock leaf record (Assessment / Cloud Account / Vulnerability) that has no
+// dedicated entity type of its own — shared by DrawerTrail and RecordDetailContent.
+// Icon for a mock leaf record (Assessment / Cloud Account / Vulnerability) that has no
+// dedicated entity type of its own — shared by DrawerTrail and RecordDetailContent.
+// A record leaf's ENTITY_TYPES key — 'cloudAccount'/'vulnerability' map directly, anything else
+// (e.g. an Assessment) falls back to 'assessment'.
+function recordEntityKey(nodeKey) {
+  if (nodeKey === 'cloudAccount' || nodeKey === 'vulnerability') return nodeKey;
+  return 'assessment';
 }
 
-function RelNodeSection({ title, data }) {
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const visible = data.rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+function recordIcon(nodeKey, size) {
+  return <EntityGlyph kind={ENTITY_TYPES[recordEntityKey(nodeKey)].glyph} size={size} />;
+}
 
-  return (
-    <div className="kg-dp-section">
-      <div className="kg-dp-section-header kg-dp-section-header--flex">
-        <span>{title} Summary</span>
-        <button className="comp-drawer-action-icon" title="Refresh"><IcRefresh /></button>
-      </div>
-      <div className="fin-ring-summary">
-        {data.rings.map(r => <MiniRing key={r.title} title={r.title} segments={r.segments} />)}
-      </div>
-      <div className="kg-dp-section-header kg-dp-section-header--flex">
-        <span>Relationship Summary ({data.rows.length})</span>
-        <button className="ds-btn sz-sm t-primary"><IcDownload /> Download <IcChevronDown /></button>
-      </div>
-      <div className="ds-table-wrap">
-        <table className="ds-table">
-          <thead>
-            <tr>{data.columns.map(c => <th key={c} className="ds-th">{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {visible.map((r, i) => (
-              <tr key={i}>
-                {data.columns.map(c => (
-                  <td key={c} className="ds-td">{ENTITY_BADGE_FIELDS.has(c) || SEV_COLORS[r[c]] ? <SevBadge level={r[c]} /> : String(r[c])}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <TablePagination
-        total={data.rows.length}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={n => { setRowsPerPage(n); setPage(1); }}
-      />
-    </div>
-  );
+// A Finding is represented by the same dedicated "finding" entity icon everywhere — header,
+// mini-graph, relationship rows — never the severity/alert triangle; severity is its own
+// meta-row field, not baked into the icon.
+function drawerItemIcon(item, size) {
+  if (item.kind === 'finding') return <EntityGlyph kind="finding" size={size} />;
+  if (item.kind === 'record') return recordIcon(item.nodeKey, size);
+  const ent = ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[item.type] || 'host'];
+  return <EntityGlyph kind={ent.glyph} size={size} />;
+}
+
+function drawerItemLabel(item) {
+  if (item.kind === 'finding') return item.row.title;
+  if (item.kind === 'record') return item.record['Display Label'];
+  return item.entity;
+}
+
+function drawerItemTypeLabel(item) {
+  if (item.kind === 'finding') return 'Finding';
+  if (item.kind === 'record') return item.title;
+  return ENTITY_TYPE_LABEL[item.type] || item.type;
+}
+
+// Maps a trail item to the shape the shared HeaderIconStack/DrawerLayout (src/components/
+// DrawerShell.jsx) needs to render it, without that shared component knowing this page's
+// 'finding'|'entity'|'record' kind vocabulary.
+function describeDrawerItem(item) {
+  const color = item.kind === 'finding' ? ENTITY_TYPES.finding.icon
+    : item.kind === 'record' ? ENTITY_TYPES[recordEntityKey(item.nodeKey)].icon
+    : ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[item.type] || 'host'].icon;
+  return { icon: drawerItemIcon(item, 16), label: drawerItemLabel(item), typeLabel: drawerItemTypeLabel(item), color };
+}
+
+// Adapts a raw record (arbitrary key/value pairs, e.g. { 'Display Label': ..., ... }) into the
+// normalized { label, chipText, fields } shape the shared RecordDetailContent expects.
+function toSharedRecord(title, record) {
+  return {
+    label: record['Display Label'],
+    chipText: title,
+    fields: Object.entries(record).map(([k, v]) => [k, SEV_COLORS[v] ? <SevBadge level={v} /> : String(v)]),
+  };
 }
 
 function EntityCell({ name, type, onClick }) {
@@ -833,28 +766,8 @@ function EntityCell({ name, type, onClick }) {
   );
 }
 
-const IcDrawerClose = () => (
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-    <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-  </svg>
-);
-
-const IcFindingGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>
-);
-
 // ── Finding Details panel — opened from row click / Explore, same comp-drawer shell as the Assessment/Trend Explore drawers ──
-function FindingDetailDrawer({ row, onClose }) {
-  const [closing, setClosing] = useState(false);
-  const handleClose = () => { setClosing(true); setTimeout(onClose, 180); };
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') handleClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
+function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateTrail }) {
   const [tab, setTab] = useState('summary');
   const [relOpen, setRelOpen] = useState(true);
   const [evoShowHidden, setEvoShowHidden] = useState(false);
@@ -878,13 +791,9 @@ function FindingDetailDrawer({ row, onClose }) {
   );
 
   return (
-    <>
-      <div className="comp-drawer-backdrop" onClick={handleClose} />
-      <button className="comp-drawer-close-ext" onClick={handleClose}><IcDrawerClose /></button>
-      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeDrawerItem}>
         <div className="kg-dp-header">
           <div className="kg-dp-title-row">
-            <div className="kg-dp-icon-circle" style={{ '--dp-tint': c.bg, '--dp-stroke': c.fg, color: c.fg }}><IcFindingGlyph /></div>
             <div className="kg-dp-title-body">
               <div className="kg-dp-name-row">
                 <span className="kg-dp-name">{row.title}</span>
@@ -903,17 +812,17 @@ function FindingDetailDrawer({ row, onClose }) {
             onToggle={() => setRelOpen(o => !o)}
             center={{
               label: row.title.length > 26 ? row.title.slice(0, 24) + '…' : row.title,
-              icon: <IcFindingGlyph />,
-              accent: 'var(--pai-indigo)',
+              icon: <EntityGlyph kind="finding" size={16} />,
+              accent: ENTITY_TYPES.finding.icon,
             }}
             leaves={[
               {
                 key: 'assessment',
                 label: 'Assessment',
-                icon: <img src={ENTITY_ICON_SRCS.assessment} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="assessment" size={16} />,
+                tint: ENTITY_TYPES.assessment.tint,
+                stroke: ENTITY_TYPES.assessment.stroke,
+                accent: ENTITY_TYPES.assessment.icon,
                 count: 1,
                 active: relTab === 'assessment',
                 onClick: () => openRelTab('assessment'),
@@ -922,10 +831,10 @@ function FindingDetailDrawer({ row, onClose }) {
               {
                 key: 'scopeEntity',
                 label: scope.label,
-                icon: <img src={ENTITY_ICON_SRCS[scope.icon] || ENTITY_ICON_SRCS.device} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind={ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].glyph} size={16} />,
+                tint: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].tint,
+                stroke: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].stroke,
+                accent: ENTITY_TYPES[scope.icon === 'cloud' ? 'cloudAccount' : scope.icon].icon,
                 count: 1,
                 active: relTab === 'scopeEntity',
                 onClick: () => openRelTab('scopeEntity'),
@@ -969,7 +878,16 @@ function FindingDetailDrawer({ row, onClose }) {
           )}
 
           {relTab && tab === relTab && (
-            <RelNodeSection title={relTabLabels[relTab]} data={buildFindingRelData(relTab, row)} />
+            <RelNodeSection
+              title={relTabLabels[relTab]}
+              data={buildFindingRelData(relTab, row)}
+              renderCell={findingsRelCell}
+              onRowClick={
+                relTab === 'scopeEntity' ? () => onNavigate({ kind: 'entity', entity: row.entity, type: row.entityType })
+                : relTab === 'assessment' ? r => onNavigate({ kind: 'record', nodeKey: 'assessment', title: 'Assessment', record: r })
+                : undefined
+              }
+            />
           )}
 
           {tab === 'evolution' && (
@@ -1011,20 +929,12 @@ function FindingDetailDrawer({ row, onClose }) {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </DrawerLayout>
   );
 }
 
 // ── Entity Details panel — opened from Associated Entities, same comp-drawer shell as Finding Details ──
-function EntityDetailDrawer({ entity, type, rows, onClose }) {
-  const [closing, setClosing] = useState(false);
-  const handleClose = () => { setClosing(true); setTimeout(onClose, 180); };
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') handleClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
+function EntityDetailContent({ entity, type, rows, onNavigate, trail, activeIndex, onNavigateTrail }) {
   const [tab, setTab] = useState('summary');
   const [relOpen, setRelOpen] = useState(true);
   const [evoShowHidden, setEvoShowHidden] = useState(false);
@@ -1063,13 +973,9 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
   );
 
   return (
-    <>
-      <div className="comp-drawer-backdrop" onClick={handleClose} />
-      <button className="comp-drawer-close-ext" onClick={handleClose}><IcDrawerClose /></button>
-      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeDrawerItem}>
         <div className="kg-dp-header">
           <div className="kg-dp-title-row">
-            <div className="kg-dp-icon-circle"><img src={ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.device} width={18} height={18} alt="" /></div>
             <div className="kg-dp-title-body">
               <div className="kg-dp-name-row">
                 <span className="kg-dp-name">{entity}</span>
@@ -1099,17 +1005,17 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
             onToggle={() => setRelOpen(o => !o)}
             center={{
               label: entity.length > 22 ? entity.slice(0, 20) + '…' : entity,
-              icon: <img src={ENTITY_ICON_SRCS[type] || ENTITY_ICON_SRCS.device} width={16} height={16} alt="" />,
-              accent: 'var(--pai-indigo)',
+              icon: <EntityGlyph kind={ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[type] || 'host'].glyph} size={16} />,
+              accent: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[type] || 'host'].icon,
             }}
             leaves={[
               {
                 key: 'cloudAccount',
                 label: 'Cloud Account',
-                icon: <img src={ENTITY_ICON_SRCS.cloud} width={16} height={16} alt="" />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="cloud" size={16} />,
+                tint: ENTITY_TYPES.cloudAccount.tint,
+                stroke: ENTITY_TYPES.cloudAccount.stroke,
+                accent: ENTITY_TYPES.cloudAccount.icon,
                 count: 1,
                 active: relTab === 'cloudAccount',
                 onClick: () => openRelTab('cloudAccount'),
@@ -1118,10 +1024,10 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
               {
                 key: 'finding',
                 label: 'Finding',
-                icon: <IcSearchGlyph />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="finding" size={16} />,
+                tint: ENTITY_TYPES.finding.tint,
+                stroke: ENTITY_TYPES.finding.stroke,
+                accent: ENTITY_TYPES.finding.icon,
                 count: rows.length,
                 active: relTab === 'finding',
                 onClick: () => openRelTab('finding'),
@@ -1130,10 +1036,10 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
               {
                 key: 'vulnerability',
                 label: 'Vulnerability',
-                icon: <IcShieldGlyph />,
-                tint: 'var(--shell-raised)',
-                stroke: 'var(--shell-border)',
-                accent: 'var(--pai-indigo)',
+                icon: <EntityGlyph kind="vulnerability" size={16} />,
+                tint: ENTITY_TYPES.vulnerability.tint,
+                stroke: ENTITY_TYPES.vulnerability.stroke,
+                accent: ENTITY_TYPES.vulnerability.icon,
                 count: vulnCount,
                 active: relTab === 'vulnerability',
                 onClick: () => openRelTab('vulnerability'),
@@ -1163,7 +1069,17 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
           )}
 
           {relTab && tab === relTab && (
-            <RelNodeSection title={REL_LABELS[relTab]} data={buildRelData(relTab, entity, type, rows)} />
+            <RelNodeSection
+              title={REL_LABELS[relTab]}
+              data={buildRelData(relTab, entity, type, rows)}
+              renderCell={findingsRelCell}
+              onRowClick={
+                relTab === 'finding' ? (r, i) => onNavigate({ kind: 'finding', row: rows[i] })
+                : relTab === 'cloudAccount' ? r => onNavigate({ kind: 'record', nodeKey: 'cloudAccount', title: 'Cloud Account', record: r })
+                : relTab === 'vulnerability' ? r => onNavigate({ kind: 'record', nodeKey: 'vulnerability', title: 'Vulnerability', record: r })
+                : undefined
+              }
+            />
           )}
 
           {tab === 'evolution' && (
@@ -1205,8 +1121,7 @@ function EntityDetailDrawer({ entity, type, rows, onClose }) {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </DrawerLayout>
   );
 }
 
@@ -1291,6 +1206,17 @@ const IcFileExcel = () => (
     <text x="12" y="17" textAnchor="middle" fontSize="5" fontWeight="700" fill="currentColor" fontFamily="Inter,sans-serif">XLS</text>
   </svg>
 );
+const IcClose = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+const IcTicket = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4">
+    <path d="M1.5 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1a1 1 0 1 0 0 2v1a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-1a1 1 0 1 0 0-2V6Z"/>
+    <path d="M6 5v6" strokeDasharray="1.5 1.5"/>
+  </svg>
+);
 const IcExposureFactorsGlyph = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12.25 0.875V3.51925C11.3912 3.60544 9.48675 4.05825 7.62825 6.265C7.54163 6.14381 7.45412 6.02612 7.371 5.89313C5.23862 2.48063 2.765 1.87075 1.75 1.76837V0.875H0.875V13.125H1.75V11.3951C3.36116 11.375 4.9075 10.7576 6.08956 9.66263C8.08063 12.0138 11.0408 12.2666 12.2211 12.2666H12.25V13.125H13.125V0.875H12.25ZM12.25 4.39906V8.76969C11.4863 8.75904 10.7328 8.59327 10.0351 8.28243C9.33751 7.9716 8.71035 7.52218 8.19175 6.9615C9.8455 4.92931 11.5023 4.48875 12.25 4.39906ZM6.629 6.35687C6.77075 6.58394 6.91906 6.79 7.07 6.98688C6.92169 7.19469 6.77425 7.41213 6.629 7.64488C6.49057 7.86498 6.33998 8.07721 6.17794 8.28056C6.14162 8.22062 6.10444 8.16244 6.06987 8.09987C4.081 4.52025 2.53181 3.69425 1.75 3.52975V2.64731C2.62194 2.75231 4.73506 3.32675 6.629 6.35687ZM1.75 10.5214V4.43625C2.32969 4.63925 3.58881 5.4355 5.30513 8.52425C5.38825 8.67387 5.47837 8.80994 5.56763 8.94731C4.54018 9.93635 3.17594 10.4986 1.75 10.5214ZM6.70162 9.02519C6.94649 8.7363 7.17019 8.43013 7.371 8.10906C7.46769 7.95419 7.56569 7.81594 7.66369 7.67375C8.26085 8.28781 8.97339 8.77791 9.76043 9.11591C10.5475 9.45391 11.3935 9.63316 12.25 9.64338V11.3877C11.2306 11.3833 8.47613 11.1606 6.70162 9.02519Z" fill="currentColor"/>
@@ -1313,7 +1239,7 @@ const IcChevD = () => (
 );
 
 // ── Remediate Now widget ──────────────────────────────────────────
-function ActNowWidget({ onNav }) {
+function ActNowWidget({ onRemediate, onNav }) {
   return (
     <div className="card fin-actnow-card">
       <div className="fin-intel-hdr">
@@ -1331,7 +1257,12 @@ function ActNowWidget({ onNav }) {
           <div key={i} className={`fin-actnow-item fin-actnow-sev-${item.sev}`}>
             <div className="fin-actnow-row1">
               <span className="fin-actnow-action">{item.action}</span>
-              <button className="fin-remediate-btn" onClick={() => onNav?.('error')}>Remediate</button>
+              <button
+                className="fin-remediate-btn"
+                onClick={() => (i === REMEDIATE_NOW.length - 1 ? onNav?.('error') : onRemediate?.(item))}
+              >
+                Remediate
+              </button>
             </div>
             <div className="fin-actnow-row2">
               <span className="fin-actnow-scope">{item.scope}</span>
@@ -1401,7 +1332,7 @@ function ProgramStatusWidget() {
 }
 
 // ── Stacked horizontal bar chart ──────────────────────────────────
-function StackedBarChart({ title, rows, xLabel }) {
+function StackedBarChart({ title, rows, xLabel, onSegClick }) {
   const [hovSeg, setHovSeg] = useState(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0, containerW: 400 });
 
@@ -1421,10 +1352,11 @@ function StackedBarChart({ title, rows, xLabel }) {
               {row.segs.filter(s => s.pct > 0).map((seg, j) => (
                 <div
                   key={j}
-                  className="fin-sbc-seg"
+                  className={`fin-sbc-seg${onSegClick ? ' fin-sbc-seg--clickable' : ''}`}
                   style={{ '--fin-seg-w': `${seg.pct}%`, '--fin-seg-bg': SEV[seg.sev] }}
                   onMouseEnter={() => setHovSeg({ sev: seg.sev, pct: seg.pct, count: seg.count, label: row.label.join(' ') })}
                   onMouseLeave={() => setHovSeg(null)}
+                  onClick={() => onSegClick?.(row, seg)}
                 />
               ))}
             </div>
@@ -1470,7 +1402,7 @@ function StackedBarChart({ title, rows, xLabel }) {
 }
 
 // ── Page root ─────────────────────────────────────────────────────
-export default function FindingsPage({ onNav, categoryFilter }) {
+export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter }) {
   const [search, setSearch]           = useState('');
   const [page, setPage]               = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -1479,11 +1411,18 @@ export default function FindingsPage({ onNav, categoryFilter }) {
   const [createTicketEntity, setCreateTicketEntity] = useState(null); // null = closed, string = entity pre-fill
   const [ctDescription, setCtDescription]           = useState('');
   const [ctAssignee, setCtAssignee]                 = useState('Patch Admin');
-  const [toast, setToast]                           = useState(null); // { type: 'success'|'error', msg }
+  const { showToast } = useToast()
   const [downloadOpen, setDownloadOpen]             = useState(false);
-  const [findingDrawerRow, setFindingDrawerRow]     = useState(null); // finding row, or null
-  const [entityDrawer, setEntityDrawer]             = useState(null); // { name, type }, or null
+  // Drawer navigation — history items: {kind:'finding',row} | {kind:'entity',entity,type} |
+  // {kind:'record',nodeKey,title,record}. Jumping to an earlier entry only moves the pointer,
+  // it never drops later entries — the trail only shrinks when the drawer fully closes.
+  const drawer = useDrawerNav();
+  const openDrawer = drawer.open;
+  const navigateDrawer = drawer.navigate;
+  const goToDrawerIndex = drawer.goToIndex;
+  const closeDrawer = drawer.close;
   const downloadRef = useRef(null);
+  const { addDownload } = useDownloads();
 
   useEffect(() => {
     if (!downloadOpen) return;
@@ -1492,8 +1431,10 @@ export default function FindingsPage({ onNav, categoryFilter }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [downloadOpen]);
 
+  const { matches } = useChartFilters(crossFilters);
+
   const filteredRows = TABLE_ROWS.filter(r =>
-    (!categoryFilter || r.cat === categoryFilter) &&
+    matches(r, CROSS_FILTER_FIELDS) &&
     (!search ||
       r.title.toLowerCase().includes(search.toLowerCase()) ||
       r.entity.toLowerCase().includes(search.toLowerCase()) ||
@@ -1503,8 +1444,21 @@ export default function FindingsPage({ onNav, categoryFilter }) {
   const start       = (clampedPage - 1) * rowsPerPage;
   const visibleRows = filteredRows.slice(start, start + rowsPerPage);
 
-  const exposureDonutData = EXPOSURE_DONUT_BY_GROUP[groupBy] || EXPOSURE_DONUT_BY_GROUP.Type;
-  const findingsDonutData = FINDINGS_DONUT_BY_GROUP[groupBy] || FINDINGS_DONUT_BY_GROUP.Type;
+  const totalWeight   = filteredRows.reduce((s, r) => s + r.weight, 0);
+  const assetChart    = aggregateStackedBars(filteredRows, 'attackSurface');
+  const findingChart  = aggregateStackedBars(filteredRows, 'cat');
+  const groupField    = GROUPBY_FIELD[groupBy];
+  const groupAttrId   = GROUPBY_ATTR_ID[groupBy];
+  const exposureDonutData = aggregateDonut(filteredRows, groupField, 'Total Exposure', r => r.exposure * r.weight);
+  const findingsDonutData = aggregateDonut(filteredRows, groupField, 'Total Findings', r => r.weight);
+
+  const toggleSeg = (rowAttrId) => (row, seg) =>
+    onToggleFilter?.([
+      { attrId: rowAttrId, key: rowAttrId === 'attack-surface' ? 'Attack Surface' : 'Exposure Category', value: row.value },
+      { attrId: 'severity', key: 'Severity', value: seg.sev },
+    ]);
+  const toggleSlice = (item) =>
+    onToggleFilter?.([{ attrId: groupAttrId, key: groupBy, value: item.label }]);
 
   function handleSearch(v) { setSearch(v); setPage(1); }
 
@@ -1519,8 +1473,7 @@ export default function FindingsPage({ onNav, categoryFilter }) {
     const success = Math.random() > 0.2;
     const type = success ? 'success' : 'error';
     const msg = success ? 'Ticket created successfully.' : 'Failed to create ticket. Please try again.';
-    setToast({ type, msg });
-    if (success) setTimeout(() => setToast(null), 3000);
+    showToast({ type, msg, duration: 3000 });
   }
 
   return (
@@ -1529,7 +1482,7 @@ export default function FindingsPage({ onNav, categoryFilter }) {
 
       {/* ── Intelligence row: Act Now + Operational Health ── */}
       <div className="fin-intel-row">
-        <ActNowWidget onNav={onNav} />
+        <ActNowWidget onRemediate={(item) => openCreateTicket(item.scope, item.action)} onNav={onNav} />
         <ProgramStatusWidget />
       </div>
 
@@ -1540,13 +1493,15 @@ export default function FindingsPage({ onNav, categoryFilter }) {
         <div className="fin-left-col">
           <StackedBarChart
             title="Asset Criticality by Attack Surface"
-            rows={ASSET_CHART}
+            rows={assetChart}
             xLabel="% of Asset Count"
+            onSegClick={onToggleFilter && toggleSeg('attack-surface')}
           />
           <StackedBarChart
             title="Finding Criticality by Exposure Category"
-            rows={FINDING_CHART}
+            rows={findingChart}
             xLabel="% of Findings Count"
+            onSegClick={onToggleFilter && toggleSeg('exposure-category')}
           />
         </div>
 
@@ -1565,9 +1520,15 @@ export default function FindingsPage({ onNav, categoryFilter }) {
               </div>
             </div>
             <div className="fin-posture-body">
-              <DonutChart data={exposureDonutData} />
+              <DonutChart
+                data={exposureDonutData}
+                onSliceClick={onToggleFilter && toggleSlice}
+              />
               <div className="fin-posture-divider" />
-              <DonutChart data={findingsDonutData} />
+              <DonutChart
+                data={findingsDonutData}
+                onSliceClick={onToggleFilter && toggleSlice}
+              />
             </div>
           </div>
         </div>
@@ -1577,7 +1538,7 @@ export default function FindingsPage({ onNav, categoryFilter }) {
       <div className="card fin-table-section">
         <div className="fin-table-hdr">
           <span className="fin-table-title">
-            Failed Findings <span className="fin-table-count">({FAILED_FINDINGS_TOTAL.toLocaleString()})</span>
+            Failed Findings <span className="fin-table-count">({totalWeight.toLocaleString()})</span>
           </span>
           <div className="fin-table-actions">
             <DSPillSearch
@@ -1586,7 +1547,7 @@ export default function FindingsPage({ onNav, categoryFilter }) {
               placeholder="Search Any"
               width={200}
             />
-            <button className="ds-btn sz-md t-outline">
+            <button className="ds-btn sz-md t-outline" onClick={(e) => addDownload('Exposure-Factors-Report.xlsx', e.currentTarget)}>
               <IcDownload /> Download Exposure Factors
             </button>
             <div ref={downloadRef} className="comp-dl-wrap">
@@ -1595,8 +1556,8 @@ export default function FindingsPage({ onNav, categoryFilter }) {
               </button>
               {downloadOpen && (
                 <div className="comp-dl-menu">
-                  <button className="comp-dl-item" onClick={() => setDownloadOpen(false)}><IcFileCsv /> CSV</button>
-                  <button className="comp-dl-item" onClick={() => setDownloadOpen(false)}><IcFileExcel /> Excel</button>
+                  <button className="comp-dl-item" onClick={(e) => { addDownload('Failed-Findings.csv', e.currentTarget); setDownloadOpen(false); }}><IcFileCsv /> CSV</button>
+                  <button className="comp-dl-item" onClick={(e) => { addDownload('Failed-Findings.xlsx', e.currentTarget); setDownloadOpen(false); }}><IcFileExcel /> Excel</button>
                 </div>
               )}
             </div>
@@ -1617,11 +1578,11 @@ export default function FindingsPage({ onNav, categoryFilter }) {
             </thead>
             <tbody>
               {visibleRows.map((row, i) => (
-                <tr key={i} className="kg-tr kg-tr--clickable" onClick={() => setFindingDrawerRow(row)}>
+                <tr key={i} className="kg-tr kg-tr--clickable" onClick={() => openDrawer({ kind: 'finding', row })}>
                   <td className="ds-td fin-td-cat">{row.cat}</td>
                   <td className="ds-td"><span className="fin-td-title-link">{row.title}</span></td>
                   <td className="ds-td" onClick={e => e.stopPropagation()}>
-                    <EntityCell name={row.entity} type={row.entityType} onClick={() => setEntityDrawer({ name: row.entity, type: row.entityType })} />
+                    <EntityCell name={row.entity} type={row.entityType} onClick={() => openDrawer({ kind: 'entity', entity: row.entity, type: row.entityType })} />
                   </td>
                   <td className="ds-td fin-td-evidence">{row.evidence}</td>
                   <td className="ds-td"><SevBadge level={row.impact} /></td>
@@ -1714,15 +1675,18 @@ export default function FindingsPage({ onNav, categoryFilter }) {
 
     {/* Create Ticket modal */}
     {createTicketEntity !== null && (
-      <div className="ct-overlay" onClick={closeCreateTicket}>
-        <div className="ct-modal" onClick={e => e.stopPropagation()}>
-          <div className="ct-modal__header">
-            <div className="ct-modal__title">Create Ticket</div>
-            <div className="ct-modal__subtitle">This ticket will be added to your board once you click 'Create' to track this finding.</div>
+      <>
+        <div className="sfm-overlay" onMouseDown={closeCreateTicket} />
+        <div className="sfm-dialog" onMouseDown={e => e.stopPropagation()}>
+          <div className="sfm-header">
+            <div className="sfm-icon-wrap"><IcTicket /></div>
+            <span className="sfm-title">Create Ticket</span>
+            <button onClick={closeCreateTicket} className="sfm-close" aria-label="Close"><IcClose /></button>
           </div>
-          <div className="ct-modal__body">
-            <div className="ct-field">
-              <label className="ct-label">Assignee</label>
+          <div className="sfm-body">
+            <p className="sfm-desc">This ticket will be added to your board once you click 'Create' to track this finding.</p>
+            <div className="sfm-field">
+              <label className="sfm-field-label">Assignee</label>
               <SelectDropdown
                 value={ctAssignee}
                 onChange={setCtAssignee}
@@ -1730,47 +1694,51 @@ export default function FindingsPage({ onNav, categoryFilter }) {
                 fullWidth
               />
             </div>
-            <div className="ct-field">
-              <label className="ct-label">Associated Entities</label>
-              <input className="ct-input ct-input--readonly" type="text" value={createTicketEntity} readOnly />
+            <div className="sfm-field">
+              <label className="sfm-field-label">Associated Entities</label>
+              <input type="text" value={createTicketEntity} readOnly className="sfm-input" />
             </div>
-            <div className="ct-field">
-              <label className="ct-label">Description of Failed Finding</label>
-              <textarea className="ct-textarea" rows={2} value={ctDescription} onChange={e => setCtDescription(e.target.value)} />
+            <div className="sfm-field">
+              <label className="sfm-field-label">Description of Failed Finding</label>
+              <textarea value={ctDescription} onChange={e => setCtDescription(e.target.value)} rows={2} className="sfm-textarea" />
             </div>
           </div>
-          <div className="ct-modal__footer">
-            <button className="ct-btn ct-btn--cancel" onClick={closeCreateTicket}>Cancel</button>
-            <button className="ct-btn ct-btn--create" onClick={handleCreateTicket}>Create</button>
+          <div className="sfm-footer">
+            <button onClick={closeCreateTicket} className="sfm-cancel">Cancel</button>
+            <button onClick={handleCreateTicket} className="sfm-create">Create</button>
           </div>
         </div>
-      </div>
+      </>
     )}
 
-    {/* Toast notification */}
-    {toast && (
-      <div className="ds-toast-container">
-        <div className={`ds-toast ${toast.type}`}>
-          <span>{toast.msg}</span>
-          <button className="ds-toast-dismiss" onClick={() => setToast(null)}>×</button>
-        </div>
-      </div>
-    )}
-
-    {/* Finding Details drawer */}
-    {findingDrawerRow && (
-      <FindingDetailDrawer row={findingDrawerRow} onClose={() => setFindingDrawerRow(null)} />
-    )}
-
-    {/* Entity Details drawer */}
-    {entityDrawer && (
-      <EntityDetailDrawer
-        entity={entityDrawer.name}
-        type={entityDrawer.type}
-        rows={TABLE_ROWS.filter(r => r.entity === entityDrawer.name)}
-        onClose={() => setEntityDrawer(null)}
-      />
-    )}
+    {/* Finding / Entity / Record Details drawer — a single persistent shell (DrawerShell) whose
+        content swaps based on drawer.index; navigating never remounts the shell, so only the
+        very first open slides in and every Relationship Summary click just replaces content.
+        The header's icon stack (trail/activeIndex/onNavigateTrail) lives inside each content
+        component's own header, not the shell, since it sits beside that content's title. */}
+    {drawer.index >= 0 && (() => {
+      const top = drawer.history[drawer.index];
+      const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: goToDrawerIndex, describe: describeDrawerItem };
+      const content = top.kind === 'finding' ? (
+        <FindingDetailContent key={drawer.index} row={top.row} onNavigate={navigateDrawer} {...trailProps} />
+      ) : top.kind === 'entity' ? (
+        <EntityDetailContent
+          key={drawer.index}
+          entity={top.entity}
+          type={top.type}
+          rows={TABLE_ROWS.filter(r => r.entity === top.entity)}
+          onNavigate={navigateDrawer}
+          {...trailProps}
+        />
+      ) : (
+        <RecordDetailContent key={drawer.index} record={toSharedRecord(top.title, top.record)} {...trailProps} />
+      );
+      return (
+        <DrawerShell onClose={closeDrawer} closing={drawer.closing}>
+          {content}
+        </DrawerShell>
+      );
+    })()}
     </>
   );
 }

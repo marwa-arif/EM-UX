@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import EntityRelSummaryGraph from './EntityRelSummaryGraph.jsx';
+import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldColor, groupCounts, useDrawerNav } from './DrawerShell.jsx';
+import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from './entityTypes.jsx';
 import '../styles/findings.css';
 
 const ENTITY_ICON_SRCS = {
@@ -34,39 +36,6 @@ const SEV_COLORS = {
   Low:      { fg: 'var(--pai-low-fg)',  bg: 'var(--pai-low-bg)' },
 };
 
-const IcDrawerClose = () => (
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-    <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-  </svg>
-);
-
-const IcPersonGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>
-  </svg>
-);
-const IcIdentityGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="2"/>
-    <path d="M4 17c0-1.7 1.8-3 4-3s4 1.3 4 3"/><line x1="14" y1="9" x2="18" y2="9"/><line x1="14" y1="13" x2="18" y2="13"/>
-  </svg>
-);
-const IcApplicationGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-  </svg>
-);
-const IcFindingGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="10" cy="10" r="6"/><line x1="18.5" y1="18.5" x2="14.5" y2="14.5"/>
-  </svg>
-);
-const IcCloudAccountGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6.5 19a4.5 4.5 0 0 1-.5-8.98A6 6 0 0 1 17.5 8.5 5 5 0 0 1 17 19H6.5z"/>
-  </svg>
-);
 const IcExposureFactorsGlyph = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12.25 0.875V3.51925C11.3912 3.60544 9.48675 4.05825 7.62825 6.265C7.54163 6.14381 7.45412 6.02612 7.371 5.89313C5.23862 2.48063 2.765 1.87075 1.75 1.76837V0.875H0.875V13.125H1.75V11.3951C3.36116 11.375 4.9075 10.7576 6.08956 9.66263C8.08063 12.0138 11.0408 12.2666 12.2211 12.2666H12.25V13.125H13.125V0.875H12.25ZM12.25 4.39906V8.76969C11.4863 8.75904 10.7328 8.59327 10.0351 8.28243C9.33751 7.9716 8.71035 7.52218 8.19175 6.9615C9.8455 4.92931 11.5023 4.48875 12.25 4.39906ZM6.629 6.35687C6.77075 6.58394 6.91906 6.79 7.07 6.98688C6.92169 7.19469 6.77425 7.41213 6.629 7.64488C6.49057 7.86498 6.33998 8.07721 6.17794 8.28056C6.14162 8.22062 6.10444 8.16244 6.06987 8.09987C4.081 4.52025 2.53181 3.69425 1.75 3.52975V2.64731C2.62194 2.75231 4.73506 3.32675 6.629 6.35687ZM1.75 10.5214V4.43625C2.32969 4.63925 3.58881 5.4355 5.30513 8.52425C5.38825 8.67387 5.47837 8.80994 5.56763 8.94731C4.54018 9.93635 3.17594 10.4986 1.75 10.5214ZM6.70162 9.02519C6.94649 8.7363 7.17019 8.43013 7.371 8.10906C7.46769 7.95419 7.56569 7.81594 7.66369 7.67375C8.26085 8.28781 8.97339 8.77791 9.76043 9.11591C10.5475 9.45391 11.3935 9.63316 12.25 9.64338V11.3877C11.2306 11.3833 8.47613 11.1606 6.70162 9.02519Z" fill="currentColor"/>
@@ -206,13 +175,141 @@ function AssetExposureFactorsPanel({ asset, entityType, critScore, exposureScore
   );
 }
 
+// Keys match ENTITY_TYPES exactly, so a leaf's own icon/color always comes straight from the
+// shared palette (ENTITY_TYPES[node.key]) — no separate icon set to keep in sync.
 const REL_NODES = [
-  { key: 'person',      label: 'Person',       Icon: IcPersonGlyph,      count: 1  },
-  { key: 'identity',     label: 'Identity',     Icon: IcIdentityGlyph,    count: 1  },
-  { key: 'application',  label: 'Application',  Icon: IcApplicationGlyph, count: 22 },
-  { key: 'finding',      label: 'Finding',      Icon: IcFindingGlyph,     count: 10 },
-  { key: 'cloudAccount', label: 'Cloud Account',Icon: IcCloudAccountGlyph,count: 1  },
+  { key: 'person',      label: 'Person',        count: 1  },
+  { key: 'identity',    label: 'Identity',      count: 1  },
+  { key: 'application', label: 'Application',   count: 22 },
+  { key: 'finding',     label: 'Finding',       count: 10 },
+  { key: 'cloudAccount',label: 'Cloud Account', count: 1  },
 ];
+
+// Leaves that map onto an entity type this file already knows how to render fully — clicking
+// them drills into a new trail entry that reuses AssetEntityContent itself (self-referential),
+// rather than dead-ending or fabricating a whole second content component.
+const REL_NODE_ENTITY_TYPE = { identity: 'identity', cloudAccount: 'cloud' };
+
+const MOCK_IDENTITY_NAMES = ['jsmith', 'r.patel', 'a.chen', 'm.garcia', 'k.nguyen', 't.oconnor'];
+const MOCK_CLOUD_NAMES = ['prod-storage-01', 'backup-vault-eastus', 'app-data-bucket', 'shared-blob-store'];
+
+// Synthesizes a plausible related asset for a leaf that DOES have a dedicated entity type
+// (Identity / Cloud Account) but no real underlying record in this mock app — deterministic
+// per parent asset, same pseudoHash approach already used for exposure factors above.
+function synthesizeRelatedAsset(parentAsset, entityType) {
+  const seed = field => parseInt(pseudoHash(`${parentAsset.name}|${entityType}|${field}`).slice(0, 4), 16);
+  const pool = entityType === 'identity' ? MOCK_IDENTITY_NAMES : MOCK_CLOUD_NAMES;
+  const crits = ['Critical', 'High', 'Medium', 'Low'];
+  return {
+    name: pool[seed('name') % pool.length],
+    type: entityType === 'identity' ? 'User Identity' : 'Storage Account',
+    crit: crits[seed('crit') % crits.length],
+    score: 300 + (seed('score') % 650),
+  };
+}
+
+const PERSON_NAMES = ['J. Rivera', 'A. Kowalski', 'S. Okafor', 'M. Tanaka', 'L. Dubois', 'R. Singh'];
+const APPLICATION_NAMES = [
+  'Slack', 'Zoom', 'Salesforce', 'Workday', 'Jira', 'Confluence', 'GitHub Enterprise', 'Okta',
+  'Tableau', 'Adobe Acrobat', 'Chrome', 'Docker Desktop', 'VS Code', 'Postman', '1Password',
+  'Zscaler', 'CrowdStrike Falcon', 'Splunk', 'Datadog', 'PagerDuty', 'Notion', 'Figma',
+];
+const ASSET_FINDING_TITLES = [
+  'Outdated TLS Version', 'Missing Endpoint Protection', 'Weak Local Admin Password',
+  'Unpatched OS Vulnerability', 'Unencrypted Local Disk', 'RDP Exposed to Internet',
+  'Legacy SMBv1 Enabled', 'Default Credentials in Use', 'Unauthorized USB Device', 'Stale Local User Account',
+];
+const CRIT_LEVELS = ['Critical', 'High', 'Medium', 'Low'];
+
+// Builds the {rings, columns, rows} data RelNodeSection needs for a given relationship-graph
+// leaf — same deterministic pseudoHash approach as the rest of this file's mock data. Person/
+// Identity/Cloud Account are single-row (count: 1 in REL_NODES); Application/Finding list out
+// as many mock rows as their leaf count claims, so the pie-chart rings have something to break
+// down and the table has more than one row to pick from.
+function buildAssetRelData(nodeKey, asset) {
+  const seed = (field, i = '') => parseInt(pseudoHash(`${asset.name}|${nodeKey}|${i}|${field}`).slice(0, 4), 16);
+
+  if (nodeKey === 'identity' || nodeKey === 'cloudAccount') {
+    const related = synthesizeRelatedAsset(asset, REL_NODE_ENTITY_TYPE[nodeKey]);
+    const rec = { 'Display Label': related.name, 'Type': related.type, 'Criticality': related.crit, 'Score': related.score };
+    return {
+      rings: [{ title: 'Criticality', segments: [{ label: related.crit, count: 1, color: fieldColor(related.crit) }] }],
+      columns: Object.keys(rec), rows: [rec],
+    };
+  }
+
+  if (nodeKey === 'person') {
+    const status = seed('status') % 5 === 0 ? 'Inactive' : 'Active';
+    const rec = {
+      'Display Label': PERSON_NAMES[seed('name') % PERSON_NAMES.length],
+      'Role': ['Owner', 'Primary User', 'IT Admin', 'Contractor'][seed('role') % 4],
+      'Department': ['IT', 'Finance', 'Engineering', 'Sales', 'HR'][seed('dept') % 5],
+      'Status': status,
+    };
+    return {
+      rings: [{ title: 'Status', segments: [{ label: status, count: 1, color: fieldColor(status) }] }],
+      columns: Object.keys(rec), rows: [rec],
+    };
+  }
+
+  const count = REL_NODES.find(n => n.key === nodeKey)?.count || 1;
+  const rows = Array.from({ length: count }, (_, i) => {
+    if (nodeKey === 'application') {
+      return {
+        'Display Label': APPLICATION_NAMES[(seed('name') + i) % APPLICATION_NAMES.length],
+        'Version': `${1 + seed('major', i) % 9}.${seed('minor', i) % 20}.${seed('patch', i) % 10}`,
+        'Risk Level': CRIT_LEVELS[seed('risk', i) % CRIT_LEVELS.length],
+        'Last Scanned': '2024-08-08',
+      };
+    }
+    // finding
+    return {
+      'Display Label': ASSET_FINDING_TITLES[(seed('name') + i) % ASSET_FINDING_TITLES.length],
+      'Severity': CRIT_LEVELS[seed('sev', i) % CRIT_LEVELS.length],
+      'Category': ['Control Gap', 'Vulnerability', 'Misconfiguration'][seed('cat', i) % 3],
+      'Status': 'Open',
+    };
+  });
+  const ringField = nodeKey === 'application' ? 'Risk Level' : 'Severity';
+  return {
+    rings: [{ title: ringField, segments: groupCounts(rows, ringField).map(([label, c]) => ({ label, count: c, color: fieldColor(label) })) }],
+    columns: Object.keys(rows[0]),
+    rows,
+  };
+}
+
+// renderCell for this file's RelNodeSection tables — small severity-style badge for
+// criticality/risk/severity fields, plain text otherwise (mirrors FindingsPage's SevBadge
+// styling via the same .fin-sev-badge class, without needing that page-local component).
+function assetRelCell(col, val) {
+  if (['Criticality', 'Risk Level', 'Severity', 'Status'].includes(col) && SEV_COLORS[val]) {
+    const c = SEV_COLORS[val];
+    return <span className="fin-sev-badge" style={{ '--fin-sev-fg': c.fg, '--fin-sev-bg': c.bg }}>{val}</span>;
+  }
+  return String(val);
+}
+
+// Maps a trail item to {icon,label,typeLabel} for the shared HeaderIconStack — this drawer's
+// trail only ever holds two kinds: 'assetEntity' (self-referential drill-down onto this same
+// content component) and 'record' (the generic fallback for leaves with no entity model).
+export function describeAssetTrailItem(item) {
+  if (item.kind === 'record') {
+    const ent = ENTITY_TYPES[item.entityTypeKey] || {};
+    return {
+      icon: <EntityGlyph kind={ent.glyph} size={16} />,
+      label: item.record.label,
+      typeLabel: item.record.chipText,
+      color: ent.icon,
+    };
+  }
+  const ent = ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[item.entityType] || 'host'];
+  return {
+    icon: <EntityGlyph kind={ent.glyph} size={16} />,
+    label: item.asset.name,
+    typeLabel: ENTITY_TYPE_LABEL[item.entityType] || item.entityType,
+    color: ent.icon,
+  };
+}
 
 function buildAssetFields(asset, entityType) {
   const id = pseudoHash(asset.name);
@@ -251,18 +348,28 @@ function buildAssetFields(asset, entityType) {
   };
 }
 
-export default function AssetDetailDrawer({ asset, entityType = 'device', onClose }) {
-  const [closing, setClosing] = useState(false);
-  const handleClose = () => { setClosing(true); setTimeout(onClose, 180); };
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') handleClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
-
+// Entity content (header + relationship mini-graph + summary/evolution/exposureFactors tabs) —
+// exported so ComplianceFindingsPage's FindingDrawer can reuse it verbatim for its Host leaf
+// instead of reimplementing the same asset view.
+export function AssetEntityContent({ asset, entityType = 'device', onNavigate, trail, activeIndex, onNavigateTrail, describe = describeAssetTrailItem }) {
   const [tab, setTab] = useState('summary');
   const [relOpen, setRelOpen] = useState(true);
   const [exposureFactorsOpen, setExposureFactorsOpen] = useState(false);
+  // Which relationship-graph leaf's "opened" (pie-chart + table) view is showing, if any —
+  // set by clicking a leaf; clicking a ROW inside that view is what actually navigates.
+  const [relTab, setRelTab] = useState(null);
+  const openRelTab = key => { setRelTab(key); setTab(key); };
+  const relTabLabel = key => REL_NODES.find(n => n.key === key)?.label || key;
+
+  const navigateFromRelRow = row => {
+    const relatedType = REL_NODE_ENTITY_TYPE[relTab];
+    if (relatedType) {
+      onNavigate({ kind: 'assetEntity', asset: synthesizeRelatedAsset(asset, relatedType), entityType: relatedType });
+    } else {
+      const node = REL_NODES.find(n => n.key === relTab);
+      onNavigate({ kind: 'record', entityTypeKey: relTab, record: { label: row['Display Label'], chipText: node.label, fields: Object.entries(row) } });
+    }
+  };
 
   const toggleExposureFactors = () => {
     const next = !exposureFactorsOpen;
@@ -292,102 +399,126 @@ export default function AssetDetailDrawer({ asset, entityType = 'device', onClos
   );
 
   return (
-    <>
-      <div className="comp-drawer-backdrop" onClick={handleClose} />
-      <button className="comp-drawer-close-ext" onClick={handleClose}><IcDrawerClose /></button>
-      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
-        <div className="kg-dp-header">
-          <div className="kg-dp-title-row">
-            <div className="kg-dp-icon-circle"><img src={ENTITY_ICON_SRCS[entityType] || ENTITY_ICON_SRCS.device} width={18} height={18} alt="" /></div>
-            <div className="kg-dp-title-body">
-              <div className="kg-dp-name-row">
-                <span className="kg-dp-name">{asset.name}</span>
-                <span className="kg-dp-type-chip">{ENTITY_TYPE_LABEL[entityType] || 'Host'}</span>
-              </div>
-              <div className="kg-dp-meta-row">
-                <span className="kg-dp-meta-item">Asset Criticality <strong style={{ color: c.fg }}>{asset.crit}</strong></span>
-                <span className="kg-dp-meta-item">Exposure Severity <strong style={{ color: c.fg }}>{asset.crit}</strong></span>
-                <span className="fin-ef-tip">
-                  <button className={`ds-btn sz-sm ${exposureFactorsOpen ? 't-tertiary' : 't-outline'}`} onClick={toggleExposureFactors}>
-                    <IcExposureFactorsGlyph /> {exposureFactorsOpen ? 'Hide Exposure Factors' : 'View Exposure Factors'}
-                  </button>
-                  <div className="fin-ef-tip-card">
-                    {exposureFactorsOpen
-                      ? 'Hide Score Simulation'
-                      : "Displays a detailed breakdown of an asset's security posture, including the Asset Criticality Score, Exposure Score, and Finding Exposure Score, helping users understand risk factors and prioritize mitigation."}
-                  </div>
-                </span>
-              </div>
+    <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describe}>
+      <div className="kg-dp-header">
+        <div className="kg-dp-title-row">
+          <div className="kg-dp-title-body">
+            <div className="kg-dp-name-row">
+              <span className="kg-dp-name">{asset.name}</span>
+              <span className="kg-dp-type-chip">{ENTITY_TYPE_LABEL[entityType] || 'Host'}</span>
+            </div>
+            <div className="kg-dp-meta-row">
+              <span className="kg-dp-meta-item">Asset Criticality <strong style={{ color: c.fg }}>{asset.crit}</strong></span>
+              <span className="kg-dp-meta-item">Exposure Severity <strong style={{ color: c.fg }}>{asset.crit}</strong></span>
+              <span className="fin-ef-tip">
+                <button className={`ds-btn sz-sm ${exposureFactorsOpen ? 't-tertiary' : 't-outline'}`} onClick={toggleExposureFactors}>
+                  <IcExposureFactorsGlyph /> {exposureFactorsOpen ? 'Hide Exposure Factors' : 'View Exposure Factors'}
+                </button>
+                <div className="fin-ef-tip-card">
+                  {exposureFactorsOpen
+                    ? 'Hide Score Simulation'
+                    : "Displays a detailed breakdown of an asset's security posture, including the Asset Criticality Score, Exposure Score, and Finding Exposure Score, helping users understand risk factors and prioritize mitigation."}
+                </div>
+              </span>
             </div>
           </div>
-
-          {/* Entity relationship mini-graph — this asset branches to Person, Identity, Application, Finding and Cloud Account */}
-          <EntityRelSummaryGraph
-            collapsible
-            open={relOpen}
-            onToggle={() => setRelOpen(o => !o)}
-            center={{
-              label: asset.name.length > 22 ? asset.name.slice(0, 20) + '…' : asset.name,
-              icon: <img src={ENTITY_ICON_SRCS[entityType] || ENTITY_ICON_SRCS.device} width={16} height={16} alt="" />,
-              accent: 'var(--pai-indigo)',
-            }}
-            leaves={REL_NODES.map(node => ({
-              key: node.key,
-              label: node.label,
-              icon: <node.Icon />,
-              tint: 'var(--shell-raised)',
-              stroke: 'var(--shell-border)',
-              accent: 'var(--shell-text-muted)',
-              count: node.count,
-            }))}
-          />
         </div>
 
-        {/* Tabs */}
-        <div className="kg-dp-tabs">
-          {['summary', 'evolution', ...(exposureFactorsOpen ? ['exposureFactors'] : [])].map(t => (
-            <button key={t} onClick={() => setTab(t)} className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}>{t === 'exposureFactors' ? 'Exposure Factors' : t}</button>
-          ))}
-        </div>
-
-        <div className="kg-dp-body">
-          {tab === 'summary' && sections.map(s => (
-            <div key={s.title} className="kg-dp-section">
-              <div className="kg-dp-section-header">{s.title}</div>
-              {renderGrid(s.fields)}
-            </div>
-          ))}
-
-          {tab === 'exposureFactors' && (
-            <AssetExposureFactorsPanel asset={asset} entityType={entityType} critScore={critScore} exposureScore={exposureScore} />
-          )}
-
-          {tab === 'evolution' && (
-            <div className="kg-dp-section">
-              <div className="ds-table-wrap">
-                <table className="ds-table">
-                  <thead>
-                    <tr>
-                      <th className="ds-th">Attribute</th>
-                      <th className="ds-th">Resolved</th>
-                      <th className="ds-th">Knowledge Graph</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allFields.map(([k, v]) => (
-                      <tr key={k}>
-                        <td className="ds-td">{k}</td>
-                        <td className="ds-td" style={{ fontWeight: 600 }}>{v}</td>
-                        <td className="ds-td">{v}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Entity relationship mini-graph — this asset branches to Person, Identity, Application, Finding and Cloud Account.
+            Identity/Cloud Account drill into a new trail entry reusing this same content component (self-referential);
+            the rest fall back to a generic record view since they have no dedicated entity model in this app yet. */}
+        <EntityRelSummaryGraph
+          collapsible
+          open={relOpen}
+          onToggle={() => setRelOpen(o => !o)}
+          center={{
+            label: asset.name.length > 22 ? asset.name.slice(0, 20) + '…' : asset.name,
+            icon: <EntityGlyph kind={ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[entityType] || 'host'].glyph} size={16} />,
+            accent: ENTITY_TYPES[ASSET_ENTITY_TYPE_KEY[entityType] || 'host'].icon,
+          }}
+          leaves={REL_NODES.map(node => ({
+            key: node.key,
+            label: node.label,
+            icon: <EntityGlyph kind={ENTITY_TYPES[node.key].glyph} size={16} />,
+            tint: ENTITY_TYPES[node.key].tint,
+            stroke: ENTITY_TYPES[node.key].stroke,
+            accent: ENTITY_TYPES[node.key].icon,
+            count: node.count,
+            active: relTab === node.key,
+            onClick: () => openRelTab(node.key),
+          }))}
+        />
       </div>
-    </>
+
+      {/* Tabs */}
+      <div className="kg-dp-tabs">
+        {['summary', 'evolution', ...(exposureFactorsOpen ? ['exposureFactors'] : []), ...(relTab ? [relTab] : [])].map(t => (
+          <button key={t} onClick={() => setTab(t)} className={tab === t ? 'kg-dp-tab kg-dp-tab--active' : 'kg-dp-tab'}>{t === 'exposureFactors' ? 'Exposure Factors' : t === relTab ? relTabLabel(t) : t}</button>
+        ))}
+      </div>
+
+      <div className="kg-dp-body">
+        {tab === 'summary' && sections.map(s => (
+          <div key={s.title} className="kg-dp-section">
+            <div className="kg-dp-section-header">{s.title}</div>
+            {renderGrid(s.fields)}
+          </div>
+        ))}
+
+        {tab === 'exposureFactors' && (
+          <AssetExposureFactorsPanel asset={asset} entityType={entityType} critScore={critScore} exposureScore={exposureScore} />
+        )}
+
+        {relTab && tab === relTab && (
+          <RelNodeSection
+            title={relTabLabel(relTab)}
+            data={buildAssetRelData(relTab, asset)}
+            renderCell={assetRelCell}
+            onRowClick={navigateFromRelRow}
+          />
+        )}
+
+        {tab === 'evolution' && (
+          <div className="kg-dp-section">
+            <div className="ds-table-wrap">
+              <table className="ds-table">
+                <thead>
+                  <tr>
+                    <th className="ds-th">Attribute</th>
+                    <th className="ds-th">Resolved</th>
+                    <th className="ds-th">Knowledge Graph</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allFields.map(([k, v]) => (
+                    <tr key={k}>
+                      <td className="ds-td">{k}</td>
+                      <td className="ds-td" style={{ fontWeight: 600 }}>{v}</td>
+                      <td className="ds-td">{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </DrawerLayout>
+  );
+}
+
+export default function AssetDetailDrawer({ asset, entityType = 'device', onClose }) {
+  const drawer = useDrawerNav({ kind: 'assetEntity', asset, entityType });
+  const top = drawer.history[drawer.index];
+  const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: drawer.goToIndex };
+
+  return (
+    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing}>
+      {top.kind === 'record' ? (
+        <RecordDetailContent key={drawer.index} record={top.record} describe={describeAssetTrailItem} {...trailProps} />
+      ) : (
+        <AssetEntityContent key={drawer.index} asset={top.asset} entityType={top.entityType} onNavigate={drawer.navigate} {...trailProps} />
+      )}
+    </DrawerShell>
   );
 }

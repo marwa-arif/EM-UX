@@ -686,6 +686,15 @@ html.theme-dark .ux3-home__navigator-chip:hover { background: rgba(255,255,255,0
   font-size: 12px; font-family: inherit;
 }
 .admin-input:focus { outline: none; border-color: var(--shell-accent); box-shadow: 0 0 0 3px rgba(99,96,216,0.15); }
+
+/* Modal-standard overrides: field label 14px/500 (not uppercase/muted), input 14px — scoped to
+   modal bodies only so the admin-page (non-modal) security-card usage of the same classes is untouched. */
+.ds-modal-body .admin-field-label {
+  font-size: 14px; font-weight: 500; color: var(--shell-text);
+  text-transform: none; letter-spacing: normal;
+}
+.ds-modal-body .admin-input { font-size: 14px; }
+
 .admin-textarea {
   padding: 8px 12px;
   border: 1px solid var(--ctrl-border); border-radius: 8px;
@@ -735,8 +744,7 @@ html.theme-dark .ux3-home__navigator-chip:hover { background: rgba(255,255,255,0
 /* ── Generic confirmation / form modal ──────────────────────────────── */
 .ds-modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(2px);
+  background: rgba(0,0,0,0.25);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
 }
@@ -745,17 +753,19 @@ html.theme-dark .ux3-home__navigator-chip:hover { background: rgba(255,255,255,0
   max-width: 440px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 4px;
+  border-radius: 12px;
   box-shadow: var(--shadow-modal, 0 24px 48px rgba(16,16,16,0.16));
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .ds-modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px;
+  background: var(--shell-raised);
   border-bottom: 1px solid var(--shell-border);
 }
-.ds-modal-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+.ds-modal-title { font-size: 16px; font-weight: 500; color: var(--shell-text); }
 /* Destructive confirmation modals — title matches the t-danger confirm button's red. */
 .ds-modal-title.danger { color: #e87c7c; }
 html.theme-light .ds-modal-title.danger { color: var(--pai-crit-fg); }
@@ -779,6 +789,7 @@ html.theme-light .ds-modal-title.danger { color: var(--pai-crit-fg); }
   color: var(--shell-text-2);
   line-height: 1.5;
 }
+.ds-modal-body strong { font-weight: 600; color: var(--shell-text); }
 .ds-modal-footer {
   display: flex; justify-content: flex-end; gap: 12px;
   padding: 16px 20px;
@@ -880,3 +891,8 @@ html.theme-light .ds-modal-title.danger { color: var(--pai-crit-fg); }
 /* Permission matrix */
 .admin-matrix-table th:not(:first-child), .admin-matrix-table td:not(:first-child) { text-align: center; }
 .admin-matrix-cell { text-align: center; }
+
+/* Compound selector: .ds-modal-title{color} is defined in this file and library.css,
+   either of which may load after this rule. */
+.ds-modal-title.admin-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
+.admin-delete-modal-title svg { flex-shrink: 0; }

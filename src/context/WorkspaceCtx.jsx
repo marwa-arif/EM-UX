@@ -68,7 +68,6 @@ function WorkspaceProvider({ children, onNav, editDashboardSeed, setEditDashboar
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [savedReports, setSavedReports] = React.useState([]);
   const [savedDashboards, setSavedDashboards] = React.useState([]);
-  const [justSavedName, setJustSavedName] = React.useState(null);
 
   const addSavedReport = React.useCallback((entry) => {
     setSavedReports(prev => [entry, ...prev.filter(r => r.name !== entry.name)]);
@@ -127,7 +126,6 @@ function WorkspaceProvider({ children, onNav, editDashboardSeed, setEditDashboar
       deleteTarget, openDeleteModal, closeDeleteModal,
       savedReports, addSavedReport,
       savedDashboards, addSavedDashboard,
-      justSavedName, setJustSavedName,
       uploadedFile, setUploadedFile,
       uploadSource, setUploadSource,
     }}>
