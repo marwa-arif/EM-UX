@@ -29,6 +29,19 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.15.0] — 2026-08-06
+### Added
+- UX3: Home landing page (`ux3/home`), now the default route in place of Client Specific · Servers.
+- UX3: Knowledge Graph page embedded in the UX3 shell with its own filter drawer.
+- UX3 nav: Security Posture group (Host/Identity/Cloud) and Studio group (Workspace/Pipeline/Ontology, Device/Cloud) alongside a renamed Attack Surface group (was Discover).
+- Topbar: product switcher (Exposure Management ↔ Studio) shown on UX3 pages.
+- Discover Cloud/Device/Identity trend drawers: driver summary line calling out which asset type most moved the trend over the selected period.
+- Settings/Admin now nests inline inside whichever shell (classic EM, Studio, UX3) was already open instead of replacing it, so closing it returns to the exact previous page; shared panel logic extracted into `src/pages/admin/AdminPanelBody.jsx`.
+### Changed
+- DashboardCanvas: Add Widget tile is now a real static grid item placed via the same first-free-gap packing as other widgets, so it fills open gaps instead of always trailing below everything.
+
+---
+
 ## [0.14.0] — 2026-07-28
 ### Added
 - AssetDetailDrawer + EntityRelSummaryGraph for the Assets by Criticality Score widget (Discover Device/Cloud/Identity), including a View/Hide Exposure Factors button, tooltip, and score-ring panel matching the Findings page's entity drawer.

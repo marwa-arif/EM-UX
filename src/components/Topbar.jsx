@@ -41,9 +41,18 @@ const LogoutIcon = () => (
   </svg>
 );
 
-function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme }) {
+const UserIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+
+function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme, showProductSwitcher = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const switcherRef = useRef(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -51,6 +60,13 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!switcherOpen) return;
+    const onDown = (e) => { if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [switcherOpen]);
 
   const handleMenuOption = (option) => {
     setMenuOpen(false);
@@ -62,6 +78,36 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
     <header className="topbar">
       <img src="assets/logo/pai-wordmark-white.svg" height={22} alt="Prevalent AI"
            className="topbar__logo" />
+
+      {showProductSwitcher && (
+        <>
+        <span className="topbar__logo-divider" />
+        <div ref={switcherRef} className="topbar__switcher">
+          <button
+            className={`topbar__switcher-btn${switcherOpen ? ' topbar__switcher-btn--open' : ''}`}
+            onClick={() => setSwitcherOpen(o => !o)}
+            aria-haspopup="menu"
+            aria-expanded={switcherOpen}
+            title="Switch product"
+          >
+            Exposure Management
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          {switcherOpen && (
+            <div className="topbar__switcher-menu" role="menu">
+              <button className="topbar__switcher-item topbar__switcher-item--active" role="menuitem" onClick={() => setSwitcherOpen(false)}>
+                Exposure Management
+              </button>
+              <button className="topbar__switcher-item" role="menuitem" onClick={() => setSwitcherOpen(false)}>
+                Studio
+              </button>
+            </div>
+          )}
+        </div>
+        </>
+      )}
 
       <div className="topbar__spacer" />
 
@@ -100,7 +146,7 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
           className="topbar__avatar"
           onClick={() => setMenuOpen(o => !o)}
         >
-          MP
+          <UserIcon />
         </button>
 
         {menuOpen && (

@@ -3,7 +3,7 @@
 @font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-SemiBold.woff2') format('woff2'); }
 @font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: block; src: url('/assets/fonts/Inter-Bold.woff2') format('woff2'); }
 
-html, body, #root { height: 100%; margin: 0; }
+html, body, #root { height: 100%; margin: 0; overflow: hidden; }
 body { font-family: 'Inter', system-ui; -webkit-font-smoothing: antialiased; }
 svg text { font-family: 'Inter', system-ui; }
 body { background: #F7F9FC; color: #101010; }
@@ -126,9 +126,10 @@ button { font-family: inherit; }
   --fg-3:          var(--shell-text-muted);
 }
 
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: #CFCFCF; border-radius: 4px; }
+*::-webkit-scrollbar { width: 0; height: 0; }
+*::-webkit-scrollbar-thumb { background: transparent; }
 *::-webkit-scrollbar-track { background: transparent; }
+* { scrollbar-width: none; }
 
 /* ── Dark theme overrides ──────────────────────────────────────────── */
 html.theme-dark {

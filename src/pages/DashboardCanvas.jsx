@@ -106,15 +106,6 @@ const GRID_GAP_PX = 12
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
-// Pixel width of `span` grid columns given the grid's current measured
-// content width — used to size the Add Widget slot/ghost preview, which
-// render outside react-grid-layout (normal document flow, not real grid
-// items) and so need their column-fraction width computed by hand.
-function colSpanToPx(span, contentWidth) {
-  const colWidth = (contentWidth - (GRID_COLS - 1) * GRID_GAP_PX) / GRID_COLS
-  return span * colWidth + (span - 1) * GRID_GAP_PX
-}
-
 function legacyGw(w) { return clamp((w.span || 1) * 3, MIN_GW, MAX_GW) }
 function legacyGh(w) { return clamp(Math.ceil(widgetHeightPx(w) / ROW_UNIT_PX), MIN_GH, MAX_GH) }
 
@@ -3281,27 +3272,47 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     return () => ro.disconnect()
   }, [gridEl])
 
+  // The Add Widget tile is a real (static — undraggable/unresizable) grid
+  // item too, sized to match whatever it's currently showing (the button's
+  // fixed footprint, or the live preview's actual selected size while the
+  // panel is open) and placed via the same first-free-gap search packWidgets
+  // uses for real widgets — so it fills whichever gap is actually free
+  // instead of always starting a new row below everything.
+  const addGw = panelMode === 'add'
+    ? clamp((WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1) * 3, MIN_GW, MAX_GW)
+    : 3
+  const addGh = panelMode === 'add'
+    ? clamp(Math.ceil((WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260) / ROW_UNIT_PX), MIN_GH, MAX_GH)
+    : 13
+  const addSlot = useMemo(
+    () => packWidgets([...widgets, { id: '__add__', gw: addGw, gh: addGh }]).find(w => w.id === '__add__'),
+    [widgets, addGw, addGh]
+  )
+
   // The settings panel's live size/height dropdowns preview a resize before
   // Apply commits it — fed in here (not just into WidgetCard's own display)
   // so RGL actually reflows neighbors live to match, a true preview of what
   // Apply will produce rather than a size change that visually overlaps them
   // until confirmed.
   const rglLayout = useMemo(
-    () => layoutWidgets.map(w => {
-      let gw = w.gw, gh = w.gh
-      if (panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)) {
-        if (liveSizeId) {
-          const span = ALL_WIDGET_SIZES.find(s => s.id === liveSizeId)?.span || w.span
-          gw = clamp((span || 1) * 3, MIN_GW, MAX_GW)
+    () => {
+      const real = layoutWidgets.map(w => {
+        let gw = w.gw, gh = w.gh
+        if (panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)) {
+          if (liveSizeId) {
+            const span = ALL_WIDGET_SIZES.find(s => s.id === liveSizeId)?.span || w.span
+            gw = clamp((span || 1) * 3, MIN_GW, MAX_GW)
+          }
+          if (liveHeightId) {
+            const px = ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px
+            if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), MIN_GH, MAX_GH)
+          }
         }
-        if (liveHeightId) {
-          const px = ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px
-          if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), MIN_GH, MAX_GH)
-        }
-      }
-      return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: MIN_GW, minH: MIN_GH, maxW: MAX_GW, maxH: MAX_GH }
-    }),
-    [layoutWidgets, panelMode, settingsWidgetId, liveSizeId, liveHeightId]
+        return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: MIN_GW, minH: MIN_GH, maxW: MAX_GW, maxH: MAX_GH }
+      })
+      return [...real, { i: '__add__', x: addSlot.gx, y: addSlot.gy, w: addSlot.gw, h: addSlot.gh, static: true }]
+    },
+    [layoutWidgets, panelMode, settingsWidgetId, liveSizeId, liveHeightId, addSlot]
   )
 
   // Fired once per completed drag/resize gesture (not per intermediate
@@ -3313,11 +3324,6 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       return l ? { ...w, gx: l.x, gy: l.y, gw: l.w, gh: l.h } : w
     }))
   }
-
-  // The Add Widget slot always sits below every real widget — computed from
-  // the same layout RGL is currently rendering, so it stays predictable even
-  // mid-drag.
-  const gridBottomRow = layoutWidgets.length ? Math.max(...layoutWidgets.map(w => w.gy + w.gh)) : 0
 
   // Widget mutators — the single path both the manual Add Widget panel and
   // Copilot's builderApi use, so both stay in sync against one `widgets` state.
@@ -3647,64 +3653,65 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                         </div>
                       )
                     })}
-                  </GridLayout>
-                )}
 
-                {/* Add Widget placeholder / Live preview — hidden in report mode.
-                    Rendered in normal document flow below the RGL-managed grid
-                    (not a grid item itself), so it always sits below every real
-                    widget without needing a computed row of its own. */}
-                {!reportMode && (
-                  <div style={{ padding: `0 ${GRID_PAD_PX}px`, marginTop: `${GRID_GAP_PX}px` }}>
-                    {panelMode === 'add' ? (
-                      <div
-                        className="dc-preview-col"
-                        style={{ width: `${colSpanToPx((WIDGET_SIZES.find(s => s.id === widgetSize)?.span || 1) * 3, gridWidth)}px` }}
-                      >
-                        <div className="dc-widget-actions">
-                          <button title="Move" className="dc-action-btn dc-action-btn--grab">
-                            <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
-                          </button>
-                          <button title="Add nested widget" className="dc-action-btn">
-                            <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
-                          </button>
-                          <button title="Edit" className="dc-action-btn">
-                            <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
-                          </button>
-                          <button title="Delete" className="dc-action-btn dc-action-btn--delete">
-                            <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
-                          </button>
-                        </div>
-                        <div
-                          className="dc-preview-card"
-                          style={{ '--dc-preview-height': `${WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 260}px` }}
-                        >
-                          <div className="dc-preview-header">
-                            <span className="dc-preview-title">
-                              {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
-                            </span>
-                            {widgetDescription && (
-                              <div className="dc-preview-desc">{widgetDescription}</div>
-                            )}
+                    {/* Add Widget tile / live preview — a real (static) grid
+                        item placed by packWidgets like any other widget, so
+                        it lands in whatever gap is actually free instead of
+                        always starting a new row below everything. */}
+                    <div key="__add__">
+                      {panelMode === 'add' ? (
+                        <div className="dc-preview-col">
+                          <div className="dc-widget-actions">
+                            <button title="Move" className="dc-action-btn dc-action-btn--grab">
+                              <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
+                            </button>
+                            <button title="Add nested widget" className="dc-action-btn">
+                              <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                            </button>
+                            <button title="Edit" className="dc-action-btn">
+                              <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+                            </button>
+                            <button title="Delete" className="dc-action-btn dc-action-btn--delete">
+                              <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
+                            </button>
                           </div>
-                          <div className="dc-preview-body">
-                            {selectedChart && <ChartSilhouette chartId={selectedChart} />}
+                          <div className="dc-preview-card">
+                            <div className="dc-preview-header">
+                              <span className="dc-preview-title">
+                                {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
+                              </span>
+                              {widgetDescription && (
+                                <div className="dc-preview-desc">{widgetDescription}</div>
+                              )}
+                            </div>
+                            <div className="dc-preview-body">
+                              {selectedChart && <ChartSilhouette chartId={selectedChart} />}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={openAdd}
-                        className="dc-add-widget-btn"
-                        style={{ width: `${colSpanToPx(3, gridWidth)}px`, height: `${13 * ROW_UNIT_PX + 12 * GRID_GAP_PX}px` }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        <span className="dc-add-widget-btn-label">Add Widget</span>
-                      </button>
-                    )}
-                  </div>
+                      ) : (
+                        <div className="dc-add-widget-tile">
+                          <button onClick={openAdd} className="dc-add-widget-main">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            <span className="dc-add-widget-btn-label">Add Widget</span>
+                          </button>
+                          {onOpenCopilotBuilder && (
+                            <button
+                              type="button"
+                              title="Build with AI"
+                              onClick={() => onOpenCopilotBuilder({})}
+                              className="dc-add-widget-ai"
+                            >
+                              <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+                              <span>Ask AI</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </GridLayout>
                 )}
               </div>
             )}

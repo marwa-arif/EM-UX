@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.15.0",
+    "date": "2026-08-06",
+    "changes": {
+      "Added": [
+        "UX3: Home landing page (`ux3/home`), now the default route in place of Client Specific · Servers.",
+        "UX3: Knowledge Graph page embedded in the UX3 shell with its own filter drawer.",
+        "UX3 nav: Security Posture group (Host/Identity/Cloud) and Studio group (Workspace/Pipeline/Ontology, Device/Cloud) alongside a renamed Attack Surface group (was Discover).",
+        "Topbar: product switcher (Exposure Management ↔ Studio) shown on UX3 pages.",
+        "Discover Cloud/Device/Identity trend drawers: driver summary line calling out which asset type most moved the trend over the selected period.",
+        "Settings/Admin now nests inline inside whichever shell (classic EM, Studio, UX3) was already open instead of replacing it, so closing it returns to the exact previous page; shared panel logic extracted into `src/pages/admin/AdminPanelBody.jsx`."
+      ],
+      "Changed": [
+        "DashboardCanvas: Add Widget tile is now a real static grid item placed via the same first-free-gap packing as other widgets, so it fills open gaps instead of always trailing below everything."
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.14.0",
     "date": "2026-07-28",
     "changes": {

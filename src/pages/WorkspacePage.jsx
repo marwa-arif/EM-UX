@@ -21,7 +21,7 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
@@ -138,6 +138,8 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
             collapsed={(collapsed || rightPanelOpen) && !navExpandOverride}
             onToggleCollapse={() => { setNavExpandOverride(false); setCollapsed(c => !c) }}
             onExpand={() => setNavExpandOverride(true)}
+            mode={appMode}
+            onModeChange={onModeChange}
           />
           <main className="wp-main">
             <SubHeader

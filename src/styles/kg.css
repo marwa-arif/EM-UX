@@ -839,6 +839,9 @@
 .kg-th__inner {
   display: inline-flex; align-items: center; gap: 8px;
 }
+.kg-th__sort-icon {
+  opacity: 0.4;
+}
 
 /* ── DetailsTable ─────────────────────────────────────────────────────── */
 .kg-details-card {
@@ -1955,4 +1958,99 @@
   font-size: 11px;
   color: var(--shell-text-muted);
   padding: 8px 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   UX 3.0 scope — Home design language overrides
+   Scoped to `.ux3-kg` only (mounted for the Knowledge Graph route inside
+   UX3Page.jsx). Local --home-* tokens/radius mirror .ux3-home (admin.css)
+   so KG reads as part of the 3.0 surface — same "departure is scoped to
+   this page" pattern; the legacy KG page under the classic shell
+   (App.jsx) keeps its original DS 2.0 chrome untouched.
+   ══════════════════════════════════════════════════════════════════════ */
+.ux3-kg {
+  --home-card: #FFFFFF;
+  --home-navy: #14213D; --home-navy-soft: #6B7280;
+  --home-ink: #050B27; --home-on-ink: #F8FAFC;
+  --home-border: rgba(20,33,61,0.08);
+  --home-hover: rgba(20,33,61,0.035);
+  padding: 12px 0 48px;
+}
+html.theme-dark .ux3-kg {
+  --home-card: #1C1C1C;
+  --home-navy: #F3F4F6; --home-navy-soft: #9AA0AC;
+  --home-border: rgba(255,255,255,0.08);
+  --home-hover: rgba(255,255,255,0.045);
+}
+
+.ux3-kg .kg-page-root { padding: 0; gap: 16px; }
+
+/* Cards: flat surface, 20px radius, thin hairline border for definition —
+   no box-shadow, since these cards now run edge-to-edge (0 side padding)
+   and a shadow there just reads as a stray line at the viewport edge. */
+.ux3-kg .kg-summary-card,
+.ux3-kg .kg-details-card {
+  background: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 20px;
+  box-shadow: none;
+  margin-left: 0;
+}
+.ux3-kg .kg-kpi-card {
+  border: 1px solid var(--home-border);
+  border-radius: 16px;
+  box-shadow: none;
+  background: var(--home-card);
+}
+.ux3-kg .kg-canvas { margin-left: 0; background: transparent; }
+
+.ux3-kg .kg-summary-title,
+.ux3-kg .kg-details-title,
+.ux3-kg .kg-kpi-label,
+.ux3-kg .kg-td,
+.ux3-kg .kg-td--label,
+.ux3-kg .kg-td--type,
+.ux3-kg .kg-td--numeric,
+.ux3-kg .kg-kpi-stat-value {
+  color: var(--home-navy);
+}
+.ux3-kg .kg-details-title-count,
+.ux3-kg .kg-relationships-label,
+.ux3-kg .kg-summary-collapse-btn,
+.ux3-kg .kg-kpi-stat-label {
+  color: var(--home-navy-soft);
+}
+.ux3-kg .kg-summary-collapse-btn:hover { color: var(--home-navy); }
+.ux3-kg .kg-tr { border-bottom: 1px solid var(--home-border); }
+.ux3-kg .kg-tr:hover td { background: var(--home-hover); }
+.ux3-kg .kg-details-header { border-bottom: 1px solid var(--home-border); }
+
+/* Segmented tabs and table headers stay DS 2.0 chrome (.kg-seg-tabs,
+   .kg-seg-thumb, .kg-th) — only the surrounding cards/borders pick up
+   Home's rounded language. */
+.ux3-kg .kg-pill-search {
+  background: var(--home-card); border-color: var(--home-border); box-shadow: none;
+}
+.ux3-kg .kg-multiselect-btn--off,
+.ux3-kg .kg-reset-btn--idle,
+.ux3-kg .kg-details-add-col-btn {
+  background: var(--home-card); border-color: var(--home-border); color: var(--home-navy-soft); box-shadow: none;
+}
+.ux3-kg .kg-details-download-btn { background: var(--home-ink); }
+.ux3-kg .kg-rail-btn-abs { background: var(--home-card); border: 1px solid var(--home-border); box-shadow: none; }
+.ux3-kg .kg-zoom-indicator-abs {
+  background: var(--home-card); border-color: var(--home-border); color: var(--home-navy-soft); box-shadow: none;
+}
+
+/* Entity detail side panel — same flat, bordered card language. */
+.ux3-kg .kg-detail-panel { border-left: 1px solid var(--home-border); box-shadow: none; }
+.ux3-kg .kg-dp-header,
+.ux3-kg .kg-dp-tabs { background: var(--home-card); border-color: var(--home-border); }
+.ux3-kg .kg-dp-rel-card,
+.ux3-kg .kg-dp-section {
+  border: 1px solid var(--home-border); border-radius: 16px; box-shadow: none;
+}
+.ux3-kg .kg-dp-rel-header,
+.ux3-kg .kg-dp-section-header {
+  background: transparent; border-bottom: 1px solid var(--home-border);
 }
