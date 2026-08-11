@@ -67,7 +67,7 @@ function IcSparkle() {
 
 // Studio home icon — inline (public/assets/icons/navbar-home.svg is a broken/
 // incomplete asset, missing its roof stroke, and unused anywhere else)
-function IcHomeNav() {
+export function IcHomeNav() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 11.5 12 4l8 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -76,33 +76,35 @@ function IcHomeNav() {
   )
 }
 
-// Studio group icons — inline (no matching raster asset for these three yet)
-function IcWorkspaceNav() {
+// Studio group icons — inline (no matching raster asset for these three yet).
+// Stroke-only, matching the outline weight of IcHomeNav/IcShieldNav/etc. above
+// (previously solid-filled, which read inconsistently against the rest of the nav).
+export function IcWorkspaceNav() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="9" cy="9" r="6" opacity="0.55"/>
-      <circle cx="16" cy="9" r="6" opacity="0.55"/>
-      <circle cx="12.5" cy="16" r="6" opacity="0.55"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="16" cy="9" r="6" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="12.5" cy="16" r="6" stroke="currentColor" strokeWidth="1.6"/>
     </svg>
   )
 }
-function IcPipelineNav() {
+export function IcPipelineNav() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="6" cy="6" r="2.5" fill="currentColor"/>
-      <circle cx="6" cy="18" r="2.5" fill="currentColor"/>
-      <circle cx="18" cy="12" r="2.5" fill="currentColor"/>
+      <circle cx="6" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="6" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="18" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.6"/>
       <path d="M8.3 6.9 15.7 10.9M8.3 17.1 15.7 13.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
     </svg>
   )
 }
-function IcOntologyNav() {
+export function IcOntologyNav() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="12" r="3"/>
-      <circle cx="12" cy="4" r="2"/>
-      <circle cx="4" cy="18" r="2"/>
-      <circle cx="20" cy="18" r="2"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="12" cy="4" r="2" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="4" cy="18" r="2" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="20" cy="18" r="2" stroke="currentColor" strokeWidth="1.6"/>
       <path d="M12 7v2M10.5 13.5 6 16.5M13.5 13.5 18 16.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
     </svg>
   )

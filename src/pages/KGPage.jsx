@@ -923,7 +923,7 @@ function Th({ children }) {
     <th className="kg-th">
       <span className="kg-th__inner">
         {children}
-        <Ic size={10} path={<><path d="m7 9 5-5 5 5M7 15l5 5 5-5"/></>} />
+        <Ic size={10} path={<polyline points="18 15 12 9 6 15" className="kg-th__sort-icon" />} />
       </span>
     </th>
   );
@@ -1004,9 +1004,9 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
           </tbody>
         </table>
       </div>
-      {totalCount > 0 && (
+      {rows.length > 0 && (
         <TablePagination
-          total={totalCount}
+          total={rows.length}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={setPage}

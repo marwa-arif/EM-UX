@@ -898,6 +898,15 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
           ? (() => { const b0 = rawTypeRangeData[0]; return rawTypeRangeData.map(d => ({ name: d.name, ...Object.fromEntries(TYPES.map(t => { const base = b0[t.label] ?? 1; return [t.label, base > 0 ? +((d[t.label] / base * 100) - 100).toFixed(2) : 0]; })) })); })()
           : rawTypeRangeData;
         typeRangeDataRef.current = typeRangeData;
+        const typeDrivers = TYPES
+          .map(t => {
+            const f = rawTypeRangeData[0]?.[t.label] ?? 0;
+            const l = rawTypeRangeData[rawTypeRangeData.length - 1]?.[t.label] ?? 0;
+            return { label: t.label, pct: f > 0 ? ((l - f) / f) * 100 : 0 };
+          })
+          .filter(d => Math.abs(d.pct) > 0.01)
+          .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+        const showDriverSummary = Math.abs(Number(trendPct)) >= 0.05 && typeDrivers.length > 0;
         return (
           <>
             <div className={`dev-drawer-overlay${drawerClosing ? ' closing' : ''}`} onClick={closeDrawer} />
@@ -938,6 +947,16 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
                     </span>
                   </label>
                 </div>
+                {showDriverSummary && (
+                  <div className="dev-drawer-summary">
+                    {isUp ? <IcTrendUp size={12} /> : <IcTrendDown size={12} />}
+                    <span>
+                      {isUp ? 'Up' : 'Down'} {Math.abs(Number(trendPct)).toFixed(2)}% over this period — mainly driven by{' '}
+                      <strong>{typeDrivers[0].label}</strong> ({typeDrivers[0].pct > 0 ? '+' : ''}{typeDrivers[0].pct.toFixed(1)}%)
+                      {typeDrivers[1] && <> and <strong>{typeDrivers[1].label}</strong> ({typeDrivers[1].pct > 0 ? '+' : ''}{typeDrivers[1].pct.toFixed(1)}%)</>}.
+                    </span>
+                  </div>
+                )}
                 <div
                   ref={drawerChartRef}
                   className="dev-drawer-chart-wrap"
