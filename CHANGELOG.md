@@ -32,6 +32,19 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.18.0] — 2026-08-11
+### Added
+- "/" keyboard shortcut opens the Navigator Copilot panel (ignored while typing in a field)
+- Shared `TimeRangeTabs` component and `useDropdownExit` hook extracted for reuse
+### Changed
+- Floating Navigator Copilot panel now plays a zoom-out close animation instead of vanishing instantly
+### Fixed
+- Compliance drill-down: trend chart and semi-donut in the row-expand drawer no longer replay their draw-in animation on every open (disabled Recharts mount animation)
+- Compliance drill-down: tree-row cells (counts, trend sparkline, rating) now share the same fixed-height centered layout as the name column, so they stay aligned during the row expand/collapse animation instead of jumping into place once it settles
+- Compliance drill-down: trend sparkline/progress bar width restored to fill its column after the alignment fix
+
+---
+
 ## [0.17.0] — 2026-08-05
 ### Added
 - Shared `DrawerShell`, `SegmentedTabs`, and `entityTypes` components extracted from the Knowledge Graph page
