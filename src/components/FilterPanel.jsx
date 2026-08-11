@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import { useSavedFilters } from '../context/SavedFiltersCtx.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import SegmentedTabs from './SegmentedTabs.jsx'
 import '../styles/filter-panel.css'
 
@@ -142,15 +144,6 @@ const GF_ENABLED_PAGES = new Set([
 function isGraphFilterEnabled(pageId) {
   return GF_ENABLED_PAGES.has(pageId);
 }
-
-const FP_SAVED_ITEMS = [
-  { id: 'cs',  name: 'Critical Servers',           desc: 'Monitor activity on key servers.',                 author: 'You',      visibility: 'Private', count: 5,  pinned: true  },
-  { id: 'chr', name: 'Corporate high risk assets', desc: 'Track sensitive corporate systems.',               author: 'John T',   visibility: 'Public',  count: 12, pinned: true  },
-  { id: 'cdm', name: 'Client data management',     desc: 'Manage client information securely.',              author: 'Sarah L',  visibility: 'Public',  count: 8,  pinned: true  },
-  { id: 'cm',  name: 'Compliance monitoring',      desc: 'Ensure regulatory compliance across departments.', author: 'Mark R',   visibility: 'Public',  count: 5,  pinned: false },
-  { id: 'ir',  name: 'Incident response plans',    desc: 'Prepare for and respond to security incidents.',   author: 'You',      visibility: 'Public',  count: 10, pinned: false },
-  { id: 'tif', name: 'Threat intel feeds',         desc: 'Stay ahead of emerging threats.',                  author: 'Jane Doe', visibility: 'Private', count: 8,  pinned: false },
-];
 
 const GF_ENTITIES = [
   { id: 'host',         label: 'Host',             file: 'entity-host.svg',              color: '#2B5690', tint: '#E3E9F1', stroke: '#AABBD3', count: 12382    },
@@ -2869,6 +2862,9 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 // ── main filter panel ─────────────────────────────────────────────────────────
 
 function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
+  const { savedFilters: FP_SAVED_ITEMS, deleteSavedFilter } = useSavedFilters();
+  const { showToast } = useToast();
+  const [deleteSavedTarget, setDeleteSavedTarget] = useState(null);
   const [tab,              setTab]             = useState('quick');
   const [selectedEntityId, setSelectedEntityId] = useState('host');
   const [gfConnCount,      setGfConnCount]      = useState(0);
@@ -2948,6 +2944,15 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   const onSDrop      = (e, i) => { e.preventDefault(); if (sdragIdx === null || sdragIdx === i) { setSdragIdx(null); setSdragOver(null); return; } const arr = [...liveSaved.order]; const [m] = arr.splice(sdragIdx, 1); arr.splice(i, 0, m); setPendingSaved({ ...liveSaved, order: arr }); setSdragIdx(null); setSdragOver(null); };
   const onSDragEnd   = () => { setSdragIdx(null); setSdragOver(null); };
 
+  const confirmDeleteSaved = () => {
+    if (!deleteSavedTarget) return;
+    deleteSavedFilter(deleteSavedTarget.id);
+    if (selectedSavedId === deleteSavedTarget.id) setSelectedSavedId(null);
+    if (appliedSavedId === deleteSavedTarget.id) setAppliedSavedId(null);
+    showToast({ type: 'success', msg: `"${deleteSavedTarget.name}" filter deleted.` });
+    setDeleteSavedTarget(null);
+  };
+
   const handleReset = () => {
     if (tab === 'saved') { setSelectedSavedId(null); setAppliedSavedId(null); onApply && onApply(0); }
     else { setSelections({}); setRangeSelections({}); }
@@ -2957,7 +2962,10 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
       setAppliedSavedId(selectedSavedId);
       const item = FP_SAVED_ITEMS.find(i => i.id === selectedSavedId);
       if (item) {
-        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name }]);
+        // Restore the actual filter criteria captured when this filter was saved —
+        // applying a saved filter should behave exactly like applying those filters directly.
+        const chips = item.filters || [];
+        onApply && onApply(new Set(chips.map(c => c.attrId)).size, chips);
       }
     } else {
       const chips = [];
@@ -2983,7 +2991,13 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   };
 
   const filteredAttrs = attrs.filter(a => !search || (a.label + (a.sub ? ` ${a.sub}` : '')).toLowerCase().includes(search.toLowerCase()));
-  const filteredSaved = FP_SAVED_ITEMS.filter(item => !savedSearch || item.name.toLowerCase().includes(savedSearch.toLowerCase()));
+  // Recent Filters must reflect the drag-to-reorder + show-count saved via the settings
+  // view (savedOrder/savedShowCount) — falling back to raw FP_SAVED_ITEMS order here was
+  // why a reorder + Save changes never showed up. Any item not yet in savedOrder (added
+  // after this panel's order was first initialized) is appended so it still appears.
+  const orderedSavedIds = [...savedOrder, ...FP_SAVED_ITEMS.map(i => i.id).filter(id => !savedOrder.includes(id))];
+  const orderedSaved = orderedSavedIds.map(id => FP_SAVED_ITEMS.find(i => i.id === id)).filter(Boolean).slice(0, savedShowCount);
+  const filteredSaved = orderedSaved.filter(item => !savedSearch || item.name.toLowerCase().includes(savedSearch.toLowerCase()));
 
   return (
     <div className="fp-root">
@@ -3151,6 +3165,13 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                         )}
                       </div>
                     </div>
+                    <button
+                      onClick={() => setDeleteSavedTarget({ id: item.id, name: item.name })}
+                      title="Delete saved filter"
+                      className="fp-attr-delete-btn fp-saved-drag-card__delete-btn"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
                   </div>
                 </div>
               );
@@ -3345,6 +3366,32 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
           entityAttrFilters={gfEntityAttrFilters}
           onEntityAttrFiltersChange={setGfEntityAttrFilters}
         />,
+        document.body
+      )}
+
+      {/* Delete saved filter — confirmation modal */}
+      {deleteSavedTarget && createPortal(
+        <div className="ds-modal-overlay">
+          <div className="ds-modal" role="dialog" aria-modal="true">
+            <div className="ds-modal-header">
+              <span className="ds-modal-title fp-delete-modal-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Saved Filter
+              </span>
+              <button className="ds-modal-close" onClick={() => setDeleteSavedTarget(null)} aria-label="Close">×</button>
+            </div>
+            <div className="ds-modal-body"><span>Are you sure you want to delete <strong>{deleteSavedTarget.name}</strong>? This saved filter will be permanently removed and cannot be recovered.</span></div>
+            <div className="ds-modal-footer">
+              <button className="ds-btn sz-md t-outline" onClick={() => setDeleteSavedTarget(null)}>Cancel</button>
+              <button className="ds-btn sz-md t-danger" onClick={confirmDeleteSaved}>Delete</button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
     </div>

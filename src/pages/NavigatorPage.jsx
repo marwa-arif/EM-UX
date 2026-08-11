@@ -356,6 +356,37 @@ function HistoryPage({ activeLabel, onBack, onSelect, chats, onRename, onDelete,
   );
 }
 
+// ── Segmented control with a sliding active-thumb (Ask/Research/Build,
+// AgentBuilder's depth-of-analysis row) — same measure-and-translate approach
+// as the shared SegmentedTabs component, kept local since these two spots key
+// off an id/index rather than the label text itself.
+function HvSegTabs({ items, activeIndex, onSelect }) {
+  const itemRefs = useRef([]);
+  const [thumb, setThumb] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const btn = itemRefs.current[activeIndex];
+    if (btn) setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIndex, items.length]);
+
+  return (
+    <div className="hv-mode-seg">
+      <div className="hv-mode-seg-thumb" style={{ left: thumb.left, width: thumb.width, opacity: thumb.width ? 1 : 0 }} />
+      {items.map((label, i) => (
+        <button
+          key={i}
+          type="button"
+          ref={el => itemRefs.current[i] = el}
+          className={`hv-mode-seg-item${activeIndex === i ? ' active' : ''}`}
+          onClick={() => onSelect(i)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Home / AI prompt view ────────────────────────────────────────────
 const MODE_DEFS = [
   { id: 'ask',      label: 'Ask'      },
@@ -552,31 +583,69 @@ function NavSidebar({
   );
 }
 
+// Chip removal fades/shrinks out before it actually leaves contextFilters —
+// same leaving-flag + timeout pattern as ToastCtx's dismissToast, timed to
+// match the hv-ctx-chip--leaving CSS animation duration below.
+const CHIP_EXIT_MS = 180;
+// The wrap's grid-template-rows collapse (hv-ctx-chips-wrap, navigator.css) —
+// kept in sync with hasChips below, not with contextFilters directly, so the
+// last chip's DOM node outlives its own fade. If it were removed from the
+// array (and DOM) in the same commit that flips the wrap shut, the 1fr track
+// would already be measuring empty content and there'd be nothing left to
+// visibly collapse — the box would just snap instead of easing closed.
+const WRAP_COLLAPSE_MS = 220;
+
 function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
   const [query, setQuery] = useState('');
   const [contextFilters, setContextFilters] = useState([]);
+  const [hasChips, setHasChips] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [agentMenuPos, setAgentMenuPos] = useState({ bottom: 0, left: 0 });
   const agentBtnRef = useRef(null);
+  const filterTimersRef = useRef({});
 
-  const toggleFilter = (pill) => {
-    setContextFilters(prev =>
-      prev.find(c => c.id === pill.id)
-        ? prev.filter(c => c.id !== pill.id)
-        : [...prev, pill]
-    );
+  const removeFilter = (id) => {
+    const isLastChip = contextFilters.filter(c => c.id !== id).length === 0;
+
+    setContextFilters(prev => prev.map(c => (c.id === id ? { ...c, leaving: true } : c)));
+    clearTimeout(filterTimersRef.current[id]);
+    filterTimersRef.current[id] = setTimeout(() => {
+      if (isLastChip) {
+        // Faded out but still mounted — collapse the wrap now, while its
+        // (invisible) layout box still holds the row's real height.
+        setHasChips(false);
+        filterTimersRef.current[id] = setTimeout(() => {
+          setContextFilters(prev => prev.filter(c => c.id !== id));
+          delete filterTimersRef.current[id];
+        }, WRAP_COLLAPSE_MS);
+      } else {
+        setContextFilters(prev => prev.filter(c => c.id !== id));
+        delete filterTimersRef.current[id];
+      }
+    }, CHIP_EXIT_MS);
   };
 
-  const removeFilter = (id) => setContextFilters(prev => prev.filter(c => c.id !== id));
+  const toggleFilter = (pill) => {
+    const isActive = contextFilters.some(c => c.id === pill.id && !c.leaving);
+    if (isActive) {
+      removeFilter(pill.id);
+    } else {
+      clearTimeout(filterTimersRef.current[pill.id]);
+      delete filterTimersRef.current[pill.id];
+      setHasChips(true);
+      setContextFilters(prev => [...prev.filter(c => c.id !== pill.id), pill]);
+    }
+  };
 
-  const hasContent = !!query.trim() || contextFilters.length > 0 || !!selectedAgent;
+  const activeFilters = contextFilters.filter(c => !c.leaving);
+  const hasContent = !!query.trim() || activeFilters.length > 0 || !!selectedAgent;
 
   const handleSend = () => {
     if (!hasContent) return;
     const text = query.trim()
       || selectedAgent?.instructions
-      || `Show ${contextFilters.map(c => c.label).join(', ')}`;
+      || `Show ${activeFilters.map(c => c.label).join(', ')}`;
     onSend(text, mode, selectedAgent);
     setSelectedAgent(null);
   };
@@ -599,10 +668,10 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
         </div>
 
         <div className="hv-composer-box">
-          {contextFilters.length > 0 && (
+          <div className={`hv-ctx-chips-wrap${hasChips ? ' open' : ''}`}>
             <div className="hv-ctx-chips">
               {contextFilters.map(c => (
-                <div key={c.id} className="hv-ctx-chip">
+                <div key={c.id} className={`hv-ctx-chip${c.leaving ? ' hv-ctx-chip--leaving' : ''}`}>
                   <span className="hv-ctx-chip-icon"><c.Icon /></span>
                   <span className="hv-ctx-chip-count">{c.count}</span>
                   <span className="hv-ctx-chip-label"> {c.label}</span>
@@ -612,7 +681,7 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
                 </div>
               ))}
             </div>
-          )}
+          </div>
 
           <div className="hv-tx-input">
             <textarea
@@ -686,17 +755,11 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
                   </button>
                 </span>
               )}
-              <div className="hv-mode-seg">
-                {MODE_DEFS.map(m => (
-                  <button
-                    key={m.id}
-                    className={`hv-mode-seg-item${mode === m.id ? ' active' : ''}`}
-                    onClick={() => onModeChange(m.id)}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+              <HvSegTabs
+                items={MODE_DEFS.map(m => m.label)}
+                activeIndex={MODE_DEFS.findIndex(m => m.id === mode)}
+                onSelect={i => onModeChange(MODE_DEFS[i].id)}
+              />
             </div>
             <button className="nav-send-btn" disabled={!hasContent} onClick={handleSend}>
               <IcSend />
@@ -706,7 +769,7 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
 
         <div className="hv-entity-pills">
           {ENTITY_PILLS.map(pill => {
-            const isSelected = !!contextFilters.find(c => c.id === pill.id);
+            const isSelected = !!contextFilters.find(c => c.id === pill.id && !c.leaving);
             return (
               <button
                 key={pill.id}
@@ -1950,18 +2013,11 @@ function AgentBuilderView({ onGoHome, onAgentCreated, onAgentUpdated, editingAge
           </div>
           <div className="agb-depth-row">
             <span className="ds-input-label">Depth of analysis</span>
-            <div className="hv-mode-seg">
-              {DEPTH_LEVELS.map((d, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`hv-mode-seg-item${depth === i ? ' active' : ''}`}
-                  onClick={() => setDepth(i)}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
+            <HvSegTabs
+              items={DEPTH_LEVELS.map(d => d.label)}
+              activeIndex={depth}
+              onSelect={setDepth}
+            />
           </div>
         </div>
 

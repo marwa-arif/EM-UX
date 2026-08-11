@@ -6,6 +6,7 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { AssessmentDrawer } from './CompliancePage.jsx'
 import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import { makeDiscoverRecords, aggregateBySource, aggregateByType, aggregateByCriticality, fakeAssessmentId } from '../data/discoverRecords.js'
 import '../styles/device.css'
 import '../styles/compliance.css'
@@ -21,6 +22,7 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -38,8 +40,8 @@ function SelectDropdown({ value, onChange, options }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {open && (
-        <div className="comp-sort-menu comp-sort-menu--right">
+      {visible && (
+        <div className={`comp-sort-menu comp-sort-menu--right${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(opt => (
             <button
               key={opt}

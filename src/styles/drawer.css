@@ -48,6 +48,13 @@
   animation: comp-drawer-out 180ms ease forwards;
 }
 
+/* A drawer opened on top of another already-open drawer renders narrower, so the
+   edge of the drawer underneath stays visible as a depth cue. */
+.comp-drawer--stacked {
+  width: 73vw;
+  max-width: 73vw;
+}
+
 .comp-drawer-close-ext {
   position: fixed;
   top: calc(var(--topbar-height) + 16px);
@@ -65,6 +72,10 @@
   color: var(--shell-text-muted);
   z-index: 202;
   transition: background 120ms;
+}
+
+.comp-drawer-close-ext--stacked {
+  right: calc(73vw + 8px);
 }
 
 .comp-drawer-close-ext:hover { background: var(--shell-raised, #E6E6E6); }

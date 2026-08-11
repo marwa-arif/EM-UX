@@ -11,6 +11,7 @@ import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldCo
 import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Group-by select dropdown (comp-sort pattern, matches other dashboards) ──
@@ -22,6 +23,7 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options, fullWidth = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -39,8 +41,8 @@ function SelectDropdown({ value, onChange, options, fullWidth = false }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {open && (
-        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}`}>
+      {visible && (
+        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(opt => (
             <button
               key={opt}

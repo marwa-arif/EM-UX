@@ -3,6 +3,7 @@ import { ChartRender } from '../components/ChartRender.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 import '../styles/kg.css'
@@ -17,6 +18,7 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options, fullWidth = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -34,8 +36,8 @@ function SelectDropdown({ value, onChange, options, fullWidth = false }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {open && (
-        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}`}>
+      {visible && (
+        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(opt => (
             <button
               key={opt}

@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import { useSavedFilters } from '../context/SavedFiltersCtx.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/active-filter-panel.css'
 
 const ATTR_ENTITY = {
@@ -12,11 +14,15 @@ const ATTR_ENTITY = {
   'asset-criticality':         'Host',
   'business-unit':             'Host',
   'type-assessment':           'Assessment',
-  'saved-filter':              'Saved',
   'assessment-id':             'Finding',
   'attack-surface':            'Host',
   'severity':                  'Finding',
   'exposure-category':         'Finding',
+  // Compliance Matrix → Compliance Findings hand-off (cell click carries framework/
+  // function/group-by dimension as three chips, all scoped under one Assessment block).
+  'framework':                 'Assessment',
+  'compliance-function':       'Assessment',
+  'compliance-group':          'Assessment',
   // Data Quality Overview's "Entity Distribution" chart uses the group-by dimension name
   // itself as the attrId (Origin/Type/Business Unit/Activity Status), plus a synthetic
   // quality-bucket dimension for the Low/Medium/High segment — all bucketed under 'Entity'.
@@ -32,15 +38,6 @@ const IcClose = () => (
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 )
-
-const SAVED_FILTER_NAMES = [
-  'Critical Servers',
-  'Corporate high risk assets',
-  'Client data management',
-  'Compliance monitoring',
-  'Incident response plans',
-  'Threat intel feeds',
-]
 
 const ENTITY_TREE = [
   { entity: 'Host',             relation: 'Host Has Finding' },
@@ -133,6 +130,11 @@ const PAGE_AFP_CONFIG = {
   },
   'data-quality/overview': {
     entityTree: [{ entity: 'Entity', relation: null }],
+    implicitEntityFilters: [],
+    implicitFindingFilters: [],
+  },
+  'report/compliance-findings': {
+    entityTree: [{ entity: 'Assessment', relation: null }],
     implicitEntityFilters: [],
     implicitFindingFilters: [],
   },
@@ -235,6 +237,7 @@ function ModalDropdown({ value, onChange, options, placeholder = 'Select', searc
 
 // ── Save Filter Modal ─────────────────────────────────────────────────────────
 export function SaveFilterModal({ onClose, onSave }) {
+  const { savedFilters } = useSavedFilters()
   const [filterName, setFilterName]      = useState('')
   const [description, setDescription]   = useState('')
   const [availability, setAvailability] = useState('Private')
@@ -302,7 +305,7 @@ export function SaveFilterModal({ onClose, onSave }) {
               <span className="sfm-section-label">Overwrite existing filter</span>
               <div className="sfm-divider" />
             </div>
-            <ModalDropdown value={overwrite} onChange={setOverwrite} options={SAVED_FILTER_NAMES} placeholder="Select any" searchable />
+            <ModalDropdown value={overwrite} onChange={setOverwrite} options={savedFilters.map(f => f.name)} placeholder="Select any" searchable />
           </div>
         </div>
 
@@ -320,14 +323,23 @@ export function SaveFilterModal({ onClose, onSave }) {
 
 // ── Active Filter Panel ───────────────────────────────────────────────────────
 export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId }) {
+  const { addSavedFilter, overwriteSavedFilter } = useSavedFilters()
+  const { showToast } = useToast()
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
 
-  const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
+  const handleSaveFilter = (data) => {
+    if (data.overwrite) {
+      overwriteSavedFilter(data.overwrite, activeFilters.length, activeFilters)
+      showToast({ type: 'success', msg: `"${data.overwrite}" filter updated.` })
+    } else {
+      addSavedFilter({ name: data.filterName, description: data.description, availability: data.availability, filterCount: activeFilters.length, filters: activeFilters })
+      showToast({ type: 'success', msg: `"${data.filterName}" saved as a filter.` })
+    }
+  }
 
-  const savedFilterIdx  = activeFilters.findIndex(f => f.attrId === 'saved-filter')
-  const savedFilterChip = savedFilterIdx >= 0 ? activeFilters[savedFilterIdx] : null
+  const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
 
   const entityGroups = useMemo(() => {
     const entities = new Map()
@@ -376,16 +388,6 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
         </div>
 
         <div className="afp-body">
-          {savedFilterChip && (
-            <div className="afp-saved-filter-banner">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="afp-saved-filter-banner__icon">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span className="afp-saved-filter-banner__label">Saved Filter applied</span>
-              <span className="afp-saved-filter-banner__name">{savedFilterChip.value}</span>
-              <button className="afp-fc-remove" title="Remove saved filter" onClick={() => onRemove?.(savedFilterIdx)}>×</button>
-            </div>
-          )}
           {entityTree.map(({ entity, relation }, entityIdx) => {
             const explicitAttrs    = entityGroups.find(g => g.entity === entity)?.attrs || []
             const showEntityWhere  = explicitAttrs.length > 0 || implicitFilters
@@ -492,7 +494,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       {showSaveModal && (
         <SaveFilterModal
           onClose={() => setShowSaveModal(false)}
-          onSave={(data) => { console.log('Filter saved:', data) }}
+          onSave={handleSaveFilter}
         />
       )}
 

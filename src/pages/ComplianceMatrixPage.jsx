@@ -466,6 +466,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
                               framework,
                               frameworkName: fw?.name ?? framework,
                               groupBy,
+                              level: viewLevel,
                               row:   row.label,
                               col:   col.full ?? col.label,
                               colId: col.id,

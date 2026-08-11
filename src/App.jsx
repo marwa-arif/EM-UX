@@ -31,6 +31,7 @@ import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
 import { DownloadsProvider }  from './DownloadsContext.jsx'
 import { ToastProvider }      from './context/ToastCtx.jsx'
+import { SavedFiltersProvider } from './context/SavedFiltersCtx.jsx'
 import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
@@ -366,6 +367,7 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               draftToken={navigatorProps?.draftToken}
               dockSide={navigatorProps?.dockSide}
               forceFloatToken={navigatorProps?.forceFloatToken}
+              closing={navigatorProps?.closing}
             />
           )}
         </div>
@@ -614,7 +616,6 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
-  const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
@@ -631,6 +632,8 @@ function App() {
   const [navigatorReset, setNavigatorReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
+  // True for the ~160ms zoom-out exit animation, before the floating panel actually unmounts
+  const [navigatorClosing, setNavigatorClosing] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
   const [navigatorBuilderKind, setNavigatorBuilderKind] = useState('assessment');
   const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
@@ -719,9 +722,32 @@ function App() {
     return () => document.removeEventListener('scroll', onScroll, true);
   }, []);
 
+  // Plays the floating Copilot's zoom-out animation, then unmounts it once it finishes —
+  // mirrors the zoom-in it plays on mount, instead of vanishing instantly like a plain toggle.
+  const closeNavigatorPanel = () => {
+    if (navigatorClosing) return;
+    setNavigatorClosing(true);
+    setTimeout(() => {
+      setRightPanel(prev => (prev === 'navigator' ? null : prev));
+      setNavigatorFloating(false);
+      setNavigatorBuilderMode(false);
+      setNavigatorBuilderKind('assessment');
+      setNavigatorBuilderContext(null);
+      setNavigatorClosing(false);
+    }, 160);
+  };
+
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
-    setRightPanel(prev => (prev === tabName ? null : tabName));
+    if (rightPanel === tabName) {
+      if (tabName === 'navigator' && navigatorFloating) {
+        closeNavigatorPanel();
+      } else {
+        setRightPanel(null);
+      }
+      return;
+    }
+    setRightPanel(tabName);
   };
 
   const handleModeChange = (mode) => {
@@ -864,6 +890,20 @@ function App() {
     history.pushState(null, '', navPath(url));
   };
 
+  // "/" → open Navigator Copilot, unless the user is typing in a field
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target;
+      const isTyping = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
+      if (isTyping) return;
+      e.preventDefault();
+      handleNav('navigator');
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [handleNav]);
+
   // Per-page filter accessors
   const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
   const activeFilterCount = curPageFilters.count;
@@ -890,7 +930,13 @@ function App() {
     <RightPanelShell
       tab={rightPanel}
       onTabSwitch={openRightTab}
-      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
+      onClose={() => {
+        if (rightPanel === 'navigator' && navigatorFloating) {
+          closeNavigatorPanel();
+        } else {
+          setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null);
+        }
+      }}
       visitedTabs={visitedTabs}
       filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
         if (merge) {
@@ -917,6 +963,7 @@ function App() {
         draftToken: navigatorDraftToken,
         dockSide: navigatorDock,
         forceFloatToken: navigatorForceFloatToken,
+        closing: navigatorClosing,
       }}
       navigatorFloating={navigatorFloating}
     />
@@ -1096,8 +1143,18 @@ function App() {
                 {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} crossFilters={filtersByPage['discover/identity']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/identity', chips)} />}
                 {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
-                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
-                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
+                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => {
+                  setFiltersByPage(prev => ({
+                    ...prev,
+                    'report/compliance-findings': toChipsState([
+                      { attrId: 'framework',           key: 'Framework',    value: filter.frameworkName },
+                      { attrId: 'compliance-function', key: filter.level,   value: filter.col },
+                      { attrId: 'compliance-group',    key: filter.groupBy, value: filter.row, score: filter.score },
+                    ]),
+                  }));
+                  handleNav('report/compliance-findings');
+                }} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage crossFilters={filtersByPage['report/compliance-findings']?.chips ?? []} onNav={handleNav} />}
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
@@ -1142,11 +1199,13 @@ function App() {
 function AppWithBoundary() {
   return (
     <ToastProvider>
-      <DownloadsProvider>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
-      </DownloadsProvider>
+      <SavedFiltersProvider>
+        <DownloadsProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </DownloadsProvider>
+      </SavedFiltersProvider>
     </ToastProvider>
   );
 }
