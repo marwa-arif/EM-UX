@@ -32,6 +32,20 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.19.1] — 2026-08-11
+### Added
+- Save Filter flow wired end-to-end (`SavedFiltersCtx`) from the Active Filters panel
+### Changed
+- Compliance Matrix → Compliance Findings hand-off now uses the shared Active Filters chip system instead of a page-local "Filtered by" bar
+- "Include Passed Findings" toggle is always visible in Compliance Findings and now actually reveals passed rows instead of only changing a displayed count
+- Recent Filters list reflects the drag-to-reorder + show-count saved in the filter panel's settings view
+### Fixed
+- Compliance Matrix cell clicks with no matching mock data no longer show a false-empty findings table
+- Compliance Findings table columns no longer reflow when toggling "Include Passed Findings"; added a centered, non-hoverable empty state
+- Delete Saved Filter modal: added header icon and fixed confirmation text rendering as three stacked lines instead of one sentence
+
+---
+
 ## [0.19.0] — 2026-08-11
 ### Added
 - "/" keyboard shortcut opens the Navigator Copilot panel (ignored while typing in a field)
