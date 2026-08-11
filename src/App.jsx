@@ -365,6 +365,7 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               draftToken={navigatorProps?.draftToken}
               dockSide={navigatorProps?.dockSide}
               forceFloatToken={navigatorProps?.forceFloatToken}
+              closing={navigatorProps?.closing}
             />
           )}
         </div>
@@ -624,6 +625,8 @@ function App() {
   const [navigatorReset, setNavigatorReset] = useState(0);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
+  // True for the ~160ms zoom-out exit animation, before the floating panel actually unmounts
+  const [navigatorClosing, setNavigatorClosing] = useState(false);
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
   const [navigatorBuilderKind, setNavigatorBuilderKind] = useState('assessment');
   const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
@@ -710,9 +713,32 @@ function App() {
     return () => document.removeEventListener('scroll', onScroll, true);
   }, []);
 
+  // Plays the floating Copilot's zoom-out animation, then unmounts it once it finishes —
+  // mirrors the zoom-in it plays on mount, instead of vanishing instantly like a plain toggle.
+  const closeNavigatorPanel = () => {
+    if (navigatorClosing) return;
+    setNavigatorClosing(true);
+    setTimeout(() => {
+      setRightPanel(prev => (prev === 'navigator' ? null : prev));
+      setNavigatorFloating(false);
+      setNavigatorBuilderMode(false);
+      setNavigatorBuilderKind('assessment');
+      setNavigatorBuilderContext(null);
+      setNavigatorClosing(false);
+    }, 160);
+  };
+
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
-    setRightPanel(prev => (prev === tabName ? null : tabName));
+    if (rightPanel === tabName) {
+      if (tabName === 'navigator' && navigatorFloating) {
+        closeNavigatorPanel();
+      } else {
+        setRightPanel(null);
+      }
+      return;
+    }
+    setRightPanel(tabName);
   };
 
   const handleModeChange = (mode) => {
@@ -846,6 +872,20 @@ function App() {
     history.pushState(null, '', navPath(url));
   };
 
+  // "/" → open Navigator Copilot, unless the user is typing in a field
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target;
+      const isTyping = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
+      if (isTyping) return;
+      e.preventDefault();
+      handleNav('navigator');
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [handleNav]);
+
   // Per-page filter accessors
   const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
   const activeFilterCount = curPageFilters.count;
@@ -872,7 +912,13 @@ function App() {
     <RightPanelShell
       tab={rightPanel}
       onTabSwitch={openRightTab}
-      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
+      onClose={() => {
+        if (rightPanel === 'navigator' && navigatorFloating) {
+          closeNavigatorPanel();
+        } else {
+          setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null);
+        }
+      }}
       visitedTabs={visitedTabs}
       filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
         if (merge) {
@@ -899,6 +945,7 @@ function App() {
         draftToken: navigatorDraftToken,
         dockSide: navigatorDock,
         forceFloatToken: navigatorForceFloatToken,
+        closing: navigatorClosing,
       }}
       navigatorFloating={navigatorFloating}
     />

@@ -1304,7 +1304,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, dockSide = 'right', forceFloatToken = 0 }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, dockSide = 'right', forceFloatToken = 0, closing = false }) {
   const [view, setView]             = useState('home')
 
   // Enter the scripted assessment-builder chat when triggered externally
@@ -1517,6 +1517,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   return (
     <div
       style={panelStyle}
+      className={isFloating ? `np-panel-floating${closing ? ' np-panel-floating--closing' : ''}` : undefined}
       ref={panelRef}
       role="complementary"
       aria-label="Navigator AI assistant"

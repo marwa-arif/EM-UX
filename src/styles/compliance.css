@@ -146,6 +146,10 @@
   box-sizing: border-box;
 }
 
+.comp-fw-card--mini::after {
+  background: linear-gradient(180deg, rgba(var(--fw-rgb),0.15) 0%, rgba(247,249,252,0) 100%);
+}
+
 .comp-fw-mini-pct {
   font-size: 11px;
   font-weight: 600;
@@ -163,26 +167,41 @@
 }
 
 /* ── Framework card ──────────────────────────────────────────────── */
+/* The card's own background always stays the neutral gradient; the "selected" tint and
+   border ring are separate pseudo-elements that fade in/out via opacity, since browsers
+   can't smoothly interpolate between two different gradient values on `background` itself. */
 .comp-fw-card {
+  position: relative;
   border-radius: 12px;
   padding: 16px 12px;
   cursor: pointer;
   transition: opacity 150ms;
   flex-shrink: 0;
+  background: linear-gradient(180deg, #F8F8F8 0%, #FBFCFF 100%);
+  border: 1px solid transparent;
 }
 
 .comp-fw-card--default {
-  background: linear-gradient(180deg, #F8F8F8 0%, #FBFCFF 100%);
-  border: 1px solid transparent;
   opacity: 0.6;
 }
 
 .comp-fw-card--selected {
-  border: 1px solid transparent;
   opacity: 1;
-  position: relative;
 }
-.comp-fw-card--selected::before {
+
+.comp-fw-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(var(--fw-rgb),0.10) 0%, rgba(247,249,252,0) 100%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.comp-fw-card--selected::after { opacity: 1; }
+
+.comp-fw-card::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -193,7 +212,10 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
 }
+.comp-fw-card--selected::before { opacity: 1; }
 
 .comp-fw-card--default:hover { opacity: 1; border-color: transparent; }
 
@@ -253,6 +275,7 @@
   color: var(--shell-text);
   line-height: 24px;
   white-space: nowrap;
+  transition: color 150ms ease;
 }
 
 .comp-fw-name--muted {
@@ -391,13 +414,9 @@
   color: var(--shell-text);
 }
 
-.comp-time-pills {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
 .comp-time-pill {
+  position: relative;
+  z-index: 1;
   height: 22px;
   padding: 0 8px;
   border-radius: 44px;
@@ -408,16 +427,30 @@
   font-weight: 500;
   font-family: inherit;
   color: var(--shell-text-muted);
-  transition: color 120ms, border-color 120ms;
+  transition: color 150ms ease;
 }
 
 .comp-time-pill:hover { color: var(--shell-text); }
 
 .comp-time-pill--active {
   color: var(--shell-text);
-  border-color: var(--shell-border);
+}
+
+/* Sliding highlight — mirrors kg-seg-thumb (SegmentedTabs): the active pill's
+   background/border/shadow live on this thumb, which moves left/right between
+   tabs instead of each pill cross-fading its own background in place. */
+.comp-time-pill-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  border-radius: 44px;
+  border: 1px solid var(--shell-border);
   background: var(--card-bg);
   box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  box-sizing: border-box;
+  pointer-events: none;
+  transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1), opacity 150ms ease;
 }
 
 .comp-score-body {
@@ -775,6 +808,30 @@
 
 .comp-domain-expand:hover { background: var(--shell-border); }
 
+.comp-domain-expand svg { transition: transform 160ms ease; }
+.comp-domain-expand--open svg { transform: rotate(90deg); }
+
+/* ── Accordion row enter/exit ────────────────────────────────────── */
+.comp-tree-row--entering td {
+  overflow: hidden;
+  animation: comp-tree-row-enter 260ms ease both;
+}
+
+.comp-tree-row--closing td {
+  overflow: hidden;
+  animation: comp-tree-row-exit 180ms ease both;
+}
+
+@keyframes comp-tree-row-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes comp-tree-row-exit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 .comp-posture-expand {
   width: 18px;
   height: 18px;
@@ -845,13 +902,20 @@
   z-index: 100;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border-radius: var(--radius-dropdown, 8px);
+  box-shadow: var(--shadow-popup, 0 4px 16px rgba(0,0,0,0.12));
   padding: 4px;
   min-width: 180px;
   display: flex;
   flex-direction: column;
   gap: 1px;
+  animation: dropdown-menu-in 160ms cubic-bezier(.2,.8,.2,1);
+  transform-origin: top;
+}
+
+.comp-sort-menu--closing {
+  animation: dropdown-menu-out 150ms ease forwards;
+  pointer-events: none;
 }
 
 .comp-sort-item {
@@ -927,11 +991,12 @@
   right: 0;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  border-radius: var(--radius-dropdown, 8px);
+  box-shadow: var(--shadow-popup, 0 4px 12px rgba(0,0,0,0.10));
   padding: 4px;
   z-index: 100;
   min-width: 110px;
+  animation: fade-up 0.15s ease;
 }
 
 .comp-dl-item {
@@ -961,6 +1026,7 @@
   align-items: center;
   gap: 8px;
   height: 36px;
+  width: 100%;
 }
 
 .comp-posture-cell--trend {
@@ -1106,13 +1172,11 @@
 }
 
 /* ── Dark theme overrides ─────────────────────────────────────────── */
-html.theme-dark .comp-fw-card--default {
+/* Applies to every card (not just --default) — the selected tint is a separate
+   ::after overlay (see .comp-fw-card::after) that layers on top in both themes. */
+html.theme-dark .comp-fw-card {
   background: linear-gradient(180deg, #1E1E1E 0%, #1A1D22 100%);
   border-color: #333333;
-}
-
-html.theme-dark .comp-fw-card--selected {
-  background: linear-gradient(90deg, rgba(217,139,29,0.12) 0%, rgba(247,249,252,0.04) 100%);
 }
 
 /* ── Assessment drawer ───────────────────────────────────────────── */
@@ -1397,6 +1461,11 @@ html.theme-dark .comp-fw-card--selected {
 
 .comp-drawer-table tr:last-child td { border-bottom: none; }
 .comp-drawer-table tr:hover td { background: var(--shell-hover); }
+
+/* Only rows wired to open the finding detail drawer (comp-drawer-tr--clickable)
+   get the click affordance — cursor + primary-cell hover color. */
+.comp-drawer-table tr.comp-drawer-tr--clickable { cursor: pointer; }
+.comp-drawer-table tr.comp-drawer-tr--clickable:hover .comp-table-entity-name { color: var(--pai-indigo); }
 
 .comp-fw-overflow-btn {
   width: 22px;
@@ -2675,6 +2744,7 @@ html.theme-dark .comp-fw-logo-img--dark {
 }
 
 .comp-time-pills-wrap {
+  position: relative;
   display: flex;
   gap: 2px;
   flex-shrink: 0;

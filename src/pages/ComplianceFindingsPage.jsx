@@ -7,6 +7,7 @@ import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldCo
 import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useToast } from '../context/ToastCtx.jsx'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
 import '../styles/kg.css'
@@ -369,13 +370,13 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
   )
 }
 
-function FindingDrawer({ row, onClose }) {
+export function FindingDrawer({ row, onClose, stacked = false }) {
   const drawer = useDrawerNav({ kind: 'finding', row })
   const top = drawer.history[drawer.index]
   const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: drawer.goToIndex }
 
   return (
-    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing}>
+    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing} stacked={stacked}>
       {top.kind === 'finding' ? (
         <FindingDetailContent key={drawer.index} row={top.row} onNavigate={drawer.navigate} {...trailProps} />
       ) : top.kind === 'assetEntity' ? (
@@ -404,6 +405,7 @@ function Toggle({ checked, onChange }) {
 function SelectDropdown({ value, onChange, options, placeholder = 'Select…', fullWidth = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -426,8 +428,8 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
-      {open && (
-        <div className={`comp-sort-menu${fullWidth ? ' cfp-sort-menu--full' : ''}`}>
+      {visible && (
+        <div className={`comp-sort-menu${fullWidth ? ' cfp-sort-menu--full' : ''}${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(opt => {
             const v = typeof opt === 'string' ? opt : opt.value
             const l = typeof opt === 'string' ? opt : opt.label
@@ -453,29 +455,29 @@ const TOTAL_ALL  = 1391872
 
 
 const ROWS = [
-  { title: 'Devices with End-of-Life OS',           entity: 'WORK-ZOA825.ACNA.CORP.COM',    type: 'device',   evidence: 'OS: Ubuntu 18.04.6 18 64-bit x64, End of Life Date: null' },
-  { title: 'Malware scan overdue',                  entity: 'WORK-CZS929.ACNA.CORP.COM',    type: 'device',   evidence: 'AV Scan SLA Breach Duration: null, AV Last Scan Date: null' },
-  { title: 'Authentication factors not configured', entity: 'ANN PHELPS',                   type: 'identity', evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
-  { title: 'MFA not enabled',                       entity: 'SERVER-POR119',                type: 'multi',    evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
+  { title: 'Devices with End-of-Life OS',           entity: 'WORK-ZOA825.ACNA.CORP.COM',    type: 'device',   evidence: 'OS: Ubuntu 18.04.6 18 64-bit x64, End of Life Date: 2023-05-31' },
+  { title: 'Malware scan overdue',                  entity: 'WORK-CZS929.ACNA.CORP.COM',    type: 'device',   evidence: 'AV Scan SLA Breach Duration: 42 days, AV Last Scan Date: 2025-05-28' },
+  { title: 'Authentication factors not configured', entity: 'ANN PHELPS',                   type: 'identity', evidence: 'Authentication Methods Registered: 0, Authentication Factors: []' },
+  { title: 'MFA not enabled',                       entity: 'SERVER-POR119',                type: 'multi',    evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
   { title: 'Full disk encryption not enforced',     entity: 'AWSEC22135',                   type: 'cloud',    evidence: 'Full Disk Encryption Status: false' },
-  { title: 'Vulnerability scan overdue',            entity: 'WORK-TWP190.ACNA.CORP.COM',    type: 'device',   evidence: 'VM Last Scan Date: null, VM Scan SLA Breach Duration: null' },
+  { title: 'Vulnerability scan overdue',            entity: 'WORK-TWP190.ACNA.CORP.COM',    type: 'device',   evidence: 'VM Last Scan Date: 2025-04-30, VM Scan SLA Breach Duration: 68 days' },
   { title: 'Unaccountable devices',                 entity: 'WORK-NWG159.ACNA.CORP.COM',    type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'Unaccountable devices',                 entity: 'WORK-SYJ357206.ACNA.CORP.COM', type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'EDR agent not fully functional',        entity: 'LSERVER-B2709K.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
-  { title: 'No login activity',                     entity: 'VM-TSR11632.ACNA.CORP.COM',    type: 'device',   evidence: 'Days Since Last Login: null' },
-  { title: 'Authentication factors not configured', entity: 'JAMES PATRICK',                type: 'identity', evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
+  { title: 'No login activity',                     entity: 'VM-TSR11632.ACNA.CORP.COM',    type: 'device',   evidence: 'Days Since Last Login: 214' },
+  { title: 'Authentication factors not configured', entity: 'JAMES PATRICK',                type: 'identity', evidence: 'Authentication Methods Registered: 0, Authentication Factors: []' },
   { title: 'Host firewall disabled',                entity: 'WORK-WJM234233.ACNA.CORP.COM', type: 'device',   evidence: 'Firewall Status: false' },
-  { title: 'MFA not enabled',                       entity: 'LSERVER-O2240Z',               type: 'multi',    evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
+  { title: 'MFA not enabled',                       entity: 'LSERVER-O2240Z',               type: 'multi',    evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
   { title: 'FIM not enabled',                       entity: 'VM-TSR51049',                  type: 'device',   evidence: 'EDR FIM Policy Status: false' },
   { title: 'EDR agent not fully functional',        entity: 'LSERVER-Z3903P.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
   { title: 'Unaccountable devices',                 entity: 'WORK-LNQ285177.ACNA.CORP.COM', type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'Patch management overdue',              entity: 'PAI-DEMO-PROD-CAST-63537D6F',  type: 'cloud',    evidence: 'Patch Status: overdue, Days Since Last Patch: 214' },
-  { title: 'No login activity',                     entity: 'SARAH CONNORS',                type: 'identity', evidence: 'Days Since Last Login: null' },
+  { title: 'No login activity',                     entity: 'SARAH CONNORS',                type: 'identity', evidence: 'Days Since Last Login: 176' },
   { title: 'Host firewall disabled',                entity: '10.126.184.252',               type: 'device',   evidence: 'Firewall Status: false' },
-  { title: 'Vulnerability scan overdue',            entity: 'VM-TSR45197',                  type: 'device',   evidence: 'VM Last Scan Date: null, VM Scan SLA Breach Duration: null' },
+  { title: 'Vulnerability scan overdue',            entity: 'VM-TSR45197',                  type: 'device',   evidence: 'VM Last Scan Date: 2025-05-12, VM Scan SLA Breach Duration: 53 days' },
   { title: 'Devices with End-of-Life OS',           entity: 'WORK-FLR646.ACNA.CORP.COM',   type: 'device',   evidence: 'OS: Windows Server 2008 R2, End of Life Date: 2020-01-14' },
-  { title: 'Malware scan overdue',                  entity: 'WORK-JRF656228.ACNA.CORP.COM', type: 'device',   evidence: 'AV Scan SLA Breach Duration: null, AV Last Scan Date: null' },
-  { title: 'MFA not enabled',                       entity: 'WORK-BQN304189.ACNA.CORP.COM', type: 'device',   evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
+  { title: 'Malware scan overdue',                  entity: 'WORK-JRF656228.ACNA.CORP.COM', type: 'device',   evidence: 'AV Scan SLA Breach Duration: 29 days, AV Last Scan Date: 2025-06-10' },
+  { title: 'MFA not enabled',                       entity: 'WORK-BQN304189.ACNA.CORP.COM', type: 'device',   evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
   { title: 'FIM not enabled',                       entity: 'WORK-FMJ966.ACNA.CORP.COM',   type: 'device',   evidence: 'EDR FIM Policy Status: false' },
   { title: 'EDR agent not fully functional',        entity: 'WORK-BQN304182.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
 ]

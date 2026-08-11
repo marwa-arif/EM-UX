@@ -74,6 +74,14 @@ const IcGlobe = () => (
 // ── Avatar group ──────────────────────────────────────────────────
 const INITIALS = ['AB', 'CD', 'EF']
 
+// SAVED_ROWS only ever stored a recipient *count* (enough for the table's
+// avatar chips) with no backing emails — so reopening Manage Schedule on an
+// already-scheduled row had nothing to prefill the "To:" field with. Mocks
+// up the same a@mail.com/b@mail.com pattern already shown as the field's
+// placeholder, matching the row's existing recipient count.
+const mockRecipientEmails = (count) =>
+  Array.from({ length: count }, (_, i) => `${String.fromCharCode(97 + i)}@mail.com`).join(', ')
+
 function AvatarGroup({ count }) {
   const shown = Math.min(count, 3)
   const extra = count > 3 ? count - 3 : 0
@@ -138,17 +146,17 @@ function SavedPage() {
 
   const openScheduleModal = (row) => {
     setScheduleTarget(row)
-    setScheduleRecipients('')
+    setScheduleRecipients(row.recipientEmails || (row.recipients ? mockRecipientEmails(row.recipients) : ''))
     setScheduleSendCopy(true)
   }
   const handleSaveSchedule = () => {
-    const count = scheduleRecipients.split(',').map(s => s.trim()).filter(Boolean).length
-    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: count, hasCalendar: true, status: 'Scheduled' } }))
+    const emails = scheduleRecipients.split(',').map(s => s.trim()).filter(Boolean)
+    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: emails.length, recipientEmails: emails.join(', '), hasCalendar: true, status: 'Scheduled' } }))
     showToast({ type: 'success', msg: `Schedule updated for "${scheduleTarget.name}".` })
     setScheduleTarget(null)
   }
   const handleStopSchedule = () => {
-    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: undefined, hasCalendar: false, status: 'Saved' } }))
+    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: undefined, recipientEmails: undefined, hasCalendar: false, status: 'Saved' } }))
     showToast({ type: 'success', msg: `Schedule stopped for "${scheduleTarget.name}".` })
     setStopScheduleConfirmOpen(false)
     setScheduleTarget(null)

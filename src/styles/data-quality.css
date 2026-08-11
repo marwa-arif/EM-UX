@@ -494,13 +494,14 @@ html.theme-dark .dq-entity-badge {
   overflow-y: auto;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+  border-radius: var(--radius-dropdown, 8px);
+  box-shadow: var(--shadow-popup, 0 4px 20px rgba(0,0,0,0.14));
   padding: 8px;
   z-index: 40;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: fade-up 0.15s ease;
 }
 
 .dqid-entity-picker__item {

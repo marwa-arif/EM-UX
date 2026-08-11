@@ -1634,6 +1634,24 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   flex-direction: column;
 }
 
+/* ── Floating Copilot: zoom entrance/exit ──────────────────────── */
+@keyframes np-float-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes np-float-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.92); }
+}
+.np-panel-floating {
+  animation: np-float-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top right;
+}
+.np-panel-floating.np-panel-floating--closing {
+  animation: np-float-out 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
 /* ── Dropdown positioning variants ─────────────────────────────── */
 .np-dropdown--view-menu  { right: 0; top: 34px; width: 186px; }
 .np-dropdown--more-menu  { right: 0; top: 34px; width: 194px; }
@@ -2280,12 +2298,13 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
   z-index: 120;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  border-radius: var(--radius-dropdown, 8px);
+  box-shadow: var(--shadow-popup, 0 4px 16px rgba(0,0,0,0.18));
   padding: 4px;
   min-width: 140px;
   display: flex;
   flex-direction: column;
+  animation: fade-up 0.15s ease;
 }
 
 .nw-menu-item {
@@ -2504,8 +2523,22 @@ html.theme-dark .hv-greeting {
   flex-shrink: 0;
 }
 
-/* Selected context chips inside composer */
+/* Selected context chips inside composer — animating grid-template-rows
+   between a 0fr and content-sized 1fr track eases the wrap open/closed
+   without needing to measure content height in JS, so the composer box
+   grows/shrinks smoothly instead of snapping when the chips row mounts.
+   Plain ease, not kg-seg-thumb's cubic-bezier(.2,.8,.2,1) — that curve
+   front-loads ~80% of its motion into the first fifth of the duration,
+   which reads fine sliding a pill sideways but looks like a snap-then-crawl
+   on a height collapse. */
+.hv-ctx-chips-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms ease;
+}
+.hv-ctx-chips-wrap.open { grid-template-rows: 1fr; }
 .hv-ctx-chips {
+  overflow: hidden; min-height: 0;
   display: flex; flex-wrap: wrap; gap: 8px;
   padding: 16px 16px 0;
 }
@@ -2517,7 +2550,13 @@ html.theme-dark .hv-greeting {
   background: var(--ctrl-bg, #f5f5f5);
   box-shadow: 0 2px 6px rgba(129,136,153,0.1);
   font-size: 14px; color: var(--shell-text, #101010);
+  animation: fade-up 0.2s ease;
 }
+/* Mirrors ds-toast--leaving: mark leaving, play the out-animation, then the
+   caller removes it from state once CHIP_EXIT_MS (NavigatorPage.jsx) elapses —
+   same duration as this animation so the chip is gone by the time it unmounts. */
+.hv-ctx-chip--leaving { animation: hv-chip-out 180ms ease forwards; pointer-events: none; }
+@keyframes hv-chip-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.85); } }
 
 .hv-ctx-chip-icon { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--shell-text-muted); }
 .hv-ctx-chip-count { font-weight: 600; font-size: 14px; }
@@ -2553,27 +2592,40 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   padding: 12px 16px; gap: 8px;
 }
 
-/* Segmented control */
+/* Segmented control — sliding thumb (same measure-and-translate approach as
+   the shared SegmentedTabs/kg-seg-thumb) instead of each button toggling its
+   own background, so switching Ask/Research/Build (or the depth-of-analysis
+   row) reads as one indicator gliding over rather than a hard cut. */
 .hv-mode-seg {
+  position: relative;
   display: flex; align-items: center; height: 32px;
   background: var(--ctrl-bg, #f5f5f5);
   border-radius: 24px; padding: 2px;
 }
 
-.hv-mode-seg-item {
-  height: 28px; padding: 0 16px; border-radius: 22px;
-  border: none; background: transparent;
-  color: var(--shell-text-2, #6e6e6e);
-  font-size: 14px; font-family: inherit; cursor: pointer;
-  white-space: nowrap; transition: background 0.12s, color 0.12s;
-}
-.hv-mode-seg-item.active {
+.hv-mode-seg-thumb {
+  position: absolute;
+  top: 2px; bottom: 2px; left: 0;
+  border-radius: 22px;
   border: 1px solid transparent;
   background:
     linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
     linear-gradient(90deg, var(--pai-brand-blue, #467FCD), var(--pai-nav-teal, #47ADCB)) border-box;
-  color: var(--shell-text, #101010); font-weight: 500;
+  transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1);
 }
+
+.hv-mode-seg-item {
+  position: relative; z-index: 1;
+  height: 28px; padding: 0 16px; border-radius: 22px;
+  border: none; background: transparent;
+  color: var(--shell-text-2, #6e6e6e);
+  /* font-weight fixed at 500 regardless of active state — toggling it made
+     the active label render wider/narrower, which shifted every button
+     after it sideways each time the active tab changed. */
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+  white-space: nowrap; transition: color 0.12s;
+}
+.hv-mode-seg-item.active { color: var(--shell-text, #101010); }
 .hv-mode-seg-item:not(.active):hover { color: var(--shell-text, #101010); }
 
 /* Entity filter pills below composer */

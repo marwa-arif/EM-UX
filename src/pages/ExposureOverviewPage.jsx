@@ -4,6 +4,8 @@ import '../styles/exposure.css'
 import '../styles/compliance.css'
 import '../styles/device.css'
 import TablePagination from '../components/TablePagination.jsx'
+import TimeRangeTabs from '../components/TimeRangeTabs.jsx'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 
 // ── Data ──────────────────────────────────────────────────────────
 const GROUP_BY_OPTIONS = [
@@ -948,13 +950,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
       <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
         <div className="exp-trend-drawer-header">
           <span className="exp-trend-drawer-title">Trend Explore</span>
-          <div className="comp-time-pills-wrap">
-            {['1W', '1M', '3M', '6M', '1Y'].map(t => (
-              <button key={t}
-                className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`}
-                onClick={() => changeRange(t)}
-              >{t}</button>
-            ))}
+          <TimeRangeTabs value={tRange} onChange={changeRange}>
             <div className="exp-custom-range-wrap" ref={customPickerRef}>
               <button
                 className={`comp-time-pill${tRange === 'CUSTOM' ? ' comp-time-pill--active' : ''}`}
@@ -976,7 +972,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
                 </div>
               )}
             </div>
-          </div>
+          </TimeRangeTabs>
           <div className="exp-trend-drawer-by">
             Exposure by
             <SelectDropdown value={exposureBy} onChange={setExposureBy} options={EXPOSURE_BY_OPTIONS} />
@@ -1123,6 +1119,7 @@ function MiniBar({ pct }) {
 function SelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -1140,8 +1137,8 @@ function SelectDropdown({ value, onChange, options }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {open && (
-        <div className="comp-sort-menu">
+      {visible && (
+        <div className={`comp-sort-menu${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(opt => (
             <button
               key={opt}

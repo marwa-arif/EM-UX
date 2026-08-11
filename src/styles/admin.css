@@ -140,10 +140,11 @@
   min-width: 180px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border-radius: var(--radius-dropdown, 8px);
   box-shadow: var(--shadow-popup, 0 8px 24px rgba(16,16,16,0.14));
   padding: 4px;
   z-index: 20;
+  animation: fade-up 0.15s ease;
 }
 .admin-row-menu-item {
   display: flex; align-items: center; gap: 8px;

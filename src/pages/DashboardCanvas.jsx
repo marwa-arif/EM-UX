@@ -12,6 +12,7 @@ import GridLayout from 'react-grid-layout/legacy'
 import 'react-grid-layout/css/styles.css'
 import { useToast } from '../context/ToastCtx.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
+import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import '../styles/dashboard.css'
 import '../styles/compliance.css'
 import '../styles/active-filter-panel.css'
@@ -560,6 +561,7 @@ function SizeSelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const selected = options.find(o => o.value === value)
+  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -579,8 +581,8 @@ function SizeSelectDropdown({ value, onChange, options }) {
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
-      {open && (
-        <div className="comp-sort-menu dc-col-menu">
+      {visible && (
+        <div className={`comp-sort-menu dc-col-menu${closing ? ' comp-sort-menu--closing' : ''}`}>
           {options.map(o => (
             <button
               key={o.value}
