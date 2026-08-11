@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import ActiveFilterPanel, { SaveFilterModal } from './ActiveFilterPanel.jsx'
+import { useSavedFilters } from '../context/SavedFiltersCtx.jsx'
+import { useToast } from '../context/ToastCtx.jsx'
 
 const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
@@ -24,6 +26,8 @@ const EXPLORE_GROUPS = [
 ];
 
 function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId }) {
+  const { addSavedFilter, overwriteSavedFilter } = useSavedFilters();
+  const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -48,7 +52,15 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
     return () => document.removeEventListener('mousedown', onDown);
   }, [exploreOpen]);
 
-  const savedFilterChip = activeFilters.find(f => f.attrId === 'saved-filter');
+  const handleSaveFilter = (data) => {
+    if (data.overwrite) {
+      overwriteSavedFilter(data.overwrite, activeFilters.length, activeFilters);
+      showToast({ type: 'success', msg: `"${data.overwrite}" filter updated.` });
+    } else {
+      addSavedFilter({ name: data.filterName, description: data.description, availability: data.availability, filterCount: activeFilters.length, filters: activeFilters });
+      showToast({ type: 'success', msg: `"${data.filterName}" saved as a filter.` });
+    }
+  };
 
   const handlePillClick = () => {
     if (!filterPillOpen && pillBtnRef.current && subheaderRef.current) {
@@ -160,17 +172,9 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               <button
                 ref={pillBtnRef}
                 onClick={handlePillClick}
-                title={savedFilterChip ? `Saved filter applied: ${savedFilterChip.value}` : undefined}
-                className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}${savedFilterChip ? ' subheader__filter-pill--saved' : ''}`}
+                className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}`}
               >
-                {savedFilterChip ? (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="subheader__filter-pill-saved-icon">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span className="subheader__filter-pill-saved-name">Saved: {savedFilterChip.value}</span>
-                  </>
-                ) : 'Active Filters'}
+                Active Filters
                 {activeFilterCount > 0 && (
                   <span className="subheader__filter-count">{activeFilterCount}</span>
                 )}
@@ -208,7 +212,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
       {showSaveModal && (
         <SaveFilterModal
           onClose={() => setShowSaveModal(false)}
-          onSave={(data) => { console.log('Filter saved:', data) }}
+          onSave={handleSaveFilter}
         />
       )}
     </>

@@ -1560,6 +1560,18 @@ html.theme-dark .comp-fw-card {
   font-weight: 600;
 }
 
+.comp-drawer-status-closed {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 44px;
+  border: 1px solid var(--pai-green);
+  color: var(--pai-green);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .comp-drawer-action-btns {
   display: flex;
   align-items: center;
@@ -3074,55 +3086,6 @@ html.theme-dark .comp-fw-logo-img--dark {
   min-width: 160px;
 }
 
-.cfp-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--shell-border);
-  background: rgba(99,96,216,0.04);
-  flex-shrink: 0;
-}
-
-.cfp-filter-label {
-  font-size: 11px;
-  color: var(--shell-text-muted);
-  font-weight: 500;
-}
-
-.cfp-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 44px;
-  background: rgba(99,96,216,0.10);
-  border: 1px solid rgba(99,96,216,0.25);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--pai-indigo);
-}
-
-.cfp-filter-clear {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 44px;
-  border: none;
-  background: transparent;
-  color: var(--shell-text-muted);
-  font-size: 11px;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.cfp-filter-clear:hover { color: var(--shell-text); }
-
 .cfp-table-wrap {
   flex: 1;
   overflow-y: auto;
@@ -3134,16 +3097,27 @@ html.theme-dark .comp-fw-logo-img--dark {
   z-index: 2;
 }
 
+/* Fixed layout so toggling "Include Passed Findings" (which changes row content/count,
+   including emptying the Action cell for passed rows) can't reflow column widths — with
+   the default auto layout, column widths are recomputed from each render's content. Only
+   Evidence is left unsized so it absorbs whatever width the other columns don't use. */
+.cfp-table-wrap .ds-table { table-layout: fixed; }
+
 /* `.ds-th` (navigator.css) is a single class, same specificity as `.cfp-th-actions`
    alone — cascade order between the two stylesheets isn't guaranteed, so combine
    both classes on the selector to win unambiguously regardless of import order. */
-.cfp-th-actions { width: 44px; }
+.cfp-th-title    { width: 320px; }
+.cfp-th-entities { width: 340px; }
+.cfp-th-status   { width: 100px; }
+.cfp-th-actions  { width: 44px; }
 .ds-th.cfp-th-actions { text-align: center; }
 
 .cfp-td-title {
   font-weight: 500;
   color: var(--shell-text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cfp-tr--clickable { cursor: pointer; }
@@ -3163,6 +3137,37 @@ html.theme-dark .comp-fw-logo-img--dark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Static message, not an interactive row — suppress the generic
+   `.ds-table tbody tr:hover td` hover highlight (workspace.css) so it doesn't read as
+   clickable. `height` (not min-height — browsers ignore min-height/max-height on
+   table-cell/table-row boxes) plus the inherited `.ds-td` vertical-align:middle center
+   the block within the table's remaining space instead of it hugging the header. */
+.cfp-table-wrap .ds-table tbody tr.cfp-tr--empty:hover td { background: transparent; }
+.cfp-tr--empty { height: 420px; }
+
+.cfp-table-empty {
+  text-align: center;
+  padding: 48px 24px;
+  white-space: normal;
+}
+
+.cfp-table-empty-emoji {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.cfp-table-empty-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text);
+  margin-bottom: 8px;
+}
+
+.cfp-table-empty-subtext {
+  font-size: 12px;
+  color: var(--shell-text-muted);
 }
 
 .cfp-td-actions {

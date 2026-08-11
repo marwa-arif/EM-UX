@@ -31,6 +31,7 @@ import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
 import { DownloadsProvider }  from './DownloadsContext.jsx'
 import { ToastProvider }      from './context/ToastCtx.jsx'
+import { SavedFiltersProvider } from './context/SavedFiltersCtx.jsx'
 import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
@@ -615,7 +616,6 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
-  const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
@@ -1143,8 +1143,18 @@ function App() {
                 {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} crossFilters={filtersByPage['discover/identity']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/identity', chips)} />}
                 {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
-                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
-                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
+                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => {
+                  setFiltersByPage(prev => ({
+                    ...prev,
+                    'report/compliance-findings': toChipsState([
+                      { attrId: 'framework',           key: 'Framework',    value: filter.frameworkName },
+                      { attrId: 'compliance-function', key: filter.level,   value: filter.col },
+                      { attrId: 'compliance-group',    key: filter.groupBy, value: filter.row, score: filter.score },
+                    ]),
+                  }));
+                  handleNav('report/compliance-findings');
+                }} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage crossFilters={filtersByPage['report/compliance-findings']?.chips ?? []} onNav={handleNav} />}
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
@@ -1189,11 +1199,13 @@ function App() {
 function AppWithBoundary() {
   return (
     <ToastProvider>
-      <DownloadsProvider>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
-      </DownloadsProvider>
+      <SavedFiltersProvider>
+        <DownloadsProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </DownloadsProvider>
+      </SavedFiltersProvider>
     </ToastProvider>
   );
 }

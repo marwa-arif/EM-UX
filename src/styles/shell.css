@@ -727,13 +727,6 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 }
 .subheader__filter-pill--active { cursor: pointer; }
 .subheader__filter-pill--open { background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); }
-.subheader__filter-pill--saved {
-  background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); color: var(--pai-indigo);
-}
-.subheader__filter-pill-saved-icon { flex-shrink: 0; }
-.subheader__filter-pill-saved-name {
-  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 
 /* ── Active Filter Preview Panel ─────────────────────────────────── */
 .afp-backdrop {
@@ -800,17 +793,6 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 /* Body */
 .afp-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 .afp-empty { font-size: 13px; color: var(--shell-text-muted); margin: 0; }
-
-/* Saved-filter-applied banner — shown above the entity tree so it's visible
-   the moment the panel opens, not just from the Filter > Saved Filters tab. */
-.afp-saved-filter-banner {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--pai-indigo-tint); border: 1px solid rgba(99,96,216,0.25);
-  border-radius: 4px; padding: 8px 12px;
-}
-.afp-saved-filter-banner__icon { color: var(--pai-indigo); flex-shrink: 0; }
-.afp-saved-filter-banner__label { font-size: 12px; font-weight: 500; color: var(--shell-text-muted); }
-.afp-saved-filter-banner__name { font-size: 13px; font-weight: 600; color: var(--pai-indigo); flex: 1; }
 
 /* Entity tree block */
 .afp-entity-block { display: flex; flex-direction: column; gap: 8px; }
