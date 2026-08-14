@@ -32,6 +32,18 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.19.0] — 2026-08-14
+### Added
+- Topbar: sidebar collapse/expand toggle, moved from the bottom of the LeftNav to an icon-only button left of the PAI logo.
+- LeftNav: hovering the collapsed sidebar's left edge peeks it back as a floating overlay without resizing page content; the Topbar toggle pins it open into the normal, content-resizing layout.
+- LeftNav: section labels (Insights, Fabric Configuration, admin groups) are now clickable to collapse/expand their own group of nav items.
+### Changed
+- LeftNav: collapsed state now fully hides the sidebar instead of shrinking to an icon-only rail.
+### Fixed
+- App: fixed a "rendered fewer hooks than expected" crash on the Workspace route caused by hooks declared after an early return.
+
+---
+
 ## [0.18.0] — 2026-08-06
 ### Added
 - UX3: Home landing page (`ux3/home`), now the default route in place of Client Specific · Servers.
