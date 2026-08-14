@@ -955,6 +955,11 @@
 .comp-dl-menu--wide { min-width: 170px; }
 .comp-dl-menu--wide .comp-dl-item { white-space: nowrap; }
 
+.comp-dl-menu--up { top: auto; bottom: calc(100% + 4px); }
+
+.comp-dl-item.danger { color: var(--pai-crit-fg); }
+.comp-dl-item.danger:hover { background: var(--pai-crit-bg, rgba(209,35,41,0.1)); }
+
 /* ── Posture cell ────────────────────────────────────────────────── */
 .comp-posture-cell {
   display: flex;

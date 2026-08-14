@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import pkg from '../../package.json';
 import changelog from '../data/changelog.json';
 
-function ChangelogModal({ onClose }) {
+export function ChangelogModal({ onClose }) {
   const currentVersion = pkg.version;
 
   return createPortal(

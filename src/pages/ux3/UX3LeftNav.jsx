@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { IcHomeNav, IcWorkspaceNav, IcPipelineNav, IcOntologyNav } from '../../components/LeftNav.jsx'
+import { IcHomeNav, IcPipelineNav, IcOntologyNav } from '../../components/LeftNav.jsx'
 
 // Security Posture Management has no matching icon asset yet — inline, same
-// convention as LeftNav.jsx's IcHomeNav/IcWorkspaceNav/etc.
+// convention as LeftNav.jsx's IcHomeNav/IcPipelineNav/etc.
 function IcShieldNav() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -32,6 +32,18 @@ function IcRemediationNav() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)" stroke="currentColor" strokeWidth="1.7"/>
       <path d="M9.5 9.5 14.5 14.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeDasharray="0.1 2.4"/>
+    </svg>
+  )
+}
+
+// Blast Radius has no matching icon asset — inline, concentric-rings motif to
+// read as "radius of impact" at nav scale. Same convention as IcShieldNav.
+function IcBlastRadiusNav() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.4" opacity="0.55"/>
     </svg>
   )
 }
@@ -85,100 +97,140 @@ function IcHelp() {
   )
 }
 
-const DEVICE_CLOUD_CHILDREN = (prefix) => [
-  { id: `${prefix}/device`, label: 'Device', icon: 'nav-discover-device' },
-  { id: `${prefix}/cloud`,  label: 'Cloud',  icon: 'nav-discover-cloud' },
-];
-
 const HOME_ITEM = { id: 'home', label: 'Home', iconNode: <IcHomeNav /> };
-const KG_ITEM = { id: 'kg', label: 'Knowledge Graph', icon: 'navbar-kg' };
 // Same top-level entries as the classic LeftNav.jsx (Navigator + Workspace, both
 // solo items above the grouped sections) — these bubble straight up to onNav
 // and leave UX3Page entirely, same as clicking them does in the classic nav.
 const NAVIGATOR_ITEM = { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" /> };
 const WORKSPACE_ITEM = { id: 'workspace', label: 'Workspace', icon: 'navbar-workspace' };
 
+// Single-item categories render as a direct link (no expand/collapse) — see
+// CategoryItem's isDirectLink handling below.
+const KG_CATEGORY = {
+  id: 'kg',
+  label: 'Knowledge Graph',
+  icon: 'navbar-kg',
+  items: [{ id: 'kg', label: 'Knowledge Graph', icon: 'navbar-kg' }],
+};
+const BLAST_RADIUS_CATEGORY = {
+  id: 'blast-radius',
+  label: 'Blast Radius',
+  iconNode: <IcBlastRadiusNav />,
+  items: [{ id: 'graph/blast-radius', label: 'Blast Radius', iconNode: <IcBlastRadiusNav /> }],
+};
+
+const EXPOSURE_CATEGORY = {
+  id: 'exposure',
+  label: 'Exposure',
+  icon: 'navbar-exposure',
+  items: [
+    { id: 'exposure/overview', label: 'Overview', icon: 'nav-overview' },
+    { id: 'exposure/findings', label: 'Findings', iconNode: <IcFindingsNav /> },
+  ],
+};
+const ATTACK_SURFACE_CATEGORY = {
+  id: 'attack-surface',
+  label: 'Attack Surface',
+  icon: 'navbar-discover',
+  items: [
+    { id: 'discover/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
+    { id: 'discover/device',   label: 'Device',   icon: 'nav-discover-device' },
+    { id: 'discover/identity', label: 'Identity', icon: 'nav-discover-identity' },
+  ],
+};
+const SECURITY_POSTURE_CATEGORY = {
+  id: 'security-posture',
+  label: 'Security Posture',
+  iconNode: <IcShieldNav />,
+  items: [
+    { id: 'security-posture/host',     label: 'Host',     icon: 'nav-discover-device' },
+    { id: 'security-posture/identity', label: 'Identity', icon: 'nav-discover-identity' },
+    { id: 'security-posture/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
+  ],
+};
+const REPORT_CATEGORY = {
+  id: 'report',
+  label: 'Assessments',
+  icon: 'navbar-report',
+  items: [
+    { id: 'report/assessments', label: 'Assessments', icon: 'nav-report-assessments' },
+  ],
+};
+const COMPLIANCE_CATEGORY = {
+  id: 'compliance',
+  label: 'Compliance',
+  icon: 'nav-report-compliance',
+  items: [
+    { id: 'report/compliance',          label: 'Overview',  icon: 'nav-report-compliance' },
+    { id: 'report/compliance-matrix',   label: 'Matrix',    icon: 'nav-report-matrix' },
+    { id: 'report/compliance-findings', label: 'Findings',  iconNode: <IcFindingsNav /> },
+  ],
+};
+// The "Data Quality" section has only these two destinations — direct-link
+// categories (same pattern as KG_CATEGORY/BLAST_RADIUS_CATEGORY) instead of
+// one "Data Quality" category nested under a "Data Quality" section, which
+// just repeated the section name.
+const DATA_QUALITY_OVERVIEW_CATEGORY = {
+  id: 'data-quality-overview',
+  label: 'Overview',
+  icon: 'nav-overview',
+  items: [{ id: 'data-quality/overview', label: 'Overview', icon: 'nav-overview' }],
+};
+const DATA_QUALITY_INDEPTH_CATEGORY = {
+  id: 'data-quality-in-depth',
+  label: 'In-Depth',
+  icon: 'nav-dq-indepth',
+  items: [{ id: 'data-quality/in-depth', label: 'In-Depth', icon: 'nav-dq-indepth' }],
+};
+const REMEDIATION_CATEGORY = {
+  id: 'remediation',
+  label: 'Remediation',
+  iconNode: <IcRemediationNav />,
+  items: [
+    { id: 'remediation/queue',  label: 'Queue',  icon: 'nav-remediation-queue' },
+    { id: 'remediation/closed', label: 'Closed', icon: 'nav-remediation-closed' },
+  ],
+};
+
+// Studio's real pillars per StudioHomePage — connector/data ingestion,
+// pipeline building, and entity/relationship (ontology) templates. None have
+// dedicated pages yet, so each collapses to a single "Coming Soon" leaf
+// (routes to UX3Page's generic placeholder fallback).
+const STUDIO_CATEGORIES = [
+  {
+    id: 'studio-pipeline-builder',
+    label: 'Pipeline Builder',
+    iconNode: <IcPipelineNav />,
+    items: [{ id: 'studio/pipeline-builder/coming-soon', label: 'Coming Soon', icon: 'nav-overview' }],
+  },
+  {
+    id: 'studio-data-ingestion',
+    label: 'Data Ingestion',
+    icon: 'data-source',
+    items: [{ id: 'studio/data-ingestion/coming-soon', label: 'Coming Soon', icon: 'nav-overview' }],
+  },
+  {
+    id: 'studio-ontology',
+    label: 'Ontology',
+    iconNode: <IcOntologyNav />,
+    items: [{ id: 'studio/ontology/coming-soon', label: 'Coming Soon', icon: 'nav-overview' }],
+  },
+];
+
+// Solutions + Studio are both always listed in the nav — no mode switcher,
+// no appMode branching. All EM categories fold under one "Solutions" header.
 const SECTIONS = [
   {
     label: 'Solutions',
     categories: [
-      {
-        id: 'exposure',
-        label: 'Exposure',
-        icon: 'navbar-exposure',
-        items: [
-          { id: 'exposure/overview', label: 'Overview', icon: 'nav-overview' },
-          { id: 'exposure/findings', label: 'Findings', iconNode: <IcFindingsNav /> },
-        ],
-      },
-      {
-        id: 'attack-surface',
-        label: 'Attack Surface',
-        icon: 'navbar-discover',
-        items: [
-          { id: 'discover/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
-          { id: 'discover/device',   label: 'Device',   icon: 'nav-discover-device' },
-          { id: 'discover/identity', label: 'Identity', icon: 'nav-discover-identity' },
-        ],
-      },
-      {
-        id: 'security-posture',
-        label: 'Security Posture',
-        iconNode: <IcShieldNav />,
-        items: [
-          { id: 'security-posture/host',     label: 'Host',     icon: 'nav-discover-device' },
-          { id: 'security-posture/identity', label: 'Identity', icon: 'nav-discover-identity' },
-          { id: 'security-posture/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
-        ],
-      },
-      {
-        id: 'report',
-        label: 'Report',
-        icon: 'navbar-report',
-        items: [
-          { id: 'report/compliance',          label: 'Compliance',          icon: 'nav-report-compliance' },
-          { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
-          { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
-          { id: 'report/compliance-findings', label: 'Compliance Findings', iconNode: <IcFindingsNav /> },
-        ],
-      },
-      {
-        id: 'data-quality',
-        label: 'Data Quality',
-        icon: 'navbar-data quality',
-        items: [
-          { id: 'data-quality/overview', label: 'Overview', icon: 'nav-overview' },
-          { id: 'data-quality/in-depth', label: 'In-Depth',  icon: 'nav-dq-indepth' },
-        ],
-      },
-      {
-        id: 'remediation',
-        label: 'Remediation',
-        iconNode: <IcRemediationNav />,
-        items: [
-          { id: 'remediation/queue',  label: 'Queue',  icon: 'nav-remediation-queue' },
-          { id: 'remediation/closed', label: 'Closed', icon: 'nav-remediation-closed' },
-        ],
-      },
-      {
-        id: 'client-specific',
-        label: 'Client Specific',
-        icon: 'infrastructure-type',
-        items: [
-          { id: 'client/servers',  label: 'Servers',  icon: 'infrastructure-type' },
-          { id: 'client/networks', label: 'Networks', icon: 'entity-network' },
-        ],
-      },
+      KG_CATEGORY, BLAST_RADIUS_CATEGORY,
+      EXPOSURE_CATEGORY, REMEDIATION_CATEGORY,
+      ATTACK_SURFACE_CATEGORY, SECURITY_POSTURE_CATEGORY,
+      REPORT_CATEGORY, COMPLIANCE_CATEGORY,
+      DATA_QUALITY_OVERVIEW_CATEGORY, DATA_QUALITY_INDEPTH_CATEGORY,
     ],
   },
-  {
-    label: 'Studio',
-    categories: [
-      { id: 'studio-workspace', label: 'Workspace', iconNode: <IcWorkspaceNav />, items: DEVICE_CLOUD_CHILDREN('studio/workspace') },
-      { id: 'studio-pipeline',  label: 'Pipeline',  iconNode: <IcPipelineNav />,  items: DEVICE_CLOUD_CHILDREN('studio/pipeline') },
-      { id: 'studio-ontology',  label: 'Ontology',  iconNode: <IcOntologyNav />,  items: DEVICE_CLOUD_CHILDREN('studio/ontology') },
-    ],
-  },
+  { label: 'Studio', categories: STUDIO_CATEGORIES },
 ];
 
 function NavIcon({ icon }) {
@@ -206,10 +258,16 @@ const BackIcon = () => (
 );
 
 function CategoryItem({ category, current, onNav, isOpen, onToggle, collapsed, onExpandNav }) {
+  // A category with exactly one child (e.g. Knowledge Graph, Blast Radius, or
+  // any of Studio's still-unbuilt pillars) is a single destination, not a
+  // group — clicking it navigates directly instead of expanding a redundant
+  // one-item list.
+  const isDirectLink = category.items.length === 1;
   const hasActiveChild = category.items.some(i => i.id === current);
   const open = isOpen || hasActiveChild;
 
   const handleClick = () => {
+    if (isDirectLink) { onNav(category.items[0].id); return; }
     if (collapsed) onExpandNav();
     onToggle();
   };
@@ -224,9 +282,9 @@ function CategoryItem({ category, current, onNav, isOpen, onToggle, collapsed, o
         {category.iconNode ? category.iconNode : <NavIcon icon={category.icon} />}
         {!collapsed && <span className="ux3-nav__category-label">{category.label}</span>}
         {!collapsed && category.badge && <span className="ux3-nav__badge">{category.badge}</span>}
-        {!collapsed && <ChevronIcon open={open} />}
+        {!collapsed && !isDirectLink && <ChevronIcon open={open} />}
       </button>
-      {!collapsed && (
+      {!collapsed && !isDirectLink && (
         <div className="ux3-nav__category-children" style={{ maxHeight: open ? category.items.length * 32 : 0 }}>
           {category.items.map(item => (
             <button
@@ -287,10 +345,9 @@ function UX3LeftNav({ current, onNav, forceCollapsed = false }) {
   }, [term]);
 
   const homeMatches = !term || HOME_ITEM.label.toLowerCase().includes(term);
-  const kgMatches = !term || KG_ITEM.label.toLowerCase().includes(term);
   const navigatorMatches = !term || NAVIGATOR_ITEM.label.toLowerCase().includes(term);
   const workspaceMatches = !term || WORKSPACE_ITEM.label.toLowerCase().includes(term);
-  const noResults = Boolean(term) && filteredSections.length === 0 && !homeMatches && !kgMatches && !navigatorMatches && !workspaceMatches;
+  const noResults = Boolean(term) && filteredSections.length === 0 && !homeMatches && !navigatorMatches && !workspaceMatches;
 
   const handleSearchIconClick = () => {
     pendingFocusRef.current = true;
@@ -357,16 +414,6 @@ function UX3LeftNav({ current, onNav, forceCollapsed = false }) {
         {filteredSections.map(section => (
           <div key={section.label} className="admin-sidebar__group">
             {!collapsed && <div className="ux3-nav__section-label">{section.label}</div>}
-            {section.label === 'Solutions' && kgMatches && (
-              <button
-                className={`admin-sidebar__item${current === KG_ITEM.id ? ' admin-sidebar__item--active' : ''}`}
-                onClick={() => onNav(KG_ITEM.id)}
-                title={collapsed ? KG_ITEM.label : undefined}
-              >
-                <NavIcon icon={KG_ITEM.icon} />
-                {!collapsed && KG_ITEM.label}
-              </button>
-            )}
             {section.categories.map(category => (
               <CategoryItem
                 key={category.id}

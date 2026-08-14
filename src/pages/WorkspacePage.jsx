@@ -61,6 +61,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   }
 
   const isEditDashboard   = current.startsWith('workspace/dashboard/edit-')
+  const isViewDashboard   = current.startsWith('workspace/dashboard/view-')
   const isSeededDashboard = current.startsWith('workspace/dashboard/new-')
   const isDashboard     = current.startsWith('workspace/dashboard')
   const isReport        = current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/')
@@ -73,10 +74,10 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // Dashboard"). Keyed off the route rather than DashboardCanvas's own mount
   // so it can't race the title/seed read above.
   useEffect(() => {
-    if (!isEditDashboard && editDashboardSeed) setEditDashboardSeed(null)
+    if (!isEditDashboard && !isViewDashboard && editDashboardSeed) setEditDashboardSeed(null)
   }, [current])
 
-  const dashTitle   = isEditDashboard && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')
+  const dashTitle   = (isEditDashboard || isViewDashboard) && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')
   const reportTitle = isReport
     ? (customReportTitles[current] ?? REPORT_TITLES[current] ?? 'Report Template')
     : isReportPreview
@@ -127,17 +128,50 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
       ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
       : [() => handleNav('exposure/overview')]
 
+  const navCollapsed = (collapsed || rightPanelOpen) && !navExpandOverride
+
+  // Same hover-peek-with-delayed-close as App.jsx — see its comment for why
+  // the close needs a grace period instead of firing on mouse-leave.
+  const [navHoverPeek, setNavHoverPeek] = useState(false)
+  const navHoverCloseTimer = useRef(null)
+  useEffect(() => { if (!navCollapsed) setNavHoverPeek(false) }, [navCollapsed])
+  useEffect(() => () => { if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current) }, [])
+  const openNavHoverPeek = () => {
+    if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null }
+    setNavHoverPeek(true)
+  }
+  const scheduleNavHoverClose = () => {
+    if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current)
+    navHoverCloseTimer.current = setTimeout(() => setNavHoverPeek(false), 300)
+  }
+
+  // Same generalized pin/unpin behavior as App.jsx's toggleNavCollapse,
+  // including force-clearing a lingering hover-peek on collapse — see its
+  // comment for why (otherwise clicking "hide" while still hovering the
+  // button looks like nothing happened).
+  const toggleNavCollapse = () => {
+    if (navCollapsed) {
+      setNavExpandOverride(o => !o)
+    } else {
+      setNavExpandOverride(false)
+      setCollapsed(c => !c)
+      if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null }
+      setNavHoverPeek(false)
+    }
+  }
+
   return (
     <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} onNavToggleHoverEnter={openNavHoverPeek} onNavToggleHoverLeave={scheduleNavHoverClose} />
         <div className="wp-body">
           <LeftNav
             current={current}
             onNav={handleNav}
-            collapsed={(collapsed || rightPanelOpen) && !navExpandOverride}
-            onToggleCollapse={() => { setNavExpandOverride(false); setCollapsed(c => !c) }}
-            onExpand={() => setNavExpandOverride(true)}
+            collapsed={navCollapsed}
+            hoverPeek={navHoverPeek}
+            onHoverEnter={openNavHoverPeek}
+            onHoverLeave={scheduleNavHoverClose}
             mode={appMode}
             onModeChange={onModeChange}
           />
@@ -164,7 +198,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                   : isConfigPage
                     ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                     : isDashboard
-                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} viewMode={isViewDashboard} />
                       : isReport
                         ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                         : isReportPreview

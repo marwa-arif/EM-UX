@@ -128,7 +128,6 @@ html.theme-light .ds-btn.t-success { background: var(--pai-low-bg); color: var(-
 .sample-queries-footer { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 48px 24px; background: var(--ctrl-bg); opacity: 0.45; transition: opacity 0.22s; }
 .sample-queries-footer:hover { opacity: 0.85; }
 .sample-queries-footer .sample-queries-list { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px 20px; }
-.sample-queries-label { font-size: 10px; font-weight: 500; color: var(--shell-text-faint); letter-spacing: 0.1em; text-transform: uppercase; }
 .sample-queries-list { display: flex; flex-direction: column; gap: 4px; }
 .sample-q-row { display: flex; align-items: center; gap: 8px; }
 .sample-q-cat { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; width: 54px; flex-shrink: 0; text-align: right; }
@@ -685,6 +684,18 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-composer-send:hover { background: var(--pai-fg2); }
 .np-composer-send:active { transform: scale(0.9); }
 .np-composer-send:disabled { background: var(--pai-border-strong); cursor: not-allowed; }
+.np-composer-row-right { display: flex; align-items: center; gap: 8px; }
+.np-composer-mic {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--pai-fg2); transition: background 0.12s, color 0.12s;
+}
+.np-composer-mic:hover:not(:disabled) { background: rgba(99,96,216,0.12); color: var(--pai-indigo); }
+.np-composer-mic:disabled { opacity: 0.4; cursor: not-allowed; }
+.np-composer-mic.listening {
+  background: var(--danger-bg); color: var(--danger-fg);
+}
 .np-new-chat-btn {
   display: inline-flex; align-items: center; gap: 4px;
   height: 24px; padding: 0 10px;
@@ -727,6 +738,14 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   padding: 12px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
 }
+.np-thought-toggle {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  font-family: inherit; font-size: 11px; color: var(--shell-text-muted);
+}
+.np-thought-toggle:hover { color: var(--pai-indigo); }
+.np-thought-toggle svg { transition: transform 0.15s ease; }
+.np-thought-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 .np-steps { display: flex; flex-direction: column; gap: 4px; }
 .np-step { display: flex; align-items: center; gap: 8px; }
 .np-step span { font-size: 11px; color: var(--shell-text-muted); }
@@ -763,7 +782,6 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 .np-sev-badge.critical { background: rgba(209,35,41,0.1); color: var(--pai-crit-fg); }
 .np-sev-badge.high     { background: rgba(217,139,29,0.1); color: var(--pai-high-fg); }
-.np-response-meta { font-size: 10px; color: var(--shell-text-faint); }
 
 /* ── Header active state ── */
 .np-icon-btn.active { background: rgba(99,96,216,0.1); color: var(--pai-indigo); }
@@ -1052,7 +1070,8 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 /* ─────────────────────────────────────────────────────────────────────
    1. Chat quick bar
    ───────────────────────────────────────────────────────────────────── */
-.np-chat-quickbar {
+.np-chat-quickbar,
+.np-bottom-actions {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 12px 4px; flex-shrink: 0;
 }
@@ -1888,7 +1907,9 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 
 .build-composer-bar {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   padding: 6px 8px;
   border-top: 1px solid var(--shell-border);
 }
@@ -2504,34 +2525,6 @@ html.theme-dark .hv-greeting {
   flex-shrink: 0;
 }
 
-/* Selected context chips inside composer */
-.hv-ctx-chips {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  padding: 16px 16px 0;
-}
-
-.hv-ctx-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 4px 6px 4px 10px; border-radius: 24px;
-  border: 1px solid var(--shell-border, #e6e6e6);
-  background: var(--ctrl-bg, #f5f5f5);
-  box-shadow: 0 2px 6px rgba(129,136,153,0.1);
-  font-size: 14px; color: var(--shell-text, #101010);
-}
-
-.hv-ctx-chip-icon { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--shell-text-muted); }
-.hv-ctx-chip-count { font-weight: 600; font-size: 14px; }
-.hv-ctx-chip-label { font-size: 14px; font-weight: 300; }
-
-.hv-ctx-chip-close {
-  display: flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border: none; background: none;
-  cursor: pointer; border-radius: 50%;
-  color: var(--shell-text-muted); padding: 0; font-family: inherit;
-  transition: color 0.1s, background 0.1s;
-}
-.hv-ctx-chip-close:hover { color: var(--shell-text); background: rgba(0,0,0,0.06); }
-
 /* Textarea area */
 .hv-tx-input { padding: 16px 16px 8px; }
 
@@ -2602,38 +2595,102 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 .hv-entity-pill-count { font-weight: 600; font-size: 14px; }
 .hv-entity-pill-label { font-size: 14px; font-weight: 300; }
 
-/* Sample prompts below entity pills — swap per Ask/Research/Build mode */
-.hv-sample-qs {
-  display: flex; flex-direction: column; gap: 8px;
-  align-items: center; max-width: 560px; width: 100%;
-  margin-top: 20px;
+/* Home tabs — Recent / Suggested / Agents below the composer, replacing the
+   old entity pills + always-visible sample-prompt list. Surfaces the same
+   chats/agents data as the History sidebar (NavSidebar), which is hidden
+   while Home is showing, so both stay one click away. Pill-style tab
+   buttons (icon + label) rather than a flat underline — same rounded-pill
+   language as .hv-entity-pill/.hv-mode-seg-item elsewhere on this screen. */
+.hv-tabs {
+  display: flex; flex-direction: column; gap: 12px;
+  max-width: 860px; width: 100%;
 }
-.hv-sample-qs-list {
-  display: flex; flex-direction: column; gap: 4px;
-  width: 100%;
+.hv-tabs-list {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
 }
-.hv-sample-q {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+.hv-pill-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 24px;
+  border: 1px solid var(--shell-border, #e6e6e6);
+  background: var(--card-bg);
+  cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 500; color: var(--shell-text-2, #6e6e6e);
+  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.hv-pill-tab:hover { border-color: var(--shell-accent, #6360d8); color: var(--shell-text, #101010); }
+.hv-pill-tab.active {
+  border-color: var(--shell-accent, #6360d8);
+  background: rgba(99,96,216,0.08);
+  color: var(--shell-accent, #6360d8);
+  box-shadow: 0 0 0 3px rgba(99,96,216,0.12);
+}
+
+.hv-tab-panel {
+  display: flex; flex-direction: column;
+}
+.hv-tab-row {
+  display: flex; align-items: center; gap: 12px;
   width: 100%; box-sizing: border-box;
-  padding: 10px 14px; border-radius: 8px;
-  border: 1px solid transparent;
+  padding: 10px 4px; border-radius: 8px;
+  border: none; border-bottom: 1px solid var(--shell-border, #e6e6e6);
   background: transparent; cursor: pointer; font-family: inherit;
-  text-align: left;
-  font-size: 12px; color: var(--shell-text-2, #444);
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-align: left; color: var(--shell-text-2, #444);
+  transition: background 0.15s;
 }
-.hv-sample-q:hover {
-  background: var(--shell-hover, rgba(0,0,0,0.04));
-  border-color: var(--shell-border, #e6e6e6);
-  color: var(--shell-text, #101010);
+.hv-tab-row:last-of-type { border-bottom: none; }
+.hv-tab-row:hover { background: var(--shell-hover, rgba(0,0,0,0.04)); }
+.hv-tab-row-icon-tile {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px;
+  background: var(--ctrl-bg, #f5f5f5); color: var(--shell-text-muted);
 }
-.hv-sample-q-text { flex: 1; min-width: 0; }
-.hv-sample-q-icon {
-  display: flex; align-items: center; flex-shrink: 0;
-  color: var(--shell-text-faint, #a3a5af);
-  transition: transform 0.15s, color 0.15s;
+.hv-tab-row-text {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;
 }
-.hv-sample-q:hover .hv-sample-q-icon { color: var(--shell-accent, #6360d8); transform: translateX(2px); }
+.hv-tab-row-title {
+  font-size: 13px; font-weight: 600; color: var(--shell-text, #101010);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hv-tab-row-sub {
+  font-size: 11px; color: var(--shell-text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Suggested rows nest a separate vote-actions block beside the send
+   button, so the row itself is a div (not a button) — .hv-tab-row-main
+   carries the styles .hv-tab-row used to have when it was the button. */
+.hv-tab-row-main {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  text-align: left; padding: 0; color: inherit;
+}
+.hv-tab-row-actions {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s;
+}
+.hv-tab-row:hover .hv-tab-row-actions,
+.hv-tab-row-actions:focus-within {
+  opacity: 1; pointer-events: auto;
+}
+.hv-tab-vote {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: none; background: transparent;
+  color: var(--shell-text-muted); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.hv-tab-vote:hover { background: var(--shell-hover, rgba(0,0,0,0.08)); color: var(--shell-text); }
+.hv-tab-vote.voted-up { color: var(--pai-green); background: rgba(49,165,109,0.14); }
+.hv-tab-vote.voted-down { color: var(--pai-red-high); background: rgba(225,82,82,0.14); }
+.hv-tab-viewall {
+  align-self: flex-start; margin-top: 8px;
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  padding: 6px 4px; font-size: 12px; font-weight: 500; color: var(--shell-accent, #6360d8);
+}
+.hv-tab-viewall:hover { text-decoration: underline; }
+.hv-tab-empty {
+  padding: 16px 4px; font-size: 12px; color: var(--shell-text-muted);
+}
 
 .hv-disclaimer {
   flex-shrink: 0; font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--shell-text-muted);
@@ -3023,6 +3080,7 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   height: 36px; padding: 4px 12px;
   font-size: var(--text-md); gap: 8px;
 }
+.cv-composer-bar-right { display: flex; align-items: center; gap: 8px; }
 
 .cv-disclaimer {
   font-size: var(--text-xs);
@@ -3172,6 +3230,38 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 
 /* ── Agent picker in the Home composer ──────────────────────────────── */
 .hv-composer-bar-left { display: flex; align-items: center; gap: 8px; }
+.hv-composer-bar-right { display: flex; align-items: center; gap: 8px; }
+
+/* ── Voice input (mic) — shared by Home / conversation / build composers,
+   all of which pair it with .nav-send-btn ─────────────────────────────── */
+.nav-mic-btn {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: transparent; border: 1px solid var(--shell-border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--shell-text-muted); transition: background .12s, color .12s, border-color .12s;
+}
+.nav-mic-btn:hover:not(:disabled) { background: rgba(99,96,216,0.08); color: var(--pai-indigo); border-color: var(--pai-indigo); }
+.nav-mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.nav-mic-btn.listening {
+  background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-fg);
+}
+
+/* Animated equalizer swapped in for the mic glyph while listening — each bar
+   scales independently on a staggered delay so it reads as live audio, not
+   a generic spinner. */
+.nav-mic-wave rect {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nav-mic-wave-bar 0.9s ease-in-out infinite;
+}
+.nav-mic-wave rect:nth-child(1) { animation-delay: 0s; }
+.nav-mic-wave rect:nth-child(2) { animation-delay: 0.15s; }
+.nav-mic-wave rect:nth-child(3) { animation-delay: 0.3s; }
+.nav-mic-wave rect:nth-child(4) { animation-delay: 0.45s; }
+@keyframes nav-mic-wave-bar {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
 
 /* ── Agents list page — real data table (ds-table), not a card list ─── */
 .nav-history-page-hdr-spacer { flex: 1; }

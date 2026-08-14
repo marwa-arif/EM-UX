@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
 import SubHeader from '../../components/SubHeader.jsx'
+import {
+  IcUsers, IcUserGroup, IcShield, IcFingerprint, IcKey,
+  IcPlug, IcTicket, IcWebhook,
+  IcLock, IcClipboard, IcCheckBadge, IcArchive,
+  IcGauge, IcBell,
+  IcBuilding, IcCreditCard,
+} from './shared.jsx'
 import { UsersSection, GroupsSection, RolesSection, INITIAL_USERS, INITIAL_GROUPS, INITIAL_ROLES } from './UsersAndAccess.jsx'
 import { SSOSection, ApiKeysSection } from './IdentitySecurity.jsx'
 import { DataSourcesSection, TicketingSection, WebhooksSection } from './DataIntegrations.jsx'
@@ -8,47 +15,51 @@ import { RiskScoringSection, NotificationRulesSection } from './RiskConfig.jsx'
 import { OrganizationSection, BillingSection } from './Workspace.jsx'
 
 /* ── Settings nav structure — shared by every shell the Settings panel
-   can nest inside (classic EM, Studio, UX3, and the Workspace fallback). ── */
+   can nest inside (classic EM, Studio, UX3, and the Workspace fallback).
+   Each item carries an iconNode so LeftNav can render the Admin Console
+   using the exact same NavItem row (icon + label, same font weight, same
+   collapse-to-icon-rail behavior) as the Insights/Fabric Configuration
+   groups, instead of a visually distinct icon-less list. ── */
 export const ADMIN_NAV_GROUPS = [
   {
     label: 'Access',
     items: [
-      { id: 'users',  label: 'Users' },
-      { id: 'groups', label: 'Groups' },
-      { id: 'roles',  label: 'Roles & Permissions' },
-      { id: 'sso',    label: 'Single Sign-On' },
-      { id: 'api-keys', label: 'API Keys' },
+      { id: 'users',  label: 'Users', iconNode: <IcUsers /> },
+      { id: 'groups', label: 'Groups', iconNode: <IcUserGroup /> },
+      { id: 'roles',  label: 'Roles & Permissions', iconNode: <IcShield /> },
+      { id: 'sso',    label: 'Single Sign-On', iconNode: <IcFingerprint /> },
+      { id: 'api-keys', label: 'API Keys', iconNode: <IcKey /> },
     ],
   },
   {
     label: 'Integrations',
     items: [
-      { id: 'data-sources', label: 'Data Sources' },
-      { id: 'ticketing',    label: 'Ticketing & SOAR' },
-      { id: 'webhooks',     label: 'Webhooks' },
+      { id: 'data-sources', label: 'Data Sources', iconNode: <IcPlug /> },
+      { id: 'ticketing',    label: 'Ticketing & SOAR', iconNode: <IcTicket /> },
+      { id: 'webhooks',     label: 'Webhooks', iconNode: <IcWebhook /> },
     ],
   },
   {
     label: 'Security & Compliance',
     items: [
-      { id: 'security',       label: 'Security' },
-      { id: 'audit-log',      label: 'Audit Log' },
-      { id: 'compliance',     label: 'Compliance Frameworks' },
-      { id: 'data-retention', label: 'Data Retention' },
+      { id: 'security',       label: 'Security', iconNode: <IcLock /> },
+      { id: 'audit-log',      label: 'Audit Log', iconNode: <IcClipboard /> },
+      { id: 'compliance',     label: 'Compliance Frameworks', iconNode: <IcCheckBadge /> },
+      { id: 'data-retention', label: 'Data Retention', iconNode: <IcArchive /> },
     ],
   },
   {
     label: 'Risk Configuration',
     items: [
-      { id: 'risk-scoring',      label: 'Risk Scoring' },
-      { id: 'notification-rules', label: 'Notification Rules' },
+      { id: 'risk-scoring',      label: 'Risk Scoring', iconNode: <IcGauge /> },
+      { id: 'notification-rules', label: 'Notification Rules', iconNode: <IcBell /> },
     ],
   },
   {
     label: 'Workspace',
     items: [
-      { id: 'organization', label: 'Organization' },
-      { id: 'billing',      label: 'Billing & Plan' },
+      { id: 'organization', label: 'Organization', iconNode: <IcBuilding /> },
+      { id: 'billing',      label: 'Billing & Plan', iconNode: <IcCreditCard /> },
     ],
   },
 ];
@@ -73,7 +84,7 @@ export function useAdminPanelState() {
   });
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const sectionLabel = ALL_ITEMS.find(s => s.id === activeSection)?.label || 'Admin Panel';
+  const sectionLabel = ALL_ITEMS.find(s => s.id === activeSection)?.label || 'Admin Console';
 
   return {
     activeSection, setActiveSection,
@@ -92,7 +103,7 @@ export function AdminSettingsNav({ activeSection, onSelect }) {
   return (
     <>
       <nav className="settings-panel__nav">
-        <div className="settings-panel__title">Settings</div>
+        <div className="settings-panel__title">Admin Console</div>
         {ADMIN_NAV_GROUPS.map(group => (
           <div key={group.label} className="settings-panel__group">
             <div className="settings-panel__group-label">{group.label}</div>
@@ -121,20 +132,12 @@ export function AdminPanelContent({ state, onNav, onClose }) {
     <>
       <SubHeader
         title={sectionLabel}
-        breadcrumb={['Home', 'Admin Panel']}
+        breadcrumb={['Home', 'Admin Console']}
         breadcrumbHrefs={[null, null]}
         breadcrumbClicks={[onClose]}
         showMenu={false}
         showExplore={false}
         actions={null}
-        leading={
-          <button className="ds-btn sz-md t-outline admin-back-btn" onClick={onClose}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-            Back
-          </button>
-        }
       />
 
       <div className="page-scroll">

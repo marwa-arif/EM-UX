@@ -160,6 +160,13 @@
 
 /* ─── Quick actions toolbar ──────────────────────────────────────── */
 .lib-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+/* SavedPage.jsx renders .lib-toolbar as a direct child of .lib-content, whose
+   own flex gap:16px already spaces it from the table below — the margin-bottom
+   above stacked on top of that gap for a doubled 32px. LibraryPage.jsx nests
+   .lib-toolbar one level deeper (inside a plain, non-gapped wrapper div), where
+   that margin-bottom is still the only thing spacing it from the cards grid,
+   so it stays there; this override only cancels the redundant direct-child case. */
+.lib-content > .lib-toolbar { margin-bottom: 0; }
 .lib-pills   { display: flex; align-items: center; gap: 8px; }
 
 .lib-pill {

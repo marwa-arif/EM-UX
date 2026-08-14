@@ -232,7 +232,7 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
 
   return (
     <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeCfpTrailItem}>
-      <div className="kg-dp-header">
+      <div className="kg-dp-header" data-nav-explore="chart" data-nav-label="Finding Relationships">
         <div className="kg-dp-title-row">
           <div className="kg-dp-title-body">
             <div className="kg-dp-name-row">
@@ -602,7 +602,7 @@ export default function ComplianceFindingsPage({ filter = null, onClearFilter, o
           )}
 
           {/* Table */}
-          <div className="ds-table-wrap cfp-table-wrap">
+          <div className="ds-table-wrap cfp-table-wrap" data-nav-explore="table" data-nav-label="Compliance Findings">
             <table className="ds-table">
               <thead>
                 <tr>

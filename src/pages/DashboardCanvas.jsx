@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
-import { createPortal } from 'react-dom'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import { GF_ENTITIES } from '../components/FilterPanel.jsx'
 import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import { SelectDropdown } from './CompliancePage.jsx'
-import { INITIAL_DATA_SOURCES } from './admin/DataIntegrations.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
 import GridLayout from 'react-grid-layout/legacy'
 import 'react-grid-layout/css/styles.css'
@@ -1950,7 +1948,7 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 // drag/resize), so this card never sets its own grid placement or animates
 // its own position — it just fills whatever box that wrapper gives it (see
 // `.dc-widget-col` in dashboard.css).
-function WidgetCardImpl({ widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, reportMode, printMode = false }) {
+function WidgetCardImpl({ widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, reportMode, viewMode = false, printMode = false }) {
   const [hovered, setHovered]         = useState(false)
   const [dlOpen, setDlOpen]           = useState(false)
   const dlRef                         = useRef(null)
@@ -1976,7 +1974,7 @@ function WidgetCardImpl({ widget, isEditing, onEdit, onRequestDelete, onEditWith
       onMouseLeave={() => setHovered(false)}
     >
       {/* Hover actions */}
-      {hovered && !reportMode && (
+      {hovered && !reportMode && !viewMode && (
         <div className="dc-widget-actions">
           <button title="Move" className="dc-action-btn dc-action-btn--grab">
             <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
@@ -2051,6 +2049,7 @@ export const WidgetCard = React.memo(WidgetCardImpl, (prev, next) =>
   prev.widget === next.widget &&
   prev.isEditing === next.isEditing &&
   prev.reportMode === next.reportMode &&
+  prev.viewMode === next.viewMode &&
   prev.printMode === next.printMode
 )
 
@@ -2829,79 +2828,17 @@ function MomSkeleton() {
   )
 }
 
-// Connected data sources feeding this workspace (same list Admin > Data
-// Integrations manages, see DataIntegrations.jsx) — only ones actually
-// "Connected" make sense to ground a generated dashboard on.
-const HERO_DATA_SOURCES = INITIAL_DATA_SOURCES.filter(s => s.status === 'Connected')
-const HERO_SOURCE_COLORS = ['--shell-accent', '--pai-nav-teal', '--pai-green', '--pai-high-fg', '--pai-purple', '--pai-brand-blue']
-const sourceInitials = (name) => name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
-
-// ── Create-with-Navigator hero ───────────────────────────────────────
+// ── Create-dashboard hero ────────────────────────────────────────────
 // Shown instead of the bare "Add Widget" tile while the canvas has zero
-// widgets — describing a dashboard here hands the prompt to Navigator's
-// real Build reasoning engine (docked right panel), which pushes generated
-// widgets straight onto this canvas as they finish. "Create manually"
-// underneath is the previous, unassisted path (openAdd).
+// widgets. "Create manually" (openAdd) is the primary path; "Use Navigator"
+// opens the docked Copilot/Navigator builder (right panel) so the user
+// describes the dashboard there instead — same onOpenCopilotBuilder({})
+// call the dc-add-widget-tile's "Ask AI" button uses once the canvas
+// already has widgets.
 // Reuses Navigator's own AI-home visual language (hv-bg blobs, hv-greeting's
-// animated gradient text, hv-composer-box's always-on gradient border) —
-// see NavigatorPage.jsx's HomeView — instead of a plain bordered box, so this
-// entry point actually reads as the same AI surface, not a generic form.
-function DashboardCreateHero({ onSubmit, onCreateManually }) {
-  const [prompt, setPrompt] = useState('')
-  const [attachMenuOpen, setAttachMenuOpen] = useState(false)
-  const [attachMenuPos, setAttachMenuPos] = useState({ top: 0, left: 0 })
-  const attachBtnRef = useRef(null)
-  const attachMenuRef = useRef(null)
-  const fileInputRef = useRef(null)
-
-  // .hv-composer-box clips its own content (overflow:hidden, for its rounded
-  // gradient border) — a plain absolutely-positioned dropdown nested inside
-  // it gets cut off, so this portals to <body> instead (same escape-hatch
-  // NavigatorPage.jsx's own agent-picker menu uses for the same reason).
-  useEffect(() => {
-    if (!attachMenuOpen) return
-    const handler = e => {
-      if (attachMenuRef.current?.contains(e.target)) return
-      if (attachBtnRef.current?.contains(e.target)) return
-      setAttachMenuOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [attachMenuOpen])
-
-  const submit = (text) => {
-    const t = (text ?? prompt).trim()
-    if (!t) return
-    onSubmit(t)
-  }
-
-  const appendToPrompt = (fragment) => setPrompt(p => (p.trim() ? `${p.trim()} ${fragment}` : fragment))
-
-  const insertEntity = (entity) => {
-    appendToPrompt(`for ${entity.label}`)
-    setAttachMenuOpen(false)
-  }
-
-  const insertSource = (source) => {
-    appendToPrompt(`from ${source.name}`)
-    setAttachMenuOpen(false)
-  }
-
-  const openAttachMenu = () => {
-    if (!attachMenuOpen && attachBtnRef.current) {
-      const r = attachBtnRef.current.getBoundingClientRect()
-      setAttachMenuPos({ top: r.bottom + 6, left: r.left })
-    }
-    setAttachMenuOpen(o => !o)
-  }
-
-  const handleFileChosen = (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    appendToPrompt(`using data from "${file.name}"`)
-  }
-
+// animated gradient text) — see NavigatorPage.jsx's HomeView — instead of a
+// plain bordered box, so this entry point still reads as the same surface.
+function DashboardCreateHero({ onCreateManually, onUseNavigator }) {
   return (
     <div className="dc-create-hero">
       <div className="hv-bg">
@@ -2911,108 +2848,32 @@ function DashboardCreateHero({ onSubmit, onCreateManually }) {
 
       <div className="dc-create-hero__content">
         <div className="dc-create-hero__badge">
-          <img src="assets/icons/Navigator icon.svg" width={20} height={20} alt="" />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
         </div>
-        <h2 className="hv-greeting">Create a dashboard with Navigator</h2>
-        <p className="hv-sub">Describe the insights you want to see and Navigator will build it for you.</p>
+        <h2 className="hv-greeting">Start building your dashboard</h2>
+        <p className="hv-sub">Add and configure widgets yourself, or let Navigator build it for you.</p>
 
-        <div className="hv-composer-box">
-          <div className="hv-tx-input">
-            <textarea
-              className="hv-composer-ta"
-              rows={2}
-              placeholder='Describe a dashboard, e.g. "critical findings by host and source"…'
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-            />
-          </div>
-          <div className="hv-composer-bar">
-            <div className="dc-create-hero__composer-left">
-              <input ref={fileInputRef} type="file" className="dc-sr-only" onChange={handleFileChosen} />
-              <button
-                ref={attachBtnRef}
-                type="button"
-                className={`np-composer-add${attachMenuOpen ? ' active' : ''}`}
-                onClick={openAttachMenu}
-                aria-label="Attach data to ground this dashboard on"
-                aria-haspopup="menu"
-                aria-expanded={attachMenuOpen}
-                title="Attach data or reference an entity"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
-              {attachMenuOpen && createPortal(
-                <div
-                  className="dc-create-hero__entity-menu"
-                  ref={attachMenuRef}
-                  style={{ '--dc-entity-menu-top': `${attachMenuPos.top}px`, '--dc-entity-menu-left': `${attachMenuPos.left}px` }}
-                >
-                  <button
-                    type="button"
-                    className="dc-create-hero__entity-item"
-                    onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click() }}
-                  >
-                    <span className="dc-create-hero__entity-icon dc-create-hero__entity-icon--upload">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                    </span>
-                    Upload a file
-                  </button>
-
-                  <div className="dc-create-hero__menu-label">Connected data sources</div>
-                  {HERO_DATA_SOURCES.map((source, i) => (
-                    <button type="button" key={source.id} className="dc-create-hero__entity-item" onClick={() => insertSource(source)}>
-                      <span className="dc-create-hero__entity-icon" style={{ '--dc-source-color': `var(${HERO_SOURCE_COLORS[i % HERO_SOURCE_COLORS.length]})` }}>
-                        {sourceInitials(source.name)}
-                      </span>
-                      {source.name}
-                    </button>
-                  ))}
-
-                  <div className="dc-create-hero__menu-label">Reference an entity</div>
-                  {GF_ENTITIES.slice(0, 6).map(entity => (
-                    <button type="button" key={entity.id} className="dc-create-hero__entity-item" onClick={() => insertEntity(entity)}>
-                      <img src={`/assets/icons/${entity.file}`} width={14} height={14} alt="" />
-                      {entity.label}
-                    </button>
-                  ))}
-                </div>,
-                document.body
-              )}
-              <span className="dc-create-hero__hint">Press Enter to generate</span>
-            </div>
-            <button
-              type="button"
-              className="nav-send-btn"
-              disabled={!prompt.trim()}
-              onClick={() => submit()}
-              aria-label="Generate dashboard"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="dc-create-hero__divider"><span>or</span></div>
-
-        <button type="button" className="ds-btn sz-md t-outline" onClick={onCreateManually}>
+        <button type="button" className="ds-btn sz-md t-primary" onClick={onCreateManually}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Create manually
+        </button>
+
+        <div className="dc-create-hero__divider"><span>or</span></div>
+
+        <button type="button" className="ds-btn sz-md t-outline" onClick={onUseNavigator}>
+          <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />
+          Use Navigator
         </button>
       </div>
     </div>
   )
 }
 
-const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '', backTarget = 'workspace/saved' }, ref) {
+const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '', backTarget = 'workspace/saved', viewMode = false }, ref) {
   const { addSavedDashboard, editDashboardSeed } = useWorkspace()
   const { addDownload } = useDownloads()
   const { showToast } = useToast()
@@ -3048,7 +2909,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // seed data, not a report, not an existing dashboard being edited) must
   // have the graph-filter scope popup set before anything else — see the
   // "New Dashboard" flow from the Library.
-  const isNewDashboard = !reportMode && !template && !editSeed && (!seedWidgets || !seedWidgets.length)
+  const isNewDashboard = !reportMode && !viewMode && !template && !editSeed && (!seedWidgets || !seedWidgets.length)
   const [dashboardScope, setDashboardScope] = useState(() =>
     editSeedEntry ? (GF_ENTITIES.find(e => e.id === editSeedEntry.scopeId) ?? null) : null
   )
@@ -3106,7 +2967,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     showToast({ type: 'success', msg: `"${savedName}" has been saved.` })
     onNav('workspace/saved')
   }
-  const isDirty = !reportMode && !(widgets.length === 0 && !name.trim())
+  const isDirty = !reportMode && !viewMode && !(widgets.length === 0 && !name.trim())
     && JSON.stringify({ name, widgets, dashboardScope }) !== lastSavedSnapshotRef.current
   const handleBackClick = () => {
     if (isDirty) { setLeaveConfirmOpen(true); return }
@@ -3300,9 +3161,9 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
         }
         return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: MIN_GW, minH: MIN_GH, maxW: MAX_GW, maxH: MAX_GH }
       })
-      return [...real, { i: '__add__', x: addSlot.gx, y: addSlot.gy, w: addSlot.gw, h: addSlot.gh, static: true }]
+      return viewMode ? real : [...real, { i: '__add__', x: addSlot.gx, y: addSlot.gy, w: addSlot.gw, h: addSlot.gh, static: true }]
     },
-    [layoutWidgets, panelMode, settingsWidgetId, liveSizeId, liveHeightId, addSlot]
+    [layoutWidgets, panelMode, settingsWidgetId, liveSizeId, liveHeightId, addSlot, viewMode]
   )
 
   // Fired once per completed drag/resize gesture (not per intermediate
@@ -3443,6 +3304,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 value={name} onChange={e => { setName(e.target.value); onNameChange?.(e.target.value) }}
                 placeholder={reportMode ? 'Enter report name here...' : 'Enter dashboard name here...'}
                 className="dc-toolbar-name-input"
+                readOnly={viewMode}
               />
 
               {!reportMode && (
@@ -3450,7 +3312,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   type="button"
                   className="dc-scope-badge"
                   title="Dashboard Scope"
-                  onClick={() => { setScopeMandatory(false); setScopeModalOpen(true) }}
+                  onClick={() => { if (viewMode) return; setScopeMandatory(false); setScopeModalOpen(true) }}
                 >
                   <span className="dc-btn-label">{dashboardScope ? dashboardScope.label : 'Dashboard Scope'}</span>
                   <span className="dc-scope-icon">
@@ -3525,20 +3387,21 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
               <div className="dc-toolbar-spacer" />
 
-              {!reportMode && (
+              {!reportMode && !viewMode && (
                 <button className="ds-btn sz-md t-outline" onClick={() => openSaveModal('save-as')}>Save As</button>
               )}
 
               <button
                 className="ds-btn sz-md t-primary"
                 onClick={() => {
+                  if (viewMode) { onNav(`workspace/dashboard/edit-${dashboardId}`); return }
                   if (!reportMode) { openSaveModal('save'); return }
                   const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
                     : templateId === 'month-over-month' ? 'month-over-month'
                     : 'executive-summary'
                   onNav(`workspace/report-preview/${previewSlug}`)
                 }}
-              >{reportMode ? 'Preview' : 'Save'}</button>
+              >{viewMode ? 'Edit' : reportMode ? 'Preview' : 'Save'}</button>
             </div>
           </div>
 
@@ -3590,10 +3453,12 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   </div>
                 )
               })()
+            ) : (widgets.length === 0 && viewMode) ? (
+              <div className="dc-empty-state">No widgets to display.</div>
             ) : (widgets.length === 0 && panelMode !== 'add') ? (
               <DashboardCreateHero
-                onSubmit={text => onOpenCopilotBuilder?.({ initialPrompt: text })}
                 onCreateManually={openAdd}
+                onUseNavigator={() => onOpenCopilotBuilder?.({})}
               />
             ) : (
               <div
@@ -3615,6 +3480,8 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                     transformScale={zoom}
                     useCSSTransforms
                     compactType="vertical"
+                    isDraggable={!viewMode}
+                    isResizable={!viewMode}
                     onDragStart={() => setInteracting(true)}
                     onDragStop={layout => { setInteracting(false); commitRglLayout(layout) }}
                     onResizeStart={() => setInteracting(true)}
@@ -3639,6 +3506,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                             onRequestDelete={w => setDeletePending(w)}
                             onEditWithCopilot={w => onOpenCopilotBuilder?.({ widgetId: w.id, widgetLabel: w.label })}
                             reportMode={false}
+                            viewMode={viewMode}
                           />
                         </div>
                       )
@@ -3647,7 +3515,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                     {/* Add Widget tile / live preview — a real (static) grid
                         item placed by packWidgets like any other widget, so
                         it lands in whatever gap is actually free instead of
-                        always starting a new row below everything. */}
+                        always starting a new row below everything. Omitted
+                        entirely in viewMode (see rglLayout above, which drops
+                        its layout entry too). */}
+                    {!viewMode && (
                     <div key="__add__">
                       {panelMode === 'add' ? (
                         <div className="dc-preview-col">
@@ -3701,6 +3572,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                         </div>
                       )}
                     </div>
+                    )}
                   </GridLayout>
                 )}
               </div>
@@ -3717,13 +3589,13 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               onZoomIn={zoomIn}
               onZoomOut={zoomOut}
               onZoomReset={zoomReset}
-              onReset={reportMode ? undefined : () => { setWidgets([]); setName(''); setPanelMode(null) }}
+              onReset={(reportMode || viewMode) ? undefined : () => { setWidgets([]); setName(''); setPanelMode(null) }}
             />
           )}
         </div>
 
         {/* ── Right Panel (custom dashboards only, not report mode) ── */}
-        {panelMode === 'add' && !reportMode && (
+        {panelMode === 'add' && !reportMode && !viewMode && (
           <AddWidgetPanel
             selected={selectedChart} setSelected={setSelectedChart}
             widgetTitle={widgetTitle} setWidgetTitle={setWidgetTitle}

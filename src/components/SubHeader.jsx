@@ -162,6 +162,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
                 onClick={handlePillClick}
                 title={savedFilterChip ? `Saved filter applied: ${savedFilterChip.value}` : undefined}
                 className={`subheader__filter-pill subheader__filter-pill--active${filterPillOpen ? ' subheader__filter-pill--open' : ''}${savedFilterChip ? ' subheader__filter-pill--saved' : ''}`}
+                data-tour="page-filter-pill"
               >
                 {savedFilterChip ? (
                   <>

@@ -2705,7 +2705,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
         <div className="comp-top-row">
 
           {/* Score card */}
-          <div className="card comp-score-card">
+          <div className="card comp-score-card" data-nav-explore="chart" data-nav-label="Compliance Score Trend">
             {/* Header row */}
             <div className="comp-score-header">
               <span className="comp-score-label">Score</span>
@@ -2779,7 +2779,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
           </div>
 
           {/* Worst Performing Assessments */}
-          <div className="card comp-rating-card">
+          <div className="card comp-rating-card" data-nav-explore="section" data-nav-label="Worst Performing Assessments">
             <div className="comp-rating-header">
               <div className="comp-rating-title">Worst Performing Assessments (Top 10)</div>
               <div className="comp-rating-col-labels">
@@ -2839,7 +2839,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
             </div>
           </div>
 
-          <div className="comp-domain-table-wrap">
+          <div className="comp-domain-table-wrap" data-nav-explore="table" data-nav-label="Function Compliance Breakdown">
             <table className="comp-domain-table">
               <colgroup>
                 <col />

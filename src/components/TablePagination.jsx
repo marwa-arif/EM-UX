@@ -46,7 +46,7 @@ export default function TablePagination({ total, page, rowsPerPage, onPageChange
   const pageNums    = getPageNums(safePage, totalPages);
 
   return (
-    <div className="tpg">
+    <div className="tpg" data-tour="page-table-pagination">
       <div className="tpg__left">
         <div className="tpg__counts">
           {ROWS_OPTIONS.map(n => (

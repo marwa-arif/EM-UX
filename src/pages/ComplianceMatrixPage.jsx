@@ -394,7 +394,7 @@ export default function ComplianceMatrixPage({ onCellClick }) {
         </div>
 
         {/* Grid wrapper */}
-        <div className="comp-matrix-grid-wrap">
+        <div className="comp-matrix-grid-wrap" data-nav-explore="table" data-nav-label="Compliance Matrix">
           <div className="comp-matrix-scroll-outer">
           <div className="comp-matrix-scroll-inner">
           <table className="comp-matrix-table">

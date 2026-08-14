@@ -6,6 +6,7 @@ import ReasoningEngine, { createExchange, useReasoningEngine } from '../componen
 import CanvasPanel, { ChatDragger, ExchangeResult, FeedbackRow } from '../components/CanvasPanel.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import { useToast } from '../context/ToastCtx.jsx'
+import { useSpeechToText } from '../hooks/useSpeechToText.js'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
 const RECENT_CHATS = [
@@ -28,28 +29,24 @@ const CTX_PILLS = [
   { id: 'vuln',     label: 'CVEs',       count: 634  },
 ];
 
-
-// Each sample query is worded to reliably land in its labeled tier when run through
-// classifyQuery() — e.g. risk/deep phrasing is imperative rather than "what is/are…"
-// so it doesn't get intercepted by the (intentionally broad) concept-question regex.
-const SAMPLE_QUERIES = [
-  { cat: 'quick',      q: 'Show me all admin users' },
-  { cat: 'graph',      q: 'Which identities have access to the payment gateway, and what roles grant that access?' },
-  { cat: 'risk',       q: 'Show me the highest risk vulnerabilities right now' },
-  { cat: 'deep',       q: 'Run a full exposure analysis across all entity types and correlate risk indicators' },
-  { cat: 'concept',    q: 'What is an exposure score?' },
-  { cat: 'data-dict',  q: 'What does privilege_level mean?' },
-  { cat: 'summary',    q: 'Give me a summary of my current exposure' },
-  { cat: 'web',        q: 'Tell me about CVE-2024-38812' },
-];
-
 // ── SVG icons (inline Lucide-style) ─────────────────────────────────
 const IcChat     = () => <Ic size={14} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
 const IcBook     = () => <Ic size={14} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />;
-const IcChevR    = () => <Ic size={12} path={<><path d="m9 18 6-6-6-6"/></>} />;
 const IcGrid     = () => <Ic size={14} path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>} />;
 const IcChevDown = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
 const IcSend     = () => <Ic size={16} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />;
+const IcMic      = () => <Ic size={14} path={<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></>} />;
+// Shown in place of IcMic while listening — an animated equalizer to signal
+// speech is actively being captured, since the static mic glyph alone
+// doesn't convey "recording in progress".
+const IcVoiceWave = () => (
+  <svg width="16" height="14" viewBox="0 0 16 14" className="nav-mic-wave" aria-hidden="true">
+    <rect x="0"    y="4" width="2.5" height="6"  rx="1.25" fill="currentColor" />
+    <rect x="4.5"  y="1" width="2.5" height="12" rx="1.25" fill="currentColor" />
+    <rect x="9"    y="3" width="2.5" height="8"  rx="1.25" fill="currentColor" />
+    <rect x="13.5" y="0" width="2.5" height="14" rx="1.25" fill="currentColor" />
+  </svg>
+);
 const IcChevD    = () => <Ic size={12} path={<><path d="m6 9 6 6 6-6"/></>} />;
 const IcEdit     = () => <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />;
 const IcSidebar  = () => <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></>} />;
@@ -369,29 +366,6 @@ const MODE_PLACEHOLDERS = {
   build:    'Describe a dashboard, e.g. “critical findings by host and source”…',
 };
 
-const SAMPLE_BUILDS = [
-  { cat: 'expose',  q: 'Critical findings by host and data source' },
-  { cat: 'cloud',   q: 'Cloud account exposure and misconfigurations' },
-  { cat: 'ident',   q: 'Identity and access risk overview' },
-  { cat: 'trend',   q: 'Findings trend over time by severity' },
-  { cat: 'cve',     q: 'Top CVEs affecting my infrastructure' },
-  { cat: 'summary', q: 'Compliance posture across all frameworks' },
-];
-
-const SAMPLE_RESEARCH = [
-  'Investigate the root cause of repeated SSH exposure across production hosts',
-  'Compare our exposure trend against last quarter and explain the drivers',
-  'Research emerging threat actors targeting our industry',
-  'Deep-dive into identity risk across all privileged accounts',
-];
-
-// Sample prompts shown on HomeView, keyed by the active Ask/Research/Build mode.
-const SAMPLE_QS_BY_MODE = {
-  ask:      SAMPLE_QUERIES,
-  research: SAMPLE_RESEARCH.map(q => ({ cat: null, q })),
-  build:    SAMPLE_BUILDS.slice(0, 4).map(s => ({ cat: null, q: s.q })),
-};
-
 const BUILD_SUGGESTIONS = [
   { id: 'bs1', label: 'Critical findings count',  chartId: 'kpi'     },
   { id: 'bs2', label: 'Findings by source',        chartId: 'hor-bar' },
@@ -413,12 +387,6 @@ function NavSidebar({
   const starred = chats.filter(c => c.starred);
   const recent = chats.filter(c => !c.starred).slice(0, 6);
   const [confirmDelete, setConfirmDelete] = useState(null);
-
-  const agentMeta = (a) => {
-    if (a.triggerType === 'manual') return 'Manual';
-    const freq = SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || 'Scheduled';
-    return a.scheduleTime ? `${freq} · ${a.scheduleTime}` : freq;
-  };
 
   const renderChatRow = (c) => collapsed ? (
     <button
@@ -552,31 +520,152 @@ function NavSidebar({
   );
 }
 
-function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
+function agentMeta(a) {
+  if (a.triggerType === 'manual') return 'Manual';
+  const freq = SCHEDULE_FREQUENCIES.find(f => f.id === a.scheduleFreq)?.label || 'Scheduled';
+  return a.scheduleTime ? `${freq} · ${a.scheduleTime}` : freq;
+}
+
+const SUGGESTED_PROMPTS = [
+  'Show me the highest risk vulnerabilities right now',
+  'Give me a summary of my current exposure',
+  'Which identities have access to the payment gateway, and what roles grant that access?',
+  'Run a full exposure analysis across all entity types and correlate risk indicators',
+  'What is an exposure score?',
+];
+
+const IcBulb = () => <Ic size={14} path={<><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.472V15h8v-2.528A6 6 0 0 0 12 2Z" /></>} />;
+const IcThumbsUp = () => <Ic size={13} path={<><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" /></>} />;
+const IcThumbsDown = () => <Ic size={13} path={<><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L13 22h0a3.13 3.13 0 0 1-3-3.88Z" /></>} />;
+
+const HOME_TABS = [
+  { id: 'suggested', label: 'Suggested', Icon: IcBulb,  rowIcon: IcBulb },
+  { id: 'recent',    label: 'Recent',    Icon: IcClock, rowIcon: IcChat },
+  { id: 'agents',    label: 'Agents',    Icon: IcBot,   rowIcon: IcBot },
+];
+
+// Home-screen content below the composer — replaces the old always-visible
+// sample-question list with pill tabs (Recent / Suggested / Agents) so
+// Recent conversations and saved Agents (otherwise only reachable via the
+// History sidebar, hidden on Home) stay one click away before it reappears.
+function HomeTabs({ chats, onSelectChat, onViewAllChats, agents, onRunAgent, onViewAllAgents, onSend, mode }) {
+  const [tab, setTab] = useState('suggested');
+  const [suggestionVotes, setSuggestionVotes] = useState({});
+  const voteSuggestion = (i, dir) => setSuggestionVotes(prev => ({ ...prev, [i]: prev[i] === dir ? null : dir }));
+  const recentChats = chats.slice(0, 6);
+  const recentAgents = agents.slice(0, 6);
+  const RowIcon = HOME_TABS.find(t => t.id === tab).rowIcon;
+
+  return (
+    <div className="hv-tabs">
+      <div className="hv-tabs-list">
+        {HOME_TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            className={`hv-pill-tab${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            <t.Icon /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="hv-tab-panel">
+        {tab === 'recent' && (
+          recentChats.length === 0 ? (
+            <div className="hv-tab-empty">No recent searches yet.</div>
+          ) : (
+            <>
+              {recentChats.map(c => (
+                <button key={c.id} type="button" className="hv-tab-row" onClick={() => onSelectChat(c.label)}>
+                  <span className="hv-tab-row-icon-tile"><RowIcon /></span>
+                  <span className="hv-tab-row-text">
+                    <span className="hv-tab-row-title">{c.label}</span>
+                    <span className="hv-tab-row-sub">{c.time}</span>
+                  </span>
+                </button>
+              ))}
+              <button type="button" className="hv-tab-viewall" onClick={onViewAllChats}>View all conversations</button>
+            </>
+          )
+        )}
+
+        {tab === 'suggested' && SUGGESTED_PROMPTS.map((q, i) => {
+          const vote = suggestionVotes[i];
+          return (
+            <div key={i} className="hv-tab-row">
+              <button type="button" className="hv-tab-row-main" onClick={() => onSend(q, mode)}>
+                <span className="hv-tab-row-icon-tile"><RowIcon /></span>
+                <span className="hv-tab-row-text">
+                  <span className="hv-tab-row-title">{q}</span>
+                </span>
+              </button>
+              <div className="hv-tab-row-actions">
+                <button
+                  type="button"
+                  className={`hv-tab-vote${vote === 'up' ? ' voted-up' : ''}`}
+                  aria-label="Good suggestion"
+                  aria-pressed={vote === 'up'}
+                  title="Good suggestion"
+                  onClick={(e) => { e.stopPropagation(); voteSuggestion(i, 'up'); }}
+                >
+                  <IcThumbsUp />
+                </button>
+                <button
+                  type="button"
+                  className={`hv-tab-vote${vote === 'down' ? ' voted-down' : ''}`}
+                  aria-label="Bad suggestion"
+                  aria-pressed={vote === 'down'}
+                  title="Bad suggestion"
+                  onClick={(e) => { e.stopPropagation(); voteSuggestion(i, 'down'); }}
+                >
+                  <IcThumbsDown />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {tab === 'agents' && (
+          recentAgents.length === 0 ? (
+            <div className="hv-tab-empty">No agents yet.</div>
+          ) : (
+            <>
+              {recentAgents.map(a => (
+                <button key={a.id} type="button" className="hv-tab-row" onClick={() => onRunAgent(a)}>
+                  <span className="hv-tab-row-icon-tile"><RowIcon /></span>
+                  <span className="hv-tab-row-text">
+                    <span className="hv-tab-row-title">{a.name}</span>
+                    <span className="hv-tab-row-sub">{agentMeta(a)}</span>
+                  </span>
+                </button>
+              ))}
+              <button type="button" className="hv-tab-viewall" onClick={onViewAllAgents}>View all agents</button>
+            </>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onSelectChat, onViewAllChats, onRunAgent, onViewAllAgents }) {
   const [query, setQuery] = useState('');
-  const [contextFilters, setContextFilters] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [agentMenuPos, setAgentMenuPos] = useState({ bottom: 0, left: 0 });
   const agentBtnRef = useRef(null);
+  const { showToast } = useToast();
+  const { listening: micOn, toggle: toggleMic, supported: micSupported } = useSpeechToText(
+    err => showToast({ type: 'error', msg: err === 'not-allowed' ? 'Microphone access was denied' : 'Voice input failed' })
+  );
 
-  const toggleFilter = (pill) => {
-    setContextFilters(prev =>
-      prev.find(c => c.id === pill.id)
-        ? prev.filter(c => c.id !== pill.id)
-        : [...prev, pill]
-    );
-  };
-
-  const removeFilter = (id) => setContextFilters(prev => prev.filter(c => c.id !== id));
-
-  const hasContent = !!query.trim() || contextFilters.length > 0 || !!selectedAgent;
+  const hasContent = !!query.trim() || !!selectedAgent;
 
   const handleSend = () => {
     if (!hasContent) return;
-    const text = query.trim()
-      || selectedAgent?.instructions
-      || `Show ${contextFilters.map(c => c.label).join(', ')}`;
+    const text = query.trim() || selectedAgent?.instructions;
     onSend(text, mode, selectedAgent);
     setSelectedAgent(null);
   };
@@ -599,21 +688,6 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
         </div>
 
         <div className="hv-composer-box">
-          {contextFilters.length > 0 && (
-            <div className="hv-ctx-chips">
-              {contextFilters.map(c => (
-                <div key={c.id} className="hv-ctx-chip">
-                  <span className="hv-ctx-chip-icon"><c.Icon /></span>
-                  <span className="hv-ctx-chip-count">{c.count}</span>
-                  <span className="hv-ctx-chip-label"> {c.label}</span>
-                  <button className="hv-ctx-chip-close" onClick={() => removeFilter(c.id)}>
-                    <Ic size={12} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div className="hv-tx-input">
             <textarea
               className="hv-composer-ta"
@@ -698,40 +772,34 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents }) {
                 ))}
               </div>
             </div>
-            <button className="nav-send-btn" disabled={!hasContent} onClick={handleSend}>
-              <IcSend />
-            </button>
-          </div>
-        </div>
-
-        <div className="hv-entity-pills">
-          {ENTITY_PILLS.map(pill => {
-            const isSelected = !!contextFilters.find(c => c.id === pill.id);
-            return (
+            <div className="hv-composer-bar-right">
               <button
-                key={pill.id}
-                className={`hv-entity-pill${isSelected ? ' selected' : ''}`}
-                onClick={() => toggleFilter(pill)}
+                className={`nav-mic-btn${micOn ? ' listening' : ''}`}
+                disabled={!micSupported}
+                onClick={() => toggleMic(query, setQuery)}
+                aria-label={micOn ? 'Stop voice input' : 'Start voice input'}
+                aria-pressed={micOn}
+                title={micSupported ? (micOn ? 'Stop voice input' : 'Voice input') : 'Voice input not supported in this browser'}
               >
-                <span className="hv-entity-pill-icon"><pill.Icon /></span>
-                <span className="hv-entity-pill-count">{pill.count}</span>
-                <span className="hv-entity-pill-label"> {pill.label}</span>
+                {micOn ? <IcVoiceWave /> : <IcMic />}
               </button>
-            );
-          })}
-        </div>
-
-        <div className="hv-sample-qs">
-          <span className="sample-queries-label">Try asking</span>
-          <div className="hv-sample-qs-list">
-            {SAMPLE_QS_BY_MODE[mode].map((s, i) => (
-              <button key={i} className="hv-sample-q sample-q-row" onClick={() => onSend(s.q, mode)}>
-                <span className="hv-sample-q-text">{s.q}</span>
-                <span className="hv-sample-q-icon"><IcChevR /></span>
+              <button className="nav-send-btn" disabled={!hasContent} onClick={handleSend}>
+                <IcSend />
               </button>
-            ))}
+            </div>
           </div>
         </div>
+
+        <HomeTabs
+          chats={chats}
+          onSelectChat={onSelectChat}
+          onViewAllChats={onViewAllChats}
+          agents={agents}
+          onRunAgent={onRunAgent}
+          onViewAllAgents={onViewAllAgents}
+          onSend={onSend}
+          mode={mode}
+        />
       </div>
 
       <p className="hv-disclaimer">Navigator uses your connected data sources. Verify critical findings independently.</p>
@@ -1016,6 +1084,9 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
   const [customTitle, setCustomTitle] = useState('');
   const [confirmDeleteThread, setConfirmDeleteThread] = useState(false);
   const { showToast } = useToast();
+  const { listening: micOn, toggle: toggleMic, supported: micSupported } = useSpeechToText(
+    err => showToast({ type: 'error', msg: err === 'not-allowed' ? 'Microphone access was denied' : 'Voice input failed' })
+  );
   const splitRef = useRef(null);
   const messagesEndRef = useRef(null);
   const modeTriggerRef = useRef(null);
@@ -1192,15 +1263,27 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
             <IcSettings />
             {appliedMode === 'agentic' ? 'Agentic' : 'Interactive'} · {DEPTH_LEVELS[appliedDepth].label}
           </button>
-          {canStop ? (
-            <button className="nav-send-btn" onClick={handleStop} title="Stop generating">
-              <span className="nav-stop-icon" />
+          <div className="cv-composer-bar-right">
+            <button
+              className={`nav-mic-btn${micOn ? ' listening' : ''}`}
+              disabled={!micSupported}
+              onClick={() => toggleMic(followUp, setFollowUp)}
+              aria-label={micOn ? 'Stop voice input' : 'Start voice input'}
+              aria-pressed={micOn}
+              title={micSupported ? (micOn ? 'Stop voice input' : 'Voice input') : 'Voice input not supported in this browser'}
+            >
+              {micOn ? <IcVoiceWave /> : <IcMic />}
             </button>
-          ) : (
-            <button className="nav-send-btn" disabled={!followUp.trim()} onClick={handleSend}>
-              <IcSend />
-            </button>
-          )}
+            {canStop ? (
+              <button className="nav-send-btn" onClick={handleStop} title="Stop generating">
+                <span className="nav-stop-icon" />
+              </button>
+            ) : (
+              <button className="nav-send-btn" disabled={!followUp.trim()} onClick={handleSend}>
+                <IcSend />
+              </button>
+            )}
+          </div>
         </div>
       </div>
       <p className="cv-disclaimer">Always review the accuracy of responses.</p>
@@ -1494,6 +1577,10 @@ function BuildView({ initialQuery, onGoHome, onNav }) {
   const [chatWidth, setChatWidth] = useState(null);
   const msgsEndRef = useRef(null);
   const splitRef = useRef(null);
+  const { showToast } = useToast();
+  const { listening: micOn, toggle: toggleMic, supported: micSupported } = useSpeechToText(
+    err => showToast({ type: 'error', msg: err === 'not-allowed' ? 'Microphone access was denied' : 'Voice input failed' })
+  );
 
   const handleDrag = (deltaX) => {
     setChatWidth(w => {
@@ -1639,6 +1726,16 @@ function BuildView({ initialQuery, onGoHome, onNav }) {
                 }}
               />
               <div className="build-composer-bar">
+                <button
+                  className={`nav-mic-btn${micOn ? ' listening' : ''}`}
+                  disabled={!micSupported}
+                  onClick={() => toggleMic(input, setInput)}
+                  aria-label={micOn ? 'Stop voice input' : 'Start voice input'}
+                  aria-pressed={micOn}
+                  title={micSupported ? (micOn ? 'Stop voice input' : 'Voice input') : 'Voice input not supported in this browser'}
+                >
+                  {micOn ? <IcVoiceWave /> : <IcMic />}
+                </button>
                 <button
                   className="nav-send-btn"
                   disabled={!input.trim()}
@@ -2197,7 +2294,7 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
 // of being reset back to Home.
 const AGENTS_STORAGE_KEY = 'nav-agents';
 
-export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav }) {
+export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange }) {
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
@@ -2219,6 +2316,11 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   useEffect(() => {
     localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
   }, [agents]);
+
+  useEffect(() => {
+    onHomeStateChange?.(view === 'home');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   useEffect(() => {
     if (!mounted.current) { mounted.current = true; return; }
@@ -2289,25 +2391,38 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
 
   return (
     <div className="nav-page-shell">
-      <NavSidebar
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        onNewChat={goHome}
-        chats={chats}
-        activeLabel={view === 'chat' ? activeQuery : null}
-        onSelectChat={handleSelectChat}
-        onToggleStar={handleToggleStarChat}
-        onRename={handleRenameChat}
-        onDelete={handleDeleteChat}
-        onViewAllChats={openHistoryPage}
-        agents={agents}
-        onRunAgent={handleRunAgent}
-        onCreateAgent={goCreateAgent}
-        onViewAllAgents={openAgentsList}
-      />
+      {view !== 'home' && (
+        <NavSidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+          onNewChat={goHome}
+          chats={chats}
+          activeLabel={view === 'chat' ? activeQuery : null}
+          onSelectChat={handleSelectChat}
+          onToggleStar={handleToggleStarChat}
+          onRename={handleRenameChat}
+          onDelete={handleDeleteChat}
+          onViewAllChats={openHistoryPage}
+          agents={agents}
+          onRunAgent={handleRunAgent}
+          onCreateAgent={goCreateAgent}
+          onViewAllAgents={openAgentsList}
+        />
+      )}
       <div className="nav-page-content-only">
         {view === 'home' && (
-          <HomeView onSend={handleSend} mode={mode} onModeChange={setMode} onOpenAgents={openAgentsList} agents={agents} />
+          <HomeView
+            onSend={handleSend}
+            mode={mode}
+            onModeChange={setMode}
+            onOpenAgents={openAgentsList}
+            agents={agents}
+            chats={chats}
+            onSelectChat={handleSelectChat}
+            onViewAllChats={openHistoryPage}
+            onRunAgent={handleRunAgent}
+            onViewAllAgents={openAgentsList}
+          />
         )}
         {view === 'chat' && (
           <ChatView query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />

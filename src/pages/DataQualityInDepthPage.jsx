@@ -914,7 +914,7 @@ function AttributeDetailDrawer({ attr, node, entity, vendors, onClose }) {
     <>
       <div className="comp-drawer-backdrop" onClick={handleClose} />
       <button className="comp-drawer-close-ext dqid-drawer-close-ext" onClick={handleClose}><IcClose /></button>
-      <div className={`comp-drawer dqid-drawer${closing ? ' comp-drawer--closing' : ''}`}>
+      <div className={`comp-drawer dqid-drawer${closing ? ' comp-drawer--closing' : ''}`} data-nav-explore="section" data-nav-label="Attribute Detail">
         <div className="comp-drawer-header">
           <div className="comp-drawer-header-content">
             <div className="comp-drawer-title-row">
@@ -1206,7 +1206,7 @@ export default function DataQualityInDepthPage() {
         <ScoreLegend />
       </div>
 
-      <div className="dqid-canvas">
+      <div className="dqid-canvas" data-nav-explore="section" data-nav-label="Entity Data Lineage">
         <div className="dqid-canvas__header">
           <DimensionTabStrip dims={dims} active={activeDim} onChange={setActiveDim} />
         </div>

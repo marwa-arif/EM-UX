@@ -24,18 +24,17 @@ const PAGE_LABELS = {
   'report/compliance-matrix': 'Report · Compliance Matrix',
   'report/compliance-findings': 'Report · Compliance Findings',
   kg: 'Knowledge Graph',
+  'graph/blast-radius': 'Blast Radius',
   'data-quality/overview': 'Data Quality · Overview',
   'data-quality/in-depth': 'Data Quality · In-Depth',
   'remediation/queue': 'Remediation · Queue',
   'remediation/closed': 'Remediation · Closed',
   'client/servers': 'Client Specific · Servers',
   'client/networks': 'Client Specific · Networks',
-  'studio/workspace/device': 'Studio · Workspace · Device',
-  'studio/workspace/cloud': 'Studio · Workspace · Cloud',
-  'studio/pipeline/device': 'Studio · Pipeline · Device',
-  'studio/pipeline/cloud': 'Studio · Pipeline · Cloud',
-  'studio/ontology/device': 'Studio · Ontology · Device',
-  'studio/ontology/cloud': 'Studio · Ontology · Cloud',
+  'studio-home': 'Studio · Home',
+  'studio/pipeline-builder/coming-soon': 'Studio · Pipeline Builder',
+  'studio/data-ingestion/coming-soon': 'Studio · Data Ingestion',
+  'studio/ontology/coming-soon': 'Studio · Ontology',
 };
 
 function UX3Placeholder({ pageLabel, onExploreCurrent }) {
@@ -103,7 +102,11 @@ function UX3Page({ onNav, initialRoute, theme, onToggleTheme, settingsOpen, admi
 
   return (
     <div className="app-shell">
-      <Topbar onNav={onNav} theme={theme} onToggleTheme={onToggleTheme} showProductSwitcher />
+      <Topbar
+        onNav={onNav}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+      />
       <div className="app-body">
         <UX3LeftNav current={subRoute} onNav={handleSubNav} forceCollapsed={settingsOpen} />
         {settingsOpen ? (

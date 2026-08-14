@@ -322,6 +322,7 @@ export function SaveFilterModal({ onClose, onSave }) {
 export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId }) {
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [resetImplicitToo, setResetImplicitToo] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
 
   const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
@@ -355,7 +356,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
   const panel = (
     <>
       <div className="afp-backdrop" onMouseDown={onClose} />
-      <div className="afp-panel" style={panelPosVars}>
+      <div className="afp-panel" style={panelPosVars} data-tour="page-filter-panel">
 
         <div className="afp-header">
           <div className="afp-header-left">
@@ -371,7 +372,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
               </div>
               <span className="afp-toggle-label">Implicit Filters</span>
             </label>
-            <button className="afp-close-btn" onClick={onClose}><IcClose /></button>
+            <button className="afp-close-btn" onClick={onClose} data-tour="page-filter-close"><IcClose /></button>
           </div>
         </div>
 
@@ -470,7 +471,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
         </div>
 
         <div className="afp-footer">
-          <button className="afp-reset-btn" data-tooltip="Will only reset explicit filters" onClick={() => setShowResetConfirm(true)}>
+          <button className="afp-reset-btn" data-tooltip="Resets explicit filters — implicit filters optional" onClick={() => setShowResetConfirm(true)}>
             Reset Filters
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 7.2561C8.84388 7.2562 9.5127 7.92682 9.5127 8.76978C9.5126 9.61265 8.84382 10.2824 8 10.2825C7.15609 10.2825 6.48642 9.61271 6.48633 8.76978C6.48633 7.92676 7.15603 7.2561 8 7.2561Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
@@ -508,14 +509,38 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                 </svg>
                 Reset All Filters
               </span>
-              <button className="ds-modal-close" onClick={() => setShowResetConfirm(false)} aria-label="Close">×</button>
+              <button className="ds-modal-close" onClick={() => { setShowResetConfirm(false); setResetImplicitToo(false) }} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">
-              This will remove all explicit filters from your current view. Implicit filters will remain active. This action cannot be undone.
+              <p className="afp-reset-modal-copy">
+                This clears every explicit filter you've applied to this view. This action cannot be undone.
+              </p>
+              <label className="afp-reset-implicit-row">
+                <input
+                  type="checkbox"
+                  checked={resetImplicitToo}
+                  onChange={e => setResetImplicitToo(e.target.checked)}
+                />
+                <span>
+                  Also remove implicit filters
+                  <span className="afp-reset-implicit-hint">Implicit filters set this page's default scope — removing them may broaden what data you see.</span>
+                </span>
+              </label>
             </div>
             <div className="ds-modal-footer">
-              <button className="ds-btn sz-md t-outline" onClick={() => setShowResetConfirm(false)}>Cancel</button>
-              <button className="ds-btn sz-md t-danger" onClick={() => { setShowResetConfirm(false); onClear?.(); onClose() }}>Reset Filters</button>
+              <button className="ds-btn sz-md t-outline" onClick={() => { setShowResetConfirm(false); setResetImplicitToo(false) }}>Cancel</button>
+              <button
+                className="ds-btn sz-md t-danger"
+                onClick={() => {
+                  onClear?.()
+                  if (resetImplicitToo) setImplicitFilters(false)
+                  setShowResetConfirm(false)
+                  setResetImplicitToo(false)
+                  onClose()
+                }}
+              >
+                {resetImplicitToo ? 'Reset All Filters' : 'Reset Explicit Filters'}
+              </button>
             </div>
           </div>
         </div>

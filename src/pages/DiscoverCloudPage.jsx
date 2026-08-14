@@ -502,7 +502,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
         <div className="dev-col-left">
 
           {/* Total stat + trend chart */}
-          <div className="card dev-card">
+          <div className="card dev-card" data-nav-explore="chart" data-nav-label="Total Assets Trend">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
@@ -585,7 +585,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
           <div className="dev-bottom-row">
 
             {/* Data Source */}
-            <div className="card dev-card dev-source-card">
+            <div className="card dev-card dev-source-card" data-nav-explore="chart" data-nav-label="Data Source">
               <div className="dev-card-title">Data Source</div>
               <div className="dev-chart-fill">
                 <ResponsiveContainer width="100%" height="100%">
@@ -650,7 +650,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
             </div>
 
             {/* Type + Donut */}
-            <div className="card dev-card dev-type-card">
+            <div className="card dev-card dev-type-card" data-nav-explore="chart" data-nav-label="Assets by Type">
               <div className="dev-card-title">Type</div>
               <div className="dev-donut-wrap">
                 <ResponsiveContainer width="100%" height="100%">
@@ -717,7 +717,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Key Security Insights">
               <table className="ds-table dev-insights-table">
                 <thead>
                   <tr>
@@ -778,7 +778,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
               <span className="dev-card-title">Criticality Insights</span>
             </div>
 
-            <div className="dev-crit-bar-section">
+            <div className="dev-crit-bar-section" data-nav-explore="section" data-nav-label="Criticality Insights">
               <div className="dev-stacked-bar">
                 {activeCriticality.map((c, i) => (
                   <div
@@ -825,7 +825,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
               />
             </div>
 
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Assets by Criticality Score">
               <table className="ds-table">
                 <thead>
                   <tr>

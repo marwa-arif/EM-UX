@@ -748,7 +748,7 @@ export default function DataQualityOverviewPage({ onNav, crossFilters = [], onTo
       <div className="dq-main">
         <div className="dq-row">
           {/* Score gauge + integrated trend */}
-          <div className="dq-card dq-card--gauge">
+          <div className="dq-card dq-card--gauge" data-nav-explore="chart" data-nav-label="Application Quality Score">
             <div className="dq-card__title">Application Quality Score</div>
             <div className="dq-card__subtitle">{displaySubject.name} · Updated 2 hours ago</div>
             <div className="dq-card__body">
@@ -766,7 +766,7 @@ export default function DataQualityOverviewPage({ onNav, crossFilters = [], onTo
                 <span className="dq-gauge-trend__empty">No trend data available</span>
               ) : (
                 <>
-                  <div className="dq-gauge-trend__spark">
+                  <div className="dq-gauge-trend__spark" data-nav-explore="chart" data-nav-label="Score Trend">
                     <ChartRender chartId="kpi" compact data={{ trendData: activeSubject.trend }} />
                   </div>
                   <span className={`dq-gauge-trend__delta${trendDelta.up ? ' dq-gauge-trend__delta--up' : ' dq-gauge-trend__delta--down'}`}>
@@ -779,7 +779,7 @@ export default function DataQualityOverviewPage({ onNav, crossFilters = [], onTo
           </div>
 
           {/* Dimensions radar */}
-          <div className="dq-card dq-card--dims">
+          <div className="dq-card dq-card--dims" data-nav-explore="chart" data-nav-label="Dimensions">
             <div className="dq-card__title">Dimensions</div>
             <div className="dq-card__body">
               <ChartRender
@@ -815,7 +815,7 @@ export default function DataQualityOverviewPage({ onNav, crossFilters = [], onTo
                   <SelectDropdown value={groupBy} onChange={setGroupBy} options={GROUP_BY_OPTIONS} />
                 </div>
               </div>
-              <div className="dq-split__body">
+              <div className="dq-split__body" data-nav-explore="chart" data-nav-label="Entity Distribution">
                 <ChartRender
                   chartId="stack-hor"
                   data={categoryData}
@@ -846,7 +846,7 @@ export default function DataQualityOverviewPage({ onNav, crossFilters = [], onTo
                   />
                 </div>
               </div>
-              <div className="ds-table-wrap dq-split__table-wrap">
+              <div className="ds-table-wrap dq-split__table-wrap" data-nav-explore="table" data-nav-label="Attributes">
                 <table className="ds-table">
                   <thead>
                     <tr>
