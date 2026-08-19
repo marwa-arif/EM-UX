@@ -7,13 +7,13 @@ import { useSpeechToText } from '../hooks/useSpeechToText.js'
 import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Static data ───────────────────────────────────────────────────────
-const AGENTS = [
+export const AGENTS = [
   { id: 'a1', name: 'Risk Analyzer',      color: '#E8922A' },
   { id: 'a2', name: 'Compliance Auditor', color: '#E8922A' },
   { id: 'a3', name: 'Threat Hunter',      color: '#E8922A' },
 ]
 
-const CHAT_HISTORY = [
+export const CHAT_HISTORY = [
   { id: 'h1', label: 'High severity findings for host vm-prod-42', time: 'Just now',    active: true  },
   { id: 'h2', label: 'Identities with access to critical storage',  time: '2 hrs ago',  active: false },
   { id: 'h3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday',  active: false },

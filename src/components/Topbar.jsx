@@ -58,7 +58,7 @@ const UserIcon = () => (
   </svg>
 );
 
-function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse, onNavToggleHoverEnter, onNavToggleHoverLeave }) {
+function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse, onNavToggleHoverEnter, onNavToggleHoverLeave, navDesign, onSetNavDesign }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -108,7 +108,16 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
 
   return (
     <header className="topbar">
-      {onToggleNavCollapse && (
+      {/* Option 2 ("rail") owns its own collapse/expand toggle inside the
+          nav itself (see LeftNavAlt.jsx) instead of this shared Topbar
+          button, same reasoning as the Navigator sidebar's own toggle.
+          Option 4 ("split") has no full-width "expanded" state to toggle
+          back into at all — its rail is icon-only by design, always the
+          same width whether pinned or not — so the button is dropped
+          rather than given an equivalent; the rail still auto-hides in the
+          same contexts (e.g. an active Navigator chat) and the existing
+          hover-peek zone still recovers it, same as Options 1/3. */}
+      {onToggleNavCollapse && navDesign !== 'rail' && navDesign !== 'split' && (
         <button
           className="topbar__btn topbar__nav-toggle"
           onClick={onToggleNavCollapse}
@@ -145,6 +154,54 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
         >
           <span className="topbar__navigator-icon" />
         </button>
+      )}
+
+      {onSetNavDesign && (
+        <div className="topbar__nav-switch" role="group" aria-label="Left nav design">
+          {/* Display order reshuffled to 2/4/1/3 (former Option 2 first, then
+              4, 1, 3) — the numbers here are just this slot's position, not
+              tied to each design's underlying navDesign value/id. */}
+          <button
+            type="button"
+            onClick={() => onSetNavDesign('rail')}
+            title="Nav design 1"
+            aria-label="Nav design 1"
+            aria-pressed={navDesign === 'rail'}
+            className={`topbar__nav-switch-btn${navDesign === 'rail' ? ' topbar__nav-switch-btn--active' : ''}`}
+          >
+            1
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetNavDesign('split')}
+            title="Nav design 2"
+            aria-label="Nav design 2"
+            aria-pressed={navDesign === 'split'}
+            className={`topbar__nav-switch-btn${navDesign === 'split' ? ' topbar__nav-switch-btn--active' : ''}`}
+          >
+            2
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetNavDesign('classic')}
+            title="Nav design 3"
+            aria-label="Nav design 3"
+            aria-pressed={navDesign === 'classic'}
+            className={`topbar__nav-switch-btn${navDesign === 'classic' ? ' topbar__nav-switch-btn--active' : ''}`}
+          >
+            3
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetNavDesign('renamed')}
+            title="Nav design 4"
+            aria-label="Nav design 4"
+            aria-pressed={navDesign === 'renamed'}
+            className={`topbar__nav-switch-btn${navDesign === 'renamed' ? ' topbar__nav-switch-btn--active' : ''}`}
+          >
+            4
+          </button>
+        </div>
       )}
 
       <VersionBadge />

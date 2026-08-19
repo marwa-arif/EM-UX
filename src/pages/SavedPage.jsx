@@ -29,7 +29,7 @@ const IcCalendarSchedule = () => (
 
 // Workspace › Saved tab
 
-const SAVED_ROWS = [
+export const SAVED_ROWS = [
   { id: '1',  name: 'CISO Dashboard',                              isNew: true,  type: 'DASHBOARD', template: 'Executive Summary',   visibility: 'Private', status: 'Saved',     lastUpdated: '11 August 2025' },
   { id: '2',  name: 'Detailed Report on Software Vulnerabilities',               type: 'REPORT',    template: 'Executive Summary',   visibility: 'Public',  status: 'Scheduled', recipients: 2, lastUpdated: '21 July 2025',    hasCalendar: true },
   { id: '3',  name: 'Compliance Report',                                        type: 'REPORT',    template: 'Compliance',          visibility: 'Public',  status: 'Scheduled', recipients: 4, lastUpdated: '03 June 2025',    hasCalendar: true },

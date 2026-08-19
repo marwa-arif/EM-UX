@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Ic } from '../ui.jsx'
 import { ADMIN_NAV_GROUPS } from '../pages/admin/AdminPanelBody.jsx'
 
-function IcEMDashboard() {
+export function IcEMDashboard() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <rect x="1" y="1" width="6" height="5" rx="1" fill="currentColor"/>
@@ -32,7 +32,7 @@ export function IcPanelToggle({ open }) {
 }
 
 // Console/terminal glyph — Admin Console entry point
-function IcConsoleNav() {
+export function IcConsoleNav() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="2.5" y="4" width="19" height="15" rx="2" stroke="currentColor" strokeWidth="1.6"/>
@@ -91,14 +91,14 @@ export function IcSummaryNav() {
 // no mode switcher, no appMode branching (matches UX3LeftNav.jsx's Navigator/
 // Workspace items, which use the same "always visible, not part of a group"
 // treatment).
-const TOP_ITEMS = [
+export const TOP_ITEMS = [
   { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
   { id: 'workspace',  label: 'Workspace', icon: 'navbar-workspace', dividerAfter: true },
 ];
 
 // "Insights" — the classic EM sections, now always visible rather than
 // gated behind the old EM/Studio switcher.
-const INSIGHTS_MODEL = [
+export const INSIGHTS_MODEL = [
   { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
       { id: 'exposure/overview',  label: 'Overview',  icon: 'nav-overview' },
       { id: 'exposure/findings',  label: 'Findings',  icon: 'nav-findings' },
@@ -127,7 +127,7 @@ const INSIGHTS_MODEL = [
 // dedicated pages yet, so each is a direct-link leaf that routes through the
 // normal onNav/current wiring but the Studio shell itself ignores `current`
 // and always shows StudioHomePage.
-const FABRIC_MODEL = [
+export const FABRIC_MODEL = [
   { id: 'studio-data-ingestion',   label: 'Data Ingestion',   icon: 'data-source',    solo: true },
   { id: 'studio-pipeline-builder', label: 'Pipeline Builder', iconNode: <IcPipelineNav />, solo: true },
   { id: 'studio-ontology',         label: 'Ontology',         iconNode: <IcOntologyNav />, solo: true },
@@ -312,13 +312,13 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
 // A section label (Insights, Fabric Configuration, admin groups) doubles as
 // a collapse/expand toggle for the nav items rendered under it — no icon
 // while collapsed, a small chevron-down while expanded.
-function SectionLabel({ label, isCollapsed, onClick, ...rest }) {
+export function SectionLabel({ label, isCollapsed, onClick, className, ...rest }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-expanded={!isCollapsed}
-      className="leftnav__section-label"
+      className={`leftnav__section-label${className ? ` ${className}` : ''}`}
       {...rest}
     >
       <span className="leftnav__section-label-text">{label}</span>

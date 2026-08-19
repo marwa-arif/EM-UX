@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import '../styles/shell.css'
 import '../styles/filter-panel.css'
 import Topbar from '../components/Topbar.jsx'
-import LeftNav from '../components/LeftNav.jsx'
+import { ActiveLeftNav } from '../components/LeftNavAlt.jsx'
 import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
@@ -21,7 +21,7 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, navDesign, onSetNavDesign }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
@@ -128,7 +128,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
       ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
       : [() => handleNav('exposure/overview')]
 
-  const navCollapsed = (collapsed || rightPanelOpen) && !navExpandOverride
+  // Option 4 ("split") has no auto-collapse at all — see App.jsx's
+  // collapsedForNav for the matching rule on the other route tree.
+  const navCollapsed = navDesign === 'split' ? false : (collapsed || rightPanelOpen) && !navExpandOverride
 
   // Same hover-peek-with-delayed-close as App.jsx — see its comment for why
   // the close needs a grace period instead of firing on mouse-leave.
@@ -163,15 +165,17 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   return (
     <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} onNavToggleHoverEnter={openNavHoverPeek} onNavToggleHoverLeave={scheduleNavHoverClose} />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} onNavToggleHoverEnter={openNavHoverPeek} onNavToggleHoverLeave={scheduleNavHoverClose} navDesign={navDesign} onSetNavDesign={onSetNavDesign} />
         <div className="wp-body">
-          <LeftNav
+          <ActiveLeftNav
+            navDesign={navDesign}
             current={current}
             onNav={handleNav}
             collapsed={navCollapsed}
             hoverPeek={navHoverPeek}
             onHoverEnter={openNavHoverPeek}
             onHoverLeave={scheduleNavHoverClose}
+            onToggleCollapse={toggleNavCollapse}
             mode={appMode}
             onModeChange={onModeChange}
           />

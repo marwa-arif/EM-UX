@@ -25,6 +25,17 @@
 }
 .topbar__theme-toggle:hover { background: rgba(255,255,255,0.10); }
 .topbar__nav-toggle:hover { background: rgba(255,255,255,0.10); }
+/* Nav-design switch — lets the two LeftNav options (classic hide+peek vs.
+   icon-rail collapse) be compared side by side without a rebuild. */
+.topbar__nav-switch { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 4px; }
+.topbar__nav-switch-btn {
+  width: 20px; height: 20px;
+  border: none; background: transparent; color: var(--shell-topbar-text); opacity: 0.6;
+  border-radius: 4px; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.topbar__nav-switch-btn:hover { opacity: 0.9; background: rgba(255,255,255,0.12); }
+.topbar__nav-switch-btn--active { opacity: 1; background: rgba(255,255,255,0.18); color: var(--shell-topbar-text); }
 .topbar__btn--pulse { animation: topbarBellPulse 500ms ease-out; }
 @keyframes topbarBellPulse {
   0%   { transform: scale(1); }
@@ -298,7 +309,7 @@
 .leftnav__section-label {
   display: flex; align-items: center; justify-content: flex-start; gap: 4px;
   width: 100%; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--shell-text-faint); padding: 8px 8px 4px;
+  color: var(--shell-text-faint); padding: 8px 8px 4px 16px;
   background: none; border: none; font-family: inherit; cursor: pointer; text-align: left;
 }
 .leftnav__section-label:hover { color: var(--shell-text-muted); }
@@ -310,8 +321,8 @@
 .leftnav__section-label:hover .leftnav__section-chevron,
 .leftnav__section-chevron--visible { opacity: 1; }
 /* Nav icon filters — theme-aware */
-.nav-item__icon        { flex-shrink: 0; filter: grayscale(20%) opacity(0.72); }
-.nav-item__icon--active { filter: grayscale(20%) opacity(0.9); }
+.nav-item__icon        { flex-shrink: 0; filter: grayscale(100%) opacity(0.72); }
+.nav-item__icon--active { filter: grayscale(100%) opacity(0.9); }
 .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
 html.theme-dark .nav-item__icon        { filter: brightness(0) invert(1) opacity(0.60); }
 html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacity(0.9); }

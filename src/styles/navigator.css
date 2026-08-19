@@ -1428,6 +1428,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 /* ── NavigatorPage content — rendered inside the standard app shell's
    page-scroll area (LeftNav + SubHeader now live outside this component) ── */
 .nav-page-shell {
+  position: relative;
   height: 100%; min-height: 0;
   display: flex; flex-direction: row;
   overflow: hidden;
@@ -1441,9 +1442,17 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 
 /* ── Persistent History + Agents sidebar (NavSidebar) — sits next to
-   .nav-page-content-only inside .nav-page-shell; collapses to a slim icon
-   rail rather than disappearing. Reuses .np-history-section/-chat-row/
-   .np-collapse-row/-btn from the History overlay styles above. ── */
+   .nav-page-content-only inside .nav-page-shell. Two collapse variants (see
+   NavSidebar's useHidePeek prop in NavigatorPage.jsx):
+     - classic (default): shrinks to a 52px icon rail (.np-hist-sidebar.
+       collapsed below) — original behavior, used by every LeftNav option
+       except "rail".
+     - useHidePeek (LeftNav "rail" option only): fully hides (.np-hist-
+       sidebar--hidden) with a hover-peek overlay (.np-hist-sidebar--peek),
+       same mechanic as the app's own LeftNav (.leftnav--collapsed/
+       .leftnav--peek in shell.css).
+   Reuses .np-history-section/-chat-row/etc. from the History overlay
+   styles above. ── */
 .np-hist-sidebar {
   flex-shrink: 0; width: 220px; overflow: hidden;
   background: var(--card-bg);
@@ -1452,6 +1461,23 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   display: flex; flex-direction: column;
 }
 .np-hist-sidebar.collapsed { width: 52px; }
+.np-hist-sidebar--hidden { width: 0; overflow: hidden; pointer-events: none; border-right: none; }
+/* Peeked overlay — position:absolute (not fixed) relative to .nav-page-shell,
+   so it appears at that container's own left edge — i.e. right of the app's
+   main LeftNav, wherever that currently ends — without hardcoding a pixel
+   offset that would need to track three different LeftNav designs/widths. */
+.np-hist-sidebar--peek {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  z-index: 20;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  animation: navSidebarPeekIn 140ms ease-out;
+}
+@keyframes navSidebarPeekIn {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
 .np-hist-sidebar-body {
   flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
   scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent;
@@ -1467,7 +1493,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   height: 48px; box-sizing: border-box; padding: 8px 12px;
 }
 .np-history-hdr--collapsed { justify-content: center; padding: 8px; }
-.np-hist-sidebar .np-history-new-btn { width: 100%; justify-content: center; }
+.np-hist-sidebar .np-history-new-btn { flex: 1; justify-content: center; }
 
 .np-hist-newchat-collapsed,
 .np-hist-agent-row-collapsed,
@@ -1481,6 +1507,19 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-hist-agent-row-collapsed:hover,
 .np-hist-chat-row-collapsed:hover { background: var(--shell-raised); color: var(--shell-text-2); }
 .np-hist-chat-row-collapsed.active { background: rgba(99,96,216,0.12); color: var(--pai-indigo); }
+
+/* Toggle button beside "New chat" (useHidePeek variant only) — collapses
+   the sidebar to hidden. Its title-bar counterpart (.np-sidebar-expand-btn,
+   ChatView/BuildView) only exists while collapsed, since there's no
+   sidebar header to put it in. */
+.np-sidebar-toggle-btn {
+  flex-shrink: 0; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 6px;
+  color: var(--shell-text-muted); cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.np-sidebar-toggle-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
 
 /* ── History control — trigger button + panel shared by Home/Chat/Build ── */
 .nav-history-btn {
@@ -1619,6 +1658,22 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 
 .np-dropdown--thread-menu { right: 4px; top: 24px; width: 176px; }
 
+/* Expand icon — appears at the far left of the Chat/Build title bar only
+   while the history sidebar is collapsed (its counterpart, the sidebar's
+   own .np-sidebar-toggle-btn, disappears along with the rest of the
+   sidebar). Hover opens the hover-peek overlay, click pins it open —
+   same dual behavior as the app's own Topbar.topbar__nav-toggle. */
+.np-sidebar-expand-btn {
+  flex-shrink: 0; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 6px;
+  color: var(--shell-text-muted); cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.np-sidebar-expand-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+/* Footer collapse row — classic variant only (useHidePeek false), shrinks
+   the sidebar to the 52px icon rail. Original implementation, unchanged. */
 .np-collapse-row { flex-shrink: 0; padding: 8px; border-top: 1px solid var(--shell-border); }
 .np-collapse-btn {
   width: 100%;

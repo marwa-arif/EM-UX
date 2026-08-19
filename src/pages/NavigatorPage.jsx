@@ -9,7 +9,7 @@ import { useToast } from '../context/ToastCtx.jsx'
 import { useSpeechToText } from '../hooks/useSpeechToText.js'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
-const RECENT_CHATS = [
+export const RECENT_CHATS = [
   { id: 'c1', label: 'High severity findings for host vm-prod-42', time: 'Just now',           bucket: 'Today',     starred: true  },
   { id: 'c2', label: 'Identities with access to critical storage',  time: '2 hrs ago',          bucket: 'Today',     starred: false },
   { id: 'c3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday, 4:12 PM', bucket: 'Yesterday', starred: false },
@@ -377,10 +377,21 @@ const BUILD_SUGGESTIONS = [
 // ── Persistent left sidebar — History (Starred + recent) and Agents live
 // here at all times, next to the (auto-collapsed) app LeftNav, instead of
 // behind the old per-view "History"/"Agents" buttons and their full-page
-// detours. Collapses to a slim icon rail rather than disappearing, so it
-// never has to cover Home/Chat/Build to be reached.
+// detours.
+//
+// Two collapse variants, picked by `useHidePeek` (App.jsx passes this as
+// `navDesign === 'rail'` — only that LeftNav option gets the new behavior;
+// every other design keeps the original):
+//   - useHidePeek (Option 2 only): collapsing fully hides the sidebar, same
+//     hide + hover-peek mechanic as the app's own LeftNav. The toggle button
+//     sits beside "New chat" while expanded; an equivalent expand icon
+//     moves into the title bar (see ChatView/BuildView) while collapsed.
+//   - classic (default, Options 1/3/etc.): collapsing shrinks to a 52px
+//     icon-only rail via the "Collapse" button at the sidebar's own footer
+//     — unchanged from the original implementation.
 function NavSidebar({
-  collapsed, onToggleCollapse, onNewChat,
+  useHidePeek = false,
+  collapsed, hoverPeek = false, onToggleCollapse, onHoverEnter, onHoverLeave, onNewChat,
   chats, activeLabel, onSelectChat, onToggleStar, onRename, onDelete, onViewAllChats,
   agents, onRunAgent, onCreateAgent, onViewAllAgents,
 }) {
@@ -388,7 +399,13 @@ function NavSidebar({
   const recent = chats.filter(c => !c.starred).slice(0, 6);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const renderChatRow = (c) => collapsed ? (
+  // Icon-rail shrink only applies to the classic variant — useHidePeek's
+  // `collapsed` means "hidden", not "shrunk", so its content always renders
+  // in full (there's nothing to show icon-only while width is 0, and the
+  // peek shows the full sidebar too).
+  const railCollapsed = !useHidePeek && collapsed;
+
+  const renderChatRow = (c) => railCollapsed ? (
     <button
       key={c.id}
       className="np-hist-chat-row-collapsed"
@@ -411,10 +428,10 @@ function NavSidebar({
     />
   );
 
-  return (
-    <div className={`np-hist-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Chat history and agents">
+  const sidebarContent = (
+    <>
       <div className="np-hist-sidebar-body">
-        {collapsed ? (
+        {railCollapsed ? (
           <div className="np-history-hdr np-history-hdr--collapsed">
             <button className="np-hist-newchat-collapsed" onClick={onNewChat} title="New chat" aria-label="New chat">
               <IcEdit />
@@ -425,6 +442,16 @@ function NavSidebar({
             <button className="np-history-new-btn" onClick={onNewChat}>
               <IcEdit /> New chat
             </button>
+            {useHidePeek && (
+              <button
+                className="np-sidebar-toggle-btn"
+                onClick={onToggleCollapse}
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <IcSidebarCollapse />
+              </button>
+            )}
           </div>
         )}
 
@@ -432,7 +459,7 @@ function NavSidebar({
           <>
             <div className="np-history-section">
               <div className="np-history-section-hdr">
-                {collapsed
+                {railCollapsed
                   ? <span className="np-history-section-title" title="Starred"><IcStar /></span>
                   : <span className="np-history-section-title"><IcStar /> Starred</span>}
               </div>
@@ -444,12 +471,12 @@ function NavSidebar({
 
         <div className="np-history-section">
           <div className="np-history-section-hdr">
-            {collapsed
+            {railCollapsed
               ? <span className="np-history-section-title" title="History"><IcHistory /></span>
               : <span className="np-history-section-title"><IcHistory /> History</span>}
           </div>
           {recent.map(renderChatRow)}
-          {!collapsed && (
+          {!railCollapsed && (
             <button className="np-history-viewall" onClick={onViewAllChats}>
               <IcHistory /> View all conversations
             </button>
@@ -460,16 +487,16 @@ function NavSidebar({
 
         <div className="np-history-section">
           <div className="np-history-section-hdr">
-            {collapsed
+            {railCollapsed
               ? <span className="np-history-section-title" title="Agents"><IcBot /></span>
               : <span className="np-history-section-title"><IcBot /> Agents</span>}
-            {!collapsed && (
+            {!railCollapsed && (
               <button className="np-history-add-btn" onClick={onCreateAgent} aria-label="Create agent">
                 <IcPlus />
               </button>
             )}
           </div>
-          {agents.slice(0, 5).map((a) => collapsed ? (
+          {agents.slice(0, 5).map((a) => railCollapsed ? (
             <button key={a.id} className="np-hist-agent-row-collapsed" title={a.name} aria-label={a.name} onClick={() => onRunAgent(a)}>
               <IcBot />
             </button>
@@ -481,7 +508,7 @@ function NavSidebar({
               </span>
             </button>
           ))}
-          {!collapsed && (
+          {!railCollapsed && (
             <button className="np-history-viewall" onClick={onViewAllAgents}>
               <IcBot /> View all agents
             </button>
@@ -489,17 +516,19 @@ function NavSidebar({
         </div>
       </div>
 
-      <div className="np-collapse-row">
-        <button
-          className={`np-collapse-btn${collapsed ? ' np-collapse-btn--collapsed' : ''}`}
-          onClick={onToggleCollapse}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <span className="np-collapse-btn-icon"><IcSidebarCollapse flip={!collapsed} /></span>
-          {!collapsed && <span className="np-collapse-btn-label">Collapse</span>}
-        </button>
-      </div>
+      {!useHidePeek && (
+        <div className="np-collapse-row">
+          <button
+            className={`np-collapse-btn${railCollapsed ? ' np-collapse-btn--collapsed' : ''}`}
+            onClick={onToggleCollapse}
+            title={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <span className="np-collapse-btn-icon"><IcSidebarCollapse flip={!railCollapsed} /></span>
+            {!railCollapsed && <span className="np-collapse-btn-label">Collapse</span>}
+          </button>
+        </div>
+      )}
 
       {confirmDelete && (
         <div className="ds-modal-overlay">
@@ -516,7 +545,33 @@ function NavSidebar({
           </div>
         </div>
       )}
-    </div>
+    </>
+  );
+
+  if (!useHidePeek) {
+    return (
+      <div className={`np-hist-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Chat history and agents">
+        {sidebarContent}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={`np-hist-sidebar${collapsed ? ' np-hist-sidebar--hidden' : ''}`} aria-label="Chat history and agents" aria-hidden={collapsed}>
+        {sidebarContent}
+      </div>
+      {collapsed && hoverPeek && (
+        <div
+          className="np-hist-sidebar np-hist-sidebar--peek"
+          aria-label="Chat history and agents"
+          onMouseEnter={onHoverEnter}
+          onMouseLeave={onHoverLeave}
+        >
+          {sidebarContent}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1069,7 +1124,7 @@ function ModeMenu({ anchorRect, appliedMode, appliedDepth, onApply, onCancel }) 
 }
 
 // ── Chat view — reasoning-engine driven conversation ─────────────────
-function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
+function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarCollapsed = false, onExpandSidebar, onSidebarHoverEnter, onSidebarHoverLeave }) {
   const [followUp, setFollowUp] = useState('');
   const [exchanges, setExchanges] = useState(() => [createExchange(query, { mode })]);
   const [liveId, setLiveId] = useState(() => exchanges[0].id);
@@ -1155,6 +1210,18 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent }) {
 
   const titleBar = (
     <div className="chat-space-title">
+      {sidebarCollapsed && (
+        <button
+          className="np-sidebar-expand-btn"
+          onClick={onExpandSidebar}
+          onMouseEnter={onSidebarHoverEnter}
+          onMouseLeave={onSidebarHoverLeave}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+        >
+          <IcSidebarCollapse flip />
+        </button>
+      )}
       {editingTitle ? (
         <input
           className="chat-space-title-input"
@@ -1555,7 +1622,7 @@ export function BuildExchangeTurn({ exchange, live, updateExchange, onWidgetRead
 }
 
 // ── Build view ───────────────────────────────────────────────────────
-function BuildView({ initialQuery, onGoHome, onNav }) {
+function BuildView({ initialQuery, onGoHome, onNav, sidebarCollapsed = false, onExpandSidebar, onSidebarHoverEnter, onSidebarHoverLeave }) {
   const [dashName,    setDashName]    = useState('Untitled Dashboard');
   const [editingName, setEditingName] = useState(false);
   const [widgets,          setWidgets]          = useState([]);
@@ -1664,6 +1731,18 @@ function BuildView({ initialQuery, onGoHome, onNav }) {
     <div className="nav-view-build">
       {/* Secondary topbar */}
       <div className="build-topbar">
+        {sidebarCollapsed && (
+          <button
+            className="np-sidebar-expand-btn"
+            onClick={onExpandSidebar}
+            onMouseEnter={onSidebarHoverEnter}
+            onMouseLeave={onSidebarHoverLeave}
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+          >
+            <IcSidebarCollapse flip />
+          </button>
+        )}
         <div className="build-name-wrap">
           {editingName ? (
             <input
@@ -2294,7 +2373,19 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
 // of being reset back to Home.
 const AGENTS_STORAGE_KEY = 'nav-agents';
 
-export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange }) {
+export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange, navDesign }) {
+  // Only the "rail" LeftNav option (Option 2) gets the hide + hover-peek
+  // sidebar behavior — Options 1/3 (and any future design) keep the
+  // original icon-rail collapse with the "Collapse" button at the sidebar's
+  // own footer, unchanged.
+  const useHidePeekSidebar = navDesign === 'rail';
+  // Option 4 (navDesign 'split') already puts New chat/History/Agents in its
+  // own Navigator panel next to the icon rail, and Option 3 (navDesign
+  // 'renamed') now folds the same New chat/History/Agents content directly
+  // into the left nav's own Navigator row (see LeftNavOption3 in
+  // LeftNavAlt.jsx) — either way this sidebar would just be a second,
+  // redundant copy of the same three sections sitting right next to it.
+  const hideOwnSidebar = navDesign === 'split' || navDesign === 'renamed';
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
@@ -2304,6 +2395,28 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   const [editingAgent, setEditingAgent] = useState(null);
   const [chats, setChats] = useState(RECENT_CHATS);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Hover-peek for the collapsed sidebar — same delayed-close pattern as
+  // App.jsx's LeftNav hover-peek: both the peeked sidebar itself and the
+  // title bar's expand icon can open/extend it, and closing is delayed so
+  // moving the mouse from the icon into the peeked sidebar doesn't close it
+  // before it can be used.
+  const [sidebarHoverPeek, setSidebarHoverPeek] = useState(false);
+  const sidebarHoverCloseTimer = useRef(null);
+  useEffect(() => { if (!sidebarCollapsed) setSidebarHoverPeek(false); }, [sidebarCollapsed]);
+  useEffect(() => () => { if (sidebarHoverCloseTimer.current) clearTimeout(sidebarHoverCloseTimer.current); }, []);
+  const openSidebarHoverPeek = () => {
+    if (sidebarHoverCloseTimer.current) { clearTimeout(sidebarHoverCloseTimer.current); sidebarHoverCloseTimer.current = null; }
+    setSidebarHoverPeek(true);
+  };
+  const scheduleSidebarHoverClose = () => {
+    if (sidebarHoverCloseTimer.current) clearTimeout(sidebarHoverCloseTimer.current);
+    sidebarHoverCloseTimer.current = setTimeout(() => setSidebarHoverPeek(false), 300);
+  };
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed(c => !c);
+    if (sidebarHoverCloseTimer.current) { clearTimeout(sidebarHoverCloseTimer.current); sidebarHoverCloseTimer.current = null; }
+    setSidebarHoverPeek(false);
+  };
   const [agents, setAgents] = useState(() => {
     try {
       const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
@@ -2391,10 +2504,14 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
 
   return (
     <div className="nav-page-shell">
-      {view !== 'home' && (
+      {view !== 'home' && !hideOwnSidebar && (
         <NavSidebar
+          useHidePeek={useHidePeekSidebar}
           collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+          hoverPeek={sidebarHoverPeek}
+          onToggleCollapse={toggleSidebarCollapse}
+          onHoverEnter={openSidebarHoverPeek}
+          onHoverLeave={scheduleSidebarHoverClose}
           onNewChat={goHome}
           chats={chats}
           activeLabel={view === 'chat' ? activeQuery : null}
@@ -2425,10 +2542,18 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
           />
         )}
         {view === 'chat' && (
-          <ChatView query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent} />
+          <ChatView
+            query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent}
+            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
+            onSidebarHoverEnter={openSidebarHoverPeek} onSidebarHoverLeave={scheduleSidebarHoverClose}
+          />
         )}
         {view === 'build' && (
-          <BuildView initialQuery={activeQuery} onGoHome={goHome} onNav={onNav} />
+          <BuildView
+            initialQuery={activeQuery} onGoHome={goHome} onNav={onNav}
+            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
+            onSidebarHoverEnter={openSidebarHoverPeek} onSidebarHoverLeave={scheduleSidebarHoverClose}
+          />
         )}
         {view === 'agent-builder' && (
           <AgentBuilderView
