@@ -2496,6 +2496,13 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 
 .hv-top-actions { position: absolute; top: 20px; right: 20px; z-index: 2; display: flex; align-items: center; gap: 8px; }
 
+/* Home's counterpart to ChatView/BuildView's title-bar .np-sidebar-expand-btn
+   (chat-space-title, above) — Home has no title bar row of its own to sit
+   inline in, so it floats at the mirrored top-left corner of .hv-shell
+   instead. Same visual button (.np-sidebar-expand-btn provides the icon
+   sizing/hover), just repositioned since it isn't part of a flex row here. */
+.hv-sidebar-expand-btn { position: absolute; top: 20px; left: 20px; z-index: 2; }
+
 /* Gradient blob background */
 .hv-bg {
   position: absolute; inset: 0;

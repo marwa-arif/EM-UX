@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import { ADMIN_NAV_GROUPS } from '../pages/admin/AdminPanelBody.jsx'
 
@@ -21,12 +21,12 @@ export function IcEMDashboard() {
 // button, was reopening the hover-peek override right after a click forced
 // it closed. Updating one already-mounted <path>'s `d` attribute in place
 // doesn't trigger that.
-export function IcPanelToggle({ open }) {
+export function IcPanelToggle({ open, size = 15 }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 15 15" fill="none" aria-hidden="true">
       <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
       <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
-      <path d={open ? 'M7 5.5 L9 7.5 L7 9.5' : 'M9 5.5 L7 7.5 L9 9.5'} stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={open ? 'M9 5.5 L7 7.5 L9 9.5' : 'M7 5.5 L9 7.5 L7 9.5'} stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
@@ -141,15 +141,21 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
   const suppressActive = navigatorAtHome && current === 'navigator';
   const activeParent = suppressActive ? null : current?.split('/')[0];
   const activeChild  = suppressActive ? null : current;
-  // Sections the user has manually opened to browse/preview — independent of
-  // which page is actually active. The active section is always shown open
-  // (below) regardless of this set, so peeking at another section never
-  // collapses the one you're actually on.
-  const [openIds, setOpenIds] = useState(() => new Set());
+  // Per-section open/closed override. Default (no entry) is "open iff this
+  // is the active section" — but an explicit entry here always wins, which
+  // is what lets a click both preview-open an inactive section AND collapse
+  // the section you're actually on (previously impossible: isOpen used to
+  // OR straight against activeParent, so the active section could never be
+  // turned off). Cleared whenever the active top-level section itself
+  // changes (below) or on any nav-triggered click (see navigate), so an
+  // override never lingers onto an unrelated page later.
+  const [openOverrides, setOpenOverrides] = useState(() => new Map());
+  useEffect(() => { setOpenOverrides(new Map()); }, [activeParent]);
 
-  const toggle = (id) => setOpenIds(prev => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
+  const toggle = (id) => setOpenOverrides(prev => {
+    const next = new Map(prev);
+    const isCurrentlyOpen = next.has(id) ? next.get(id) : activeParent === id;
+    next.set(id, !isCurrentlyOpen);
     return next;
   });
 
@@ -163,14 +169,15 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
     return next;
   });
 
-  // Navigating to an actual page clears every manually-previewed section —
-  // only the section for the page you just landed on stays open (via the
-  // activeParent check below), so whatever you were previewing collapses.
+  // Navigating to an actual page clears every override — every section
+  // reverts to its default (open iff it's the one you just landed on), so
+  // whatever you were previewing collapses and a section you'd manually
+  // collapsed earlier gets a fresh chance to auto-open for the new page.
   // forceMode tells App.jsx's handleNav which page-set (em/studio) this id
   // belongs to, since Insights and Fabric Configuration items now live side
   // by side instead of behind a switcher that used to set this explicitly.
   const navigate = (id, forceMode) => {
-    setOpenIds(new Set());
+    setOpenOverrides(new Map());
     onNav(id, forceMode ? { forceMode } : undefined);
   };
 
@@ -193,19 +200,22 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
   // to click it.
   const showPeek = collapsed && hoverPeek;
 
-  const renderGroup = (items, forceMode) => items.map(item => (
-    <React.Fragment key={item.id}>
-      <NavItem
-        item={item}
-        isActiveParent={activeParent === item.id}
-        activeChild={activeChild}
-        isOpen={openIds.has(item.id) || activeParent === item.id}
-        onToggle={() => toggle(item.id)}
-        onNav={(id) => navigate(id, forceMode)}
-      />
-      {item.dividerAfter && <div className="leftnav__divider" />}
-    </React.Fragment>
-  ));
+  const renderGroup = (items, forceMode) => items.map(item => {
+    const isOpen = openOverrides.has(item.id) ? openOverrides.get(item.id) : activeParent === item.id;
+    return (
+      <React.Fragment key={item.id}>
+        <NavItem
+          item={item}
+          isActiveParent={activeParent === item.id}
+          activeChild={activeChild}
+          isOpen={isOpen}
+          onToggle={() => toggle(item.id)}
+          onNav={(id) => navigate(id, forceMode)}
+        />
+        {item.dividerAfter && <div className="leftnav__divider" />}
+      </React.Fragment>
+    );
+  });
 
   // Admin Console groups render through the same NavItem row (icon + label,
   // same font weight/hover/selected treatment) as Insights/Fabric
@@ -329,10 +339,10 @@ export function SectionLabel({ label, isCollapsed, onClick, className, ...rest }
   );
 }
 
-function NavItem({ item, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
+export function NavItem({ item, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
   const hasChildren = item.children && item.children.length;
   const treatAsLeaf = !hasChildren;
-  // Grey = this section is expanded (ambient — may just be a preview, see openIds above).
+  // Grey = this section is expanded (ambient — may just be a preview, see openOverrides above).
   // Accent = this exact destination is the current page — same meaning as a selected
   // child, so a leaf item (no children of its own) gets the same treatment a child does.
   const isExpanded = hasChildren && isOpen;

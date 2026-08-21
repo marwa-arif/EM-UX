@@ -25,11 +25,14 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
-  // Remembers whichever workspace list tab (Saved or Templates) the user was
-  // last on, so "back"/"cancel"/"leave" out of the dashboard/report builder
-  // returns to where they came from instead of always landing on Saved.
+  // Remembers whichever workspace list route (Saved or Templates, each
+  // optionally locked to -dashboards/-reports by Option 4's nav — see
+  // ActiveLeftNav's Workspace section) the user was last on, so "back"/
+  // "cancel"/"leave" out of the dashboard/report builder returns to the
+  // exact same locked view instead of always landing on the unlocked Saved tab.
+  const isListRoute = (id) => /^workspace\/(saved|library)(-dashboards|-reports)?$/.test(id)
   const [listOrigin, setListOrigin] = useState(
-    current === 'workspace/library' ? 'workspace/library' : 'workspace/saved'
+    isListRoute(current) ? current : 'workspace/saved'
   )
   const dashboardBuilderRef = useRef(null)
   useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
@@ -53,7 +56,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
       localStorage.removeItem('pai-excel-warn-dismissed')
     }
     const resolved = id === 'workspace' ? 'workspace/saved' : id
-    if (resolved === 'workspace/saved' || resolved === 'workspace/library') {
+    if (isListRoute(resolved)) {
       setListOrigin(resolved)
     }
     setCurrent(resolved)
@@ -68,6 +71,16 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const isReportPreview = current.startsWith('workspace/report-preview/')
   const isConfigPage    = current === 'workspace/configure-screen'
   const isReportPage    = isReport || isReportPreview
+  // Option 4's Workspace nav section (Dashboards/Report Centre rows) routes
+  // here with a -dashboards/-reports suffix instead of a separate page —
+  // SavedPage/LibraryPage read this to hide their own All/Dashboards/
+  // Reports pill filter and lock the list to just that type.
+  const isSavedPage   = current === 'workspace/saved' || current === 'workspace/saved-dashboards' || current === 'workspace/saved-reports'
+  const isLibraryPage = current === 'workspace/library' || current === 'workspace/library-dashboards' || current === 'workspace/library-reports'
+  const savedTypeLock = !(isSavedPage || isLibraryPage) ? null
+    : current.endsWith('-dashboards') ? 'dashboards'
+    : current.endsWith('-reports') ? 'reports'
+    : null
 
   // Once the user navigates away from the edit-* route, drop the seed so it
   // isn't mistakenly picked up by the next dashboard opened (e.g. "New
@@ -117,16 +130,18 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     'Workspace'
 
   const pageBreadcrumb =
-    isDashboard     ? ['Home', 'Workspace', dashTitle] :
-    isReport        ? ['Home', 'Workspace', reportTitle] :
-    isReportPreview ? ['Home', 'Workspace', reportTitle] :
-    isConfigPage    ? ['Home', 'Workspace', 'Configure Screen'] :
-    ['Home', 'Workspace']
+    isDashboard     ? ['Configuration', dashTitle] :
+    isReport        ? ['Insights', 'Workspace', reportTitle] :
+    isReportPreview ? ['Insights', 'Workspace', reportTitle] :
+    isConfigPage    ? ['Insights', 'Workspace', 'Configure Screen'] :
+    ['Insights', 'Workspace']
 
   const pageBreadcrumbClicks =
-    isDashboard || isReportPage || isConfigPage
-      ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
-      : [() => handleNav('exposure/overview')]
+    isDashboard
+      ? [() => handleNav(listOrigin)]
+      : isReportPage || isConfigPage
+        ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
+        : [() => handleNav('exposure/overview')]
 
   // Option 4 ("split") has no auto-collapse at all — see App.jsx's
   // collapsedForNav for the matching rule on the other route tree.
@@ -197,8 +212,8 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
             />
             <div className="wp-main-body">
               <div className="wp-main-content">
-                {current === 'workspace/saved'
-                  ? <SavedPage />
+                {isSavedPage
+                  ? <SavedPage typeLock={savedTypeLock} />
                   : isConfigPage
                     ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                     : isDashboard
@@ -212,7 +227,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                               template={reportTemplate}
                               onBack={() => handleNav(previewBack)}
                             />
-                          : <LibraryPage />
+                          : <LibraryPage typeLock={savedTypeLock} />
                 }
               </div>
               {isReport && (

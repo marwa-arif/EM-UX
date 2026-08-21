@@ -526,78 +526,78 @@ const _UNUSED = {
 const PAGE_META = {
   'exposure/overview': {
     title: 'Overview',
-    breadcrumb: ['Home', 'Exposure', 'Overview'],
+    breadcrumb: ['Insights', 'Exposure', 'Overview'],
     breadcrumbHrefs: [null, null, null],
   },
   'exposure/findings': {
     title: 'Findings',
-    breadcrumb: ['Home', 'Exposure', 'Findings'],
+    breadcrumb: ['Insights', 'Exposure', 'Findings'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/device': {
     title: 'Device',
-    breadcrumb: ['Home', 'Discover', 'Device'],
+    breadcrumb: ['Insights', 'Discover', 'Device'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/cloud': {
     title: 'Cloud',
-    breadcrumb: ['Home', 'Discover', 'Cloud'],
+    breadcrumb: ['Insights', 'Discover', 'Cloud'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/identity': {
     title: 'Identity',
-    breadcrumb: ['Home', 'Discover', 'Identity'],
+    breadcrumb: ['Insights', 'Discover', 'Identity'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance': {
     title: 'Compliance',
-    breadcrumb: ['Home', 'Report', 'Compliance'],
+    breadcrumb: ['Insights', 'Report', 'Compliance'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/assessments': {
     title: 'Assessments',
-    breadcrumb: ['Home', 'Report', 'Assessments'],
+    breadcrumb: ['Insights', 'Report', 'Assessments'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance-matrix': {
     title: 'Compliance Matrix',
-    breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
+    breadcrumb: ['Insights', 'Report', 'Compliance Matrix'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance-findings': {
     title: 'Compliance Findings',
-    breadcrumb: ['Home', 'Report', 'Compliance Findings'],
+    breadcrumb: ['Insights', 'Report', 'Compliance Findings'],
     breadcrumbHrefs: [null, null, null],
   },
   'data-quality/overview': {
     title: 'Overview',
-    breadcrumb: ['Home', 'Data Quality', 'Overview'],
+    breadcrumb: ['Insights', 'Data Quality', 'Overview'],
     breadcrumbHrefs: [null, null, null],
   },
   'data-quality/in-depth': {
     title: 'In-Depth',
-    breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
+    breadcrumb: ['Insights', 'Data Quality', 'In-Depth'],
     breadcrumbHrefs: [null, null, null],
   },
   'remediation/queue': {
     title: 'Queue',
-    breadcrumb: ['Home', 'Remediation', 'Queue'],
+    breadcrumb: ['Insights', 'Remediation', 'Queue'],
     breadcrumbHrefs: [null, null, null],
   },
   'remediation/closed': {
     title: 'Closed',
-    breadcrumb: ['Home', 'Remediation', 'Closed'],
+    breadcrumb: ['Insights', 'Remediation', 'Closed'],
     breadcrumbHrefs: [null, null, null],
   },
   kg: {
     title: 'Knowledge Graph',
-    breadcrumb: ['Home', 'Knowledge Graph'],
+    breadcrumb: ['Insights', 'Knowledge Graph'],
     breadcrumbHrefs: ['/knowledge-graph', null],
     onAdd: () => {},
   },
   navigator: {
     title: 'Navigator',
-    breadcrumb: ['Home', 'Navigator'],
+    breadcrumb: ['Insights', 'Navigator'],
     breadcrumbHrefs: [null, null],
   },
 };
@@ -707,6 +707,11 @@ function App() {
   // (looking like the click did nothing) until the mouse actually moves.
   const toggleNavCollapse = () => {
     if (collapsedForNav) {
+      // Clear the manual-collapse flag itself, not just the override — the
+      // override alone gets revoked on the very next navigation (handleNav's
+      // setNavExpandOverride(false)), which would silently re-reveal a
+      // still-true navCollapsed and collapse the sidebar right back.
+      setNavCollapsed(false);
       setNavExpandOverride((o) => !o);
     } else {
       setNavExpandOverride(false);
@@ -1162,7 +1167,7 @@ function App() {
               {!isNavigatorRoute && (
                 <SubHeader
                   title="Studio"
-                  breadcrumb={['Home']}
+                  breadcrumb={['Insights']}
                   breadcrumbHrefs={[null]}
                   showMenu={false}
                   showExplore={false}
@@ -1185,7 +1190,7 @@ function App() {
               {!isNavigatorRoute && (
                 <SubHeader
                   title={showingAssessmentBuilder ? 'Assessment Builder' : pageMeta.title}
-                  breadcrumb={showingAssessmentBuilder ? ['Home', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
+                  breadcrumb={showingAssessmentBuilder ? ['Insights', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
                   breadcrumbHrefs={showingAssessmentBuilder ? [null, null, null, null] : pageMeta.breadcrumbHrefs}
                   breadcrumbClicks={showingAssessmentBuilder ? [undefined, undefined, () => setAssessmentBuilderOpen(false)] : [() => handleNav('exposure/overview')]}
                   leading={undefined}

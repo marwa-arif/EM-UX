@@ -132,7 +132,7 @@ export function AdminPanelContent({ state, onNav, onClose }) {
     <>
       <SubHeader
         title={sectionLabel}
-        breadcrumb={['Home', 'Admin Console']}
+        breadcrumb={['Insights', 'Admin Console']}
         breadcrumbHrefs={[null, null]}
         breadcrumbClicks={[onClose]}
         showMenu={false}

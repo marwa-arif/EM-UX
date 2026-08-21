@@ -148,7 +148,7 @@ export function UserSettingsContent({ state, onClose }) {
     <>
       <SubHeader
         title={sectionLabel}
-        breadcrumb={['Home', 'Settings']}
+        breadcrumb={['Insights', 'Settings']}
         breadcrumbHrefs={[null, null]}
         breadcrumbClicks={[onClose]}
         showMenu={false}

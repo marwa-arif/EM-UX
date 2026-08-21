@@ -76,10 +76,15 @@ const IcClock         = () => <Ic size={16} path={<><circle cx="12" cy="12" r="9
 const IcCheckCircle   = () => <Ic size={28} path={<><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></>} />;
 const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />;
 const IcStar           = () => <Ic size={13} path={<><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+// Panel divider always stays on the left (`M9 3v18`) — that's where the real
+// sidebar physically sits, so mirroring the whole glyph (as an earlier
+// version did via scaleX(-1)) drew it on the wrong side and read as
+// "collapse" even on the "Expand sidebar" buttons. Only the chevron itself
+// flips: right-pointing (`flip` false, default) reads as "expand this way,"
+// left-pointing (`flip` true) as "collapse this way" — same convention as
+// LeftNav.jsx's IcPanelToggle.
 const IcSidebarCollapse = ({ flip = false }) => (
-  <span style={{ display: 'flex', transform: flip ? 'scaleX(-1)' : 'none' }}>
-    <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M13.5 9l2.5 3-2.5 3"/></>} />
-  </span>
+  <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d={flip ? 'M16 9l-2.5 3 2.5 3' : 'M13.5 9l2.5 3-2.5 3'}/></>} />
 );
 
 const ENTITY_PILLS = [
@@ -449,7 +454,7 @@ function NavSidebar({
                 title="Collapse sidebar"
                 aria-label="Collapse sidebar"
               >
-                <IcSidebarCollapse />
+                <IcSidebarCollapse flip />
               </button>
             )}
           </div>
@@ -705,7 +710,7 @@ function HomeTabs({ chats, onSelectChat, onViewAllChats, agents, onRunAgent, onV
   );
 }
 
-function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onSelectChat, onViewAllChats, onRunAgent, onViewAllAgents }) {
+function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onSelectChat, onViewAllChats, onRunAgent, onViewAllAgents, sidebarCollapsed, onExpandSidebar, onSidebarHoverEnter, onSidebarHoverLeave }) {
   const [query, setQuery] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
@@ -729,6 +734,18 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onS
 
   return (
     <div className="hv-shell">
+      {sidebarCollapsed && (
+        <button
+          className="np-sidebar-expand-btn hv-sidebar-expand-btn"
+          onClick={onExpandSidebar}
+          onMouseEnter={onSidebarHoverEnter}
+          onMouseLeave={onSidebarHoverLeave}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+        >
+          <IcSidebarCollapse />
+        </button>
+      )}
       <div className="hv-bg">
         <div className="hv-bg-blob hv-bg-blob-1" />
         <div className="hv-bg-blob hv-bg-blob-2" />
@@ -1219,7 +1236,7 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarC
           title="Expand sidebar"
           aria-label="Expand sidebar"
         >
-          <IcSidebarCollapse flip />
+          <IcSidebarCollapse />
         </button>
       )}
       {editingTitle ? (
@@ -1740,7 +1757,7 @@ function BuildView({ initialQuery, onGoHome, onNav, sidebarCollapsed = false, on
             title="Expand sidebar"
             aria-label="Expand sidebar"
           >
-            <IcSidebarCollapse flip />
+            <IcSidebarCollapse />
           </button>
         )}
         <div className="build-name-wrap">
@@ -2504,7 +2521,7 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
 
   return (
     <div className="nav-page-shell">
-      {view !== 'home' && !hideOwnSidebar && (
+      {!hideOwnSidebar && (
         <NavSidebar
           useHidePeek={useHidePeekSidebar}
           collapsed={sidebarCollapsed}
@@ -2539,6 +2556,10 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
             onViewAllChats={openHistoryPage}
             onRunAgent={handleRunAgent}
             onViewAllAgents={openAgentsList}
+            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed}
+            onExpandSidebar={toggleSidebarCollapse}
+            onSidebarHoverEnter={openSidebarHoverPeek}
+            onSidebarHoverLeave={scheduleSidebarHoverClose}
           />
         )}
         {view === 'chat' && (
