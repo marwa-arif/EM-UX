@@ -425,16 +425,10 @@ const BUILD_SUGGESTIONS = [
 // behind the old per-view "History"/"Agents" buttons and their full-page
 // detours.
 //
-// Two collapse variants, picked by `useHidePeek` (App.jsx passes this as
-// `navDesign === 'rail'` — only that LeftNav option gets the new behavior;
-// every other design keeps the original):
-//   - useHidePeek (Option 2 only): collapsing fully hides the sidebar, same
-//     hide + hover-peek mechanic as the app's own LeftNav. The toggle button
-//     sits beside "New chat" while expanded; an equivalent expand icon
-//     moves into the title bar (see ChatView/BuildView) while collapsed.
-//   - classic (default, Options 1/3/etc.): collapsing shrinks to a 52px
-//     icon-only rail via the "Collapse" button at the sidebar's own footer
-//     — unchanged from the original implementation.
+// `useHidePeek` (always on): collapsing fully hides the sidebar, same
+// hide + hover-peek mechanic as the app's own LeftNav. The toggle button
+// sits beside "New chat" while expanded; an equivalent expand icon moves
+// into the title bar (see ChatView/BuildView) while collapsed.
 function NavSidebar({
   useHidePeek = false,
   collapsed, hoverPeek = false, onToggleCollapse, onHoverEnter, onHoverLeave, onNewChat,
@@ -2430,23 +2424,7 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
 // of being reset back to Home.
 const AGENTS_STORAGE_KEY = 'nav-agents';
 
-export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange, navDesign }) {
-  // The "rail" LeftNav option (Option 2, Topbar button 1) and the hybrid
-  // (Option 5, button 5) both get the hide + hover-peek sidebar behavior —
-  // Options 1/3 (and any other design) keep the original icon-rail collapse
-  // with the "Collapse" button at the sidebar's own footer, unchanged.
-  // Hybrid's own LeftNav rail already uses this exact hide+peek convention
-  // for itself (see LeftNavHybrid in LeftNavAlt.jsx), so extending it here
-  // keeps Navigator's own internal sidebar consistent with the rest of that
-  // option instead of the two behaving differently side by side.
-  const useHidePeekSidebar = navDesign === 'rail' || navDesign === 'hybrid';
-  // Option 4 (navDesign 'split') already puts New chat/History/Agents in its
-  // own Navigator panel next to the icon rail, and Option 3 (navDesign
-  // 'renamed') now folds the same New chat/History/Agents content directly
-  // into the left nav's own Navigator row (see LeftNavOption3 in
-  // LeftNavAlt.jsx) — either way this sidebar would just be a second,
-  // redundant copy of the same three sections sitting right next to it.
-  const hideOwnSidebar = navDesign === 'split' || navDesign === 'renamed';
+export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange }) {
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
@@ -2568,28 +2546,26 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
 
   return (
     <div className="nav-page-shell">
-      {!hideOwnSidebar && (
-        <NavSidebar
-          useHidePeek={useHidePeekSidebar}
-          collapsed={sidebarCollapsed}
-          hoverPeek={sidebarHoverPeek}
-          onToggleCollapse={toggleSidebarCollapse}
-          onHoverEnter={openSidebarHoverPeek}
-          onHoverLeave={scheduleSidebarHoverClose}
-          onNewChat={goHome}
-          chats={chats}
-          activeLabel={view === 'chat' ? activeQuery : null}
-          onSelectChat={handleSelectChat}
-          onToggleStar={handleToggleStarChat}
-          onRename={handleRenameChat}
-          onDelete={handleDeleteChat}
-          onViewAllChats={openHistoryPage}
-          agents={agents}
-          onRunAgent={handleRunAgent}
-          onCreateAgent={goCreateAgent}
-          onViewAllAgents={openAgentsList}
-        />
-      )}
+      <NavSidebar
+        useHidePeek
+        collapsed={sidebarCollapsed}
+        hoverPeek={sidebarHoverPeek}
+        onToggleCollapse={toggleSidebarCollapse}
+        onHoverEnter={openSidebarHoverPeek}
+        onHoverLeave={scheduleSidebarHoverClose}
+        onNewChat={goHome}
+        chats={chats}
+        activeLabel={view === 'chat' ? activeQuery : null}
+        onSelectChat={handleSelectChat}
+        onToggleStar={handleToggleStarChat}
+        onRename={handleRenameChat}
+        onDelete={handleDeleteChat}
+        onViewAllChats={openHistoryPage}
+        agents={agents}
+        onRunAgent={handleRunAgent}
+        onCreateAgent={goCreateAgent}
+        onViewAllAgents={openAgentsList}
+      />
       <div className="nav-page-content-only">
         {view === 'home' && (
           <HomeView
@@ -2603,7 +2579,7 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
             onViewAllChats={openHistoryPage}
             onRunAgent={handleRunAgent}
             onViewAllAgents={openAgentsList}
-            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed}
+            sidebarCollapsed={sidebarCollapsed}
             onExpandSidebar={toggleSidebarCollapse}
             onSidebarHoverEnter={openSidebarHoverPeek}
             onSidebarHoverLeave={scheduleSidebarHoverClose}
@@ -2612,14 +2588,14 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
         {view === 'chat' && (
           <ChatView
             query={activeQuery} mode={mode} onGoHome={goHome} onNav={onNav} runningAgent={runningAgent}
-            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
+            sidebarCollapsed={sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
             onSidebarHoverEnter={openSidebarHoverPeek} onSidebarHoverLeave={scheduleSidebarHoverClose}
           />
         )}
         {view === 'build' && (
           <BuildView
             initialQuery={activeQuery} onGoHome={goHome} onNav={onNav}
-            sidebarCollapsed={useHidePeekSidebar && sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
+            sidebarCollapsed={sidebarCollapsed} onExpandSidebar={toggleSidebarCollapse}
             onSidebarHoverEnter={openSidebarHoverPeek} onSidebarHoverLeave={scheduleSidebarHoverClose}
           />
         )}

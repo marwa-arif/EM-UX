@@ -180,10 +180,10 @@ function SavedPage({ typeLock }) {
     closeDeleteModal()
   }
 
-  // typeLock (set by Option 4's Workspace nav section — see LeftNavAlt.jsx)
-  // overrides the page's own All/Dashboards/Reports pill filter entirely,
-  // rather than driving it through setSavedFilter, so it can't clobber that
-  // shared context state for the other nav designs.
+  // typeLock (derived from the current route, see WorkspacePage.jsx's
+  // savedTypeLock) overrides the page's own All/Dashboards/Reports pill
+  // filter entirely, rather than driving it through setSavedFilter, so it
+  // can't clobber that shared context state.
   const effectiveFilter = typeLock ?? savedFilter
 
   const filtered = allRows.filter(row => {

@@ -49,22 +49,6 @@
   transform: rotate(180deg);
 }
 
-/* Option 3's inline Navigator panel reuses NavigatorPage.jsx's own
-   .np-history-* classes verbatim (see LeftNavOption3 in LeftNavAlt.jsx) for
-   visual parity with its real sidebar — but those classes assume a bare
-   220px column with no extra inset (.np-hist-sidebar in navigator.css),
-   whereas here they sit one level deeper inside .leftnav__body. Without the
-   padding, the panel reads as flush against the sidebar edge next to its
-   Insights/Fabric Configuration siblings, which each get 8px from
-   .nav-item's own padding (shell.css) before their own row padding starts. */
-.leftnav-alt__inline-panel { padding: 0 8px; }
-/* navigator.css only stretches .np-history-new-btn to fill its row inside
-   .np-hist-sidebar (NavigatorPage.jsx's own standalone sidebar) — that
-   selector doesn't match here, so without this the button would shrink to
-   its own content width instead of filling this container like it does in
-   the real sidebar. */
-.leftnav-alt__inline-panel .np-history-new-btn { flex: 1; justify-content: center; }
-
 /* Master headers ("Insights", "Fabric Configuration") sit a level above the
    per-entity sub-headers (Exposure, Discover, ...) nested under them — a
    darker grey than the shared .leftnav__section-label default (shell-text-
@@ -78,16 +62,16 @@
    position:fixed (not absolute): .leftnav__body needs overflow-y:auto to
    scroll a tall icon list, and CSS resolves overflow-x:visible to auto
    whenever the other axis isn't visible — clipping an absolutely-positioned
-   tooltip to the 52px rail (same root cause as the Option 2 flyout bug
-   fixed earlier). position:fixed's containing block is the viewport, so it
-   isn't subject to that ancestor's overflow clipping; omitting `top` keeps
-   the tooltip at the button's own static (in-flow) vertical position, so
-   this still needs no JS — :hover remains the only trigger. */
+   tooltip to the 52px rail. position:fixed's containing block is the
+   viewport, so it isn't subject to that ancestor's overflow clipping;
+   omitting `top` keeps the tooltip at the button's own static (in-flow)
+   vertical position, so this still needs no JS — :hover remains the only
+   trigger. */
 .nav-item__btn--rail-collapsed { position: relative; }
 /* [data-tooltip] guard on both rules below: LeftNavHybrid's Row can render
    this class with no data-tooltip attribute at all (hideTooltip, see
    LeftNavAlt.jsx) for a row whose hover already opens something
-   self-labeled (Option 5's Navigator/Workspace preview). Without the
+   self-labeled (the Navigator/Workspace preview). Without the
    guard, `content: attr(data-tooltip)` on a missing attribute still
    evaluates to an empty string, not `none` — so the ::after box (padding,
    background, shadow, border-radius) rendered anyway on hover, just with

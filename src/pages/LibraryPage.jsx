@@ -78,10 +78,10 @@ function LibraryPage({ typeLock }) {
     { title: 'Tracked Security Gaps',                          desc: 'Monitored list of unresolved weaknesses showing progress, ownership, and aging of outstanding security issues.',                tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
   ]
 
-  // typeLock (set by button 4's Workspace nav section — see LeftNavOption3
-  // in LeftNavAlt.jsx) overrides the page's own All/Dashboards/Reports pill
+  // typeLock (derived from the current route, see WorkspacePage.jsx's
+  // savedTypeLock) overrides the page's own All/Dashboards/Reports pill
   // filter entirely, rather than driving it through setLibraryFilter, so it
-  // can't clobber that shared context state for the other nav designs.
+  // can't clobber that shared context state.
   const effectiveFilter = typeLock ?? libraryFilter
 
   const filteredCards = allQuickCards.filter(c => {

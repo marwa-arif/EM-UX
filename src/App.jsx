@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
-import { ActiveLeftNav } from './components/LeftNavAlt.jsx'
+import { LeftNavHybrid } from './components/LeftNavAlt.jsx'
 import ProductTour from './components/ProductTour.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import KGPage from './pages/KGPage.jsx'
@@ -652,11 +652,6 @@ function App() {
   // separate "auto-collapse on this route" check re-asserting itself over
   // a preference the user already expressed by using the toggle.
   const [navCollapsed, setNavCollapsed] = useState(() => current === 'navigator');
-  // Which of the two LeftNav designs is active — 'classic' (hide + hover-peek,
-  // LeftNav.jsx) or 'rail' (icon-rail collapse, LeftNavAlt.jsx). Persisted so
-  // a chosen design survives a reload; switched via the Topbar's "1"/"2" control.
-  const [navDesign, setNavDesign] = useState(() => localStorage.getItem('pai-nav-design') || 'classic');
-  useEffect(() => { localStorage.setItem('pai-nav-design', navDesign); }, [navDesign]);
   // Lets a click on a dropdown-capable LeftNav item force the sidebar open
   // even while auto-collapsed (e.g. on the Navigator route) so its children
   // become visible/clickable. Cleared on every navigation.
@@ -693,37 +688,12 @@ function App() {
   // branches further down) — hooks have to run in the same order on every
   // render, and a conditional return skipping some of them is exactly the
   // "rendered fewer hooks than expected" crash React throws.
-  // Option 4 ("split") has no auto-collapse at all — its rail+panel stays
-  // identical across every dashboard and Navigator, never hiding behind the
-  // hover-peek overlay the other options use to reclaim width.
-  const collapsedForNav = navDesign === 'split' ? false : (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating))) && !navExpandOverride;
-
-  // Hover-peek for the collapsed sidebar. Both the sidebar itself and the
-  // Topbar toggle button (left of the logo) can open/extend it, and closing
-  // is delayed rather than instant — otherwise moving the mouse from the
-  // peeked sidebar up to the toggle button (to pin it open) crosses a gap
-  // that would close the peek before the click lands.
-  const [navHoverPeek, setNavHoverPeek] = useState(false);
-  const navHoverCloseTimer = useRef(null);
-  useEffect(() => { if (!collapsedForNav) setNavHoverPeek(false); }, [collapsedForNav]);
-  useEffect(() => () => { if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current); }, []);
-  const openNavHoverPeek = () => {
-    if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null; }
-    setNavHoverPeek(true);
-  };
-  const scheduleNavHoverClose = () => {
-    if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current);
-    navHoverCloseTimer.current = setTimeout(() => setNavHoverPeek(false), 300);
-  };
+  const collapsedForNav = (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating))) && !navExpandOverride;
 
   // Sidebar toggle (now in the Topbar, left of the logo): whenever the nav
   // is currently collapsed (hidden, whatever the reason), pin it open via
   // the escape-hatch override; whenever it's already pinned/expanded, this
-  // is what puts it back into its default collapsed-by-context state. When
-  // collapsing, force-clear any hover-peek immediately — the cursor is
-  // usually still resting on this very button right after the click, and
-  // without this the sidebar would keep rendering as a hover-peek overlay
-  // (looking like the click did nothing) until the mouse actually moves.
+  // is what puts it back into its default collapsed-by-context state.
   const toggleNavCollapse = () => {
     if (collapsedForNav) {
       // Clear the manual-collapse flag itself, not just the override — the
@@ -735,8 +705,6 @@ function App() {
     } else {
       setNavExpandOverride(false);
       setNavCollapsed((c) => !c);
-      if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null; }
-      setNavHoverPeek(false);
     }
   };
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
@@ -1107,8 +1075,6 @@ function App() {
             seedDashboard={dashboardSeed}
             appMode={appMode}
             onModeChange={handleModeChange}
-            navDesign={navDesign}
-            onSetNavDesign={setNavDesign}
             initialCollapsed={navCollapsed}
           />
         )}
@@ -1159,11 +1125,10 @@ function App() {
           <PasswordGate onUnlock={unlock} />
         </div>
       )}
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} onNavToggleHoverEnter={openNavHoverPeek} onNavToggleHoverLeave={scheduleNavHoverClose} navDesign={navDesign} onSetNavDesign={setNavDesign} />
+      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
-        <ActiveLeftNav
-          navDesign={navDesign}
+        <LeftNavHybrid
           current={current}
           onNav={handleNav}
           navigatorAtHome={isNavigatorRoute && navigatorAtHome}
@@ -1171,9 +1136,6 @@ function App() {
           adminActiveSection={adminState.activeSection}
           onAdminSelect={adminState.setActiveSection}
           collapsed={collapsedForNav}
-          hoverPeek={navHoverPeek}
-          onHoverEnter={openNavHoverPeek}
-          onHoverLeave={scheduleNavHoverClose}
           onToggleCollapse={toggleNavCollapse}
         />
 
@@ -1196,7 +1158,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} navDesign={navDesign} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -1238,7 +1200,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} navDesign={navDesign} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
                 {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}

@@ -25,17 +25,6 @@
 }
 .topbar__theme-toggle:hover { background: rgba(255,255,255,0.10); }
 .topbar__nav-toggle:hover { background: rgba(255,255,255,0.10); }
-/* Nav-design switch — lets the two LeftNav options (classic hide+peek vs.
-   icon-rail collapse) be compared side by side without a rebuild. */
-.topbar__nav-switch { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 4px; }
-.topbar__nav-switch-btn {
-  width: 20px; height: 20px;
-  border: none; background: transparent; color: var(--shell-topbar-text); opacity: 0.6;
-  border-radius: 4px; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.topbar__nav-switch-btn:hover { opacity: 0.9; background: rgba(255,255,255,0.12); }
-.topbar__nav-switch-btn--active { opacity: 1; background: rgba(255,255,255,0.18); color: var(--shell-topbar-text); }
 .topbar__btn--pulse { animation: topbarBellPulse 500ms ease-out; }
 @keyframes topbarBellPulse {
   0%   { transform: scale(1); }

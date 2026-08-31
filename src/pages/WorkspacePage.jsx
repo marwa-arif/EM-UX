@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import '../styles/shell.css'
 import '../styles/filter-panel.css'
 import Topbar from '../components/Topbar.jsx'
-import { ActiveLeftNav } from '../components/LeftNavAlt.jsx'
+import { LeftNavHybrid } from '../components/LeftNavAlt.jsx'
 import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
@@ -21,15 +21,15 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, navDesign, onSetNavDesign, initialCollapsed = false }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, initialCollapsed = false }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
   // Remembers whichever workspace list route (Saved or Templates, each
-  // optionally locked to -dashboards/-reports by Option 4's nav — see
-  // ActiveLeftNav's Workspace section) the user was last on, so "back"/
-  // "cancel"/"leave" out of the dashboard/report builder returns to the
-  // exact same locked view instead of always landing on the unlocked Saved tab.
+  // optionally locked to -dashboards/-reports, see savedTypeLock below) the
+  // user was last on, so "back"/"cancel"/"leave" out of the dashboard/report
+  // builder returns to the exact same locked view instead of always landing
+  // on the unlocked Saved tab.
   const isListRoute = (id) => /^workspace\/(saved|library)(-dashboards|-reports)?$/.test(id)
   const [listOrigin, setListOrigin] = useState(
     isListRoute(current) ? current : 'workspace/saved'
@@ -38,10 +38,10 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
   // Seeded from App.jsx's own manual-collapse flag (see its `navCollapsed`
   // and the <WorkspacePage initialCollapsed={navCollapsed}> call site) — App
-  // and WorkspacePage mount entirely separate ActiveLeftNav/Topbar trees, so
+  // and WorkspacePage mount entirely separate LeftNavHybrid/Topbar trees, so
   // without this, navigating here from a manually-collapsed App-tree page
-  // (e.g. clicking Workspace on Option 5's own rail) always reset back to
-  // expanded, since this state defaulted to false on every fresh mount.
+  // (e.g. clicking Workspace on the rail) always reset back to expanded,
+  // since this state defaulted to false on every fresh mount.
   const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [navExpandOverride, setNavExpandOverride] = useState(false)
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
@@ -170,53 +170,27 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
         ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
         : [() => handleNav('exposure/overview')]
 
-  // Option 4 ("split") has no auto-collapse at all — see App.jsx's
-  // collapsedForNav for the matching rule on the other route tree.
-  const navCollapsed = navDesign === 'split' ? false : (collapsed || rightPanelOpen) && !navExpandOverride
+  const navCollapsed = (collapsed || rightPanelOpen) && !navExpandOverride
 
-  // Same hover-peek-with-delayed-close as App.jsx — see its comment for why
-  // the close needs a grace period instead of firing on mouse-leave.
-  const [navHoverPeek, setNavHoverPeek] = useState(false)
-  const navHoverCloseTimer = useRef(null)
-  useEffect(() => { if (!navCollapsed) setNavHoverPeek(false) }, [navCollapsed])
-  useEffect(() => () => { if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current) }, [])
-  const openNavHoverPeek = () => {
-    if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null }
-    setNavHoverPeek(true)
-  }
-  const scheduleNavHoverClose = () => {
-    if (navHoverCloseTimer.current) clearTimeout(navHoverCloseTimer.current)
-    navHoverCloseTimer.current = setTimeout(() => setNavHoverPeek(false), 300)
-  }
-
-  // Same generalized pin/unpin behavior as App.jsx's toggleNavCollapse,
-  // including force-clearing a lingering hover-peek on collapse — see its
-  // comment for why (otherwise clicking "hide" while still hovering the
-  // button looks like nothing happened).
+  // Same generalized pin/unpin behavior as App.jsx's toggleNavCollapse.
   const toggleNavCollapse = () => {
     if (navCollapsed) {
       setNavExpandOverride(o => !o)
     } else {
       setNavExpandOverride(false)
       setCollapsed(c => !c)
-      if (navHoverCloseTimer.current) { clearTimeout(navHoverCloseTimer.current); navHoverCloseTimer.current = null }
-      setNavHoverPeek(false)
     }
   }
 
   return (
     <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} onNavToggleHoverEnter={openNavHoverPeek} onNavToggleHoverLeave={scheduleNavHoverClose} navDesign={navDesign} onSetNavDesign={onSetNavDesign} />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} />
         <div className="wp-body">
-          <ActiveLeftNav
-            navDesign={navDesign}
+          <LeftNavHybrid
             current={current}
             onNav={handleNav}
             collapsed={navCollapsed}
-            hoverPeek={navHoverPeek}
-            onHoverEnter={openNavHoverPeek}
-            onHoverLeave={scheduleNavHoverClose}
             onToggleCollapse={toggleNavCollapse}
             mode={appMode}
             onModeChange={onModeChange}
