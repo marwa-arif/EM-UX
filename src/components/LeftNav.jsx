@@ -2,17 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import { ADMIN_NAV_GROUPS } from '../pages/admin/AdminPanelBody.jsx'
 
-export function IcEMDashboard() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="9" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="1" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-      <rect x="9" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-    </svg>
-  )
-}
-
 // Sidebar panel toggle icon — one persistent <svg>/<path> tree whose arrow
 // direction flips via a prop, rather than two separate components swapped
 // by the caller. Swapping components (unmount+remount a different SVG
@@ -21,20 +10,26 @@ export function IcEMDashboard() {
 // button, was reopening the hover-peek override right after a click forced
 // it closed. Updating one already-mounted <path>'s `d` attribute in place
 // doesn't trigger that.
+// Same bolder shape as NavigatorPage.jsx's own IcSidebarCollapse (24-unit
+// viewBox, strokeWidth 2, Ic's Lucide-style stroke convention) instead of
+// this file's old thin 1.35-stroke design — the two were visually
+// inconsistent despite meaning the same thing ("toggle this sidebar").
+// `open` maps directly to IcSidebarCollapse's own `flip`: both point the
+// chevron left when true, right when false.
 export function IcPanelToggle({ open, size = 15 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
-      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
-      <path d={open ? 'M9 5.5 L7 7.5 L9 9.5' : 'M7 5.5 L9 7.5 L7 9.5'} stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <path d="M9 3v18"/>
+      <path d={open ? 'M13.5 9l2.5 3-2.5 3' : 'M16 9l-2.5 3 2.5 3'}/>
     </svg>
   )
 }
 
-// Console/terminal glyph — Admin Console entry point
-export function IcConsoleNav() {
+// Console/terminal glyph — Admin Panel entry point (topbar account menu)
+export function IcConsoleNav({ size = 16 }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="2.5" y="4" width="19" height="15" rx="2" stroke="currentColor" strokeWidth="1.6"/>
       <path d="M6.5 9.5 10 12.5 6.5 15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M12 15.5h5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
@@ -91,8 +86,18 @@ export function IcSummaryNav() {
 // no mode switcher, no appMode branching (matches UX3LeftNav.jsx's Navigator/
 // Workspace items, which use the same "always visible, not part of a group"
 // treatment).
+// Navigator uses `icon` (not `iconNode`) like every other row here — its
+// asset is a blue-gradient fill, not a currentColor stroke, so it needs the
+// same mask-image treatment RowIcon/NavItem give every other `icon` entry
+// to actually recolor on selection. It used to carry its own <img> iconNode
+// instead, which meant the accent-selected state's `color: var(--shell-
+// accent)` had nothing to act on (an <img> ignores CSS `color`) — the icon
+// just kept rendering its native blue instead of turning purple like every
+// sibling row does, and looked inconsistently grey the rest of the time
+// since only the grayscale filter (not the accent color) was ever visibly
+// applying to it.
 export const TOP_ITEMS = [
-  { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
+  { id: 'navigator', label: 'Navigator', icon: 'Navigator icon', navigateId: 'navigator-page', solo: true },
   { id: 'workspace',  label: 'Workspace', icon: 'navbar-workspace', dividerAfter: true },
 ];
 
@@ -113,6 +118,7 @@ export const INSIGHTS_MODEL = [
       { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
       { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
       { id: 'report/compliance-findings', label: 'Compliance Findings', icon: 'nav-findings' },
+      { id: 'report/mra-security-risk',   label: 'MRA Security Risk',   icon: 'nav-report-matrix' },
   ]},
   { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
   { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [
@@ -217,7 +223,7 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
     );
   });
 
-  // Admin Console groups render through the same NavItem row (icon + label,
+  // Admin Panel groups render through the same NavItem row (icon + label,
   // same font weight/hover/selected treatment) as Insights/Fabric
   // Configuration — clicks pick an admin section instead of navigating
   // `current`, so they get their own tiny render path rather than going
@@ -274,21 +280,6 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
             {!collapsedSections.has('fabric') && renderGroup(FABRIC_MODEL, 'studio')}
           </>
         )}
-      </div>
-
-      <div className="leftnav__footer" data-tour="nav-console">
-        <NavItem
-          item={{
-            id: 'admin-page',
-            label: consoleActive ? 'EM Dashboard' : 'Console Panel',
-            iconNode: consoleActive ? <IcEMDashboard /> : <IcConsoleNav />,
-          }}
-          isActiveParent={consoleActive}
-          activeChild={null}
-          isOpen={false}
-          onToggle={() => {}}
-          onNav={() => onNav(consoleActive ? 'admin-exit' : 'admin-page')}
-        />
       </div>
     </>
   );

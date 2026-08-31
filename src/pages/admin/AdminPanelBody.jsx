@@ -16,7 +16,7 @@ import { OrganizationSection, BillingSection } from './Workspace.jsx'
 
 /* ── Settings nav structure — shared by every shell the Settings panel
    can nest inside (classic EM, Studio, UX3, and the Workspace fallback).
-   Each item carries an iconNode so LeftNav can render the Admin Console
+   Each item carries an iconNode so LeftNav can render the Admin Panel
    using the exact same NavItem row (icon + label, same font weight, same
    collapse-to-icon-rail behavior) as the Insights/Fabric Configuration
    groups, instead of a visually distinct icon-less list. ── */
@@ -84,7 +84,7 @@ export function useAdminPanelState() {
   });
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const sectionLabel = ALL_ITEMS.find(s => s.id === activeSection)?.label || 'Admin Console';
+  const sectionLabel = ALL_ITEMS.find(s => s.id === activeSection)?.label || 'Admin Panel';
 
   return {
     activeSection, setActiveSection,
@@ -103,7 +103,7 @@ export function AdminSettingsNav({ activeSection, onSelect }) {
   return (
     <>
       <nav className="settings-panel__nav">
-        <div className="settings-panel__title">Admin Console</div>
+        <div className="settings-panel__title">Admin Panel</div>
         {ADMIN_NAV_GROUPS.map(group => (
           <div key={group.label} className="settings-panel__group">
             <div className="settings-panel__group-label">{group.label}</div>
@@ -132,7 +132,7 @@ export function AdminPanelContent({ state, onNav, onClose }) {
     <>
       <SubHeader
         title={sectionLabel}
-        breadcrumb={['Insights', 'Admin Console']}
+        breadcrumb={['Insights', 'Admin Panel']}
         breadcrumbHrefs={[null, null]}
         breadcrumbClicks={[onClose]}
         showMenu={false}

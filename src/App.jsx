@@ -27,6 +27,7 @@ import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
 import CompliancePage       from './pages/CompliancePage.jsx'
 import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
+import MRASecurityRiskPage    from './pages/MRASecurityRiskPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 import DataQualityOverviewPage from './pages/DataQualityOverviewPage.jsx'
 import DataQualityInDepthPage from './pages/DataQualityInDepthPage.jsx'
@@ -34,6 +35,7 @@ import SplashScreen           from './components/SplashScreen.jsx'
 import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
 import { DownloadsProvider }  from './DownloadsContext.jsx'
+import { NavigatorActivityProvider } from './context/NavigatorActivityCtx.jsx'
 import { ToastProvider }      from './context/ToastCtx.jsx'
 import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
@@ -569,6 +571,11 @@ const PAGE_META = {
     breadcrumb: ['Insights', 'Report', 'Compliance Findings'],
     breadcrumbHrefs: [null, null, null],
   },
+  'report/mra-security-risk': {
+    title: 'MRA Security Risk',
+    breadcrumb: ['Insights', 'Report', 'MRA Security Risk'],
+    breadcrumbHrefs: [null, null, null],
+  },
   'data-quality/overview': {
     title: 'Overview',
     breadcrumb: ['Insights', 'Data Quality', 'Overview'],
@@ -625,7 +632,7 @@ function App() {
   const adminState = useAdminPanelState();
   // Per-user Settings (Profile/Password/Notifications) — a separate flag from
   // settingsOpen/adminState above, since it's a distinct destination from the
-  // org-wide Admin Console: always a full-page takeover (see UserSettingsPage.jsx)
+  // org-wide Admin Panel: always a full-page takeover (see UserSettingsPage.jsx)
   // rather than nested inside whichever shell was active.
   const [userSettingsOpen, setUserSettingsOpen] = useState(() => stripBase(window.location.pathname) === '/settings');
   const userSettingsState = useUserSettingsState();
@@ -637,7 +644,14 @@ function App() {
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [tourActive, setTourActive] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  // Collapsed by default only when Navigator is the actual landing route —
+  // an initial *value*, not a recurring rule, so that from here on
+  // navCollapsed is the single, ordinary source of truth the toggle already
+  // controls. Anything else (expanding on another page, then navigating
+  // into Navigator) just persists via that same state, instead of a
+  // separate "auto-collapse on this route" check re-asserting itself over
+  // a preference the user already expressed by using the toggle.
+  const [navCollapsed, setNavCollapsed] = useState(() => current === 'navigator');
   // Which of the two LeftNav designs is active — 'classic' (hide + hover-peek,
   // LeftNav.jsx) or 'rail' (icon-rail collapse, LeftNavAlt.jsx). Persisted so
   // a chosen design survives a reload; switched via the Topbar's "1"/"2" control.
@@ -654,20 +668,25 @@ function App() {
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
   // Whether the full-page Navigator is showing its Home landing screen (vs.
-  // an active chat/build) — drives LeftNav's active-highlight suppression
-  // and auto-collapse below, so Navigator only "feels" like the current
-  // section once the user actually starts a conversation.
+  // an active chat/build) — drives LeftNav's active-highlight suppression,
+  // so Navigator only "feels" like the current section once the user
+  // actually starts a conversation.
   const [navigatorAtHome, setNavigatorAtHome] = useState(true);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
 
   // Auto-collapse whenever a docked right panel is open (Navigator in sidebar/
-  // builder mode, or the filter panel) or the full-page Navigator route is
-  // active and past its Home screen, to reclaim width. Floating Navigator
-  // overlays content instead of consuming layout width, so it's exempt.
-  // Navigator's own Home landing screen stays exempt too, so it reads as a
-  // proper home page rather than an already-active chat. Never overrides the
-  // user's manual preference once Navigator/the panel closes.
+  // builder mode, or the filter panel), to reclaim width it's actually
+  // occupying. Floating Navigator overlays content instead of consuming
+  // layout width, so it's exempt. Landing on the full-page Navigator route
+  // itself is deliberately NOT part of this recurring check — that would
+  // fight navCollapsed on every single visit (e.g. expand it on another
+  // page, then navigate into Navigator, only to have it snap back collapsed
+  // regardless). Navigator's "collapsed by default" behavior instead lives
+  // one level up, in navCollapsed's own initial value above — a one-time
+  // default for a session that actually lands there, after which this
+  // ordinary navCollapsed toggle state is the only thing driving it, same
+  // as every other route.
   //
   // This (and the hover-peek hooks below) must live above every early
   // `return` in this component (see the workspace/ux3/error/notFound
@@ -677,7 +696,7 @@ function App() {
   // Option 4 ("split") has no auto-collapse at all — its rail+panel stays
   // identical across every dashboard and Navigator, never hiding behind the
   // hover-peek overlay the other options use to reclaim width.
-  const collapsedForNav = navDesign === 'split' ? false : (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)) || (current === 'navigator' && !navigatorAtHome)) && !navExpandOverride;
+  const collapsedForNav = navDesign === 'split' ? false : (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating))) && !navExpandOverride;
 
   // Hover-peek for the collapsed sidebar. Both the sidebar itself and the
   // Topbar toggle button (left of the logo) can open/extend it, and closing
@@ -1090,6 +1109,7 @@ function App() {
             onModeChange={handleModeChange}
             navDesign={navDesign}
             onSetNavDesign={setNavDesign}
+            initialCollapsed={navCollapsed}
           />
         )}
       </>
@@ -1228,9 +1248,10 @@ function App() {
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
                 {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
+                {current === 'report/mra-security-risk'    && <MRASecurityRiskPage />}
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
-                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
+                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'report/mra-security-risk' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
                 {isKG && <KGPage focusEntity={kgFocusEntity} />}
               </div>
             </div>
@@ -1281,9 +1302,11 @@ function AppWithBoundary() {
   return (
     <ToastProvider>
       <DownloadsProvider>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
+        <NavigatorActivityProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </NavigatorActivityProvider>
       </DownloadsProvider>
     </ToastProvider>
   );

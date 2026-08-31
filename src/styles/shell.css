@@ -4,7 +4,7 @@
   background: var(--shell-topbar-bg);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 16px 0 8px;
   gap: 12px;
   flex-shrink: 0;
   position: relative;
@@ -320,15 +320,24 @@
 }
 .leftnav__section-label:hover .leftnav__section-chevron,
 .leftnav__section-chevron--visible { opacity: 1; }
-/* Nav icon filters — theme-aware */
-.nav-item__icon        { flex-shrink: 0; filter: grayscale(100%) opacity(0.72); }
-.nav-item__icon--active { filter: grayscale(100%) opacity(0.9); }
+/* Nav icon filters — theme-aware. brightness(0), not grayscale(100%): a
+   few nav SVGs (e.g. Navigator icon.svg) carry a baked-in brand gradient
+   rather than the sibling icons' flat #101010 — grayscale() preserves each
+   source color's own luminance, so the gradient converts to a visibly
+   lighter grey than the already-near-black siblings at the same opacity.
+   brightness(0) flattens every icon's opaque pixels to pure black first
+   (a no-op on the already-black ones), matching the dark-theme rule below,
+   which sidesteps the same mismatch via brightness(0) invert(1). */
+.nav-item__icon        { flex-shrink: 0; filter: brightness(0) opacity(0.72); }
+.nav-item__icon--active { filter: brightness(0) opacity(0.9); }
 .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
 html.theme-dark .nav-item__icon        { filter: brightness(0) invert(1) opacity(0.60); }
 html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacity(0.9); }
 html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
-/* Masked variant for single-color icon assets that need a true accent tint (mirrors .nav-item__child-icon) */
-.nav-item__icon--masked { width: 16px; height: 16px; display: inline-block; background-color: var(--shell-accent); mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
+/* Masked variant for single-color icon assets that need a true accent tint (mirrors .nav-item__child-icon).
+   filter: none since its color comes from background-color, not the source asset — the grayscale/invert
+   filters above are for the plain <img> variant and would desaturate this tint if inherited. */
+.nav-item__icon--masked { width: 16px; height: 16px; display: inline-block; background-color: var(--shell-accent); filter: none; mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
 
 /* ── App root shell ──────────────────────────────────────────────── */
 .app-shell {
@@ -462,13 +471,6 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 
 .leftnav__body { flex: 1; overflow-y: auto; padding: 8px 0; }
 .leftnav__divider { margin: 8px 12px; border-top: 1px solid var(--shell-border); }
-
-/* ── Left nav footer — Console Panel entry point. Renders through the same
-   .nav-item/.nav-item__btn markup as every other row above (see NavItem in
-   LeftNav.jsx), so it needs no styling of its own beyond the footer's own
-   divider/padding — that's what makes its icon and label match the rest of
-   the sidebar instead of standing out with a distinct treatment. ── */
-.leftnav__footer { flex-shrink: 0; padding: 8px 0; border-top: 1px solid var(--shell-border); }
 
 /* Nav items */
 .nav-item { padding: 0 8px; margin-bottom: 4px; }

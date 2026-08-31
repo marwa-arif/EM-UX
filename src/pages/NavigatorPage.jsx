@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Ic } from '../ui.jsx'
 import { WidgetCard } from './DashboardCanvas.jsx'
@@ -6,6 +6,7 @@ import ReasoningEngine, { createExchange, useReasoningEngine } from '../componen
 import CanvasPanel, { ChatDragger, ExchangeResult, FeedbackRow } from '../components/CanvasPanel.jsx'
 import TablePagination from '../components/TablePagination.jsx'
 import { useToast } from '../context/ToastCtx.jsx'
+import { useNavigatorActivity } from '../context/NavigatorActivityCtx.jsx'
 import { useSpeechToText } from '../hooks/useSpeechToText.js'
 import { TEXT_ONLY_TIERS, INTRO_COMPLETION_MESSAGES, FOLLOWUP_SUGGESTIONS } from './navigatorEngine.js'
 
@@ -370,6 +371,46 @@ const MODE_PLACEHOLDERS = {
   research: 'What do you want to research in depth?',
   build:    'Describe a dashboard, e.g. “critical findings by host and source”…',
 };
+
+// Segmented control with a sliding active-pill indicator (used for Ask/Research/Build
+// and Depth of analysis) — measures the active item's own rect so it works for
+// unequal-width labels without hardcoding per-item widths.
+function ModeSeg({ items, activeId, onChange, className = '' }) {
+  const trackRef = useRef(null);
+  const itemRefs = useRef({});
+  const [thumbStyle, setThumbStyle] = useState(null);
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    const el = itemRefs.current[activeId];
+    if (!track || !el) return;
+    const measure = () => {
+      const trackRect = track.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      setThumbStyle({ width: elRect.width, transform: `translateX(${elRect.left - trackRect.left}px)` });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [activeId, items]);
+
+  return (
+    <div className={`hv-mode-seg ${className}`} ref={trackRef}>
+      {thumbStyle && <span className="hv-mode-seg-thumb" style={thumbStyle} aria-hidden="true" />}
+      {items.map(it => (
+        <button
+          key={it.id}
+          ref={(el) => { itemRefs.current[it.id] = el; }}
+          type="button"
+          className={`hv-mode-seg-item${activeId === it.id ? ' active' : ''}`}
+          onClick={() => onChange(it.id)}
+        >
+          {it.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const BUILD_SUGGESTIONS = [
   { id: 'bs1', label: 'Critical findings count',  chartId: 'kpi'     },
@@ -832,17 +873,7 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onS
                   </button>
                 </span>
               )}
-              <div className="hv-mode-seg">
-                {MODE_DEFS.map(m => (
-                  <button
-                    key={m.id}
-                    className={`hv-mode-seg-item${mode === m.id ? ' active' : ''}`}
-                    onClick={() => onModeChange(m.id)}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+              <ModeSeg items={MODE_DEFS} activeId={mode} onChange={onModeChange} />
             </div>
             <div className="hv-composer-bar-right">
               <button
@@ -1156,6 +1187,7 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarC
   const [customTitle, setCustomTitle] = useState('');
   const [confirmDeleteThread, setConfirmDeleteThread] = useState(false);
   const { showToast } = useToast();
+  const { startChat, finishChat } = useNavigatorActivity();
   const { listening: micOn, toggle: toggleMic, supported: micSupported } = useSpeechToText(
     err => showToast({ type: 'error', msg: err === 'not-allowed' ? 'Microphone access was denied' : 'Voice input failed' })
   );
@@ -1215,6 +1247,21 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarC
   const liveExchange = exchanges.find(ex => ex.id === liveId) || null;
   const canStop = liveExchange && !liveExchange.chitChat && !liveExchange.done;
   const handleStop = () => { engineRegistry.current[liveId]?.stop(); updateExchange(liveId, ex => ({ ...ex, done: true, reasoningCollapsed: true })); };
+
+  // Surface "still generating" to the rest of the app (e.g. the LeftNav's
+  // Navigator hover preview) via a context whose own fallback timer keeps
+  // running even if this component unmounts — see NavigatorActivityCtx for
+  // why that can't just be liveExchange.done itself. Chit-chat replies are
+  // already `done: true` the instant they're created, so they never start.
+  useEffect(() => {
+    if (!liveExchange || liveExchange.chitChat || liveExchange.done) return;
+    startChat(liveExchange.id, liveExchange.query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveExchange?.id]);
+  useEffect(() => {
+    if (liveExchange?.done) finishChat(liveExchange.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveExchange?.id, liveExchange?.done]);
 
   const threadTitle = customTitle || exchanges[0]?.query;
 
@@ -2143,18 +2190,11 @@ function AgentBuilderView({ onGoHome, onAgentCreated, onAgentUpdated, editingAge
           </div>
           <div className="agb-depth-row">
             <span className="ds-input-label">Depth of analysis</span>
-            <div className="hv-mode-seg">
-              {DEPTH_LEVELS.map((d, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`hv-mode-seg-item${depth === i ? ' active' : ''}`}
-                  onClick={() => setDepth(i)}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
+            <ModeSeg
+              items={DEPTH_LEVELS.map((d, i) => ({ id: i, label: d.label }))}
+              activeId={depth}
+              onChange={setDepth}
+            />
           </div>
         </div>
 
@@ -2391,11 +2431,15 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
 const AGENTS_STORAGE_KEY = 'nav-agents';
 
 export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange, navDesign }) {
-  // Only the "rail" LeftNav option (Option 2) gets the hide + hover-peek
-  // sidebar behavior — Options 1/3 (and any future design) keep the
-  // original icon-rail collapse with the "Collapse" button at the sidebar's
-  // own footer, unchanged.
-  const useHidePeekSidebar = navDesign === 'rail';
+  // The "rail" LeftNav option (Option 2, Topbar button 1) and the hybrid
+  // (Option 5, button 5) both get the hide + hover-peek sidebar behavior —
+  // Options 1/3 (and any other design) keep the original icon-rail collapse
+  // with the "Collapse" button at the sidebar's own footer, unchanged.
+  // Hybrid's own LeftNav rail already uses this exact hide+peek convention
+  // for itself (see LeftNavHybrid in LeftNavAlt.jsx), so extending it here
+  // keeps Navigator's own internal sidebar consistent with the rest of that
+  // option instead of the two behaving differently side by side.
+  const useHidePeekSidebar = navDesign === 'rail' || navDesign === 'hybrid';
   // Option 4 (navDesign 'split') already puts New chat/History/Agents in its
   // own Navigator panel next to the icon rail, and Option 3 (navDesign
   // 'renamed') now folds the same New chat/History/Agents content directly
@@ -2411,7 +2455,10 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   const [runningAgent, setRunningAgent] = useState(null);
   const [editingAgent, setEditingAgent] = useState(null);
   const [chats, setChats] = useState(RECENT_CHATS);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Collapsed by default — Navigator is the app's default view, so it
+  // should read as a clean landing page (icon rail only) rather than
+  // opening with its own History/Agents sidebar already pinned open.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   // Hover-peek for the collapsed sidebar — same delayed-close pattern as
   // App.jsx's LeftNav hover-peek: both the peeked sidebar itself and the
   // title bar's expand icon can open/extend it, and closing is delayed so

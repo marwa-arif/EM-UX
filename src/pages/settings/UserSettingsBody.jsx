@@ -3,7 +3,7 @@ import SubHeader from '../../components/SubHeader.jsx'
 import { IcUsers, IcLock, IcBell, SectionHead, ToggleRow } from '../admin/shared.jsx'
 
 /* ── Per-user Settings — basic account-level preferences, distinct from the
-   Admin Console's org/company/plan-wide configuration (AdminPanelBody.jsx).
+   Admin Panel's org/company/plan-wide configuration (AdminPanelBody.jsx).
    Reached only from the Topbar account menu, never nested inside a shell's
    own left nav, so it's a single flat list rather than grouped sections. ── */
 export const USER_SETTINGS_NAV = [

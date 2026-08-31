@@ -4,7 +4,7 @@ import VersionBadge from './VersionBadge.jsx'
 import NotificationPanel, { initialNotifications } from './NotificationPanel.jsx'
 import HelpSupportPanel from './HelpSupportPanel.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
-import { IcPanelToggle } from './LeftNav.jsx'
+import { IcPanelToggle, IcConsoleNav } from './LeftNav.jsx'
 
 const SunIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -97,6 +97,7 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
   const handleMenuOption = (option) => {
     setMenuOpen(false);
     if (option === 'settings') onNav?.('user-settings-page');
+    else if (option === 'admin') onNav?.('admin-page');
     else if (option === 'help') setHelpOpen(true);
     else if (option === 'ux3') onNav?.('ux3-page');
     else if (option === 'logout') window.location.href = import.meta.env.BASE_URL;
@@ -160,7 +161,9 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
         <div className="topbar__nav-switch" role="group" aria-label="Left nav design">
           {/* Display order reshuffled to 2/4/1/3 (former Option 2 first, then
               4, 1, 3) — the numbers here are just this slot's position, not
-              tied to each design's underlying navDesign value/id. */}
+              tied to each design's underlying navDesign value/id. Button 5
+              (navDesign 'hybrid') is appended after the original four rather
+              than reshuffled in, so it's always the newest/rightmost slot. */}
           <button
             type="button"
             onClick={() => onSetNavDesign('rail')}
@@ -200,6 +203,16 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
             className={`topbar__nav-switch-btn${navDesign === 'renamed' ? ' topbar__nav-switch-btn--active' : ''}`}
           >
             4
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetNavDesign('hybrid')}
+            title="Nav design 5 — hybrid"
+            aria-label="Nav design 5 — hybrid"
+            aria-pressed={navDesign === 'hybrid'}
+            className={`topbar__nav-switch-btn${navDesign === 'hybrid' ? ' topbar__nav-switch-btn--active' : ''}`}
+          >
+            5
           </button>
         </div>
       )}
@@ -271,6 +284,10 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
             <button className="topbar__account-menu-item" role="menuitem" onClick={() => handleMenuOption('settings')}>
               <SettingsIcon />
               Settings
+            </button>
+            <button className="topbar__account-menu-item" role="menuitem" onClick={() => handleMenuOption('admin')} data-tour="topbar-admin">
+              <IcConsoleNav size={14} />
+              Admin Panel
             </button>
             <button className="topbar__account-menu-item" role="menuitem" onClick={() => handleMenuOption('help')}>
               <HelpIcon />

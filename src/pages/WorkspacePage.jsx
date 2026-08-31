@@ -7,7 +7,7 @@ import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
 import LibraryPage from './LibraryPage.jsx'
-import SavedPage from './SavedPage.jsx'
+import SavedPage, { SAVED_ROWS } from './SavedPage.jsx'
 import DashboardCanvas, { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE } from './DashboardCanvas.jsx'
 import DataConfigPage from './DataConfigPage.jsx'
 import ReportPreviewPage from './ReportPreviewPage.jsx'
@@ -21,7 +21,7 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, navDesign, onSetNavDesign }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, navDesign, onSetNavDesign, initialCollapsed = false }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
@@ -36,7 +36,13 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   )
   const dashboardBuilderRef = useRef(null)
   useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
-  const [collapsed, setCollapsed] = useState(false)
+  // Seeded from App.jsx's own manual-collapse flag (see its `navCollapsed`
+  // and the <WorkspacePage initialCollapsed={navCollapsed}> call site) — App
+  // and WorkspacePage mount entirely separate ActiveLeftNav/Topbar trees, so
+  // without this, navigating here from a manually-collapsed App-tree page
+  // (e.g. clicking Workspace on Option 5's own rail) always reset back to
+  // expanded, since this state defaulted to false on every fresh mount.
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [navExpandOverride, setNavExpandOverride] = useState(false)
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
@@ -47,9 +53,14 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // itself with that dashboard's widgets/scope instead of starting blank.
   const [editDashboardSeed, setEditDashboardSeed] = useState(null)
 
-  const handleNav = (id) => {
+  // `data` (e.g. the query string LeftNavAlt.jsx's Navigator preview passes
+  // for a specific recent chat) has to be forwarded through both branches —
+  // dropping it here silently reduces that call to a bare, query-less
+  // 'navigator-page' navigation, landing on a blank new chat instead of the
+  // chat that was actually clicked.
+  const handleNav = (id, data) => {
     if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
-      onNav(id)
+      onNav(id, data)
       return
     }
     if (id.startsWith('workspace/report/') && !id.startsWith('workspace/report-preview/')) {
@@ -60,7 +71,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
       setListOrigin(resolved)
     }
     setCurrent(resolved)
-    onNav(resolved)
+    onNav(resolved, data)
   }
 
   const isEditDashboard   = current.startsWith('workspace/dashboard/edit-')
@@ -88,6 +99,22 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // so it can't race the title/seed read above.
   useEffect(() => {
     if (!isEditDashboard && !isViewDashboard && editDashboardSeed) setEditDashboardSeed(null)
+  }, [current])
+
+  // SavedPage's own Edit/View buttons set the seed *before* navigating (see
+  // its handleEdit/handleView), so it's already correct by the time this
+  // runs. But an edit-*/view-* route can also be reached directly — e.g. the
+  // LeftNav's Workspace hover preview (LeftNavAlt.jsx's openSavedItem) opens
+  // one from wherever the user currently is, with no seed set at all — so
+  // resolve it here from the id in the route whenever it's missing/stale,
+  // rather than falling back to a generic "New Dashboard" title.
+  useEffect(() => {
+    if (!isEditDashboard && !isViewDashboard) return
+    const rowId = current.slice(current.lastIndexOf('-') + 1)
+    if (editDashboardSeed && editDashboardSeed.id === rowId) return
+    const row = SAVED_ROWS.find(r => r.id === rowId)
+    if (row) setEditDashboardSeed(row)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current])
 
   const dashTitle   = (isEditDashboard || isViewDashboard) && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')

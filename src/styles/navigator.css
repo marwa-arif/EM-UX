@@ -1486,11 +1486,12 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-hist-sidebar.collapsed .np-history-section-hdr { justify-content: center; padding: 4px 0 8px; }
 .np-hist-sidebar.collapsed .np-history-divider { margin: 4px 10px; }
 
-/* Header height matches .leftnav__header (48px, border-box) so the two
-   border-bottom lines land on the same row instead of stepping between the
-   icon rail and this sidebar. */
+/* Header height matches .chat-space-title's effective total (54px content +
+   1px border-bottom = 55px, see navigator.css above) so the two border-bottom
+   lines land on the same row instead of stepping where the sidebar meets the
+   chat view's own title bar. */
 .np-hist-sidebar .np-history-hdr {
-  height: 48px; box-sizing: border-box; padding: 8px 12px;
+  height: 55px; box-sizing: border-box; padding: 8px 12px;
 }
 .np-history-hdr--collapsed { justify-content: center; padding: 8px; }
 .np-hist-sidebar .np-history-new-btn { flex: 1; justify-content: center; }
@@ -2610,23 +2611,35 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 
 /* Segmented control */
 .hv-mode-seg {
+  position: relative;
   display: flex; align-items: center; height: 32px;
   background: var(--ctrl-bg, #f5f5f5);
   border-radius: 24px; padding: 2px;
 }
 
+.hv-mode-seg-thumb {
+  position: absolute; top: 2px; left: 0; height: 28px;
+  box-sizing: border-box;
+  border-radius: 22px; border: 1px solid transparent;
+  background:
+    linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
+    linear-gradient(90deg, var(--pai-brand-blue, #467FCD), var(--pai-nav-teal, #47ADCB)) border-box;
+  transition: transform 0.22s cubic-bezier(.4, 0, .2, 1), width 0.22s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .hv-mode-seg-item {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
   height: 28px; padding: 0 16px; border-radius: 22px;
   border: none; background: transparent;
   color: var(--shell-text-2, #6e6e6e);
   font-size: 14px; font-family: inherit; cursor: pointer;
-  white-space: nowrap; transition: background 0.12s, color 0.12s;
+  white-space: nowrap; transition: color 0.12s;
 }
 .hv-mode-seg-item.active {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
-    linear-gradient(90deg, var(--pai-brand-blue, #467FCD), var(--pai-nav-teal, #47ADCB)) border-box;
   color: var(--shell-text, #101010); font-weight: 500;
 }
 .hv-mode-seg-item:not(.active):hover { color: var(--shell-text, #101010); }
@@ -2670,6 +2683,9 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 .hv-tabs-list {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
 }
+/* Each chip is a single element, same size whether idle or selected — the
+   grey idle border just cross-fades its own border-color/background/shadow
+   to the accent-selected look, no separate overlay and no scaling. */
 .hv-pill-tab {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 24px;
@@ -2677,14 +2693,14 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   background: var(--card-bg);
   cursor: pointer; font-family: inherit;
   font-size: 13px; font-weight: 500; color: var(--shell-text-2, #6e6e6e);
-  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.15s ease;
 }
 .hv-pill-tab:hover { border-color: var(--shell-accent, #6360d8); color: var(--shell-text, #101010); }
 .hv-pill-tab.active {
   border-color: var(--shell-accent, #6360d8);
   background: rgba(99,96,216,0.08);
-  color: var(--shell-accent, #6360d8);
   box-shadow: 0 0 0 3px rgba(99,96,216,0.12);
+  color: var(--shell-accent, #6360d8);
 }
 
 .hv-tab-panel {

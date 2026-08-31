@@ -25,17 +25,29 @@
    JS, not CSS) since a compact row has no visible label to convey that. */
 .nav-item__rail-caret {
   position: absolute;
-  left: 4px;
-  top: 4px;
   color: var(--shell-text-muted);
   opacity: 0;
-  transition: opacity 120ms, transform 120ms cubic-bezier(.2,.8,.2,1);
+  transition: opacity 120ms;
   pointer-events: none;
 }
 .nav-item__btn--rail-expandable:hover .nav-item__rail-caret { opacity: 1; }
-/* Open (about to collapse) flips the triangle 180deg — same corner, opposite
-   diagonal — so the hint always points toward what the click will do. */
-.nav-item__btn--rail-expandable[aria-expanded="true"] .nav-item__rail-caret { transform: rotate(180deg); }
+/* Open: hint sits top-right (mirrored so its flush corner still lands in
+   the corner), and stays visible without hovering — it's the only cue a
+   collapsed rail has that this section is currently expanded. Closed
+   (about to expand): hint sits bottom-right, rotated 180deg, hover-only —
+   just a preview of the action, not a persistent state. No position/
+   rotation transition — corner-to-corner is a jump, not a slide. */
+.nav-item__btn--rail-expandable[aria-expanded="true"] .nav-item__rail-caret {
+  top: 4px;
+  right: 4px;
+  transform: scaleX(-1);
+  opacity: 1;
+}
+.nav-item__btn--rail-expandable[aria-expanded="false"] .nav-item__rail-caret {
+  right: 4px;
+  bottom: 4px;
+  transform: rotate(180deg);
+}
 
 /* Option 3's inline Navigator panel reuses NavigatorPage.jsx's own
    .np-history-* classes verbatim (see LeftNavOption3 in LeftNavAlt.jsx) for
@@ -72,7 +84,18 @@
    the tooltip at the button's own static (in-flow) vertical position, so
    this still needs no JS — :hover remains the only trigger. */
 .nav-item__btn--rail-collapsed { position: relative; }
-.nav-item__btn--rail-collapsed::after {
+/* [data-tooltip] guard on both rules below: LeftNavHybrid's Row can render
+   this class with no data-tooltip attribute at all (hideTooltip, see
+   LeftNavAlt.jsx) for a row whose hover already opens something
+   self-labeled (Option 5's Navigator/Workspace preview). Without the
+   guard, `content: attr(data-tooltip)` on a missing attribute still
+   evaluates to an empty string, not `none` — so the ::after box (padding,
+   background, shadow, border-radius) rendered anyway on hover, just with
+   no text in it: a small blank white pill overlapping whatever real
+   content sat at that same fixed left:60px position (the preview flyout's
+   own title, in this case). The attribute selector means an element with
+   no data-tooltip has no matching ::after rule at all. */
+.nav-item__btn--rail-collapsed[data-tooltip]::after {
   content: attr(data-tooltip);
   position: fixed;
   left: 60px;
@@ -90,7 +113,7 @@
   transition: opacity 120ms;
   z-index: 60;
 }
-.nav-item__btn--rail-collapsed:hover::after { opacity: 1; }
+.nav-item__btn--rail-collapsed[data-tooltip]:hover::after { opacity: 1; }
 
 /* ── Option 4 — icon rail + collapsible contextual panel ─────────────
    .leftnav-split is the flex wrapper (rail + panel) that replaces a single
@@ -261,6 +284,22 @@
 .leftnav-split__row--active { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
 .leftnav-split__row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .leftnav-split__row-meta { flex-shrink: 0; font-size: 11px; color: var(--shell-text-faint); }
+/* Status pill for a chat that's still generating a response elsewhere (e.g.
+   the user asked a question in Navigator, then switched to a dashboard
+   before it finished) — same pulsing-dot convention as the reasoning
+   engine's own .tac-status-dot (navigator.css), so "still working" reads
+   the same way here as it does inside the chat itself. */
+.nav-chat-status-pill {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--shell-accent); background: var(--shell-active);
+  border-radius: 4px; padding: 3px 6px;
+}
+.nav-chat-status-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  background: var(--shell-accent);
+  animation: tac-dot-pulse 1.4s ease infinite;
+}
 .leftnav-split__viewall {
   display: block; width: 100%; margin-top: 4px; padding: 8px;
   border: none; border-radius: 6px; background: none;
@@ -274,3 +313,73 @@
   font-family: inherit; font-size: 12px; font-weight: 500; color: var(--shell-text-2); cursor: pointer;
 }
 .leftnav-split__newchat:hover { background: var(--shell-hover); border-color: var(--shell-accent); color: var(--shell-accent); }
+
+/* ── Option 5 (hybrid) — preview flyout ────────────────────────────────
+   Reuses Option 4's panel-header/title/body classes for visual parity, but
+   this is a floating, hover-driven popover (position:fixed, opens on
+   mouseenter/focus, closes on mouseleave/blur/Escape — see LeftNavHybrid's
+   openPreview/scheduleClosePreview), not a permanently docked 240px panel —
+   it previews a category or Navigator's recent chats without reserving
+   layout width. A *click* on Insights/Fabric's own rail icon bypasses this
+   entirely and expands the full nav instead (see handleRailClick). */
+.leftnav-hybrid__flyout {
+  position: fixed;
+  left: 52px;
+  top: var(--topbar-height);
+  width: 220px;
+  max-height: calc(100vh - var(--topbar-height) - 16px);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  z-index: 55;
+  animation: leftnavPeekIn 140ms ease-out;
+}
+
+/* Navigator preview's header actions (New chat / Chats / Agents) — same
+   icon-button treatment and dark-pill tooltip convention as
+   .leftnav-split__panel-collapse below, just three of them side by side
+   instead of one. */
+.leftnav-hybrid__header-actions { display: flex; align-items: center; gap: 2px; }
+.leftnav-hybrid__icon-btn {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border: none; border-radius: 6px; background: none; cursor: pointer;
+  color: var(--shell-text-muted);
+}
+.leftnav-hybrid__icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+.leftnav-hybrid__icon-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-hybrid__icon-btn:hover::after { opacity: 1; }
+/* New report/New dashboard use raster assets with their own baked-in
+   purple fill (assets/icons/new-report.svg, template-add.svg) — masked to
+   background-color:currentColor here so they pick up the icon button's own
+   grey (and its hover shade) instead, matching IcNewChat's plain currentColor
+   stroke in the Navigator preview's header actions. */
+.leftnav-hybrid__icon-btn-mask {
+  width: 13px; height: 13px; display: inline-block; background-color: currentColor;
+  mask-size: contain; -webkit-mask-size: contain;
+  mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
+  mask-position: center; -webkit-mask-position: center;
+}
+
