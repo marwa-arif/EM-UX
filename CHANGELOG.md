@@ -33,6 +33,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.20.0] — 2026-08-31
+### Changed
+- LeftNav: settled on the hybrid design (labeled 220px expanded state, persistent 52px icon rail when collapsed, hover-preview flyout for Navigator/Workspace) as the app's only left nav; the Classic/Rail/Renamed/Split A/B variants and the Topbar's nav-design switcher are removed.
+
+---
+
 ## [0.19.0] — 2026-08-14
 ### Added
 - Topbar: sidebar collapse/expand toggle, moved from the bottom of the LeftNav to an icon-only button left of the PAI logo.
