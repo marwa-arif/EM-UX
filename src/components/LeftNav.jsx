@@ -1,17 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import { ADMIN_NAV_GROUPS } from '../pages/admin/AdminPanelBody.jsx'
-
-function IcEMDashboard() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="9" y="1" width="6" height="5" rx="1" fill="currentColor"/>
-      <rect x="1" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-      <rect x="9" y="8" width="6" height="7" rx="1" fill="currentColor"/>
-    </svg>
-  )
-}
 
 // Sidebar panel toggle icon — one persistent <svg>/<path> tree whose arrow
 // direction flips via a prop, rather than two separate components swapped
@@ -21,20 +10,26 @@ function IcEMDashboard() {
 // button, was reopening the hover-peek override right after a click forced
 // it closed. Updating one already-mounted <path>'s `d` attribute in place
 // doesn't trigger that.
-export function IcPanelToggle({ open }) {
+// Same bolder shape as NavigatorPage.jsx's own IcSidebarCollapse (24-unit
+// viewBox, strokeWidth 2, Ic's Lucide-style stroke convention) instead of
+// this file's old thin 1.35-stroke design — the two were visually
+// inconsistent despite meaning the same thing ("toggle this sidebar").
+// `open` maps directly to IcSidebarCollapse's own `flip`: both point the
+// chevron left when true, right when false.
+export function IcPanelToggle({ open, size = 15 }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.35"/>
-      <path d="M5.25 1.5v12" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/>
-      <path d={open ? 'M7 5.5 L9 7.5 L7 9.5' : 'M9 5.5 L7 7.5 L9 9.5'} stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <path d="M9 3v18"/>
+      <path d={open ? 'M13.5 9l2.5 3-2.5 3' : 'M16 9l-2.5 3 2.5 3'}/>
     </svg>
   )
 }
 
-// Console/terminal glyph — Admin Console entry point
-function IcConsoleNav() {
+// Console/terminal glyph — Admin Panel entry point (topbar account menu)
+export function IcConsoleNav({ size = 16 }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="2.5" y="4" width="19" height="15" rx="2" stroke="currentColor" strokeWidth="1.6"/>
       <path d="M6.5 9.5 10 12.5 6.5 15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M12 15.5h5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
@@ -91,14 +86,24 @@ export function IcSummaryNav() {
 // no mode switcher, no appMode branching (matches UX3LeftNav.jsx's Navigator/
 // Workspace items, which use the same "always visible, not part of a group"
 // treatment).
-const TOP_ITEMS = [
-  { id: 'navigator', label: 'Navigator', iconNode: <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="" />, navigateId: 'navigator-page', solo: true },
+// Navigator uses `icon` (not `iconNode`) like every other row here — its
+// asset is a blue-gradient fill, not a currentColor stroke, so it needs the
+// same mask-image treatment RowIcon/NavItem give every other `icon` entry
+// to actually recolor on selection. It used to carry its own <img> iconNode
+// instead, which meant the accent-selected state's `color: var(--shell-
+// accent)` had nothing to act on (an <img> ignores CSS `color`) — the icon
+// just kept rendering its native blue instead of turning purple like every
+// sibling row does, and looked inconsistently grey the rest of the time
+// since only the grayscale filter (not the accent color) was ever visibly
+// applying to it.
+export const TOP_ITEMS = [
+  { id: 'navigator', label: 'Navigator', icon: 'Navigator icon', navigateId: 'navigator-page', solo: true },
   { id: 'workspace',  label: 'Workspace', icon: 'navbar-workspace', dividerAfter: true },
 ];
 
 // "Insights" — the classic EM sections, now always visible rather than
 // gated behind the old EM/Studio switcher.
-const INSIGHTS_MODEL = [
+export const INSIGHTS_MODEL = [
   { id: 'exposure',   label: 'Exposure',        icon: 'navbar-exposure',   children: [
       { id: 'exposure/overview',  label: 'Overview',  icon: 'nav-overview' },
       { id: 'exposure/findings',  label: 'Findings',  icon: 'nav-findings' },
@@ -113,6 +118,7 @@ const INSIGHTS_MODEL = [
       { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
       { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
       { id: 'report/compliance-findings', label: 'Compliance Findings', icon: 'nav-findings' },
+      { id: 'report/mra-security-risk',   label: 'MRA Security Risk',   icon: 'nav-report-matrix' },
   ]},
   { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
   { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [
@@ -127,7 +133,7 @@ const INSIGHTS_MODEL = [
 // dedicated pages yet, so each is a direct-link leaf that routes through the
 // normal onNav/current wiring but the Studio shell itself ignores `current`
 // and always shows StudioHomePage.
-const FABRIC_MODEL = [
+export const FABRIC_MODEL = [
   { id: 'studio-data-ingestion',   label: 'Data Ingestion',   icon: 'data-source',    solo: true },
   { id: 'studio-pipeline-builder', label: 'Pipeline Builder', iconNode: <IcPipelineNav />, solo: true },
   { id: 'studio-ontology',         label: 'Ontology',         iconNode: <IcOntologyNav />, solo: true },
@@ -141,15 +147,21 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
   const suppressActive = navigatorAtHome && current === 'navigator';
   const activeParent = suppressActive ? null : current?.split('/')[0];
   const activeChild  = suppressActive ? null : current;
-  // Sections the user has manually opened to browse/preview — independent of
-  // which page is actually active. The active section is always shown open
-  // (below) regardless of this set, so peeking at another section never
-  // collapses the one you're actually on.
-  const [openIds, setOpenIds] = useState(() => new Set());
+  // Per-section open/closed override. Default (no entry) is "open iff this
+  // is the active section" — but an explicit entry here always wins, which
+  // is what lets a click both preview-open an inactive section AND collapse
+  // the section you're actually on (previously impossible: isOpen used to
+  // OR straight against activeParent, so the active section could never be
+  // turned off). Cleared whenever the active top-level section itself
+  // changes (below) or on any nav-triggered click (see navigate), so an
+  // override never lingers onto an unrelated page later.
+  const [openOverrides, setOpenOverrides] = useState(() => new Map());
+  useEffect(() => { setOpenOverrides(new Map()); }, [activeParent]);
 
-  const toggle = (id) => setOpenIds(prev => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
+  const toggle = (id) => setOpenOverrides(prev => {
+    const next = new Map(prev);
+    const isCurrentlyOpen = next.has(id) ? next.get(id) : activeParent === id;
+    next.set(id, !isCurrentlyOpen);
     return next;
   });
 
@@ -163,14 +175,15 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
     return next;
   });
 
-  // Navigating to an actual page clears every manually-previewed section —
-  // only the section for the page you just landed on stays open (via the
-  // activeParent check below), so whatever you were previewing collapses.
+  // Navigating to an actual page clears every override — every section
+  // reverts to its default (open iff it's the one you just landed on), so
+  // whatever you were previewing collapses and a section you'd manually
+  // collapsed earlier gets a fresh chance to auto-open for the new page.
   // forceMode tells App.jsx's handleNav which page-set (em/studio) this id
   // belongs to, since Insights and Fabric Configuration items now live side
   // by side instead of behind a switcher that used to set this explicitly.
   const navigate = (id, forceMode) => {
-    setOpenIds(new Set());
+    setOpenOverrides(new Map());
     onNav(id, forceMode ? { forceMode } : undefined);
   };
 
@@ -193,21 +206,24 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
   // to click it.
   const showPeek = collapsed && hoverPeek;
 
-  const renderGroup = (items, forceMode) => items.map(item => (
-    <React.Fragment key={item.id}>
-      <NavItem
-        item={item}
-        isActiveParent={activeParent === item.id}
-        activeChild={activeChild}
-        isOpen={openIds.has(item.id) || activeParent === item.id}
-        onToggle={() => toggle(item.id)}
-        onNav={(id) => navigate(id, forceMode)}
-      />
-      {item.dividerAfter && <div className="leftnav__divider" />}
-    </React.Fragment>
-  ));
+  const renderGroup = (items, forceMode) => items.map(item => {
+    const isOpen = openOverrides.has(item.id) ? openOverrides.get(item.id) : activeParent === item.id;
+    return (
+      <React.Fragment key={item.id}>
+        <NavItem
+          item={item}
+          isActiveParent={activeParent === item.id}
+          activeChild={activeChild}
+          isOpen={isOpen}
+          onToggle={() => toggle(item.id)}
+          onNav={(id) => navigate(id, forceMode)}
+        />
+        {item.dividerAfter && <div className="leftnav__divider" />}
+      </React.Fragment>
+    );
+  });
 
-  // Admin Console groups render through the same NavItem row (icon + label,
+  // Admin Panel groups render through the same NavItem row (icon + label,
   // same font weight/hover/selected treatment) as Insights/Fabric
   // Configuration — clicks pick an admin section instead of navigating
   // `current`, so they get their own tiny render path rather than going
@@ -265,21 +281,6 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
           </>
         )}
       </div>
-
-      <div className="leftnav__footer" data-tour="nav-console">
-        <NavItem
-          item={{
-            id: 'admin-page',
-            label: consoleActive ? 'EM Dashboard' : 'Console Panel',
-            iconNode: consoleActive ? <IcEMDashboard /> : <IcConsoleNav />,
-          }}
-          isActiveParent={consoleActive}
-          activeChild={null}
-          isOpen={false}
-          onToggle={() => {}}
-          onNav={() => onNav(consoleActive ? 'admin-exit' : 'admin-page')}
-        />
-      </div>
     </>
   );
 
@@ -312,13 +313,13 @@ function LeftNav({ current, onNav, collapsed, hoverPeek = false, onHoverEnter, o
 // A section label (Insights, Fabric Configuration, admin groups) doubles as
 // a collapse/expand toggle for the nav items rendered under it — no icon
 // while collapsed, a small chevron-down while expanded.
-function SectionLabel({ label, isCollapsed, onClick, ...rest }) {
+export function SectionLabel({ label, isCollapsed, onClick, className, ...rest }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-expanded={!isCollapsed}
-      className="leftnav__section-label"
+      className={`leftnav__section-label${className ? ` ${className}` : ''}`}
       {...rest}
     >
       <span className="leftnav__section-label-text">{label}</span>
@@ -329,10 +330,10 @@ function SectionLabel({ label, isCollapsed, onClick, ...rest }) {
   );
 }
 
-function NavItem({ item, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
+export function NavItem({ item, isActiveParent, activeChild, isOpen, onToggle, onNav }) {
   const hasChildren = item.children && item.children.length;
   const treatAsLeaf = !hasChildren;
-  // Grey = this section is expanded (ambient — may just be a preview, see openIds above).
+  // Grey = this section is expanded (ambient — may just be a preview, see openOverrides above).
   // Accent = this exact destination is the current page — same meaning as a selected
   // child, so a leaf item (no children of its own) gets the same treatment a child does.
   const isExpanded = hasChildren && isOpen;

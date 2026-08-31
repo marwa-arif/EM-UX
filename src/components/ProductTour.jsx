@@ -12,7 +12,7 @@ import '../styles/productTour.css'
 // step whose target never mounts (collapsed sidebar hiding a section label,
 // a menu-only button while its menu is closed, etc.) is skipped automatically.
 const STEPS = [
-  { id: 'welcome', title: 'Welcome to Prevalent AI', body: 'Take a quick tour of the dashboard — navigation, Insights pages, filters, tables, and the Console. You can exit anytime.' },
+  { id: 'welcome', title: 'Welcome to Prevalent AI', body: 'Take a quick tour of the dashboard — navigation, Insights pages, filters, tables, and the Admin Panel. You can exit anytime.' },
   { id: 'topbar-logo', target: '[data-tour="topbar-logo"]', title: 'Home', body: 'Click the Prevalent AI logo anytime to return to Navigator, your home base.' },
   { id: 'topbar-navigator', target: '[data-tour="topbar-navigator"]', title: 'Navigator', body: 'Open Navigator for quick AI-assisted answers without leaving the page you’re on.' },
   { id: 'topbar-theme', target: '[data-tour="topbar-theme"]', title: 'Theme', body: 'Switch between light and dark themes to match your preference.' },
@@ -32,7 +32,7 @@ const STEPS = [
   { id: 'discover-search', page: 'discover/device', target: '[data-tour="page-discover-search"]', title: 'Search', body: 'Search narrows any table instantly — no need to scroll through hundreds of rows.' },
   { id: 'discover-table', page: 'discover/device', target: '[data-tour="page-discover-table"]', title: 'Discover', body: 'Browse and drill into individual devices, cloud resources, and identities.' },
   { id: 'nav-section-fabric', target: '[data-tour="nav-section-fabric"]', title: 'Fabric Configuration', body: 'This is where you manage how data flows into the platform — ingestion, pipelines, ontology, and summary.' },
-  { id: 'nav-console', target: '[data-tour="nav-console"]', title: 'Console Panel', body: 'Org-wide and plan-level settings live here.' },
+  { id: 'topbar-admin', openSelector: '[data-tour="topbar-account"]', target: '[data-tour="topbar-admin"]', closeSelector: '[data-tour="topbar-account"]', title: 'Admin Panel', body: 'Org-wide and plan-level settings live here.' },
   { id: 'closing', title: 'You’re all set', body: 'That’s the tour. Open Help & Support anytime to ask Navigator a question or run this tour again.' },
 ];
 

@@ -4,7 +4,7 @@ import '../styles/device.css'
 import { UserSettingsNav, UserSettingsContent } from './settings/UserSettingsBody.jsx'
 
 // Standalone full-page Settings — per-user only (Profile/Password/Notifications).
-// Unlike the Admin Console (AdminPage.jsx), which nests inside whatever shell
+// Unlike the Admin Panel (AdminPage.jsx), which nests inside whatever shell
 // was already active so its own left nav stays visible, this always takes
 // over the full page: it's reachable from every shell via the same Topbar
 // menu item, and has no shell-specific left nav of its own to nest next to.

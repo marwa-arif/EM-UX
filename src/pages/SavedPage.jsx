@@ -29,7 +29,7 @@ const IcCalendarSchedule = () => (
 
 // Workspace › Saved tab
 
-const SAVED_ROWS = [
+export const SAVED_ROWS = [
   { id: '1',  name: 'CISO Dashboard',                              isNew: true,  type: 'DASHBOARD', template: 'Executive Summary',   visibility: 'Private', status: 'Saved',     lastUpdated: '11 August 2025' },
   { id: '2',  name: 'Detailed Report on Software Vulnerabilities',               type: 'REPORT',    template: 'Executive Summary',   visibility: 'Public',  status: 'Scheduled', recipients: 2, lastUpdated: '21 July 2025',    hasCalendar: true },
   { id: '3',  name: 'Compliance Report',                                        type: 'REPORT',    template: 'Compliance',          visibility: 'Public',  status: 'Scheduled', recipients: 4, lastUpdated: '03 June 2025',    hasCalendar: true },
@@ -93,7 +93,7 @@ function AvatarGroup({ count }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────
-function SavedPage() {
+function SavedPage({ typeLock }) {
   const {
     onNav,
     savedFilter, setSavedFilter,
@@ -180,8 +180,14 @@ function SavedPage() {
     closeDeleteModal()
   }
 
+  // typeLock (set by Option 4's Workspace nav section — see LeftNavAlt.jsx)
+  // overrides the page's own All/Dashboards/Reports pill filter entirely,
+  // rather than driving it through setSavedFilter, so it can't clobber that
+  // shared context state for the other nav designs.
+  const effectiveFilter = typeLock ?? savedFilter
+
   const filtered = allRows.filter(row => {
-    const matchType   = savedFilter     === 'all' || (savedFilter     === 'dashboards' && row.type       === 'DASHBOARD') || (savedFilter     === 'reports' && row.type       === 'REPORT')
+    const matchType   = effectiveFilter === 'all' || (effectiveFilter === 'dashboards' && row.type       === 'DASHBOARD') || (effectiveFilter === 'reports' && row.type       === 'REPORT')
     const matchVis    = savedVisibility === 'all' || (savedVisibility === 'private'    && row.visibility === 'Private')   || (savedVisibility === 'public'  && row.visibility === 'Public')
     const matchSearch = savedSearch === '' || row.name.toLowerCase().includes(savedSearch.toLowerCase())
     return matchType && matchVis && matchSearch
@@ -202,7 +208,7 @@ function SavedPage() {
               <SavedIcon size={14} />
               Saved
             </button>
-            <button className="ds-tab has-icon" onClick={() => onNav('workspace/library')}>
+            <button className="ds-tab has-icon" onClick={() => onNav(typeLock ? `workspace/library-${typeLock}` : 'workspace/library')}>
               <LibraryIcon size={14} />
               Templates
             </button>
@@ -225,11 +231,13 @@ function SavedPage() {
 
           {/* Sub-filter bar */}
           <div className="lib-toolbar">
-            <div className="lib-pills">
-              <button className={`lib-pill${savedFilter === 'all'        ? ' active' : ''}`} onClick={() => setSavedFilter('all')}>All</button>
-              <button className={`lib-pill${savedFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setSavedFilter('dashboards')}>Dashboards</button>
-              <button className={`lib-pill${savedFilter === 'reports'    ? ' active' : ''}`} onClick={() => setSavedFilter('reports')}>Reports</button>
-            </div>
+            {!typeLock && (
+              <div className="lib-pills">
+                <button className={`lib-pill${savedFilter === 'all'        ? ' active' : ''}`} onClick={() => setSavedFilter('all')}>All</button>
+                <button className={`lib-pill${savedFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setSavedFilter('dashboards')}>Dashboards</button>
+                <button className={`lib-pill${savedFilter === 'reports'    ? ' active' : ''}`} onClick={() => setSavedFilter('reports')}>Reports</button>
+              </div>
+            )}
             <div className="lib-pills">
               <button className={`lib-vis-pill${savedVisibility === 'all'     ? ' active' : ''}`} onClick={() => setSavedVisibility('all')}>All</button>
               <button className={`lib-vis-pill${savedVisibility === 'private' ? ' active' : ''}`} onClick={() => setSavedVisibility('private')}>Private</button>

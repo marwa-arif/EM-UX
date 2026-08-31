@@ -1428,6 +1428,7 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 /* ── NavigatorPage content — rendered inside the standard app shell's
    page-scroll area (LeftNav + SubHeader now live outside this component) ── */
 .nav-page-shell {
+  position: relative;
   height: 100%; min-height: 0;
   display: flex; flex-direction: row;
   overflow: hidden;
@@ -1441,9 +1442,17 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 }
 
 /* ── Persistent History + Agents sidebar (NavSidebar) — sits next to
-   .nav-page-content-only inside .nav-page-shell; collapses to a slim icon
-   rail rather than disappearing. Reuses .np-history-section/-chat-row/
-   .np-collapse-row/-btn from the History overlay styles above. ── */
+   .nav-page-content-only inside .nav-page-shell. Two collapse variants (see
+   NavSidebar's useHidePeek prop in NavigatorPage.jsx):
+     - classic (default): shrinks to a 52px icon rail (.np-hist-sidebar.
+       collapsed below) — original behavior, used by every LeftNav option
+       except "rail".
+     - useHidePeek (LeftNav "rail" option only): fully hides (.np-hist-
+       sidebar--hidden) with a hover-peek overlay (.np-hist-sidebar--peek),
+       same mechanic as the app's own LeftNav (.leftnav--collapsed/
+       .leftnav--peek in shell.css).
+   Reuses .np-history-section/-chat-row/etc. from the History overlay
+   styles above. ── */
 .np-hist-sidebar {
   flex-shrink: 0; width: 220px; overflow: hidden;
   background: var(--card-bg);
@@ -1452,6 +1461,23 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
   display: flex; flex-direction: column;
 }
 .np-hist-sidebar.collapsed { width: 52px; }
+.np-hist-sidebar--hidden { width: 0; overflow: hidden; pointer-events: none; border-right: none; }
+/* Peeked overlay — position:absolute (not fixed) relative to .nav-page-shell,
+   so it appears at that container's own left edge — i.e. right of the app's
+   main LeftNav, wherever that currently ends — without hardcoding a pixel
+   offset that would need to track three different LeftNav designs/widths. */
+.np-hist-sidebar--peek {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  z-index: 20;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  animation: navSidebarPeekIn 140ms ease-out;
+}
+@keyframes navSidebarPeekIn {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
 .np-hist-sidebar-body {
   flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
   scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent;
@@ -1460,14 +1486,15 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-hist-sidebar.collapsed .np-history-section-hdr { justify-content: center; padding: 4px 0 8px; }
 .np-hist-sidebar.collapsed .np-history-divider { margin: 4px 10px; }
 
-/* Header height matches .leftnav__header (48px, border-box) so the two
-   border-bottom lines land on the same row instead of stepping between the
-   icon rail and this sidebar. */
+/* Header height matches .chat-space-title's effective total (54px content +
+   1px border-bottom = 55px, see navigator.css above) so the two border-bottom
+   lines land on the same row instead of stepping where the sidebar meets the
+   chat view's own title bar. */
 .np-hist-sidebar .np-history-hdr {
-  height: 48px; box-sizing: border-box; padding: 8px 12px;
+  height: 55px; box-sizing: border-box; padding: 8px 12px;
 }
 .np-history-hdr--collapsed { justify-content: center; padding: 8px; }
-.np-hist-sidebar .np-history-new-btn { width: 100%; justify-content: center; }
+.np-hist-sidebar .np-history-new-btn { flex: 1; justify-content: center; }
 
 .np-hist-newchat-collapsed,
 .np-hist-agent-row-collapsed,
@@ -1481,6 +1508,19 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 .np-hist-agent-row-collapsed:hover,
 .np-hist-chat-row-collapsed:hover { background: var(--shell-raised); color: var(--shell-text-2); }
 .np-hist-chat-row-collapsed.active { background: rgba(99,96,216,0.12); color: var(--pai-indigo); }
+
+/* Toggle button beside "New chat" (useHidePeek variant only) — collapses
+   the sidebar to hidden. Its title-bar counterpart (.np-sidebar-expand-btn,
+   ChatView/BuildView) only exists while collapsed, since there's no
+   sidebar header to put it in. */
+.np-sidebar-toggle-btn {
+  flex-shrink: 0; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 6px;
+  color: var(--shell-text-muted); cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.np-sidebar-toggle-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
 
 /* ── History control — trigger button + panel shared by Home/Chat/Build ── */
 .nav-history-btn {
@@ -1619,6 +1659,22 @@ html.theme-light .web-toggle-btn.active { border-color: rgba(71,173,203,0.5); ba
 
 .np-dropdown--thread-menu { right: 4px; top: 24px; width: 176px; }
 
+/* Expand icon — appears at the far left of the Chat/Build title bar only
+   while the history sidebar is collapsed (its counterpart, the sidebar's
+   own .np-sidebar-toggle-btn, disappears along with the rest of the
+   sidebar). Hover opens the hover-peek overlay, click pins it open —
+   same dual behavior as the app's own Topbar.topbar__nav-toggle. */
+.np-sidebar-expand-btn {
+  flex-shrink: 0; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 6px;
+  color: var(--shell-text-muted); cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.np-sidebar-expand-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+
+/* Footer collapse row — classic variant only (useHidePeek false), shrinks
+   the sidebar to the 52px icon rail. Original implementation, unchanged. */
 .np-collapse-row { flex-shrink: 0; padding: 8px; border-top: 1px solid var(--shell-border); }
 .np-collapse-btn {
   width: 100%;
@@ -2441,6 +2497,13 @@ html.theme-light .nav-tx-mode-chip.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1
 
 .hv-top-actions { position: absolute; top: 20px; right: 20px; z-index: 2; display: flex; align-items: center; gap: 8px; }
 
+/* Home's counterpart to ChatView/BuildView's title-bar .np-sidebar-expand-btn
+   (chat-space-title, above) — Home has no title bar row of its own to sit
+   inline in, so it floats at the mirrored top-left corner of .hv-shell
+   instead. Same visual button (.np-sidebar-expand-btn provides the icon
+   sizing/hover), just repositioned since it isn't part of a flex row here. */
+.hv-sidebar-expand-btn { position: absolute; top: 20px; left: 20px; z-index: 2; }
+
 /* Gradient blob background */
 .hv-bg {
   position: absolute; inset: 0;
@@ -2548,23 +2611,34 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 
 /* Segmented control */
 .hv-mode-seg {
+  position: relative;
   display: flex; align-items: center; height: 32px;
   background: var(--ctrl-bg, #f5f5f5);
   border-radius: 24px; padding: 2px;
 }
 
+.hv-mode-seg-thumb {
+  position: absolute; top: 2px; left: 0; height: 28px;
+  border-radius: 22px; border: 1px solid transparent;
+  background:
+    linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
+    linear-gradient(90deg, var(--pai-brand-blue, #467FCD), var(--pai-nav-teal, #47ADCB)) border-box;
+  transition: transform 0.22s cubic-bezier(.4, 0, .2, 1), width 0.22s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .hv-mode-seg-item {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
   height: 28px; padding: 0 16px; border-radius: 22px;
   border: none; background: transparent;
   color: var(--shell-text-2, #6e6e6e);
   font-size: 14px; font-family: inherit; cursor: pointer;
-  white-space: nowrap; transition: background 0.12s, color 0.12s;
+  white-space: nowrap; transition: color 0.12s;
 }
 .hv-mode-seg-item.active {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
-    linear-gradient(90deg, var(--pai-brand-blue, #467FCD), var(--pai-nav-teal, #47ADCB)) border-box;
   color: var(--shell-text, #101010); font-weight: 500;
 }
 .hv-mode-seg-item:not(.active):hover { color: var(--shell-text, #101010); }
@@ -2608,6 +2682,9 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
 .hv-tabs-list {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
 }
+/* Each chip is a single element, same size whether idle or selected — the
+   grey idle border just cross-fades its own border-color/background/shadow
+   to the accent-selected look, no separate overlay and no scaling. */
 .hv-pill-tab {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 24px;
@@ -2615,14 +2692,14 @@ html.theme-dark .hv-composer-ta::placeholder { color: var(--shell-text-muted, #8
   background: var(--card-bg);
   cursor: pointer; font-family: inherit;
   font-size: 13px; font-weight: 500; color: var(--shell-text-2, #6e6e6e);
-  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.15s ease;
 }
 .hv-pill-tab:hover { border-color: var(--shell-accent, #6360d8); color: var(--shell-text, #101010); }
 .hv-pill-tab.active {
   border-color: var(--shell-accent, #6360d8);
   background: rgba(99,96,216,0.08);
-  color: var(--shell-accent, #6360d8);
   box-shadow: 0 0 0 3px rgba(99,96,216,0.12);
+  color: var(--shell-accent, #6360d8);
 }
 
 .hv-tab-panel {
