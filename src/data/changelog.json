@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.20.1",
+    "date": "2026-09-02",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Repaired the develop build, broken since PR #23: removed the unfinished MRA Security Risk report route (page/styles were never committed) and added the missing `MatrixDropdown.jsx` component used by Compliance Matrix (also never committed)."
+      ]
+    }
+  },
+  {
     "version": "0.20.0",
     "date": "2026-08-31",
     "changes": {
