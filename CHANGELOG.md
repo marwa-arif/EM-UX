@@ -33,6 +33,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.21.1] — 2026-09-02
+### Changed
+- Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix.
+
+---
+
 ## [0.21.0] — 2026-09-02
 ### Added
 - Collapsed left-nav rail: Exposure/Discover/Report/Data Quality and Navigator/Workspace now show their children in a hover flyout instead of expanding inline — this is now the only collapsed-rail behavior (the earlier inline-accordion option is removed).

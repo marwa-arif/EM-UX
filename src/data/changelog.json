@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.21.1",
+    "date": "2026-09-02",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix."
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.21.0",
     "date": "2026-09-02",
     "changes": {
