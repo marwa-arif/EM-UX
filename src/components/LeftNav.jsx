@@ -117,7 +117,6 @@ export const INSIGHTS_MODEL = [
       { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
       { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
       { id: 'report/compliance-findings', label: 'Compliance Findings', icon: 'nav-findings' },
-      { id: 'report/mra-security-risk',   label: 'MRA Security Risk',   icon: 'nav-report-matrix' },
   ]},
   { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
   { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [

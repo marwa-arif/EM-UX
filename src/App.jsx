@@ -27,7 +27,6 @@ import DiscoverIdentityPage from './pages/DiscoverIdentityPage.jsx'
 import CompliancePage       from './pages/CompliancePage.jsx'
 import ComplianceMatrixPage   from './pages/ComplianceMatrixPage.jsx'
 import ComplianceFindingsPage from './pages/ComplianceFindingsPage.jsx'
-import MRASecurityRiskPage    from './pages/MRASecurityRiskPage.jsx'
 import AssessmentsPage        from './pages/AssessmentsPage.jsx'
 import DataQualityOverviewPage from './pages/DataQualityOverviewPage.jsx'
 import DataQualityInDepthPage from './pages/DataQualityInDepthPage.jsx'
@@ -569,11 +568,6 @@ const PAGE_META = {
   'report/compliance-findings': {
     title: 'Compliance Findings',
     breadcrumb: ['Insights', 'Report', 'Compliance Findings'],
-    breadcrumbHrefs: [null, null, null],
-  },
-  'report/mra-security-risk': {
-    title: 'MRA Security Risk',
-    breadcrumb: ['Insights', 'Report', 'MRA Security Risk'],
     breadcrumbHrefs: [null, null, null],
   },
   'data-quality/overview': {
@@ -1210,10 +1204,9 @@ function App() {
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
                 {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
                 {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
-                {current === 'report/mra-security-risk'    && <MRASecurityRiskPage />}
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
-                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'report/mra-security-risk' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
+                {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
                 {isKG && <KGPage focusEntity={kgFocusEntity} />}
               </div>
             </div>
