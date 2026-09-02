@@ -49,6 +49,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.20.1] — 2026-09-02
+### Fixed
+- Repaired the develop build, broken since PR #23: removed the unfinished MRA Security Risk report route (page/styles were never committed) and added the missing `MatrixDropdown.jsx` component used by Compliance Matrix (also never committed).
+
+---
+
 ## [0.20.0] — 2026-08-31
 ### Changed
 - LeftNav: settled on the hybrid design (labeled 220px expanded state, persistent 52px icon rail when collapsed, hover-preview flyout for Navigator/Workspace) as the app's only left nav; the Classic/Rail/Renamed/Split A/B variants and the Topbar's nav-design switcher are removed.
