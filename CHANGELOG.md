@@ -33,6 +33,22 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.21.0] — 2026-09-02
+### Added
+- Collapsed left-nav rail: Exposure/Discover/Report/Data Quality and Navigator/Workspace now show their children in a hover flyout instead of expanding inline — this is now the only collapsed-rail behavior (the earlier inline-accordion option is removed).
+- Navigator's flyout routes to dedicated History/Agents overlays; Workspace's flyout routes to its Saved/Templates tabs; both icons still support a direct click to their section's default page.
+- Dashboard widgets: per-chart-type minimum resize size (pie/KPI/table/bar/line) so a widget can't be shrunk past the point its chart clips or garbles; legend/table rows scroll instead once content no longer fits.
+- Graph Filter modal and widget scope config support switching between multiple entities, plus a graph-canvas view for building scope visually.
+- Additional Library dashboard templates (CISO Dashboard, Client Subsidiary, Device Attack Surface, Risk Mitigation Queries, Tracked Security Gaps).
+- Loading animation for the Navigator canvas empty state.
+### Changed
+- Navigator sidebar expand/collapse controls switched to chevron-into-bar icons, with alignment fixes across the chat/build title bars.
+### Fixed
+- Pie/donut dashboard widgets and their legends no longer overlap or clip when resized down; fixed a duplicate/conflicting `.cr-pie-legend` CSS rule causing inconsistent legend spacing.
+- Removed the stale "MRA Security Risk" report nav entry.
+
+---
+
 ## [0.20.0] — 2026-08-31
 ### Changed
 - LeftNav: settled on the hybrid design (labeled 220px expanded state, persistent 52px icon rail when collapsed, hover-preview flyout for Navigator/Workspace) as the app's only left nav; the Classic/Rail/Renamed/Split A/B variants and the Topbar's nav-design switcher are removed.

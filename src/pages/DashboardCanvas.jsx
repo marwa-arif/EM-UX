@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, u
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
-import { GF_ENTITIES } from '../components/FilterPanel.jsx'
+import { GF_ENTITIES, getEntityAttrs } from '../components/FilterPanel.jsx'
 import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import { SelectDropdown } from './CompliancePage.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
@@ -107,10 +107,39 @@ const MIN_GH = 4,  MAX_GH = 40
 const GRID_PAD_PX = 20
 const GRID_GAP_PX = 12
 
+// ── Widget sizing guideline ─────────────────────────────────────────
+// Per-chart-type resize floors, in grid units (gw = columns, gh = rows of
+// ROW_UNIT_PX each). Axis labels, legend text, and KPI numbers don't scale
+// down with the widget — below a certain size the chart itself can only
+// clip or garble, never shrink and stay legible. So each chart type gets a
+// floor sized to its own fixed-size chrome, not the generic MIN_GW/MIN_GH.
+// When content still doesn't fit at the floor (e.g. a pie widget with many
+// legend rows), the chart keeps its floor size and the overflowing content
+// scrolls instead (see .cr-pie-legend / .cr-rpt-table-scroll) — never
+// compress text to force a fit.
+const CHART_MIN_SIZE = {
+  // 10 rows is the smallest height that still fits the fixed 200px donut
+  // without clipping it (~272px needed incl. card header/padding, 10 rows
+  // renders ~308px) — deliberately kept below the "Small" preset's 13 rows
+  // so Small/Medium/Large/etc. stay distinct choices instead of all
+  // collapsing to whichever preset first clears the floor.
+  pie:         { minGw: 4,      minGh: 10 },
+  kpi:         { minGw: MIN_GW, minGh: 6  }, // matches the smallest KPI height preset (2x Small, 120px)
+  table:       { minGw: 4,      minGh: 6  }, // rows already scroll internally (.cr-rpt-table-scroll)
+  'hor-bar':   { minGw: MIN_GW, minGh: 8  },
+  'vert-bar':  { minGw: MIN_GW, minGh: 8  },
+  'stack-hor': { minGw: MIN_GW, minGh: 8  },
+  'stack-vert':{ minGw: MIN_GW, minGh: 8  },
+  line:        { minGw: MIN_GW, minGh: 8  },
+}
+function minSizeFor(chartId) {
+  return CHART_MIN_SIZE[chartId] || { minGw: MIN_GW, minGh: MIN_GH }
+}
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
-function legacyGw(w) { return clamp((w.span || 1) * 3, MIN_GW, MAX_GW) }
-function legacyGh(w) { return clamp(Math.ceil(widgetHeightPx(w) / ROW_UNIT_PX), MIN_GH, MAX_GH) }
+function legacyGw(w) { return clamp((w.span || 1) * 3, minSizeFor(w.chartId).minGw, MAX_GW) }
+function legacyGh(w) { return clamp(Math.ceil(widgetHeightPx(w) / ROW_UNIT_PX), minSizeFor(w.chartId).minGh, MAX_GH) }
 
 // react-grid-layout owns all drag/resize/reflow interaction (see the grid
 // render in DashboardCanvas) — this function only has one job: give every
@@ -137,11 +166,14 @@ function packWidgets(widgets) {
     }
   }
 
-  const sized = widgets.map(w => ({
-    ...w,
-    gw: clamp(w.gw ?? legacyGw(w), MIN_GW, MAX_GW),
-    gh: clamp(w.gh ?? legacyGh(w), MIN_GH, MAX_GH),
-  }))
+  const sized = widgets.map(w => {
+    const { minGw, minGh } = minSizeFor(w.chartId)
+    return {
+      ...w,
+      gw: clamp(w.gw ?? legacyGw(w), minGw, MAX_GW),
+      gh: clamp(w.gh ?? legacyGh(w), minGh, MAX_GH),
+    }
+  })
 
   // Reserve cells for everything that already has a real position first, so
   // auto-placed widgets never land on top of them.
@@ -429,15 +461,13 @@ function ChartSilhouette({ chartId }) {
 }
 
 // ── KG picker button ─────────────────────────────────────────────────
-const KGBtn = () => (
+const KGBtn = ({ onClick }) => (
   <button
     className="dc-kg-btn"
+    onClick={onClick}
     style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
   >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/>
-      <line x1="8" y1="11" x2="16" y2="7"/><line x1="8" y1="13" x2="16" y2="17"/>
-    </svg>
+    <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
   </button>
 )
 
@@ -654,12 +684,17 @@ function ColumnDropdown({ selected, onAdd }) {
 }
 
 // ── GraphFilterModal ─────────────────────────────────────────────────
-function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
+function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, onClose, onApply }) {
+  const entities = (scopeEntities && scopeEntities.length) ? scopeEntities : GF_ENTITIES.filter(e => e.id === 'host')
+  const [activeEntityId, setActiveEntityId] = useState(entities[0]?.id)
+  const [showGraph,     setShowGraph]     = useState(false)
   const [selectedAttr, setSelectedAttr] = useState(currentAttr || 'Type')
   const [attrSearch,   setAttrSearch]   = useState('')
   const [valSearch,    setValSearch]    = useState('')
   const [selectedVals, setSelectedVals] = useState([])
   const [selectAll,    setSelectAll]    = useState(false)
+
+  const activeEntity = entities.find(e => e.id === activeEntityId) || entities[0]
 
   const filteredAttrs = GRAPH_FILTER_ATTRS.filter(a =>
     !attrSearch || a.toLowerCase().includes(attrSearch.toLowerCase())
@@ -675,60 +710,86 @@ function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
     if (selectAll) { setSelectedVals([]); setSelectAll(false) }
     else           { setSelectedVals([...values]); setSelectAll(true) }
   }
+  const selectEntity = (id) => {
+    setActiveEntityId(id)
+    setShowGraph(false)
+    setSelectedAttr('Type')
+    setSelectedVals([])
+    setSelectAll(false)
+  }
 
   return (
     <div className="dc-gf-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="dc-gf-modal" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3, '--dc-indigo': PAI.indigo }}>
         {/* Header */}
-        <div className="dc-gf-header">
-          <button className="dc-gf-tab">Graph Filter</button>
+        <div className="ds-modal-header dc-gf-header">
+          <span className="ds-modal-title dc-gf-modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18.7485 14.25C18.0856 14.2496 17.4415 14.47 16.9176 14.8762L14.751 13.1887C14.9146 12.8138 14.9989 12.4091 14.9985 12C14.9985 11.9306 14.9985 11.8612 14.991 11.7928L16.2314 11.3794C16.6238 11.9846 17.2211 12.4281 17.9139 12.6288C18.6067 12.8295 19.3486 12.7738 20.0037 12.4721C20.6588 12.1703 21.1833 11.6426 21.481 10.9857C21.7788 10.3287 21.8298 9.58649 21.6249 8.89494C21.42 8.20338 20.9728 7.60881 20.3652 7.22012C19.7576 6.83144 19.0303 6.67466 18.3166 6.77852C17.6028 6.88238 16.9504 7.23991 16.4787 7.78563C16.0071 8.33135 15.7479 9.02871 15.7485 9.74999C15.7485 9.81936 15.7485 9.88874 15.756 9.95718L14.5157 10.3706C14.2438 9.95027 13.8711 9.60465 13.4314 9.36525C12.9917 9.12585 12.4992 9.00028 11.9985 8.99999C11.833 9.00034 11.6678 9.01413 11.5045 9.04124L10.8632 7.59374C11.4169 7.15133 11.7961 6.52716 11.9336 5.83188C12.0711 5.13659 11.9579 4.41509 11.6142 3.79525C11.2706 3.17541 10.7185 2.69727 10.056 2.44556C9.39345 2.19386 8.66319 2.18485 7.99464 2.42014C7.32609 2.65542 6.76243 3.11981 6.40356 3.73098C6.0447 4.34216 5.9138 5.06065 6.03408 5.75911C6.15436 6.45758 6.51804 7.0909 7.06066 7.54684C7.60328 8.00277 8.2898 8.25187 8.99855 8.24999C9.16408 8.24964 9.32931 8.23585 9.49261 8.20874L10.1339 9.65249C9.59007 10.0829 9.21265 10.6888 9.0661 11.3666C8.91955 12.0445 9.01298 12.7522 9.33042 13.3687L6.92011 15.51C6.31353 15.1011 5.57864 14.9274 4.85317 15.0216C4.12771 15.1157 3.46149 15.4712 2.97939 16.0214C2.49729 16.5716 2.2324 17.2788 2.23439 18.0103C2.23637 18.7419 2.50508 19.4476 2.99016 19.9952C3.47523 20.5428 4.14337 20.8946 4.86933 20.9849C5.59529 21.0751 6.32923 20.8974 6.93359 20.4852C7.53794 20.073 7.97122 19.4546 8.1522 18.7458C8.33317 18.0369 8.24943 17.2865 7.91667 16.635L10.327 14.4937C10.8489 14.8451 11.4682 15.023 12.097 15.0022C12.7258 14.9813 13.3321 14.7627 13.8295 14.3775L15.996 16.065C15.833 16.4388 15.7487 16.8422 15.7485 17.25C15.7485 17.8433 15.9245 18.4234 16.2541 18.9167C16.5838 19.41 17.0523 19.7946 17.6005 20.0216C18.1487 20.2487 18.7519 20.3081 19.3338 20.1923C19.9158 20.0766 20.4503 19.7909 20.8699 19.3713C21.2894 18.9518 21.5751 18.4172 21.6909 17.8353C21.8067 17.2533 21.7472 16.6501 21.5202 16.1019C21.2931 15.5538 20.9086 15.0852 20.4153 14.7556C19.9219 14.4259 19.3419 14.25 18.7485 14.25ZM18.7485 8.24999C19.0452 8.24999 19.3352 8.33796 19.5819 8.50278C19.8286 8.66761 20.0208 8.90187 20.1344 9.17596C20.2479 9.45005 20.2776 9.75165 20.2197 10.0426C20.1618 10.3336 20.019 10.6009 19.8092 10.8106C19.5994 11.0204 19.3322 11.1633 19.0412 11.2212C18.7502 11.279 18.4486 11.2493 18.1745 11.1358C17.9004 11.0223 17.6662 10.83 17.5013 10.5833C17.3365 10.3367 17.2485 10.0467 17.2485 9.74999C17.2485 9.35216 17.4066 8.97063 17.6879 8.68933C17.9692 8.40802 18.3507 8.24999 18.7485 8.24999ZM7.49855 5.24999C7.49855 4.95332 7.58652 4.66331 7.75134 4.41663C7.91616 4.16996 8.15043 3.9777 8.42452 3.86417C8.69861 3.75064 9.00021 3.72093 9.29118 3.77881C9.58215 3.83669 9.84943 3.97955 10.0592 4.18933C10.269 4.39911 10.4118 4.66638 10.4697 4.95735C10.5276 5.24833 10.4979 5.54993 10.3844 5.82401C10.2708 6.0981 10.0786 6.33237 9.8319 6.49719C9.58523 6.66202 9.29522 6.74999 8.99855 6.74999C8.60072 6.74999 8.21919 6.59195 7.93789 6.31065C7.65658 6.02934 7.49855 5.64781 7.49855 5.24999ZM5.24855 19.5C4.95187 19.5 4.66187 19.412 4.41519 19.2472C4.16852 19.0824 3.97626 18.8481 3.86273 18.574C3.7492 18.2999 3.71949 17.9983 3.77737 17.7074C3.83525 17.4164 3.97811 17.1491 4.18789 16.9393C4.39767 16.7296 4.66494 16.5867 4.95591 16.5288C5.24688 16.4709 5.54848 16.5006 5.82257 16.6142C6.09666 16.7277 6.33093 16.92 6.49575 17.1666C6.66057 17.4133 6.74855 17.7033 6.74855 18C6.74855 18.3978 6.59051 18.7793 6.30921 19.0606C6.0279 19.342 5.64637 19.5 5.24855 19.5ZM10.4985 12C10.4985 11.7033 10.5865 11.4133 10.7513 11.1666C10.9162 10.92 11.1504 10.7277 11.4245 10.6142C11.6986 10.5006 12.0002 10.4709 12.2912 10.5288C12.5822 10.5867 12.8494 10.7296 13.0592 10.9393C13.269 11.1491 13.4118 11.4164 13.4697 11.7074C13.5276 11.9983 13.4979 12.2999 13.3844 12.574C13.2708 12.8481 13.0786 13.0824 12.8319 13.2472C12.5852 13.412 12.2952 13.5 11.9985 13.5C11.6007 13.5 11.2192 13.342 10.9379 13.0606C10.6566 12.7793 10.4985 12.3978 10.4985 12ZM18.7485 18.75C18.4519 18.75 18.1619 18.662 17.9152 18.4972C17.6685 18.3324 17.4763 18.0981 17.3627 17.824C17.2492 17.5499 17.2195 17.2483 17.2774 16.9574C17.3352 16.6664 17.4781 16.3991 17.6879 16.1893C17.8977 15.9796 18.1649 15.8367 18.4559 15.7788C18.7469 15.7209 19.0485 15.7506 19.3226 15.8642C19.5967 15.9777 19.8309 16.17 19.9958 16.4166C20.1606 16.6633 20.2485 16.9533 20.2485 17.25C20.2485 17.6478 20.0905 18.0293 19.8092 18.3106C19.5279 18.592 19.1464 18.75 18.7485 18.75Z"/>
+            </svg>
+            Graph Filter
+          </span>
         </div>
 
         {/* Body */}
         <div className="dc-gf-body">
-          {/* Left panel — attributes */}
-          <div className="dc-gf-left">
-            <button className="dc-gf-hide-attrs">
+          {/* Left panel — attributes, or the entity graph canvas */}
+          <div className={`dc-gf-left${showGraph ? ' dc-gf-left--full' : ''}`}>
+            <button className="dc-gf-hide-attrs" onClick={() => setShowGraph(v => !v)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 18 6-6-6-6"/>
+                <path d={showGraph ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/>
               </svg>
-              Hide Attributes
+              {showGraph ? 'Back to Attributes' : 'Go to Graph'}
             </button>
-            <div className="dc-gf-search-wrap">
-              <input
-                className="dc-gf-search-input"
-                placeholder="Search attribute"
-                value={attrSearch}
-                onChange={e => setAttrSearch(e.target.value)}
-              />
-              <svg className="dc-gf-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
-            <div className="dc-gf-entity-label">Host</div>
-            <div className="dc-gf-attr-list">
-              {filteredAttrs.map(attr => (
-                <div
-                  key={attr}
-                  className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
-                  onClick={() => { setSelectedAttr(attr); setSelectedVals([]); setSelectAll(false) }}
-                >
-                  <span className={`dc-gf-attr-radio${selectedAttr === attr ? ' dc-gf-attr-radio--on' : ''}`} />
-                  <span className="dc-gf-attr-name">{attr}</span>
+            {showGraph ? (
+              <div className="gf-canvas-area dc-gf-canvas-area">
+                {entities.map(entity => {
+                  const selected = activeEntityId === entity.id
+                  return (
+                    <div
+                      key={entity.id}
+                      className="gf-node"
+                      onClick={() => selectEntity(entity.id)}
+                    >
+                      <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
+                        <img src={`/assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+                        <span className="gf-node__count">{entity.count.toLocaleString()}</span>
+                      </div>
+                      <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>
+                        {entity.label}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <>
+                <div className="dc-gf-search-wrap">
+                  <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
                 </div>
-              ))}
-            </div>
+                <div className="dc-gf-entity-label">{activeEntity?.label}</div>
+                <div className="dc-gf-attr-list">
+                  {filteredAttrs.map(attr => (
+                    <div
+                      key={attr}
+                      className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
+                      onClick={() => { setSelectedAttr(attr); setSelectedVals([]); setSelectAll(false) }}
+                    >
+                      <span className={`dc-gf-attr-radio${selectedAttr === attr ? ' dc-gf-attr-radio--on' : ''}`} />
+                      <span className="dc-gf-attr-name">{attr}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Right panel — values */}
+          {/* Right panel — values (hidden while the graph canvas is active) */}
+          {!showGraph && (
           <div className="dc-gf-right">
             <div className="dc-gf-val-heading">Values ({values.length})</div>
             <div className="dc-gf-search-wrap">
-              <input
-                className="dc-gf-search-input"
-                placeholder="Search value"
-                value={valSearch}
-                onChange={e => setValSearch(e.target.value)}
-              />
-              <svg className="dc-gf-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
             </div>
             <div className="dc-gf-val-controls">
               <label className="dc-gf-select-all-label">
@@ -757,6 +818,7 @@ function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
               <div className="dc-gf-filters-label">Filters</div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -775,49 +837,250 @@ function GraphFilterModal({ currentAttr, mode = 'attr', onClose, onApply }) {
   )
 }
 
+// ── ScopeAttrsPanel ──────────────────────────────────────────────────
+// Attribute + value picker used by DashboardScopeModal's "Add Attributes"
+// step. Structured exactly like the widget settings' Graph Filter modal —
+// same attribute-list / values-grid / Exclude-Include layout, and the same
+// "Go to Graph" canvas toggle for switching which scope entity is active —
+// just backed by real per-entity attributes (getEntityAttrs) instead of the
+// generic mock list, and covering every entity in the dashboard's scope.
+function ScopeAttrsPanel({ entities, filters, onFiltersChange }) {
+  const [activeEntityId, setActiveEntityId] = useState(entities[0]?.id)
+  const [showGraph,      setShowGraph]      = useState(false)
+
+  const activeEntity   = entities.find(e => e.id === activeEntityId) || entities[0]
+  const activeFilters  = filters[activeEntityId] || {}
+  const attrs          = getEntityAttrs(activeEntityId)
+
+  const [selectedAttrId, setSelectedAttrId] = useState(attrs[0]?.id)
+  const [attrSearch, setAttrSearch] = useState('')
+  const [valSearch,  setValSearch]  = useState('')
+  const [draftVals,  setDraftVals]  = useState(() => new Set(activeFilters[attrs[0]?.id]?.values))
+  const [selectAll,  setSelectAll]  = useState(false)
+
+  const selectedAttr  = attrs.find(a => a.id === selectedAttrId)
+  const filteredAttrs = attrs.filter(a => !attrSearch || a.label.toLowerCase().includes(attrSearch.toLowerCase()))
+  const options = selectedAttr?.options || (selectedAttr?.type === 'boolean' ? ['True', 'False'] : [])
+  const values  = options.filter(v => !valSearch || v.toLowerCase().includes(valSearch.toLowerCase()))
+
+  const selectEntity = (id) => {
+    setActiveEntityId(id)
+    setShowGraph(false)
+    const nextAttrs = getEntityAttrs(id)
+    setSelectedAttrId(nextAttrs[0]?.id)
+    setDraftVals(new Set(filters[id]?.[nextAttrs[0]?.id]?.values))
+    setAttrSearch(''); setValSearch(''); setSelectAll(false)
+  }
+  const selectAttr = (id) => {
+    setSelectedAttrId(id)
+    setDraftVals(new Set(activeFilters[id]?.values))
+    setValSearch('')
+    setSelectAll(false)
+  }
+  const toggleVal = (v) => setDraftVals(prev => {
+    const next = new Set(prev)
+    next.has(v) ? next.delete(v) : next.add(v)
+    return next
+  })
+  const toggleSelectAll = () => {
+    if (selectAll) { setDraftVals(new Set()); setSelectAll(false) }
+    else           { setDraftVals(new Set(values)); setSelectAll(true) }
+  }
+  const applyMode = (mode) => {
+    if (!draftVals.size) return
+    onFiltersChange({
+      ...filters,
+      [activeEntityId]: { ...activeFilters, [selectedAttrId]: { mode, values: [...draftVals] } },
+    })
+  }
+  const removeFilter = (attrId) => {
+    const nextEntityFilters = { ...activeFilters }
+    delete nextEntityFilters[attrId]
+    onFiltersChange({ ...filters, [activeEntityId]: nextEntityFilters })
+  }
+
+  return (
+    <div className="dc-gf-attrs-body" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3, '--dc-indigo': PAI.indigo }}>
+      <div className={`dc-gf-left${showGraph ? ' dc-gf-left--full' : ''}`}>
+        <button className="dc-gf-hide-attrs" onClick={() => setShowGraph(v => !v)}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d={showGraph ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'}/>
+          </svg>
+          {showGraph ? 'Back to Attributes' : 'Go to Graph'}
+        </button>
+        {showGraph ? (
+          <div className="gf-canvas-area dc-gf-canvas-area">
+            {entities.map(entity => {
+              const selected = activeEntityId === entity.id
+              return (
+                <div key={entity.id} className="gf-node" onClick={() => selectEntity(entity.id)}>
+                  <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
+                    <img src={`/assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+                    <span className="gf-node__count">{entity.count.toLocaleString()}</span>
+                  </div>
+                  <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>{entity.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="dc-gf-search-wrap">
+              <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
+            </div>
+            <div className="dc-gf-entity-label">{activeEntity?.label}</div>
+            <div className="dc-gf-attr-list">
+              {filteredAttrs.map(attr => (
+                <div
+                  key={attr.id}
+                  className={`dc-gf-attr-item${selectedAttrId === attr.id ? ' dc-gf-attr-item--active' : ''}`}
+                  onClick={() => selectAttr(attr.id)}
+                >
+                  <span className={`dc-gf-attr-radio${selectedAttrId === attr.id ? ' dc-gf-attr-radio--on' : ''}`} />
+                  <span className="dc-gf-attr-name">{attr.label}</span>
+                  {activeFilters[attr.id] && <span className="gfa-attr__badge">{activeFilters[attr.id].values.length}</span>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {!showGraph && (
+      <div className="dc-gf-right">
+        <div className="dc-gf-val-heading">Values ({values.length})</div>
+        <div className="dc-gf-search-wrap">
+          <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
+        </div>
+        {values.length > 0 ? (
+          <>
+            <div className="dc-gf-val-controls">
+              <label className="dc-gf-select-all-label">
+                <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="dc-gf-checkbox" />
+                Select All as Pattern
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              </label>
+              <span className="dc-gf-sort-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+                Sort by : A-Z
+              </span>
+            </div>
+            <div className="dc-gf-val-grid">
+              {values.map(v => (
+                <div key={v} className="dc-gf-val-item" onClick={() => toggleVal(v)}>
+                  <span className="dc-gf-val-name">{v}</span>
+                  <span className={`dc-gf-val-radio${draftVals.has(v) ? ' dc-gf-val-radio--on' : ''}`} />
+                </div>
+              ))}
+            </div>
+            <div className="dc-gf-val-actions">
+              <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Exclude')}>Exclude Selected</button>
+              <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Include')}>Include Selection</button>
+            </div>
+          </>
+        ) : (
+          <p className="gfa-empty-hint">No values available for this attribute type</p>
+        )}
+        {Object.keys(activeFilters).length > 0 && (
+          <div className="gfa-applied">
+            <div className="gfa-applied__label">Filters</div>
+            {Object.entries(activeFilters).map(([attrId, f]) => (
+              <div key={attrId} className="gfa-applied__chip">
+                <span className="gfa-applied__mode">{f.mode}</span>
+                <span className="gfa-applied__text">{attrs.find(a => a.id === attrId)?.label}: {f.values.join(', ')}</span>
+                <button className="gfa-applied__remove" onClick={() => removeFilter(attrId)}>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      )}
+    </div>
+  )
+}
+
 // ── DashboardScopeModal ──────────────────────────────────────────────
 // Graph-filter entity picker used to set a dashboard's scope. Mandatory
 // (non-dismissable) the first time a brand-new dashboard is opened; when
 // reopened later via the Dashboard Scope badge it's a normal dismissable
 // modal so the user can change the scope.
-function DashboardScopeModal({ mandatory, onClose, onBack, onSelect }) {
-  const [search, setSearch]         = useState('')
-  const [selectedId, setSelectedId] = useState(null)
+function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters, onClose, onBack, onSelect }) {
+  const [search, setSearch]           = useState('')
+  const [selectedIds, setSelectedIds] = useState(() =>
+    initialSelectedIds?.length ? initialSelectedIds : ['host']
+  )
+  const [attrFilters, setAttrFilters] = useState(() => initialAttrFilters ?? {})
+  const [attrsViewOpen, setAttrsViewOpen] = useState(false)
 
   const filtered = GF_ENTITIES.filter(e =>
     !search || e.label.toLowerCase().includes(search.toLowerCase())
   )
-  const selected = GF_ENTITIES.find(e => e.id === selectedId) || null
+  const selected = GF_ENTITIES.filter(e => selectedIds.includes(e.id))
   const dismiss = mandatory ? onBack : onClose
+  const toggleEntity = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  const attrCount = (id) => Object.keys(attrFilters[id] || {}).length
+  const totalAttrCount = selected.reduce((n, e) => n + attrCount(e.id), 0)
+  const openAttrs = () => { if (selected.length) setAttrsViewOpen(true) }
+
+  if (attrsViewOpen) {
+    return (
+      <div className="ds-modal-overlay" onClick={mandatory ? undefined : onClose}>
+        <div className="ds-modal dc-scope-modal dc-scope-modal--wide" onClick={e => e.stopPropagation()}>
+          <div className="ds-modal-header">
+            <span className="ds-modal-title">Add Attributes</span>
+            <button className="ds-modal-close" onClick={dismiss}>✕</button>
+          </div>
+          <div className="ds-modal-body ds-modal-body--flush">
+            <ScopeAttrsPanel
+              entities={selected}
+              filters={attrFilters}
+              onFiltersChange={setAttrFilters}
+            />
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setAttrsViewOpen(false)}>Back</button>
+            <button className="ds-btn sz-md t-primary" onClick={() => setAttrsViewOpen(false)}>Done</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="ds-modal-overlay" onClick={mandatory ? undefined : onClose}>
       <div className="ds-modal dc-scope-modal" onClick={e => e.stopPropagation()}>
         <div className="ds-modal-header">
-          <span className="ds-modal-title">Set Dashboard Scope</span>
+          <span className="ds-modal-title">{mandatory ? 'Set Dashboard Scope' : 'Edit Dashboard Scope'}</span>
           <button className="ds-modal-close" onClick={dismiss}>✕</button>
         </div>
         <div className="ds-modal-body">
           <p className="dc-scope-modal__hint">
-            Select a node or entity to scope this dashboard to. You can change this later from the Dashboard Scope badge.
+            Select one or more nodes or entities to scope this dashboard to. You can change this later from the Dashboard Scope badge.
           </p>
-          <input
-            className="dc-scope-modal__search"
-            placeholder="Search entity"
+          <DSPillSearch
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={setSearch}
+            placeholder="Search entity"
+            width="100%"
           />
           <div className="dc-scope-modal__grid">
             {filtered.map(entity => (
               <button
                 type="button"
                 key={entity.id}
-                className={`dc-scope-node${selectedId === entity.id ? ' dc-scope-node--selected' : ''}`}
+                className={`dc-scope-node${selectedIds.includes(entity.id) ? ' dc-scope-node--selected' : ''}`}
                 style={{ '--dc-scope-color': entity.color }}
-                onClick={() => setSelectedId(entity.id)}
+                onClick={() => toggleEntity(entity.id)}
               >
                 <span className="dc-scope-node__circle">
                   <img src={`/assets/icons/${entity.file}`} width={20} height={20} alt="" />
+                  {attrCount(entity.id) > 0 && <span className="dc-scope-node__attr-badge">{attrCount(entity.id)}</span>}
                 </span>
                 <span className="dc-scope-node__label">{entity.label}</span>
               </button>
@@ -825,14 +1088,29 @@ function DashboardScopeModal({ mandatory, onClose, onBack, onSelect }) {
           </div>
         </div>
         <div className="ds-modal-footer">
-          <button className="ds-btn sz-md t-outline" onClick={dismiss}>
-            {mandatory ? 'Back' : 'Cancel'}
-          </button>
-          <button
-            className="ds-btn sz-md t-primary"
-            disabled={!selected}
-            onClick={() => selected && onSelect(selected)}
-          >Confirm Scope</button>
+          <div className="dc-scope-attrs-section">
+            <button
+              type="button"
+              className="ds-btn sz-md t-outline"
+              disabled={!selected.length}
+              onClick={openAttrs}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Attributes
+              {totalAttrCount > 0 && <span className="dc-scope-attr-tab__badge">{totalAttrCount}</span>}
+            </button>
+            {!selected.length && <span className="dc-scope-attrs-section__hint">Select an entity first</span>}
+          </div>
+          <div className="dc-scope-modal__footer-actions">
+            <button className="ds-btn sz-md t-outline" onClick={dismiss}>
+              {mandatory ? 'Back' : 'Cancel'}
+            </button>
+            <button
+              className="ds-btn sz-md t-primary"
+              disabled={!selected.length}
+              onClick={() => selected.length && onSelect(selected, attrFilters)}
+            >Confirm Scope</button>
+          </div>
         </div>
       </div>
     </div>
@@ -977,7 +1255,7 @@ function ColorPickerModal({ color, label, onClose, onApply }) {
 }
 
 // ── Widget Settings Panel ────────────────────────────────────────────
-function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
+function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, onLiveChange }) {
   const [tab, setTab]             = useState('data')
   const [title, setTitle]         = useState(() => {
     const defaultLabel   = CHART_TYPES.find(c => c.id === widget.chartId)?.label
@@ -1015,6 +1293,14 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
   const [kpiCompOperation, setKpiCompOperation]   = useState('count-distinct')
   const [kpiCompAggregateBy, setKpiCompAggregateBy] = useState('host')
   const [fontSize, setFontSize] = useState(widget.fontSize || 'medium')
+  const [aggregateByModalOpen, setAggregateByModalOpen] = useState(false)
+  const [kpiCompAggregateByModalOpen, setKpiCompAggregateByModalOpen] = useState(false)
+  const [kpiFilterModalOpen, setKpiFilterModalOpen] = useState(false)
+  const [kpiFilters, setKpiFilters]         = useState([])
+  const [kpiCompFilterModalOpen, setKpiCompFilterModalOpen] = useState(false)
+  const [kpiCompFilters, setKpiCompFilters] = useState([])
+  const [xAxisField, setXAxisField]         = useState('')
+  const [xAxisModalOpen, setXAxisModalOpen] = useState(false)
   // A brand-new widget has no persisted classification yet — Configure Colors
   // stays locked until the user actually engages with the Data tab's
   // attribute control at least once (typing it for pie, or applying the
@@ -1171,9 +1457,46 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                   onChange={setExploreIn}
                 />
                 {exploreIn && (
-                  <FieldRow label="Filter" hint="Select a widget filter for navigation context">
-                    <TextInput placeholder="Select Widget Filter" withKG />
-                  </FieldRow>
+                  <>
+                    <FieldRow label="Filter" hint="Select a widget filter for navigation context">
+                      <div className="dc-text-input-wrap">
+                        <input
+                          readOnly
+                          placeholder="Select Widget Filter"
+                          className="dc-text-input"
+                          style={{ '--dc-input-color': PAI.fg3 }}
+                        />
+                        <button
+                          className="dc-kg-btn"
+                          onClick={() => setWidgetFilterModalOpen(true)}
+                          style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                        >
+                          <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                        </button>
+                      </div>
+                      {widgetFilters.length > 0 && (
+                        <div className="dc-chips">
+                          {widgetFilters.map((f, i) => (
+                            <span key={i} className="dc-chip">
+                              {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                              <button
+                                className="dc-chip-x"
+                                onClick={() => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
+                              >×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </FieldRow>
+                    {widgetFilterModalOpen && (
+                      <GraphFilterModal
+                        scopeEntities={scopeEntities}
+                        mode="filter"
+                        onClose={() => setWidgetFilterModalOpen(false)}
+                        onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
+                      />
+                    )}
+                  </>
                 )}
               </>
             ) : isTable ? (
@@ -1195,8 +1518,43 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                   )}
                 </FieldRow>
                 <FieldRow label="Widget Filter" hint="Filter data shown in this widget">
-                  <TextInput placeholder="Select Widget Filter" withKG />
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      placeholder="Select Widget Filter"
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg3 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setWidgetFilterModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  {widgetFilters.length > 0 && (
+                    <div className="dc-chips">
+                      {widgetFilters.map((f, i) => (
+                        <span key={i} className="dc-chip">
+                          {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                          <button
+                            className="dc-chip-x"
+                            onClick={() => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </FieldRow>
+                {widgetFilterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    mode="filter"
+                    onClose={() => setWidgetFilterModalOpen(false)}
+                    onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
+                  />
+                )}
                 <div className="dc-divider" />
                 <ToggleRow
                   label="Enable Download"
@@ -1209,9 +1567,31 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
               <>
                 <FieldRow label="Attribute" hint="Define how to divide sections in pie">
                   <FieldRow label="Classification">
-                    <TextInput value={classification} onChange={e => { setClassification(e.target.value); setAttributeTouched(true) }} withKG />
+                    <div className="dc-text-input-wrap">
+                      <input
+                        readOnly
+                        value={classification}
+                        className="dc-text-input"
+                        style={{ '--dc-input-color': PAI.fg1 }}
+                      />
+                      <button
+                        className="dc-kg-btn"
+                        onClick={() => setFilterModalOpen(true)}
+                        style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                      >
+                        <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                      </button>
+                    </div>
                   </FieldRow>
                 </FieldRow>
+                {filterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={classification}
+                    onClose={() => setFilterModalOpen(false)}
+                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
+                  />
+                )}
                 <FieldRow label="Size" hint="Display total/distinct count in the center of pie chart">
                   <div className="dc-axis-row">
                     <div className="dc-axis-col">
@@ -1247,6 +1627,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {filterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
                     onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
@@ -1313,6 +1694,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     mode="filter"
                     onClose={() => setWidgetFilterModalOpen(false)}
                     onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
@@ -1348,6 +1730,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {filterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
                     onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
@@ -1414,6 +1797,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     mode="filter"
                     onClose={() => setWidgetFilterModalOpen(false)}
                     onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
@@ -1465,6 +1849,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {magnitudeModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={magnitude}
                     onClose={() => setMagnitudeModalOpen(false)}
                     onApply={attr => { setMagnitude(attr); setMagnitudeModalOpen(false) }}
@@ -1472,6 +1857,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 )}
                 {stackClassModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
                     onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
@@ -1506,12 +1892,21 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                     </div>
                     <button
                       className="dc-kg-btn dc-kg-btn--bottom"
+                      onClick={() => setAggregateByModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
+                {aggregateByModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={aggregateBy}
+                    onClose={() => setAggregateByModalOpen(false)}
+                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                  />
+                )}
 
                 <FieldRow label="Widget Filter" tooltip="Filter data shown in this widget">
                   <div className="dc-text-input-wrap">
@@ -1545,6 +1940,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     mode="filter"
                     onClose={() => setWidgetFilterModalOpen(false)}
                     onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
@@ -1603,6 +1999,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {magnitudeModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={magnitude}
                     onClose={() => setMagnitudeModalOpen(false)}
                     onApply={attr => { setMagnitude(attr); setMagnitudeModalOpen(false) }}
@@ -1610,6 +2007,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 )}
                 {stackClassModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
                     onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
@@ -1644,12 +2042,21 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                     </div>
                     <button
                       className="dc-kg-btn dc-kg-btn--bottom"
+                      onClick={() => setAggregateByModalOpen(true)}
                       style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                     >
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
                 </FieldRow>
+                {aggregateByModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={aggregateBy}
+                    onClose={() => setAggregateByModalOpen(false)}
+                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                  />
+                )}
 
                 <FieldRow
                   label="Widget Filter"
@@ -1686,6 +2093,7 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
+                    scopeEntities={scopeEntities}
                     mode="filter"
                     onClose={() => setWidgetFilterModalOpen(false)}
                     onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
@@ -1709,8 +2117,31 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
             ) : isKpi ? null : (
               <>
                 <FieldRow label="X Axis">
-                  <TextInput placeholder="Select field" withKG />
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      value={xAxisField}
+                      placeholder="Select field"
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': xAxisField ? PAI.fg1 : PAI.fg3 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setXAxisModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
                 </FieldRow>
+                {xAxisModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={xAxisField}
+                    onClose={() => setXAxisModalOpen(false)}
+                    onApply={attr => { setXAxisField(attr); setXAxisModalOpen(false) }}
+                  />
+                )}
                 <FieldRow label="Y Axis">
                   <div className="dc-axis-row--no-mb">
                     <div className="dc-axis-col">
@@ -1740,7 +2171,11 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                       <div className="dc-axis-label">Aggregate By</div>
                       <SizeSelectDropdown value={aggregateBy} onChange={v => setAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
-                    <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                    <button
+                      className="dc-kg-btn dc-kg-btn--bottom"
+                      onClick={() => setAggregateByModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
@@ -1753,12 +2188,45 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                     </div>
                     <div className="dc-text-input-wrap">
                       <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
-                      <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                      <button
+                        className="dc-kg-btn"
+                        onClick={() => setKpiFilterModalOpen(true)}
+                        style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                      >
                         <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
+                    {kpiFilters.length > 0 && (
+                      <div className="dc-chips">
+                        {kpiFilters.map((f, i) => (
+                          <span key={i} className="dc-chip">
+                            {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                            <button
+                              className="dc-chip-x"
+                              onClick={() => setKpiFilters(prev => prev.filter((_, j) => j !== i))}
+                            >×</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
+                {aggregateByModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={aggregateBy}
+                    onClose={() => setAggregateByModalOpen(false)}
+                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                  />
+                )}
+                {kpiFilterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    mode="filter"
+                    onClose={() => setKpiFilterModalOpen(false)}
+                    onApply={f => { setKpiFilters(prev => [...prev, f]); setKpiFilterModalOpen(false) }}
+                  />
+                )}
                 <div className="dc-divider" />
                 <div className="dc-kpi-metric-section">
                   <div className="dc-kpi-metric-title">Comparison Metric (Optional)</div>
@@ -1772,7 +2240,11 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                       <div className="dc-axis-label">Aggregate By</div>
                       <SizeSelectDropdown value={kpiCompAggregateBy} onChange={v => setKpiCompAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
                     </div>
-                    <button className="dc-kg-btn dc-kg-btn--bottom" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                    <button
+                      className="dc-kg-btn dc-kg-btn--bottom"
+                      onClick={() => setKpiCompAggregateByModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
@@ -1785,12 +2257,45 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
                     </div>
                     <div className="dc-text-input-wrap">
                       <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
-                      <button className="dc-kg-btn" style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}>
+                      <button
+                        className="dc-kg-btn"
+                        onClick={() => setKpiCompFilterModalOpen(true)}
+                        style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                      >
                         <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
+                    {kpiCompFilters.length > 0 && (
+                      <div className="dc-chips">
+                        {kpiCompFilters.map((f, i) => (
+                          <span key={i} className="dc-chip">
+                            {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                            <button
+                              className="dc-chip-x"
+                              onClick={() => setKpiCompFilters(prev => prev.filter((_, j) => j !== i))}
+                            >×</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
+                {kpiCompAggregateByModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    currentAttr={kpiCompAggregateBy}
+                    onClose={() => setKpiCompAggregateByModalOpen(false)}
+                    onApply={attr => { setKpiCompAggregateBy(attr); setKpiCompAggregateByModalOpen(false) }}
+                  />
+                )}
+                {kpiCompFilterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    mode="filter"
+                    onClose={() => setKpiCompFilterModalOpen(false)}
+                    onApply={f => { setKpiCompFilters(prev => [...prev, f]); setKpiCompFilterModalOpen(false) }}
+                  />
+                )}
                 <div className="dc-divider" />
                 <ToggleRow
                   label="Show Total Count"
@@ -1808,9 +2313,46 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
             )}
 
             {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && !isStackHor && !isKpi && (
-              <FieldRow label="Widget Filter">
-                <TextInput placeholder="Select Widget Filter" withKG />
-              </FieldRow>
+              <>
+                <FieldRow label="Widget Filter">
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      placeholder="Select Widget Filter"
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg3 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setWidgetFilterModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  {widgetFilters.length > 0 && (
+                    <div className="dc-chips">
+                      {widgetFilters.map((f, i) => (
+                        <span key={i} className="dc-chip">
+                          {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                          <button
+                            className="dc-chip-x"
+                            onClick={() => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </FieldRow>
+                {widgetFilterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    mode="filter"
+                    onClose={() => setWidgetFilterModalOpen(false)}
+                    onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
+                  />
+                )}
+              </>
             )}
 
             {!isPie && !isTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && !isStackHor && !isKpi && (
@@ -1822,8 +2364,43 @@ function WidgetSettingsPanel({ widget, onSaveChanges, onClose, onLiveChange }) {
             {isPie && (
               <>
                 <FieldRow label="Widget Filter">
-                  <TextInput placeholder="Select Widget Filter" withKG />
+                  <div className="dc-text-input-wrap">
+                    <input
+                      readOnly
+                      placeholder="Select Widget Filter"
+                      className="dc-text-input"
+                      style={{ '--dc-input-color': PAI.fg3 }}
+                    />
+                    <button
+                      className="dc-kg-btn"
+                      onClick={() => setWidgetFilterModalOpen(true)}
+                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                    >
+                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                    </button>
+                  </div>
+                  {widgetFilters.length > 0 && (
+                    <div className="dc-chips">
+                      {widgetFilters.map((f, i) => (
+                        <span key={i} className="dc-chip">
+                          {f.attr}{f.values?.length ? `: ${f.values.join(', ')}` : ''}
+                          <button
+                            className="dc-chip-x"
+                            onClick={() => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </FieldRow>
+                {widgetFilterModalOpen && (
+                  <GraphFilterModal
+                    scopeEntities={scopeEntities}
+                    mode="filter"
+                    onClose={() => setWidgetFilterModalOpen(false)}
+                    onApply={f => { setWidgetFilters(prev => [...prev, f]); setWidgetFilterModalOpen(false) }}
+                  />
+                )}
                 <div className="dc-divider" />
                 <ToggleRow
                   label="Show Legend"
@@ -2894,7 +3471,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // WorkspacePage's `isSeededDashboard` handling — and behave exactly like a
   // template, just constructed at runtime from the chat session instead of a
   // hard-coded constant.
-  const [name, setName]       = useState(reportMode ? reportTitle : (template?.name ?? editSeed?.name ?? seedName ?? ''))
+  const [name, setName]       = useState(reportMode ? reportTitle : (seedName || template?.name || editSeed?.name || ''))
   const [widgets, setWidgets] = useState(() => {
     if (template) return template.widgets
     if (editSeedEntry) return editSeedEntry.widgets
@@ -2910,9 +3487,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // have the graph-filter scope popup set before anything else — see the
   // "New Dashboard" flow from the Library.
   const isNewDashboard = !reportMode && !viewMode && !template && !editSeed && (!seedWidgets || !seedWidgets.length)
-  const [dashboardScope, setDashboardScope] = useState(() =>
-    editSeedEntry ? (GF_ENTITIES.find(e => e.id === editSeedEntry.scopeId) ?? null) : null
+  const [dashboardScopes, setDashboardScopes] = useState(() =>
+    editSeedEntry ? GF_ENTITIES.filter(e => e.id === editSeedEntry.scopeId) : []
   )
+  const [dashboardScopeAttrs, setDashboardScopeAttrs] = useState({})
   const [scopeModalOpen, setScopeModalOpen] = useState(false)
   const [scopeMandatory, setScopeMandatory] = useState(false)
   useEffect(() => {
@@ -2945,7 +3523,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // An existing dashboard opened for editing starts out already "saved" — its
   // snapshot must reflect that so the leave-confirmation doesn't fire until
   // something actually changes.
-  const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScope }) : null)
+  const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) : null)
 
   const openSaveModal = (mode) => { setSaveModalMode(mode); setSaveNameDraft(name); setSaveModalOpen(true) }
   const handleDashboardSaved = (savedName) => {
@@ -2963,12 +3541,12 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     })
     setDashboardId(id)
     setName(savedName)
-    lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScope })
+    lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScopes, dashboardScopeAttrs })
     showToast({ type: 'success', msg: `"${savedName}" has been saved.` })
     onNav('workspace/saved')
   }
   const isDirty = !reportMode && !viewMode && !(widgets.length === 0 && !name.trim())
-    && JSON.stringify({ name, widgets, dashboardScope }) !== lastSavedSnapshotRef.current
+    && JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) !== lastSavedSnapshotRef.current
   const handleBackClick = () => {
     if (isDirty) { setLeaveConfirmOpen(true); return }
     onNav(backTarget)
@@ -3149,17 +3727,18 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     () => {
       const real = layoutWidgets.map(w => {
         let gw = w.gw, gh = w.gh
+        const { minGw, minGh } = minSizeFor(w.chartId)
         if (panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)) {
           if (liveSizeId) {
             const span = ALL_WIDGET_SIZES.find(s => s.id === liveSizeId)?.span || w.span
-            gw = clamp((span || 1) * 3, MIN_GW, MAX_GW)
+            gw = clamp((span || 1) * 3, minGw, MAX_GW)
           }
           if (liveHeightId) {
             const px = ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px
-            if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), MIN_GH, MAX_GH)
+            if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), minGh, MAX_GH)
           }
         }
-        return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: MIN_GW, minH: MIN_GH, maxW: MAX_GW, maxH: MAX_GH }
+        return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: minGw, minH: minGh, maxW: MAX_GW, maxH: MAX_GH }
       })
       return viewMode ? real : [...real, { i: '__add__', x: addSlot.gx, y: addSlot.gy, w: addSlot.gw, h: addSlot.gh, static: true }]
     },
@@ -3314,10 +3893,14 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   title="Dashboard Scope"
                   onClick={() => { if (viewMode) return; setScopeMandatory(false); setScopeModalOpen(true) }}
                 >
-                  <span className="dc-btn-label">{dashboardScope ? dashboardScope.label : 'Dashboard Scope'}</span>
+                  <span className="dc-btn-label">
+                    {dashboardScopes.length
+                      ? dashboardScopes[0].label + (dashboardScopes.length > 1 ? ` +${dashboardScopes.length - 1}` : '')
+                      : 'Dashboard Scope'}
+                  </span>
                   <span className="dc-scope-icon">
-                    {dashboardScope
-                      ? <img src={`/assets/icons/${dashboardScope.file}`} width={16} height={16} alt="" className="dc-scope-icon-img" />
+                    {dashboardScopes.length
+                      ? <img src={`/assets/icons/${dashboardScopes[0].file}`} width={16} height={16} alt="" className="dc-scope-icon-img" />
                       : <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />}
                   </span>
                 </button>
@@ -3610,6 +4193,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
           <WidgetSettingsPanel
             key={settingsWidget.id}
             widget={settingsWidget}
+            scopeEntities={dashboardScopes}
             onSaveChanges={changes => handleSettingsSave(settingsWidget.id, changes)}
             onClose={() => handleSettingsClose(settingsWidget.id)}
             onLiveChange={({ sizeId, heightId }) => { setLiveSizeId(sizeId); setLiveHeightId(heightId) }}
@@ -3621,9 +4205,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     {scopeModalOpen && (
       <DashboardScopeModal
         mandatory={scopeMandatory}
+        initialSelectedIds={dashboardScopes.map(e => e.id)}
+        initialAttrFilters={dashboardScopeAttrs}
         onClose={() => setScopeModalOpen(false)}
         onBack={() => onNav(backTarget)}
-        onSelect={(entity) => { setDashboardScope(entity); setScopeModalOpen(false); setScopeMandatory(false) }}
+        onSelect={(entities, attrFilters) => { setDashboardScopes(entities); setDashboardScopeAttrs(attrFilters); setScopeModalOpen(false); setScopeMandatory(false) }}
       />
     )}
 

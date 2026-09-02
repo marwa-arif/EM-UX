@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { SectionLabel, NavItem, TOP_ITEMS, INSIGHTS_MODEL, FABRIC_MODEL } from './LeftNav.jsx'
 import { ADMIN_NAV_GROUPS } from '../pages/admin/AdminPanelBody.jsx'
-import { RECENT_CHATS } from '../pages/NavigatorPage.jsx'
-import { SAVED_ROWS } from '../pages/SavedPage.jsx'
-import { useNavigatorActivity } from '../context/NavigatorActivityCtx.jsx'
 
 // Shared three-way icon treatment (masked/accent-tinted when active, plain
 // img otherwise, or a literal iconNode for inline-SVG icons) — used by both
-// Row's rail buttons and RailAccordionRow.
+// Row's rail buttons and RailFlyoutRow.
 // isActive = this row IS the selected destination (purple/accent mask).
 // isSectionActive = this row is an ancestor of the selected destination
 // (e.g. a rail accordion header whose child is selected) — same dark/full-
@@ -28,23 +25,12 @@ function RowIcon({ icon, iconNode, isActive, isSectionActive }) {
   );
 }
 
-// hideTooltip: for a compact row whose hover/click already opens something
-// self-labeled (the Navigator/Workspace preview flyout — see LeftNavHybrid
-// below) — the CSS hover tooltip would otherwise render on top of that
-// flyout's own header.
-// onMouseEnter/onMouseLeave/onFocus/onBlur: optional passthrough so a rail
-// row can also drive a hover/keyboard-focus preview (LeftNavHybrid) without
-// every other Row caller needing to know about that.
-function Row({ label, icon, iconNode, isActive, onClick, compact = false, hideTooltip = false, onMouseEnter, onMouseLeave, onFocus, onBlur }) {
+function Row({ label, icon, iconNode, isActive, onClick, compact = false }) {
   return (
     <div className="nav-item">
       <button
         onClick={onClick}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        data-tooltip={compact && !hideTooltip ? label : undefined}
+        data-tooltip={compact ? label : undefined}
         aria-label={compact ? label : undefined}
         className={`nav-item__btn${compact ? ' nav-item__btn--rail-collapsed' : ''}${isActive ? ' nav-item__btn--selected' : ''}`}
       >
@@ -56,101 +42,130 @@ function Row({ label, icon, iconNode, isActive, onClick, compact = false, hideTo
 }
 
 // Rail-collapsed counterpart to LeftNav.jsx's NavItem — a section icon
-// (Exposure/Discover/Report/Data Quality) that toggles its own children
-// icons inline below it. No room for a text label or chevron in the 52px
-// rail, so the expand/collapse affordance is a tooltip ("Expand X"/
-// "Collapse X") plus a small corner-triangle hint — same reasoning as
-// .nav-item__btn--rail-collapsed's own tooltip. Closed, the triangle only
-// appears on hover, previewing the expand action at the row's bottom-right
-// corner. Open, it stays visible without hovering (the only at-a-glance
-// cue that a rail icon is currently expanded) and moves to the top-right
-// corner, mirrored rather than just rotated, so it still reads as flush
-// with that corner instead of floating.
-// Children animate open/closed via a measured max-height (ref + scrollHeight)
-// on `.nav-item__children` — the same class/transition NavItem's own
-// children use in the expanded view, rather than a hardcoded row-count
-// guess, since the divider that closes the group is measured along with it.
-function RailAccordionRow({ entity, isOpen, isHighlighted, isSectionActive, onToggle, activeId, onNavigateChild }) {
-  const tooltip = `${isOpen ? 'Collapse' : 'Expand'} ${entity.label}`;
-  const childrenRef = useRef(null);
-  const [maxHeight, setMaxHeight] = useState(0);
-  useLayoutEffect(() => {
-    if (childrenRef.current) setMaxHeight(isOpen ? childrenRef.current.scrollHeight : 0);
-  }, [isOpen, entity.children]);
-
+// (Exposure/Discover/Report/Data Quality, or Navigator/Workspace) that has
+// no room for a text label or chevron in the 52px rail, so its children
+// (or, for Navigator/Workspace, a handful of shortcut destinations — see
+// NAVIGATOR_FLYOUT_CHILDREN/WORKSPACE_FLYOUT_CHILDREN below) show in a
+// floating panel to its right on hover/focus instead of expanding inline.
+// position:fixed + a measured `top` (via getBoundingClientRect on open, not
+// continuous tracking) rather than position:absolute — same reasoning as
+// .nav-item__btn--rail-collapsed's own tooltip (leftNavAlt.css):
+// .leftnav__body's overflow-y:auto would otherwise clip an absolutely
+// positioned panel that extends past the 52px rail. Unlike that tooltip's
+// CSS-only static-position trick, the panel holds real interactive buttons
+// (not generated content), so it needs an actual measured offset instead of
+// a `top: auto` fallback.
+// isActive vs isSectionActive on the parent icon itself mirror RowIcon's own
+// distinction: Insights entities (Exposure etc.) pass isSectionActive — the
+// icon is never itself the exact destination, its real children are.
+// Navigator/Workspace pass isActive instead — unlike Insights entities,
+// they ARE real leaf destinations in their own right, so their icon keeps
+// the same accent-selected look a plain Row gives any other leaf.
+// onClick: fires on a plain click of the parent icon itself, separate from
+// the hover-driven flyout — only Navigator/Workspace pass this (their icon
+// is a real destination, landing on the section's default page); Insights
+// entities leave it undefined so their icon stays click-inert — only their
+// children (Overview, Findings, ...) are real destinations to navigate to.
+function RailFlyoutRow({ entity, isOpen, isActive, isSectionActive, activeId, onClick, onOpen, onClose, onNavigateChild }) {
+  const btnRef = useRef(null);
+  const [top, setTop] = useState(0);
+  const handleOpen = () => {
+    if (btnRef.current) setTop(btnRef.current.getBoundingClientRect().top);
+    onOpen();
+  };
   return (
-    <div className="leftnav-alt__rail-group">
-      <div className="nav-item">
-        <button
-          onClick={onToggle}
-          data-tooltip={tooltip}
-          aria-label={tooltip}
-          aria-expanded={isOpen}
-          className={`nav-item__btn nav-item__btn--rail-collapsed nav-item__btn--rail-expandable${isHighlighted ? ' nav-item__btn--active' : ''}`}
-        >
-          <RowIcon icon={entity.icon} iconNode={entity.iconNode} isSectionActive={isSectionActive} />
-          <svg className="nav-item__rail-caret" width="7" height="7" viewBox="0 0 7 7" aria-hidden="true">
-            <path d="M0 0 L7 0 L0 7 Z" fill="currentColor" />
-          </svg>
-        </button>
-      </div>
-      <div className="nav-item__children" ref={childrenRef} style={{ maxHeight }}>
-        {entity.children.map(c => (
-          <Row key={c.id} label={c.label} icon={c.icon} iconNode={c.iconNode} isActive={activeId === c.id} onClick={() => onNavigateChild(c.id)} compact />
-        ))}
-        <div className="leftnav__divider" />
-      </div>
+    <div className="nav-item">
+      <button
+        ref={btnRef}
+        onClick={onClick}
+        onMouseEnter={handleOpen}
+        onMouseLeave={onClose}
+        onFocus={handleOpen}
+        onBlur={onClose}
+        data-tooltip={isOpen ? undefined : entity.label}
+        aria-label={entity.label}
+        aria-expanded={isOpen}
+        className={`nav-item__btn nav-item__btn--rail-collapsed${isActive ? ' nav-item__btn--selected' : isSectionActive ? ' nav-item__btn--active' : ''}`}
+      >
+        <RowIcon icon={entity.icon} iconNode={entity.iconNode} isActive={isActive} isSectionActive={isSectionActive} />
+      </button>
+      {isOpen && (
+        <div className="leftnav-alt__rail-flyout" style={{ top }} onMouseEnter={handleOpen} onMouseLeave={onClose}>
+          <div className="leftnav-alt__rail-flyout-title">{entity.label}</div>
+          {entity.children.map(c => (
+            <button
+              key={c.id}
+              className={`leftnav-alt__rail-flyout-row${activeId === c.id ? ' leftnav-alt__rail-flyout-row--active' : ''}`}
+              onClick={() => onNavigateChild(c.navigateId ?? c.id)}
+            >
+              <RowIcon icon={c.icon} iconNode={c.iconNode} isActive={activeId === c.id} />
+              <span className="leftnav-alt__rail-flyout-row-label">{c.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function IcAgentsNav() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="4" y="9" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.6"/>
-      <path d="M9 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" strokeWidth="1.6"/>
-      <circle cx="9" cy="14.5" r="1.2" fill="currentColor"/>
-      <circle cx="15" cy="14.5" r="1.2" fill="currentColor"/>
-      <path d="M2 13h2M20 13h2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-// Fabric Configuration has no navbar-*.svg asset of its own (its four leaf
-// items each carry their own icon instead) — a small inline glyph, same
-// stroke weight/style as LeftNav.jsx's IcPipelineNav/IcOntologyNav/etc.,
-// stands in as the category icon for the rail's Fabric Configuration group.
-function IcFabricNav() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6"/>
-      <rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6"/>
-      <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6"/>
-      <rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6"/>
-    </svg>
-  );
-}
-function IcNewChat() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-// "Chats" — full history list, distinct from IcNewChat (a pencil glyph reads
-// as "start new", this reads as "the whole list") — used by the Navigator
-// preview flyout header below.
-function IcChatsListNav() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4 6h13M4 12h13M4 18h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      <circle cx="20.5" cy="6" r="1.3" fill="currentColor"/>
-      <circle cx="20.5" cy="12" r="1.3" fill="currentColor"/>
-    </svg>
-  );
-}
+// Synthetic "children" for Navigator/Workspace's rail flyout — same
+// real-leaf-route pattern as Templates/Saved below: "History"/"Agents" are
+// their own routes, '/navigator/history' and '/navigator/agents' (App.jsx),
+// which render the same full-page Navigator but land it on the matching
+// overlay (History list / Agents list) — see navigatorOverlay/initialOverlay
+// derivation in App.jsx and NavigatorPage.jsx. Presented as flyout rows
+// purely to match Exposure's Overview/Findings pattern, not because either
+// is a real accordion. Icons are hand-drawn at a native 16x16 viewBox with
+// ~1px strokes (not scaled down from a 24x24 glyph) specifically to match
+// nav-overview.svg/nav-findings.svg's weight — an earlier 24x24-viewBox
+// version read noticeably bigger/bolder next to Exposure's asset icons at
+// the same rendered 16x16 size.
+const NAVIGATOR_FLYOUT_CHILDREN = [
+  {
+    // id: 'navigator' (not a synthetic 'navigator/new-chat') deliberately —
+    // it needs to land on the exact same route the Navigator icon's own
+    // plain click already does (App.jsx's id === 'navigator-page' branch
+    // bumps resetToken and routes to 'navigator'), so navigateId points
+    // there while id itself is what RailFlyoutRow compares against
+    // `activeId` (=== current) to highlight this row — matching 'navigator'
+    // is exactly "currently on the fresh Home/new-chat screen", the same
+    // way 'navigator/history' and 'navigator/agents' below self-highlight.
+    id: 'navigator', navigateId: 'navigator-page', label: 'New chat',
+    iconNode: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M7.2 2.8H3.3A1.3 1.3 0 0 0 2 4.1v8.6a1.3 1.3 0 0 0 1.3 1.3h8.6a1.3 1.3 0 0 0 1.3-1.3V8.8" stroke="currentColor" strokeWidth="1.05" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12.3 1.7a1.4 1.4 0 0 1 2 2L8 10l-2.6.6.6-2.6z" stroke="currentColor" strokeWidth="1.05" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'navigator/history', label: 'History',
+    iconNode: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2.5 4H10.5M2.5 8H10.5M2.5 12H7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+        <circle cx="13.2" cy="4" r="0.9" fill="currentColor"/>
+        <circle cx="13.2" cy="8" r="0.9" fill="currentColor"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'navigator/agents', label: 'Agents',
+    iconNode: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <rect x="3" y="6.5" width="10" height="7" rx="1.3" stroke="currentColor" strokeWidth="1.05"/>
+        <path d="M6 6.5V4.3a1.8 1.8 0 0 1 3.6 0V6.5" stroke="currentColor" strokeWidth="1.05"/>
+        <circle cx="6" cy="10" r="0.75" fill="currentColor"/>
+        <circle cx="10" cy="10" r="0.75" fill="currentColor"/>
+        <path d="M1.5 9h1M13.5 9h1" stroke="currentColor" strokeWidth="1.05" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+];
+const WORKSPACE_FLYOUT_CHILDREN = [
+  { id: 'workspace/saved',   label: 'Saved',      icon: 'saved' },
+  { id: 'workspace/library', label: 'Templates', icon: 'template-add' },
+];
+const TOP_ITEM_FLYOUT_CHILDREN = { navigator: NAVIGATOR_FLYOUT_CHILDREN, workspace: WORKSPACE_FLYOUT_CHILDREN };
 
 // LeftNavHybrid — the left nav's expanded/collapsed shell, reconciled
 // against design-system-2.0/ds/patterns/navigation.json's own numbers (52px
@@ -161,20 +176,14 @@ function IcChatsListNav() {
 //   - Collapsed: never goes to 0 width — a persistent `.leftnav-alt--rail`
 //     52px treatment with the full flat icon list (TOP_ITEMS, every
 //     Insights entity, every Fabric item), not a 4-icon category rail.
-//     Exposure/Discover/Report/Data Quality expand inline via
-//     RailAccordionRow.
-//   - Hovering the Navigator icon opens a preview flyout (recent chats +
-//     New chat/Chats/Agents actions) instead of a plain tooltip —
-//     suppressed while Navigator is already the active destination, since
-//     then there's nothing new to preview.
+//     Exposure/Discover/Report/Data Quality (and Navigator/Workspace) show
+//     their children in a hover flyout via RailFlyoutRow rather than
+//     expanding inline — see RailFlyoutRow's own doc comment.
 //   - The Topbar's shared collapse toggle is always shown, in both states —
 //     one control, one location.
 //   - Drag-to-resize between 52px and 220px (and a third, fully-hidden
 //     sliver state past that) is removed for now, may come back later —
 //     the Topbar toggle is the only way to collapse/expand this nav.
-const NAV_EXPANDED_WIDTH = 220;
-const NAV_RAIL_WIDTH = 52;
-
 export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, consoleActive = false, adminActiveSection, onAdminSelect, navigatorAtHome = false }) {
   // No navigatorAtHome suppression here — Navigator's home landing is the
   // one screen a user is on immediately after a fresh load, so leaving its
@@ -182,10 +191,31 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
   // rather than a deliberately neutral home state.
   const activeParent = current?.split('/')[0];
   const activeId = current;
-  const { activeChat } = useNavigatorActivity();
+
+  // Collapsed rail's hover-flyout open state — delayed close (mouseleave/
+  // blur schedule a ~150ms close so the cursor can travel from the icon
+  // into the panel itself; Escape force-closes for a keyboard user tabbed
+  // into it).
+  const [railFlyoutOpen, setRailFlyoutOpen] = useState(null);
+  const railFlyoutCloseTimer = useRef(null);
+  const openRailFlyout = (id) => {
+    if (railFlyoutCloseTimer.current) { clearTimeout(railFlyoutCloseTimer.current); railFlyoutCloseTimer.current = null; }
+    setRailFlyoutOpen(id);
+  };
+  const scheduleCloseRailFlyout = () => {
+    if (railFlyoutCloseTimer.current) clearTimeout(railFlyoutCloseTimer.current);
+    railFlyoutCloseTimer.current = setTimeout(() => setRailFlyoutOpen(null), 150);
+  };
+  useEffect(() => () => { if (railFlyoutCloseTimer.current) clearTimeout(railFlyoutCloseTimer.current); }, []);
+  useEffect(() => { if (!collapsed) setRailFlyoutOpen(null); }, [collapsed]);
+  useEffect(() => {
+    if (!railFlyoutOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setRailFlyoutOpen(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [railFlyoutOpen]);
 
   const insightsIds = new Set(INSIGHTS_MODEL.map(e => e.id));
-  const fabricIds = new Set(FABRIC_MODEL.map(f => f.id));
 
   // Expanded state: Insights and Fabric Configuration collapse independently
   // — same Set-of-collapsed-keys mechanic Classic's own LeftNav.jsx uses,
@@ -221,107 +251,30 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
     onNav(id, forceMode ? { forceMode } : undefined);
   };
 
-  // Collapsed rail's preview — Navigator only now. The rail itself went
-  // back to Option 1's full flat icon list (see railContent below), where
-  // Exposure/Discover/Report/Data Quality expand inline via
-  // RailAccordionRow exactly like Option 1, not through a category flyout —
-  // so there's nothing left for Insights/Fabric/Workspace to preview.
-  // Hover-driven: opens instantly on mouseenter/focus, closes ~150ms after
-  // mouseleave/blur (same delayed-close reasoning as App.jsx's own
-  // hover-peek — instant close would make it impossible to move the cursor
-  // from the icon into the flyout itself to click a row). Escape still
-  // force-closes it for a keyboard user who's tabbed into it.
-  const [hoverPreview, setHoverPreview] = useState(null);
-  const previewCloseTimer = useRef(null);
-  const openPreview = (kind) => {
-    if (previewCloseTimer.current) { clearTimeout(previewCloseTimer.current); previewCloseTimer.current = null; }
-    setHoverPreview(kind);
-  };
-  const scheduleClosePreview = () => {
-    if (previewCloseTimer.current) clearTimeout(previewCloseTimer.current);
-    previewCloseTimer.current = setTimeout(() => setHoverPreview(null), 150);
-  };
-  useEffect(() => () => { if (previewCloseTimer.current) clearTimeout(previewCloseTimer.current); }, []);
-  useEffect(() => { if (!collapsed) setHoverPreview(null); }, [collapsed]);
-  useEffect(() => {
-    if (!hoverPreview) return;
-    const onKey = (e) => { if (e.key === 'Escape') setHoverPreview(null); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [hoverPreview]);
-
-  const navigateFromFlyout = (id, forceMode) => {
-    setHoverPreview(null);
+  const navigateFromRailFlyout = (id, forceMode) => {
+    setRailFlyoutOpen(null);
     navigate(id, forceMode);
   };
 
-  // Route-only active check (no hoverPreview involved) — whether Navigator
-  // is the thing currently showing, independent of whatever's being
-  // previewed. Used both for the icon's highlight and to decide whether
-  // hovering it should even open a preview (openPreviewIfIdle) — hovering
-  // the section you're already on has nothing new to preview.
-  const isRouteActive = (kind) => activeParent === kind;
-  const isRailActive = (kind) => hoverPreview === kind || isRouteActive(kind);
-  const openPreviewIfIdle = (kind) => { if (!isRouteActive(kind)) openPreview(kind); };
-
-  // A preview row's own click opens that specific chat/dashboard/report,
-  // not just a generic landing page — 'navigator-page' already re-opens
-  // ChatView directly into a live conversation for any non-empty query
-  // (see NavigatorPage.jsx's own `view` init), so re-asking the chat's
-  // original label reproduces "that chat" well enough for a mocked history
-  // with no real per-message transcript behind it. Real per-chat routes
-  // ("Chats"/"Agents" header icons, "View all conversations") still fall
-  // back to plain 'navigator-page' — there's nowhere more specific for
-  // those to go yet.
-  const openChat = (query) => { setHoverPreview(null); onNav('navigator-page', query); };
-  // One fewer static row whenever the in-progress chat pins its own row
-  // above them, so the preview still tops out at 5 total instead of growing.
-  const NAV_PREVIEW_CHATS = RECENT_CHATS.slice(0, activeChat ? 4 : 5);
-
-  // Same idea as openChat above, mirroring SavedPage.jsx's own handleView
-  // exactly (see its handleEdit/handleView) so a row here lands on the same
-  // real per-dashboard route a click in the actual Saved list would — a
-  // dashboard's title is personalized by WorkspacePage's own id-based seed
-  // lookup once there (see its editDashboardSeed fallback), same as arriving
-  // via SavedPage itself. Reports have no per-item route in this app at
-  // all yet (SavedPage's own handleView sends every report to the same
-  // 'executive-summary' preview) — matched here rather than inventing one.
-  const openSavedItem = (row) => {
-    setHoverPreview(null);
-    onNav(row.type === 'REPORT' ? 'workspace/report-preview/executive-summary' : `workspace/dashboard/view-${row.id}`);
-  };
-
-  // SAVED_ROWS is already ordered most-recent-first (see its own
-  // `lastUpdated` values in SavedPage.jsx), so a plain slice is genuinely
-  // "recent" — capped at 4 each, same brevity as the 5 recent chats above.
-  const savedDashboards = SAVED_ROWS.filter(r => r.type === 'DASHBOARD').slice(0, 4);
-  const savedReports = SAVED_ROWS.filter(r => r.type === 'REPORT').slice(0, 4);
-
-  // Rail-collapsed Insights — reuses the module-level RailAccordionRow
-  // rather than a second copy of the same accordion component.
+  // Rail-collapsed Insights — reuses the module-level RailFlyoutRow so
+  // Exposure/Discover/Report/Data Quality show their children in a hover
+  // flyout, same mechanism as Navigator/Workspace below.
   const renderCompactInsightsGroup = (items, forceMode) => items.map(item => {
     const hasChildren = item.children && item.children.length;
     if (!hasChildren) {
       const leaf = { id: item.navigateId ?? item.id, label: item.label, icon: item.icon, iconNode: item.iconNode };
       return <Row key={leaf.id} label={leaf.label} icon={leaf.icon} iconNode={leaf.iconNode} isActive={activeId === leaf.id} onClick={() => navigate(leaf.id, forceMode)} compact />;
     }
-    const isOpen = isEntityOpen(item.id);
     return (
-      <RailAccordionRow
+      <RailFlyoutRow
         key={item.id}
         entity={item}
-        isOpen={isOpen}
-        isHighlighted={isOpen}
-        // Same as Option 1's own renderCompactInsightsGroup: without this,
-        // manually collapsing an entity while still on one of its pages
-        // (activeParent === item.id but isOpen now false via the explicit
-        // override) drops the icon back to a fully plain, unhighlighted
-        // state — losing the only remaining cue that this is still the
-        // active section, just collapsed.
+        isOpen={railFlyoutOpen === item.id}
         isSectionActive={activeParent === item.id}
-        onToggle={() => toggleEntity(item.id)}
         activeId={activeId}
-        onNavigateChild={(id) => navigate(id, forceMode)}
+        onOpen={() => openRailFlyout(item.id)}
+        onClose={scheduleCloseRailFlyout}
+        onNavigateChild={(id) => navigateFromRailFlyout(id, forceMode)}
       />
     );
   });
@@ -348,148 +301,6 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
     );
   };
 
-  // Shared between both sidebar states — the popover no longer retires once
-  // the sidebar is expanded to its full 220px, it just anchors past the
-  // wider row instead of the 52px rail (see the `left` inline style below,
-  // the one thing that actually differs between the two placements).
-  const previewFlyouts = (
-    <>
-      {hoverPreview === 'navigator' && (
-        <div
-          className="leftnav-hybrid__flyout"
-          style={{ left: collapsed ? NAV_RAIL_WIDTH : NAV_EXPANDED_WIDTH }}
-          onMouseEnter={() => openPreview('navigator')}
-          onMouseLeave={scheduleClosePreview}
-        >
-          <div className="leftnav-split__panel-header">
-            <span className="leftnav-split__panel-title">Navigator</span>
-            <div className="leftnav-hybrid__header-actions">
-              <button
-                type="button"
-                className="leftnav-hybrid__icon-btn"
-                data-tooltip="New chat"
-                aria-label="New chat"
-                onClick={() => navigateFromFlyout('navigator-page')}
-              >
-                <IcNewChat />
-              </button>
-              <button
-                type="button"
-                className="leftnav-hybrid__icon-btn"
-                data-tooltip="Chats"
-                aria-label="Chats"
-                onClick={() => navigateFromFlyout('navigator-page')}
-              >
-                <IcChatsListNav />
-              </button>
-              <button
-                type="button"
-                className="leftnav-hybrid__icon-btn"
-                data-tooltip="Agents"
-                aria-label="Agents"
-                onClick={() => navigateFromFlyout('navigator-page')}
-              >
-                <IcAgentsNav />
-              </button>
-            </div>
-          </div>
-          <div className="leftnav-split__panel-body">
-            <div className="leftnav-split__group-title">Recent chats</div>
-            {activeChat && (
-              <button key={activeChat.id} className="leftnav-split__row" onClick={() => openChat(activeChat.label)}>
-                <IcChatsListNav />
-                <span className="leftnav-split__row-label">{activeChat.label}</span>
-                {activeChat.status === 'generating' ? (
-                  <span className="nav-chat-status-pill">
-                    <span className="nav-chat-status-dot" />
-                    Generating
-                  </span>
-                ) : (
-                  <span className="leftnav-split__row-meta">Just now</span>
-                )}
-              </button>
-            )}
-            {NAV_PREVIEW_CHATS.map(c => (
-              <button key={c.id} className="leftnav-split__row" onClick={() => openChat(c.label)}>
-                <IcChatsListNav />
-                <span className="leftnav-split__row-label">{c.label}</span>
-                <span className="leftnav-split__row-meta">{c.time}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {hoverPreview === 'workspace' && (
-        <div
-          className="leftnav-hybrid__flyout"
-          style={{ left: collapsed ? NAV_RAIL_WIDTH : NAV_EXPANDED_WIDTH }}
-          onMouseEnter={() => openPreview('workspace')}
-          onMouseLeave={scheduleClosePreview}
-        >
-          <div className="leftnav-split__panel-header">
-            <span className="leftnav-split__panel-title">Workspace</span>
-            {/* Same icon assets as SavedPage.jsx's own New Report/New
-                Dashboard buttons, masked to currentColor (like RowIcon's own
-                masked branch) so they pick up the icon button's grey instead
-                of their baked-in purple fill, matching IcNewChat's plain
-                currentColor stroke above. New Dashboard routes to the real
-                'workspace/dashboard/new' flow; New Report has nowhere to go
-                yet — SavedPage's own "New Report" button has no onClick
-                either, so this lands on Saved rather than inventing a route
-                that doesn't exist. */}
-            <div className="leftnav-hybrid__header-actions">
-              <button
-                type="button"
-                className="leftnav-hybrid__icon-btn"
-                data-tooltip="New report"
-                aria-label="New report"
-                onClick={() => navigateFromFlyout('workspace/saved')}
-              >
-                <span
-                  className="leftnav-hybrid__icon-btn-mask"
-                  style={{ maskImage: "url('assets/icons/new-report.svg')", WebkitMaskImage: "url('assets/icons/new-report.svg')" }}
-                />
-              </button>
-              <button
-                type="button"
-                className="leftnav-hybrid__icon-btn"
-                data-tooltip="New dashboard"
-                aria-label="New dashboard"
-                onClick={() => navigateFromFlyout('workspace/dashboard/new')}
-              >
-                <span
-                  className="leftnav-hybrid__icon-btn-mask"
-                  style={{ maskImage: "url('assets/icons/template-add.svg')", WebkitMaskImage: "url('assets/icons/template-add.svg')" }}
-                />
-              </button>
-            </div>
-          </div>
-          <div className="leftnav-split__panel-body">
-            <div className="leftnav-split__group">
-              <div className="leftnav-split__group-title">Recent dashboards</div>
-              {savedDashboards.map(row => (
-                <button key={row.id} className="leftnav-split__row" onClick={() => openSavedItem(row)}>
-                  <span className="leftnav-split__row-label">{row.name}</span>
-                </button>
-              ))}
-            </div>
-            <div className="leftnav-split__group">
-              <div className="leftnav-split__group-title">Recent reports</div>
-              {savedReports.map(row => (
-                <button key={row.id} className="leftnav-split__row" onClick={() => openSavedItem(row)}>
-                  <span className="leftnav-split__row-label">{row.name}</span>
-                </button>
-              ))}
-            </div>
-            <button className="leftnav-split__viewall" onClick={() => navigateFromFlyout('workspace/saved')}>View all saved</button>
-            <button className="leftnav-split__viewall" onClick={() => navigateFromFlyout('workspace/library')}>Templates library</button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-
   const expandedContent = (
     <>
       <div className="leftnav__body">
@@ -497,33 +308,19 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
           ADMIN_NAV_GROUPS.map(renderAdminGroup)
         ) : (
           <>
-            {TOP_ITEMS.map(item => {
-              // Same hover preview as the collapsed rail below (see
-              // railContent) — expanding the sidebar to its full 220px no
-              // longer retires the popover, it just repositions it past the
-              // wider row (see previewFlyouts' left offset).
-              const hasPreview = item.id === 'navigator' || item.id === 'workspace';
-              return (
-                <React.Fragment key={item.id}>
-                  <div
-                    onMouseEnter={hasPreview ? () => openPreviewIfIdle(item.id) : undefined}
-                    onMouseLeave={hasPreview ? scheduleClosePreview : undefined}
-                    onFocus={hasPreview ? () => openPreviewIfIdle(item.id) : undefined}
-                    onBlur={hasPreview ? scheduleClosePreview : undefined}
-                  >
-                    <NavItem
-                      item={item}
-                      isActiveParent={hasPreview ? isRailActive(item.id) : activeParent === item.id}
-                      activeChild={activeId}
-                      isOpen={false}
-                      onToggle={() => {}}
-                      onNav={(id) => navigate(id)}
-                    />
-                  </div>
-                  {item.dividerAfter && <div className="leftnav__divider" />}
-                </React.Fragment>
-              );
-            })}
+            {TOP_ITEMS.map(item => (
+              <React.Fragment key={item.id}>
+                <NavItem
+                  item={item}
+                  isActiveParent={activeParent === item.id}
+                  activeChild={activeId}
+                  isOpen={false}
+                  onToggle={() => {}}
+                  onNav={(id) => navigate(id)}
+                />
+                {item.dividerAfter && <div className="leftnav__divider" />}
+              </React.Fragment>
+            ))}
 
             <SectionLabel
               label="Insights"
@@ -562,16 +359,13 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
           </>
         )}
       </div>
-      {previewFlyouts}
     </>
   );
 
   // Collapsed rail — Option 1's exact compactContent shape (TOP_ITEMS,
   // renderCompactInsightsGroup, FABRIC_MODEL flat icons), not the earlier
-  // 4-icon category rail. Navigator is the one row wired for a hover
-  // preview instead of a plain tooltip; everything else behaves exactly
-  // like Option 1's own rail — plain tooltip, inline accordion expansion
-  // for Exposure/Discover/Report/Data Quality via RailAccordionRow.
+  // 4-icon category rail. Navigator/Workspace and every Insights entity
+  // show their children in RailFlyoutRow's hover flyout.
   const railContent = (
     <>
       <div className="leftnav__body">
@@ -582,66 +376,55 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
         ) : (
           <>
             {TOP_ITEMS.map(item => {
-              // Navigator and Workspace both keep their hover preview from
-              // before; every other rail row is plain Option-1 behavior.
-              const hasPreview = item.id === 'navigator' || item.id === 'workspace';
+              const isActive = activeParent === item.id;
               return (
-                <Row
+                <RailFlyoutRow
                   key={item.id}
-                  label={item.label}
-                  icon={item.icon}
-                  iconNode={item.iconNode}
-                  isActive={hasPreview ? isRailActive(item.id) : activeParent === item.id}
+                  entity={{ ...item, children: TOP_ITEM_FLYOUT_CHILDREN[item.id] }}
+                  isOpen={railFlyoutOpen === item.id}
+                  isActive={isActive}
+                  activeId={activeId}
+                  // A plain click still lands on the section's own default
+                  // page (Navigator's landing/new-chat screen, Workspace's
+                  // Saved list). The hover flyout is an additional shortcut
+                  // to a specific child (History/Agents, Templates/Saved),
+                  // not a replacement for the icon's own click behavior.
                   onClick={() => navigate(item.navigateId ?? item.id)}
-                  compact
-                  // Always suppressed for Navigator/Workspace now, active or
-                  // not — while active, NavigatorPage's own top-left expand
-                  // icon (useHidePeekSidebar, see NavigatorPage.jsx) sits
-                  // right next to this rail, and the plain tooltip pill used
-                  // to render on top of its label. No replacement needed:
-                  // that title-bar icon is itself the hover affordance once
-                  // Navigator/Workspace is the active destination.
-                  hideTooltip={hasPreview}
-                  onMouseEnter={hasPreview ? () => openPreviewIfIdle(item.id) : undefined}
-                  onMouseLeave={hasPreview ? scheduleClosePreview : undefined}
-                  onFocus={hasPreview ? () => openPreviewIfIdle(item.id) : undefined}
-                  onBlur={hasPreview ? scheduleClosePreview : undefined}
+                  // Never suppressed by isActive, for either item: History/
+                  // Agents and Saved/Templates are all real sibling routes
+                  // you need to jump between while already inside that
+                  // section, not a redundant preview of where you already
+                  // are — matching Insights entities, whose own flyout
+                  // (renderCompactInsightsGroup) never gates on isActive
+                  // either.
+                  onOpen={() => openRailFlyout(item.id)}
+                  onClose={scheduleCloseRailFlyout}
+                  onNavigateChild={(id) => navigateFromRailFlyout(id)}
                 />
               );
             })}
             <div className="leftnav__divider" />
             {renderCompactInsightsGroup(INSIGHTS_MODEL, 'em')}
             <div className="leftnav__divider" />
-            {(() => {
-              // Fabric Configuration is a single expandable group here too
-              // (per user request) — same RailAccordionRow shape as an
-              // Insights entity, not four flat icons. isEntityOpen/
-              // toggleEntity's defaultOpen override is needed because this
-              // synthetic id never appears in activeParent — every real
-              // Fabric page routes by its own leaf id (fabricIds.has(...)
-              // is the real "am I inside this group" check).
-              const fabricEntity = { id: 'fabric-configuration', label: 'Fabric Configuration', iconNode: <IcFabricNav />, children: FABRIC_MODEL };
-              const fabricDefaultOpen = fabricIds.has(activeParent);
-              const isOpen = isEntityOpen(fabricEntity.id, fabricDefaultOpen);
-              return (
-                <RailAccordionRow
-                  entity={fabricEntity}
-                  isOpen={isOpen}
-                  isHighlighted={isOpen}
-                  // Same reasoning as the Insights entities above — without
-                  // this, collapsing Fabric Configuration while still on one
-                  // of its own pages loses the "you're still in here" cue.
-                  isSectionActive={fabricDefaultOpen}
-                  onToggle={() => toggleEntity(fabricEntity.id, fabricDefaultOpen)}
-                  activeId={activeId}
-                  onNavigateChild={(id) => navigate(id, 'studio')}
-                />
-              );
-            })()}
+            {/* Fabric Configuration renders as four flat icons here, same as
+                the expanded view's FABRIC_MODEL.map — no accordion, since
+                each entry is already a leaf (solo: true), unlike Insights'
+                Exposure/Discover/Report/Data Quality which each nest real
+                children and need RailFlyoutRow to show them. */}
+            {FABRIC_MODEL.map(item => (
+              <Row
+                key={item.id}
+                label={item.label}
+                icon={item.icon}
+                iconNode={item.iconNode}
+                isActive={activeParent === item.id}
+                onClick={() => navigate(item.id, 'studio')}
+                compact
+              />
+            ))}
           </>
         )}
       </div>
-      {previewFlyouts}
     </>
   );
 

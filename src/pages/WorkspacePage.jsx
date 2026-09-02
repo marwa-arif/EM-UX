@@ -13,7 +13,25 @@ import DataConfigPage from './DataConfigPage.jsx'
 import ReportPreviewPage from './ReportPreviewPage.jsx'
 
 const DASHBOARD_TITLES = {
-  'workspace/dashboard/discover': 'Discover Dashboard',
+  'workspace/dashboard/discover':             'Discover Dashboard',
+  'workspace/dashboard/ciso':                 'CISO Dashboard',
+  'workspace/dashboard/client-subsidiary':    'Client Subsidiary',
+  'workspace/dashboard/device-attack-surface':'Device Attack Surface',
+  'workspace/dashboard/risk-mitigation':      'Risk Mitigation Queries',
+  'workspace/dashboard/security-gaps':        'Tracked Security Gaps',
+}
+// Dashboard-template routes map to one of DashboardCanvas's four widget
+// templates — several Library cards intentionally reuse the same widget
+// set (see DASHBOARD_EDIT_SEED_BY_TEMPLATE in DashboardCanvas.jsx, which
+// makes the same reuse when re-editing an already-saved dashboard of these
+// types) while still getting their own route/title/badge.
+const DASHBOARD_TEMPLATE_IDS = {
+  'workspace/dashboard/discover':              'discover',
+  'workspace/dashboard/ciso':                  'executive-summary',
+  'workspace/dashboard/client-subsidiary':     'executive-summary',
+  'workspace/dashboard/device-attack-surface': 'vulnerabilities',
+  'workspace/dashboard/risk-mitigation':       'vulnerabilities',
+  'workspace/dashboard/security-gaps':         'vulnerabilities',
 }
 const REPORT_TITLES = {
   'workspace/report/executive-summary': 'Executive Summary',
@@ -134,7 +152,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     reportTemplateId === 'month-over-month' ? MOM_TEMPLATE :
     EXEC_SUMMARY_TEMPLATE
 
-  const templateId  = current === 'workspace/dashboard/discover' ? 'discover' : reportTemplateId
+  const templateId  = DASHBOARD_TEMPLATE_IDS[current] ?? reportTemplateId
   const previewBack = current.replace('report-preview', 'report')
 
   const handleRemoveFilter = (idx) => {
@@ -218,7 +236,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                   : isConfigPage
                     ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                     : isDashboard
-                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} viewMode={isViewDashboard} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : DASHBOARD_TITLES[current]} backTarget={listOrigin} viewMode={isViewDashboard} />
                       : isReport
                         ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                         : isReportPreview

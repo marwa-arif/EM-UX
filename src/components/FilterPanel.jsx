@@ -3351,4 +3351,4 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   );
 }
 
-export { FilterPanel, GraphFilterDrawer, GF_ENTITIES };
+export { FilterPanel, GraphFilterDrawer, GF_ENTITIES, GFAttrPanelBody, getEntityAttrs };
