@@ -601,6 +601,20 @@ const PAGE_META = {
     breadcrumb: ['Insights', 'Navigator'],
     breadcrumbHrefs: [null, null],
   },
+  // SubHeader is never rendered for these (isNavigatorRoute suppresses it —
+  // NavigatorPage draws its own header), so title/breadcrumb below are
+  // unused today. The entries still need to exist so `isKG`/the notFound
+  // guard treat these routes correctly instead of falling through to KG.
+  'navigator/history': {
+    title: 'History',
+    breadcrumb: ['Insights', 'Navigator', 'History'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'navigator/agents': {
+    title: 'Agents',
+    breadcrumb: ['Insights', 'Navigator', 'Agents'],
+    breadcrumbHrefs: [null, null, null],
+  },
 };
 
 function App() {
@@ -638,14 +652,14 @@ function App() {
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
   const [tourActive, setTourActive] = useState(false);
-  // Collapsed by default only when Navigator is the actual landing route —
-  // an initial *value*, not a recurring rule, so that from here on
+  // Expanded by default on every route, including the Navigator landing
+  // route — an initial *value*, not a recurring rule, so that from here on
   // navCollapsed is the single, ordinary source of truth the toggle already
-  // controls. Anything else (expanding on another page, then navigating
-  // into Navigator) just persists via that same state, instead of a
-  // separate "auto-collapse on this route" check re-asserting itself over
-  // a preference the user already expressed by using the toggle.
-  const [navCollapsed, setNavCollapsed] = useState(() => current === 'navigator');
+  // controls. Expanding or collapsing from here just persists via that same
+  // state, instead of a separate "auto-collapse on this route" check
+  // re-asserting itself over a preference the user already expressed by
+  // using the toggle.
+  const [navCollapsed, setNavCollapsed] = useState(false);
   // Lets a click on a dropdown-capable LeftNav item force the sidebar open
   // even while auto-collapsed (e.g. on the Navigator route) so its children
   // become visible/clickable. Cleared on every navigation.
@@ -656,6 +670,12 @@ function App() {
   // Home screen even when `current` is already 'navigator' (mid-chat) — a
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
+  // Which overlay (if any) NavigatorPage should land on once resetToken
+  // fires — null for a plain Home/chat landing, 'history'/'agents' for the
+  // rail flyout's History/Agents rows. Derived from `current` itself
+  // (routes are real: /navigator/history, /navigator/agents) rather than
+  // tracked as separate state, so it can never drift out of sync with the
+  // URL — see the id === 'navigator-page' branch below.
   // Whether the full-page Navigator is showing its Home landing screen (vs.
   // an active chat/build) — drives LeftNav's active-highlight suppression,
   // so Navigator only "feels" like the current section once the user
@@ -671,11 +691,8 @@ function App() {
   // itself is deliberately NOT part of this recurring check — that would
   // fight navCollapsed on every single visit (e.g. expand it on another
   // page, then navigate into Navigator, only to have it snap back collapsed
-  // regardless). Navigator's "collapsed by default" behavior instead lives
-  // one level up, in navCollapsed's own initial value above — a one-time
-  // default for a session that actually lands there, after which this
-  // ordinary navCollapsed toggle state is the only thing driving it, same
-  // as every other route.
+  // regardless). The ordinary navCollapsed toggle state is the only thing
+  // driving Navigator's collapse behavior, same as every other route.
   //
   // This (and the hover-peek hooks below) must live above every early
   // `return` in this component (see the workspace/ux3/error/notFound
@@ -877,12 +894,13 @@ function App() {
       }
       return;
     }
-    if (id === 'navigator-page') {
+    if (id === 'navigator-page' || id === 'navigator/history' || id === 'navigator/agents') {
       setRightPanel(null);
-      setNavigatorQuery(data || '');
+      setNavigatorQuery(id === 'navigator-page' ? (data || '') : '');
       setNavigatorReset(n => n + 1);
-      setCurrent('navigator');
-      history.pushState(null, '', navPath('/navigator'));
+      const route = id === 'navigator-page' ? 'navigator' : id;
+      setCurrent(route);
+      history.pushState(null, '', navPath(`/${route}`));
       return;
     }
     // Hand-off from Navigator (Build mode's "Add to Workspace", or Ask/
@@ -1109,7 +1127,8 @@ function App() {
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
   const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
-  const isNavigatorRoute = current === 'navigator';
+  const isNavigatorRoute = current === 'navigator' || current.startsWith('navigator/');
+  const navigatorOverlay = current === 'navigator/history' ? 'history' : current === 'navigator/agents' ? 'agents' : null;
 
   return (
     <div className="app-shell">
@@ -1152,7 +1171,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -1194,7 +1213,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
                 {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}

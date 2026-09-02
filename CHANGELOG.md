@@ -33,6 +33,28 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.21.1] — 2026-09-02
+### Changed
+- Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix.
+
+---
+
+## [0.21.0] — 2026-09-02
+### Added
+- Collapsed left-nav rail: Exposure/Discover/Report/Data Quality and Navigator/Workspace now show their children in a hover flyout instead of expanding inline — this is now the only collapsed-rail behavior (the earlier inline-accordion option is removed).
+- Navigator's flyout routes to dedicated History/Agents overlays; Workspace's flyout routes to its Saved/Templates tabs; both icons still support a direct click to their section's default page.
+- Dashboard widgets: per-chart-type minimum resize size (pie/KPI/table/bar/line) so a widget can't be shrunk past the point its chart clips or garbles; legend/table rows scroll instead once content no longer fits.
+- Graph Filter modal and widget scope config support switching between multiple entities, plus a graph-canvas view for building scope visually.
+- Additional Library dashboard templates (CISO Dashboard, Client Subsidiary, Device Attack Surface, Risk Mitigation Queries, Tracked Security Gaps).
+- Loading animation for the Navigator canvas empty state.
+### Changed
+- Navigator sidebar expand/collapse controls switched to chevron-into-bar icons, with alignment fixes across the chat/build title bars.
+### Fixed
+- Pie/donut dashboard widgets and their legends no longer overlap or clip when resized down; fixed a duplicate/conflicting `.cr-pie-legend` CSS rule causing inconsistent legend spacing.
+- Removed the stale "MRA Security Risk" report nav entry.
+
+---
+
 ## [0.20.1] — 2026-09-02
 ### Fixed
 - Repaired the develop build, broken since PR #23: removed the unfinished MRA Security Risk report route (page/styles were never committed) and added the missing `MatrixDropdown.jsx` component used by Compliance Matrix (also never committed).

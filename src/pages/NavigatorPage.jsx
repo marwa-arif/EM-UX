@@ -77,16 +77,36 @@ const IcClock         = () => <Ic size={16} path={<><circle cx="12" cy="12" r="9
 const IcCheckCircle   = () => <Ic size={28} path={<><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></>} />;
 const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />;
 const IcStar           = () => <Ic size={13} path={<><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
-// Panel divider always stays on the left (`M9 3v18`) — that's where the real
-// sidebar physically sits, so mirroring the whole glyph (as an earlier
-// version did via scaleX(-1)) drew it on the wrong side and read as
-// "collapse" even on the "Expand sidebar" buttons. Only the chevron itself
-// flips: right-pointing (`flip` false, default) reads as "expand this way,"
-// left-pointing (`flip` true) as "collapse this way" — same convention as
-// LeftNav.jsx's IcPanelToggle.
+// Hamburger glyph — same three-line shape as NavigatorPanel.jsx's IcMenu.
+// `flip` is accepted but unused: a hamburger has no directionality, unlike
+// the old box+chevron glyph this replaced. np-sidebar-expand-btn now shows
+// this as its resting-state icon (collapsed, not hovered) and swaps to
+// IcSidebarExpand on hover via CSS — see np-sidebar-expand-icon--default/
+// --hover in navigator.css.
 const IcSidebarCollapse = ({ flip = false }) => (
-  <Ic size={14} path={<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d={flip ? 'M16 9l-2.5 3 2.5 3' : 'M13.5 9l2.5 3-2.5 3'}/></>} />
+  <Ic size={14} path={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>} />
 );
+// Provided assets (expand-navigator.svg / collapse-navigator.svg) — chevron
+// pointing at a bar, direction matching which way the sidebar slides.
+// IcSidebarExpand is np-sidebar-expand-btn's hover-only icon (see above);
+// IcSidebarCollapseChevron is np-sidebar-toggle-btn's icon once the sidebar
+// is actually pinned open.
+function IcSidebarExpand() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M8.30669 3.25983C8.22686 3.33804 8.16345 3.43139 8.12016 3.53442C8.07686 3.63745 8.05457 3.74808 8.05457 3.85983C8.05457 3.97158 8.07686 4.08221 8.12016 4.18524C8.16345 4.28827 8.22686 4.38162 8.30669 4.45983L12.2752 8.28101C12.6831 8.67379 12.6838 9.32659 12.2767 9.72023L8.32669 13.5398C8.17938 13.6994 8.09871 13.9092 8.10122 14.1263C8.10373 14.3434 8.18923 14.5514 8.34019 14.7074C8.49114 14.8635 8.6961 14.9559 8.91302 14.9656C9.12993 14.9754 9.34235 14.9017 9.50669 14.7598L14.723 9.71859C15.1296 9.32561 15.1297 8.67391 14.7233 8.28075L9.50669 3.23483C9.42649 3.15723 9.33172 3.09628 9.22785 3.0555C9.12397 3.01473 9.01305 2.99493 8.90148 2.99725C8.78991 2.99958 8.67991 3.02398 8.57782 3.06905C8.47573 3.11411 8.38358 3.17896 8.30669 3.25983Z" fill="currentColor"/>
+      <path d="M3.83291 2.5C3.60748 2.5 3.39127 2.58955 3.23187 2.74896C3.07246 2.90837 2.98291 3.12457 2.98291 3.35L2.98291 14.65C2.98291 14.8754 3.07246 15.0916 3.23187 15.251C3.39127 15.4104 3.60748 15.5 3.83291 15.5C4.05834 15.5 4.27454 15.4104 4.43395 15.251C4.59336 15.0916 4.68291 14.8754 4.68291 14.65L4.68291 3.35C4.68291 3.12457 4.59336 2.90837 4.43395 2.74896C4.27454 2.58955 4.05834 2.5 3.83291 2.5Z" fill="currentColor"/>
+    </svg>
+  );
+}
+function IcSidebarCollapseChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M9.69331 14.7402C9.77314 14.662 9.83655 14.5686 9.87984 14.4656C9.92314 14.3626 9.94543 14.2519 9.94543 14.1402C9.94543 14.0284 9.92314 13.9178 9.87984 13.8148C9.83655 13.7117 9.77314 13.6184 9.69331 13.5402L5.72484 9.71899C5.31692 9.32622 5.31623 8.67341 5.72331 8.27977L9.67331 4.46017C9.82062 4.30065 9.90129 4.0908 9.89878 3.87369C9.89627 3.65657 9.81077 3.44864 9.65981 3.29257C9.50886 3.1365 9.3039 3.04411 9.08699 3.03437C8.87007 3.02463 8.65765 3.09826 8.49331 3.24017L3.27703 8.28141C2.8704 8.67439 2.87026 9.32609 3.27671 9.71925L8.49331 14.7652C8.57351 14.8428 8.66828 14.9037 8.77215 14.9445C8.87603 14.9853 8.98695 15.0051 9.09852 15.0027C9.21009 15.0004 9.32009 14.976 9.42218 14.931C9.52427 14.8859 9.61642 14.821 9.69331 14.7402Z" fill="currentColor"/>
+      <path d="M14.1671 15.5C14.3925 15.5 14.6087 15.4104 14.7681 15.251C14.9275 15.0916 15.0171 14.8754 15.0171 14.65L15.0171 3.35C15.0171 3.12457 14.9275 2.90837 14.7681 2.74896C14.6087 2.58956 14.3925 2.5 14.1671 2.5C13.9417 2.5 13.7255 2.58956 13.5661 2.74896C13.4066 2.90837 13.3171 3.12457 13.3171 3.35L13.3171 14.65C13.3171 14.8754 13.4066 15.0916 13.566 15.251C13.7255 15.4104 13.9417 15.5 14.1671 15.5Z" fill="currentColor"/>
+    </svg>
+  );
+}
 
 const ENTITY_PILLS = [
   { id: 'vuln',   label: 'Vulnerability', count: '13,456', Icon: IcVulnerability },
@@ -431,7 +451,7 @@ const BUILD_SUGGESTIONS = [
 // into the title bar (see ChatView/BuildView) while collapsed.
 function NavSidebar({
   useHidePeek = false,
-  collapsed, hoverPeek = false, onToggleCollapse, onHoverEnter, onHoverLeave, onNewChat,
+  collapsed, hoverPeek = false, skipEnterAnim = false, onToggleCollapse, onHoverEnter, onHoverLeave, onNewChat,
   chats, activeLabel, onSelectChat, onToggleStar, onRename, onDelete, onViewAllChats,
   agents, onRunAgent, onCreateAgent, onViewAllAgents,
 }) {
@@ -468,7 +488,14 @@ function NavSidebar({
     />
   );
 
-  const sidebarContent = (
+  // isPeek: this exact same header renders inside two different contexts —
+  // the real (pinned) sidebar and the hover-peek preview overlay (see the
+  // two call sites below) — and the toggle button means opposite things in
+  // each: in the peek, nothing is actually expanded yet, so clicking it
+  // *expands*; once pinned, clicking it *collapses*. Everything else in
+  // this content is identical between the two, so only this one icon/label
+  // branches on isPeek rather than splitting into two components.
+  const renderSidebarContent = (isPeek = false) => (
     <>
       <div className="np-hist-sidebar-body">
         {railCollapsed ? (
@@ -486,10 +513,10 @@ function NavSidebar({
               <button
                 className="np-sidebar-toggle-btn"
                 onClick={onToggleCollapse}
-                title="Collapse sidebar"
-                aria-label="Collapse sidebar"
+                title={isPeek ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={isPeek ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                <IcSidebarCollapse flip />
+                {isPeek ? <IcSidebarExpand /> : <IcSidebarCollapseChevron />}
               </button>
             )}
           </div>
@@ -591,15 +618,15 @@ function NavSidebar({
   if (!useHidePeek) {
     return (
       <div className={`np-hist-sidebar${collapsed ? ' collapsed' : ''}`} aria-label="Chat history and agents">
-        {sidebarContent}
+        {renderSidebarContent()}
       </div>
     );
   }
 
   return (
     <>
-      <div className={`np-hist-sidebar${collapsed ? ' np-hist-sidebar--hidden' : ''}`} aria-label="Chat history and agents" aria-hidden={collapsed}>
-        {sidebarContent}
+      <div className={`np-hist-sidebar${collapsed ? ' np-hist-sidebar--hidden' : ''}${skipEnterAnim ? ' np-hist-sidebar--no-anim' : ''}`} aria-label="Chat history and agents" aria-hidden={collapsed}>
+        {renderSidebarContent(false)}
       </div>
       {collapsed && hoverPeek && (
         <div
@@ -608,7 +635,7 @@ function NavSidebar({
           onMouseEnter={onHoverEnter}
           onMouseLeave={onHoverLeave}
         >
-          {sidebarContent}
+          {renderSidebarContent(true)}
         </div>
       )}
     </>
@@ -778,7 +805,8 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onS
           title="Expand sidebar"
           aria-label="Expand sidebar"
         >
-          <IcSidebarCollapse />
+          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
+          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
         </button>
       )}
       <div className="hv-bg">
@@ -1277,7 +1305,8 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarC
           title="Expand sidebar"
           aria-label="Expand sidebar"
         >
-          <IcSidebarCollapse />
+          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
+          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
         </button>
       )}
       {editingTitle ? (
@@ -1798,7 +1827,8 @@ function BuildView({ initialQuery, onGoHome, onNav, sidebarCollapsed = false, on
             title="Expand sidebar"
             aria-label="Expand sidebar"
           >
-            <IcSidebarCollapse />
+            <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
+            <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
           </button>
         )}
         <div className="build-name-wrap">
@@ -2424,7 +2454,7 @@ function AgentsListPage({ agents, onBack, onRun, onCreateNew, onDelete, onRename
 // of being reset back to Home.
 const AGENTS_STORAGE_KEY = 'nav-agents';
 
-export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav, onHomeStateChange }) {
+export default function NavigatorPage({ initialQuery = '', resetToken = 0, initialOverlay = null, onNav, onHomeStateChange }) {
   const [view, setView]         = useState(initialQuery ? 'chat' : 'home');
   const [activeQuery, setQuery] = useState(initialQuery);
   const [mode, setMode]         = useState('ask');
@@ -2443,10 +2473,35 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
   // moving the mouse from the icon into the peeked sidebar doesn't close it
   // before it can be used.
   const [sidebarHoverPeek, setSidebarHoverPeek] = useState(false);
+  // Set only when the expand click lands while the peek overlay is already
+  // showing — that overlay just played the slide-in a moment ago, so the
+  // real sidebar replaying its own width transition on top reads as a
+  // stutter, not a second reveal. Cleared a couple frames later (not on the
+  // next collapse — that was the bug: this flag stayed true the entire time
+  // the sidebar sat open, so clicking "Collapse" replayed a stale
+  // transition:none and the close snapped shut with no slide animation at
+  // all instead of just skipping the one redundant open).
+  const [sidebarSkipEnterAnim, setSidebarSkipEnterAnim] = useState(false);
   const sidebarHoverCloseTimer = useRef(null);
+  const sidebarSkipAnimResetRef = useRef(null);
+  // Guards openSidebarHoverPeek right after a collapse click: the hamburger
+  // (np-sidebar-expand-btn) mounts at the same moment the pinned sidebar
+  // starts shrinking, and since it sits inside the content area that slides
+  // left to fill the freed space, it physically sweeps underneath wherever
+  // the mouse is still resting (right on the "Collapse" button just
+  // clicked) partway through that 220ms width transition — the browser
+  // treats that as a real mouseenter and pops the peek open with no actual
+  // hover gesture. Blocked for one transition's worth of time; a genuine
+  // hover after that still opens it normally.
+  const sidebarCollapseGuardTimer = useRef(null);
   useEffect(() => { if (!sidebarCollapsed) setSidebarHoverPeek(false); }, [sidebarCollapsed]);
-  useEffect(() => () => { if (sidebarHoverCloseTimer.current) clearTimeout(sidebarHoverCloseTimer.current); }, []);
+  useEffect(() => () => {
+    if (sidebarHoverCloseTimer.current) clearTimeout(sidebarHoverCloseTimer.current);
+    if (sidebarSkipAnimResetRef.current) cancelAnimationFrame(sidebarSkipAnimResetRef.current);
+    if (sidebarCollapseGuardTimer.current) clearTimeout(sidebarCollapseGuardTimer.current);
+  }, []);
   const openSidebarHoverPeek = () => {
+    if (sidebarCollapseGuardTimer.current) return;
     if (sidebarHoverCloseTimer.current) { clearTimeout(sidebarHoverCloseTimer.current); sidebarHoverCloseTimer.current = null; }
     setSidebarHoverPeek(true);
   };
@@ -2455,6 +2510,20 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
     sidebarHoverCloseTimer.current = setTimeout(() => setSidebarHoverPeek(false), 300);
   };
   const toggleSidebarCollapse = () => {
+    if (sidebarCollapsed && sidebarHoverPeek) {
+      setSidebarSkipEnterAnim(true);
+      // Let the no-transition paint land first, then drop the flag so a
+      // later click on "Collapse" gets its normal width animation instead
+      // of silently reusing this one-time suppression.
+      if (sidebarSkipAnimResetRef.current) cancelAnimationFrame(sidebarSkipAnimResetRef.current);
+      sidebarSkipAnimResetRef.current = requestAnimationFrame(() => {
+        sidebarSkipAnimResetRef.current = requestAnimationFrame(() => setSidebarSkipEnterAnim(false));
+      });
+    }
+    if (!sidebarCollapsed) {
+      if (sidebarCollapseGuardTimer.current) clearTimeout(sidebarCollapseGuardTimer.current);
+      sidebarCollapseGuardTimer.current = setTimeout(() => { sidebarCollapseGuardTimer.current = null; }, 260);
+    }
     setSidebarCollapsed(c => !c);
     if (sidebarHoverCloseTimer.current) { clearTimeout(sidebarHoverCloseTimer.current); sidebarHoverCloseTimer.current = null; }
     setSidebarHoverPeek(false);
@@ -2477,8 +2546,19 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
+  // initialOverlay ('history'|'agents'|null) lands the page on the History
+  // or Agents list instead of Home/chat — driven by the left rail's
+  // Navigator flyout (LeftNavAlt.jsx's NAVIGATOR_FLYOUT_CHILDREN). Always
+  // resolved explicitly (never left as whatever it was before) so a plain
+  // "New chat" navigation correctly closes an overlay left open from an
+  // earlier "History"/"Agents" click.
   useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+    if (!mounted.current) {
+      mounted.current = true;
+      if (initialOverlay === 'history') openHistoryPage();
+      else if (initialOverlay === 'agents') openAgentsList();
+      return;
+    }
     if (initialQuery) {
       setMode('ask');
       setQuery(initialQuery);
@@ -2489,6 +2569,9 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
       setQuery('');
     }
     setRunningAgent(null);
+    if (initialOverlay === 'history') openHistoryPage();
+    else if (initialOverlay === 'agents') openAgentsList();
+    else { setHistoryOpen(false); setAgentsOpen(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetToken]);
 
@@ -2550,6 +2633,7 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, onNav
         useHidePeek
         collapsed={sidebarCollapsed}
         hoverPeek={sidebarHoverPeek}
+        skipEnterAnim={sidebarSkipEnterAnim}
         onToggleCollapse={toggleSidebarCollapse}
         onHoverEnter={openSidebarHoverPeek}
         onHoverLeave={scheduleSidebarHoverClose}
