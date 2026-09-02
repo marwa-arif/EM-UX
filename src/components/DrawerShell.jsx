@@ -131,7 +131,7 @@ export function RelNodeSection({ title, data, onRowClick, renderCell = (col, val
 // Shared drawer chrome (backdrop, close button, sliding panel) mounted once per drawer
 // session — swapping `children` on navigation just replaces content in place, it never
 // remounts this shell, so only the very first open animates in.
-export function DrawerShell({ children, onClose, closing, stacked = false }) {
+export function DrawerShell({ children, onClose, closing }) {
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
@@ -144,8 +144,8 @@ export function DrawerShell({ children, onClose, closing, stacked = false }) {
           consumers wire this to useDrawerNav's close(onClosed), and a stray event object would
           get invoked as onClosed(). */}
       <div className="comp-drawer-backdrop" onClick={() => onClose()} />
-      <button className={`comp-drawer-close-ext${stacked ? ' comp-drawer-close-ext--stacked' : ''}`} onClick={() => onClose()}><IcDrawerClose /></button>
-      <div className={`comp-drawer${stacked ? ' comp-drawer--stacked' : ''}${closing ? ' comp-drawer--closing' : ''}`}>
+      <button className="comp-drawer-close-ext" onClick={() => onClose()}><IcDrawerClose /></button>
+      <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
         {children}
       </div>
     </>

@@ -3,12 +3,13 @@ import React from 'react'
 // Workspace context — shared state for all workspace pages
 
 // Pill search matching the KG design system: icon on right inside indigo circle
-function DSPillSearch({ value, onChange, placeholder, width = 200 }) {
+function DSPillSearch({ value, onChange, placeholder, width = 200, dataTour }) {
   const [focused, setFocused] = React.useState(false);
   return (
     <div
       className={`ds-pill-search${focused ? ' ds-pill-search--focused' : ''}`}
       style={{ width }}
+      data-tour={dataTour}
     >
       <input
         value={value}

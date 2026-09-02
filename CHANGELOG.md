@@ -23,6 +23,7 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-07-22 17:30 | branch: develop | daa8ebc Merge remote-tracking branch 'origin/develop' into develop -->
 <!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
 <!-- pull: 2026-08-03 18:03 | branch: feature/ui-updates | bf4d4b0 Merge remote-tracking branch 'origin/feature/ui-updates' into develop -->
+<!-- pull: 2026-08-17 10:21 | branch: feature/studio-workspace | 3e7e8da chore: bump to v0.19.0 -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
@@ -32,30 +33,37 @@ All notable UI changes are tracked here.
 
 ---
 
-## [0.19.1] — 2026-08-11
+## [0.21.0] — 2026-09-02
 ### Added
-- Save Filter flow wired end-to-end (`SavedFiltersCtx`) from the Active Filters panel
+- Collapsed left-nav rail: Exposure/Discover/Report/Data Quality and Navigator/Workspace now show their children in a hover flyout instead of expanding inline — this is now the only collapsed-rail behavior (the earlier inline-accordion option is removed).
+- Navigator's flyout routes to dedicated History/Agents overlays; Workspace's flyout routes to its Saved/Templates tabs; both icons still support a direct click to their section's default page.
+- Dashboard widgets: per-chart-type minimum resize size (pie/KPI/table/bar/line) so a widget can't be shrunk past the point its chart clips or garbles; legend/table rows scroll instead once content no longer fits.
+- Graph Filter modal and widget scope config support switching between multiple entities, plus a graph-canvas view for building scope visually.
+- Additional Library dashboard templates (CISO Dashboard, Client Subsidiary, Device Attack Surface, Risk Mitigation Queries, Tracked Security Gaps).
+- Loading animation for the Navigator canvas empty state.
 ### Changed
-- Compliance Matrix → Compliance Findings hand-off now uses the shared Active Filters chip system instead of a page-local "Filtered by" bar
-- "Include Passed Findings" toggle is always visible in Compliance Findings and now actually reveals passed rows instead of only changing a displayed count
-- Recent Filters list reflects the drag-to-reorder + show-count saved in the filter panel's settings view
+- Navigator sidebar expand/collapse controls switched to chevron-into-bar icons, with alignment fixes across the chat/build title bars.
 ### Fixed
-- Compliance Matrix cell clicks with no matching mock data no longer show a false-empty findings table
-- Compliance Findings table columns no longer reflow when toggling "Include Passed Findings"; added a centered, non-hoverable empty state
-- Delete Saved Filter modal: added header icon and fixed confirmation text rendering as three stacked lines instead of one sentence
+- Pie/donut dashboard widgets and their legends no longer overlap or clip when resized down; fixed a duplicate/conflicting `.cr-pie-legend` CSS rule causing inconsistent legend spacing.
+- Removed the stale "MRA Security Risk" report nav entry.
 
 ---
 
-## [0.19.0] — 2026-08-11
-### Added
-- "/" keyboard shortcut opens the Navigator Copilot panel (ignored while typing in a field)
-- Shared `TimeRangeTabs` component and `useDropdownExit` hook extracted for reuse
+## [0.20.0] — 2026-08-31
 ### Changed
-- Floating Navigator Copilot panel now plays a zoom-out close animation instead of vanishing instantly
+- LeftNav: settled on the hybrid design (labeled 220px expanded state, persistent 52px icon rail when collapsed, hover-preview flyout for Navigator/Workspace) as the app's only left nav; the Classic/Rail/Renamed/Split A/B variants and the Topbar's nav-design switcher are removed.
+
+---
+
+## [0.19.0] — 2026-08-14
+### Added
+- Topbar: sidebar collapse/expand toggle, moved from the bottom of the LeftNav to an icon-only button left of the PAI logo.
+- LeftNav: hovering the collapsed sidebar's left edge peeks it back as a floating overlay without resizing page content; the Topbar toggle pins it open into the normal, content-resizing layout.
+- LeftNav: section labels (Insights, Fabric Configuration, admin groups) are now clickable to collapse/expand their own group of nav items.
+### Changed
+- LeftNav: collapsed state now fully hides the sidebar instead of shrinking to an icon-only rail.
 ### Fixed
-- Compliance drill-down: trend chart and semi-donut in the row-expand drawer no longer replay their draw-in animation on every open (disabled Recharts mount animation)
-- Compliance drill-down: tree-row cells (counts, trend sparkline, rating) now share the same fixed-height centered layout as the name column, so they stay aligned during the row expand/collapse animation instead of jumping into place once it settles
-- Compliance drill-down: trend sparkline/progress bar width restored to fill its column after the alignment fix
+- App: fixed a "rendered fewer hooks than expected" crash on the Workspace route caused by hooks declared after an early return.
 
 ---
 

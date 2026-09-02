@@ -1,0 +1,253 @@
+/* ── LeftNav Alt (Option 2) ──────────────────────────────────────────
+   Insights renders the same per-entity NavItem accordion as Option 1
+   (LeftNav.jsx) — one row with its own icon + chevron, expanding inline to
+   its children — under a single "Insights" umbrella header. Reuses Option
+   1's outer shell classes (.leftnav/.nav-item*, all in shell.css) wholesale
+   for the expanded state.
+
+   Whole-nav collapse (the Topbar toggle) is the one place Option 2 diverges
+   from Option 1's mechanic: instead of hiding behind Option 1's
+   .leftnav--collapsed/.leftnav--peek (width:0 + hover-peek overlay), it
+   stays visible at a persistent 52px icon-only rail — see .leftnav-alt--rail
+   and LeftNavAlt.jsx's compactContent. */
+.leftnav-alt__group { margin-bottom: 4px; }
+.leftnav.leftnav-alt--rail { width: 52px; overflow-x: hidden; }
+
+/* Master headers ("Insights", "Fabric Configuration") sit a level above the
+   per-entity sub-headers (Exposure, Discover, ...) nested under them — a
+   darker grey than the shared .leftnav__section-label default (shell-text-
+   faint) marks that hierarchy; hover darkens one step further, matching the
+   step .leftnav__section-label:hover takes from its own lighter default. */
+.leftnav__section-label.leftnav-alt__top-header { color: var(--shell-text-muted); }
+.leftnav__section-label.leftnav-alt__top-header:hover { color: var(--shell-text-2); }
+
+/* Icon-only rail tooltip — white pill + subtle drop shadow, CSS :hover only
+   (no JS show/hide), instant fade-in (no native `title` hover delay).
+   position:fixed (not absolute): .leftnav__body needs overflow-y:auto to
+   scroll a tall icon list, and CSS resolves overflow-x:visible to auto
+   whenever the other axis isn't visible — clipping an absolutely-positioned
+   tooltip to the 52px rail. position:fixed's containing block is the
+   viewport, so it isn't subject to that ancestor's overflow clipping;
+   omitting `top` keeps the tooltip at the button's own static (in-flow)
+   vertical position, so this still needs no JS — :hover remains the only
+   trigger. */
+.nav-item__btn--rail-collapsed { position: relative; }
+/* [data-tooltip] guard on both rules below: RailFlyoutRow (LeftNavAlt.jsx)
+   sets data-tooltip={isOpen ? undefined : entity.label} — no attribute at
+   all while its own flyout is open, since the flyout's title already labels
+   the icon. Without the guard, `content: attr(data-tooltip)` on a missing
+   attribute still evaluates to an empty string, not `none` — so the ::after
+   box (padding, background, shadow, border-radius) rendered anyway on
+   hover, just with no text in it: a small blank white pill overlapping the
+   flyout's own title at that same fixed left:60px position. The attribute
+   selector means an element with no data-tooltip has no matching ::after
+   rule at all. */
+.nav-item__btn--rail-collapsed[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: fixed;
+  left: 60px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  /* Above any page-local overlay (e.g. navigator.css's .nav-history-page at
+     100) — this is app-shell chrome, not page content, so it must never
+     lose a stacking fight to whatever z-index an individual page picks.
+     Still below toasts (500) and modals (1000+), which need to outrank
+     nav chrome too. */
+  z-index: 450;
+}
+.nav-item__btn--rail-collapsed[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Collapsed-rail accordion (hover-flyout) ─────────────────────────────
+   Exposure/Discover/Report/Data Quality and Navigator/Workspace all show
+   their children here on hover/focus (RailFlyoutRow, LeftNavAlt.jsx).
+   position:fixed for the same reason as the rail tooltip above
+   (.leftnav__body's overflow-y:auto would clip an absolutely positioned
+   panel past the 52px rail); `top` is set inline per instance (measured
+   from the hovered icon), not fixed here. */
+.leftnav-alt__rail-flyout {
+  position: fixed;
+  left: 60px;
+  min-width: 180px;
+  max-width: 240px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  padding: 4px;
+  /* Same reasoning as the rail tooltip's z-index above — must outrank
+     page-local overlays like .nav-history-page (100) since History/Agents
+     is exactly where this flyout needs to stay usable. */
+  z-index: 450;
+  animation: leftnavPeekIn 140ms ease-out;
+}
+.leftnav-alt__rail-flyout-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--shell-text-muted);
+  padding: 6px 8px 4px;
+}
+.leftnav-alt__rail-flyout-row {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px; border: none; border-radius: 6px; background: none;
+  font-family: inherit; font-size: 12px; color: var(--shell-text-2); text-align: left; cursor: pointer;
+}
+.leftnav-alt__rail-flyout-row:hover { background: var(--shell-hover); color: var(--shell-text); }
+.leftnav-alt__rail-flyout-row--active { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
+.leftnav-alt__rail-flyout-row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Option 4 — icon rail + collapsible contextual panel ─────────────
+   .leftnav-split is the flex wrapper (rail + panel) that replaces a single
+   .leftnav element at the call site; the rail itself reuses Option 2's
+   .leftnav-alt--rail (52px, same Row/compact tooltip treatment) verbatim.
+   The panel's width animates 0 -> 240px the same way .rp-shell does
+   (shell.css) — its content stays mounted through the close transition
+   (see `lastSection` in LeftNavAlt.jsx) so the row list doesn't vanish
+   before the width has visibly collapsed. */
+.leftnav-split {
+  display: flex;
+  flex-shrink: 0;
+  height: 100%;
+}
+.leftnav-split--peek {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  height: calc(100vh - var(--topbar-height));
+  z-index: 45;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  animation: leftnavPeekIn 140ms ease-out;
+}
+.leftnav-split__panel {
+  position: relative;
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  background: var(--card-bg);
+  border-right: 1px solid var(--shell-border);
+  transition: width 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.leftnav-split__panel--open { width: 240px; }
+/* Drag-collapsed sliver — width itself comes from the inline style
+   (LeftNavAlt.jsx sets it to PANEL_COLLAPSED_WIDTH, 12px) so it can track a
+   live drag; this just lets the handle's own tooltip escape the panel's
+   overflow:hidden, same reasoning as the rail's fixed-position tooltip
+   above. Settling at 12px instead of animating back to 0 like a full close
+   keeps the handle in place as a persistent "drag or click to reopen"
+   affordance — same convention as Teams' own collapsed channel list. */
+.leftnav-split__panel--collapsed { overflow: visible; }
+/* Suppresses the width transition mid-drag so the panel tracks the pointer
+   1:1 instead of chasing it — re-enabled the instant the drag ends. */
+.leftnav-split__panel--dragging { transition: none; }
+.leftnav-split__panel-inner {
+  width: 240px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Same sidebar-toggle glyph as Option 2's own "Collapse sidebar" row
+   (IcPanelToggle, LeftNav.jsx) instead of a plain close/X — this button
+   minimizes the panel to the drag handle below, it doesn't deselect the
+   open section, so the sidebar-toggle icon reads truer than a close mark. */
+.leftnav-split__panel-collapse {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border: none; border-radius: 6px; background: none; cursor: pointer;
+  color: var(--shell-text-muted);
+}
+.leftnav-split__panel-collapse:hover { background: var(--shell-hover); color: var(--shell-text); }
+/* Same dark-pill tooltip convention as the rail's own ::after (data-tooltip
+   above) but position:absolute, not fixed — this button sits inside
+   .leftnav-split__panel-inner (its own overflow:hidden is for the row list's
+   vertical scroll), and top+right keeps the tooltip within the panel's
+   240px width instead of needing to escape it. */
+.leftnav-split__panel-collapse::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-split__panel-collapse:hover::after { opacity: 1; }
+
+/* Right-edge drag handle — grab it and drag left to collapse the panel to
+   the sliver below, same global-listener/col-resize mechanic as
+   NavigatorPanel.jsx's own .np-resize-handle. Inset fully inside the panel
+   (not straddling the border like filter-panel.css's own resize handles do)
+   because .leftnav-split__panel clips with overflow:hidden — a handle that
+   overhangs the edge would have its outer half clipped and un-hittable. */
+.leftnav-split__panel-resizer {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+  cursor: col-resize; z-index: 10;
+}
+.leftnav-split__panel-resizer:hover { background: var(--shell-hover); }
+
+/* Collapsed sliver — a full-height button standing in for the panel; click
+   or drag it back out to reopen at PANEL_WIDTH. The tooltip mirrors the
+   rail's own dark hover-tooltip (.nav-item__btn--rail-collapsed::after
+   above) but is fixed-positioned relative to the sliver's own known offset
+   (52px rail + 12px sliver + 8px gap) rather than the rail's 60px, since it
+   sits one column further right. */
+.leftnav-split__panel-handle {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  border: none; background: none; cursor: col-resize; padding: 0;
+  position: relative;
+}
+.leftnav-split__panel-handle:hover { background: var(--shell-hover); }
+.leftnav-split__panel-grip {
+  width: 2px; height: 32px; border-radius: 2px;
+  background: var(--shell-border);
+}
+.leftnav-split__panel-handle:hover .leftnav-split__panel-grip { background: var(--shell-text-muted); }
+.leftnav-split__panel-handle::after {
+  content: attr(data-tooltip);
+  position: fixed;
+  left: 72px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-split__panel-handle:hover::after { opacity: 1; }
+.leftnav-split__newchat {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-bottom: 8px; padding: 8px 12px;
+  border: 1px solid var(--ctrl-border); border-radius: 8px; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 500; color: var(--shell-text-2); cursor: pointer;
+}
+.leftnav-split__newchat:hover { background: var(--shell-hover); border-color: var(--shell-accent); color: var(--shell-accent); }
+

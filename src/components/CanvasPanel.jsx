@@ -441,6 +441,7 @@ export default function CanvasPanel({ exchange, onFeedback, onAddToWorkspace }) 
       <div className="canvas-content">
         {empty ? (
           <div className="canvas-empty">
+            <img src="/assets/media/analyzing-loop.gif" alt="" className="canvas-empty-loader" />
             <span className="canvas-empty-label">Results will open here once the AI finishes reasoning.</span>
           </div>
         ) : (

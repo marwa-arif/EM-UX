@@ -160,6 +160,13 @@
 
 /* ─── Quick actions toolbar ──────────────────────────────────────── */
 .lib-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+/* SavedPage.jsx renders .lib-toolbar as a direct child of .lib-content, whose
+   own flex gap:16px already spaces it from the table below — the margin-bottom
+   above stacked on top of that gap for a doubled 32px. LibraryPage.jsx nests
+   .lib-toolbar one level deeper (inside a plain, non-gapped wrapper div), where
+   that margin-bottom is still the only thing spacing it from the cards grid,
+   so it stays there; this override only cancels the redundant direct-child case. */
+.lib-content > .lib-toolbar { margin-bottom: 0; }
 .lib-pills   { display: flex; align-items: center; gap: 8px; }
 
 .lib-pill {
@@ -220,21 +227,20 @@
   position: absolute; right: 0; top: calc(100% + 6px);
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: var(--radius-dropdown, 8px);
-  box-shadow: var(--shadow-popup, 0 4px 16px rgba(0,0,0,0.10));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   min-width: 180px; z-index: 100;
-  overflow: hidden; padding: 4px;
-  animation: fade-up 0.15s ease;
+  overflow: hidden; padding: 4px 0;
 }
 .lib-sort-opt {
   display: block; width: 100%; text-align: left;
-  padding: 10px 12px;
-  border: none; border-radius: 6px; cursor: pointer;
+  padding: 10px 16px;
+  border: none; cursor: pointer;
   font-size: 13px; font-family: inherit;
   background: transparent; color: var(--shell-text);
   transition: background 100ms, color 100ms;
 }
-.lib-sort-opt:hover  { background: var(--shell-hover); }
+.lib-sort-opt:hover  { background: var(--pai-indigo-tint); color: var(--pai-indigo); }
 .lib-sort-opt.active { background: var(--pai-indigo); color: var(--card-bg); }
 
 /* ─── Empty state ────────────────────────────────────────────────── */

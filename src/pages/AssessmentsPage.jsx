@@ -247,7 +247,7 @@ export default function AssessmentsPage({ onOpenCopilotBuilder, onBuilderApiRead
       </div>
 
       {/* Table */}
-      <div className="asmts-table-wrap">
+      <div className="asmts-table-wrap" data-nav-explore="table" data-nav-label="Assessments">
         <table className="ds-table asmts-table">
           <thead>
             <tr>

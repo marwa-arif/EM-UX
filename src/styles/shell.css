@@ -4,7 +4,7 @@
   background: var(--shell-topbar-bg);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 16px 0 8px;
   gap: 12px;
   flex-shrink: 0;
   position: relative;
@@ -12,6 +12,10 @@
 }
 .topbar__spacer { flex: 1; }
 .topbar__logo { display: block; }
+.topbar__logo-btn {
+  display: flex; align-items: center;
+  padding: 0; border: none; background: transparent; cursor: pointer;
+}
 .topbar__btn {
   width: 32px; height: 32px;
   border: none; background: transparent; color: var(--shell-topbar-text);
@@ -20,6 +24,7 @@
   position: relative;
 }
 .topbar__theme-toggle:hover { background: rgba(255,255,255,0.10); }
+.topbar__nav-toggle:hover { background: rgba(255,255,255,0.10); }
 .topbar__btn--pulse { animation: topbarBellPulse 500ms ease-out; }
 @keyframes topbarBellPulse {
   0%   { transform: scale(1); }
@@ -53,7 +58,6 @@
   padding: 8px;
   z-index: 60;
   display: flex; flex-direction: column;
-  animation: fade-up 0.15s ease;
 }
 .topbar__account-menu-header { padding: 4px 8px 8px; }
 .topbar__account-menu-name { font-size: 12px; font-weight: 600; color: var(--shell-text); }
@@ -102,7 +106,6 @@
   z-index: 60;
   display: flex; flex-direction: column;
   overflow: hidden;
-  animation: fade-up 0.15s ease;
 }
 .notif-panel__header {
   display: flex; align-items: center; justify-content: space-between;
@@ -235,157 +238,95 @@
   box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
 }
 
-.topbar__logo-divider {
-  width: 1px; height: 20px;
-  background: rgba(255,255,255,0.20);
-}
-.topbar__switcher { position: relative; }
-.topbar__switcher-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  height: 32px; padding: 0 8px;
-  border: none; background: transparent; border-radius: 6px;
-  font-size: 13px; font-weight: 500; font-family: 'Urbanist', sans-serif;
-  color: var(--shell-topbar-text);
-  cursor: pointer;
-}
-.topbar__switcher-btn:hover,
-.topbar__switcher-btn--open { background: rgba(255,255,255,0.10); }
-.topbar__switcher-menu {
-  position: absolute; top: calc(100% + 8px); left: 0;
-  width: 200px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-popup, 0 8px 24px rgba(16,16,16,0.16));
-  padding: 8px;
-  z-index: 60;
-  display: flex; flex-direction: column;
-}
-.topbar__switcher-item {
-  display: flex; align-items: center;
-  width: 100%; height: 32px; padding: 0 8px;
-  border: none; background: transparent; border-radius: 6px;
-  font-size: 12px; font-weight: 500; font-family: 'Urbanist', sans-serif;
-  color: var(--shell-text-2);
-  cursor: pointer; text-align: left;
-}
-.topbar__switcher-item:hover { background: var(--shell-hover); }
-.topbar__switcher-item--active { color: var(--shell-text); font-weight: 600; }
 
 /* ── LeftNav ─────────────────────────────────────────────────────── */
+/* The pinned/collapsed sidebar — always mounted, in flow. Collapsing just
+   animates width down to 0 (uniform, linear, identical transition whichever
+   direction it runs), same mechanic the old icon-rail used, just targeting
+   0 instead of a 52px rail. Deliberately NOT combined with the hover-peek
+   overlay below on this same element — position can't be transitioned, so
+   a single element trying to be "in-flow width-animated" AND "position:
+   fixed overlay" at once means one of the two would always snap instead of
+   animate. They're two separate elements instead (see .leftnav--peek). */
 .leftnav {
   position: relative;
   flex-shrink: 0;
+  width: 220px;
   background: var(--card-bg);
   border-right: 1px solid var(--shell-border);
   display: flex;
   flex-direction: column;
-  transition: width 180ms linear;
   overflow-x: visible;
   overflow-y: hidden;
+  transition: width 200ms linear;
 }
-/* ── Left nav header — workspace switcher ────────────────────────── */
-.leftnav__header {
-  height: 48px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--shell-raised);
-  border-bottom: 1px solid var(--shell-border-2);
-  flex-shrink: 0;
-  padding: 0 8px;
-  position: relative;
+.leftnav--collapsed {
+  width: 0;
+  overflow-x: hidden;
+  pointer-events: none;
 }
-
-/* Workspace / product switcher button */
-.leftnav__switcher {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 6px; border-radius: 8px;
-  background: transparent; border: none; cursor: pointer;
-  text-align: left; transition: background 120ms;
-  overflow: hidden;
+/* Hover-peek overlay — only mounted while collapsed and hovered. position:
+   fixed so it never participates in .app-body's flex sizing (main content
+   stays full-width beneath it); appears on top of the page instead of
+   resizing it. The Topbar toggle next to the logo is the only way to pin
+   the sidebar open into the normal, content-resizing .leftnav above. */
+.leftnav--peek {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  width: 220px;
+  height: calc(100vh - var(--topbar-height));
+  z-index: 45;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  animation: leftnavPeekIn 140ms ease-out;
 }
-.leftnav__switcher:hover { background: var(--shell-hover); }
-.leftnav__switcher--open { background: var(--shell-hover); }
-.leftnav__switcher--collapsed { flex: 0 0 auto; gap: 0; padding: 5px; }
-
-/* Product icon block */
-.leftnav__switcher-icon {
-  width: 28px; height: 28px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 7px;
-  background: linear-gradient(135deg, rgba(99,96,216,0.12), rgba(71,173,203,0.08));
-  border: 1px solid rgba(99,96,216,0.14);
-  color: var(--pai-indigo);
+@keyframes leftnavPeekIn {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
-
-/* Name + sub stacked */
-.leftnav__switcher-text {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 1px;
+.leftnav__hover-zone {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  width: 14px;
+  height: calc(100vh - var(--topbar-height));
+  z-index: 44;
 }
-.leftnav__switcher-name {
-  font-size: 12px; font-weight: 600; color: var(--shell-text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  line-height: 1.3; transition: color 120ms;
+/* ── Left nav section labels — Insights / Fabric Configuration groups,
+   replacing the old EM/Studio switcher now that both are always visible.
+   Same token values as UX3LeftNav.jsx's .ux3-nav__section-label. ── */
+.leftnav__section-label {
+  display: flex; align-items: center; justify-content: flex-start; gap: 4px;
+  width: 100%; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--shell-text-faint); padding: 8px 8px 4px 16px;
+  background: none; border: none; font-family: inherit; cursor: pointer; text-align: left;
 }
-.leftnav__switcher:hover .leftnav__switcher-name { color: var(--shell-accent); }
-.leftnav__switcher--open .leftnav__switcher-name { color: var(--shell-accent); }
-.leftnav__switcher-sub {
-  font-size: 10px; color: var(--shell-text-muted); line-height: 1.3;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.leftnav__section-label:hover { color: var(--shell-text-muted); }
+.leftnav__section-label-text { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leftnav__section-chevron {
+  display: inline-flex; flex-shrink: 0; color: var(--shell-text-faint);
+  opacity: 0; transition: opacity 120ms;
 }
-
-/* Sort caret — up/down arrows, distinct from nav chevrons */
-.leftnav__switcher-caret {
-  display: inline-flex; color: var(--shell-text-muted); flex-shrink: 0;
-  transition: color 120ms;
-}
-.leftnav__switcher:hover .leftnav__switcher-caret,
-.leftnav__switcher--open .leftnav__switcher-caret {
-  color: var(--pai-indigo);
-}
-
-/* App-mode dropdown */
-.leftnav__mode-dropdown {
-  position: absolute; top: calc(100% + 4px); left: 8px;
-  width: 188px;
-  background: var(--card-bg);
-  border: 1px solid var(--shell-border-2);
-  border-radius: var(--radius-dropdown, 8px);
-  box-shadow: var(--shadow-popup, 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.10));
-  z-index: 200;
-  padding: 4px;
-  animation: fade-up 0.15s ease;
-}
-.leftnav__mode-option {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 8px;
-  background: transparent; border: none; border-radius: 6px;
-  cursor: pointer; font-size: 12px; font-weight: 500;
-  color: var(--shell-text); font-family: inherit; text-align: left;
-  transition: background 120ms;
-}
-.leftnav__mode-option:hover { background: var(--shell-hover); }
-.leftnav__mode-option-img { flex-shrink: 0; }
-.leftnav__mode-option-label { flex: 1; }
-.leftnav__mode-option-soon {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: var(--pai-indigo-secondary); color: #fff;
-  border-radius: 44px; padding: 1px 8px; flex-shrink: 0;
-}
-/* Nav icon filters — theme-aware */
-.nav-item__icon        { flex-shrink: 0; filter: grayscale(20%) opacity(0.72); }
-.nav-item__icon--active { filter: grayscale(20%) opacity(0.9); }
+.leftnav__section-label:hover .leftnav__section-chevron,
+.leftnav__section-chevron--visible { opacity: 1; }
+/* Nav icon filters — theme-aware. brightness(0), not grayscale(100%): a
+   few nav SVGs (e.g. Navigator icon.svg) carry a baked-in brand gradient
+   rather than the sibling icons' flat #101010 — grayscale() preserves each
+   source color's own luminance, so the gradient converts to a visibly
+   lighter grey than the already-near-black siblings at the same opacity.
+   brightness(0) flattens every icon's opaque pixels to pure black first
+   (a no-op on the already-black ones), matching the dark-theme rule below,
+   which sidesteps the same mismatch via brightness(0) invert(1). */
+.nav-item__icon        { flex-shrink: 0; filter: brightness(0) opacity(0.72); }
+.nav-item__icon--active { filter: brightness(0) opacity(0.9); }
 .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
 html.theme-dark .nav-item__icon        { filter: brightness(0) invert(1) opacity(0.60); }
 html.theme-dark .nav-item__icon--active { filter: brightness(0) invert(1) opacity(0.9); }
 html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-accent); }
-/* Masked variant for single-color icon assets that need a true accent tint (mirrors .nav-item__child-icon) */
-.nav-item__icon--masked { width: 16px; height: 16px; display: inline-block; background-color: var(--shell-accent); mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
+/* Masked variant for single-color icon assets that need a true accent tint (mirrors .nav-item__child-icon).
+   filter: none since its color comes from background-color, not the source asset — the grayscale/invert
+   filters above are for the plain <img> variant and would desaturate this tint if inherited. */
+.nav-item__icon--masked { width: 16px; height: 16px; display: inline-block; background-color: var(--shell-accent); filter: none; mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
 
 /* ── App root shell ──────────────────────────────────────────────── */
 .app-shell {
@@ -520,55 +461,6 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 .leftnav__body { flex: 1; overflow-y: auto; padding: 8px 0; }
 .leftnav__divider { margin: 8px 12px; border-top: 1px solid var(--shell-border); }
 
-/* ── Left nav footer — UX 3.0 entry point ────────────────────────── */
-.leftnav__footer { flex-shrink: 0; padding: 8px; border-top: 1px solid var(--shell-border); }
-.leftnav__ux3-btn {
-  width: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 6px; border-radius: 8px;
-  background: transparent; border: none; cursor: pointer;
-  text-align: left; font-family: inherit;
-  color: var(--shell-text-2); transition: background 120ms, color 120ms;
-}
-.leftnav__ux3-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
-.leftnav__ux3-btn--collapsed { padding: 5px; }
-.leftnav__ux3-btn--active { background: var(--shell-raised); color: var(--shell-text); }
-.leftnav__ux3-btn--active:hover { background: var(--shell-hover); }
-.leftnav__ux3-btn-icon {
-  width: 28px; height: 28px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 7px;
-  background: linear-gradient(135deg, rgba(99,96,216,0.12), rgba(71,173,203,0.08));
-  border: 1px solid rgba(99,96,216,0.14);
-  color: var(--pai-indigo);
-}
-.leftnav__ux3-btn-label {
-  flex: 1; min-width: 0; font-size: 12px; font-weight: 600;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.leftnav__ux3-btn-badge {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  background: var(--pai-indigo-secondary); color: var(--pai-indigo-secondary-fg);
-  border-radius: 44px; padding: 1px 8px; flex-shrink: 0;
-}
-
-/* Panel collapse/expand — its own strip at the very bottom of the sidebar,
-   away from the switcher and every nav row, so it's a single unambiguous
-   control instead of one more thing sharing the header. */
-.leftnav__collapse-row { flex-shrink: 0; padding: 8px; border-top: 1px solid var(--shell-border); }
-.leftnav__collapse-btn {
-  width: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 8px;
-  background: transparent; border: none; cursor: pointer;
-  text-align: left; font-family: inherit;
-  color: var(--shell-text-muted); transition: background 120ms, color 120ms;
-}
-.leftnav__collapse-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
-.leftnav__collapse-btn--collapsed { padding: 6px; }
-.leftnav__collapse-btn-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.leftnav__collapse-btn-label { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; white-space: nowrap; }
-
 /* Nav items */
 .nav-item { padding: 0 8px; margin-bottom: 4px; }
 .nav-item__btn {
@@ -581,7 +473,6 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
   transition: background 120ms cubic-bezier(.2,.8,.2,1);
   justify-content: flex-start;
 }
-.nav-item__btn--collapsed { padding: 8px; }
 .nav-item__btn--active { background: var(--shell-raised); color: var(--shell-text); font-weight: 500; }
 .nav-item__btn--selected { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
 .nav-item__btn:hover:not(.nav-item__btn--active):not(.nav-item__btn--selected) { background: var(--shell-hover); }
@@ -651,18 +542,17 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 .subheader__dropdown {
   position: absolute; top: 32px; left: 0;
   background: var(--card-bg); border: 1px solid var(--pai-border);
-  border-radius: var(--radius-dropdown, 8px); box-shadow: var(--shadow-popup, 0 4px 16px rgba(0,0,0,0.10));
-  min-width: 120px; z-index: 100; padding: 4px;
-  animation: fade-up 0.15s ease;
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  min-width: 120px; z-index: 100; padding: 4px 0;
 }
 .subheader__dropdown-item {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 8px 10px;
-  background: none; border: none; border-radius: 6px;
+  width: 100%; padding: 8px 14px;
+  background: none; border: none;
   font-size: 12px; font-weight: 500; color: var(--shell-text);
   cursor: pointer; text-align: left; font-family: inherit;
 }
-.subheader__dropdown-item:hover { background: var(--shell-hover); }
+.subheader__dropdown-item:hover { background: var(--pai-indigo-tint); }
 
 .subheader__explore-wrap { position: relative; flex-shrink: 0; }
 .subheader__explore-btn {
@@ -678,13 +568,12 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 .subheader__explore-dropdown {
   position: absolute; top: 34px; left: 0;
   background: var(--card-bg); border: 1px solid var(--pai-border);
-  border-radius: var(--radius-dropdown, 8px); box-shadow: var(--shadow-popup, 0 8px 24px rgba(0,0,0,0.10));
-  min-width: 200px; z-index: 100; padding: 8px 4px;
-  animation: fade-up 0.15s ease;
+  border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  min-width: 200px; z-index: 100; padding: 8px 0;
 }
 .subheader__explore-divider { margin: 8px 0; border-top: 1px solid var(--shell-border); }
 .subheader__explore-group {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px 4px;
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px 4px;
 }
 .subheader__explore-group-label {
   font-size: 11px; font-weight: 600; color: var(--shell-text-muted);
@@ -692,12 +581,12 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 }
 .subheader__explore-item {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 8px 10px 8px 32px;
-  background: none; border: none; border-radius: 6px;
+  width: 100%; padding: 8px 14px 8px 36px;
+  background: none; border: none;
   font-size: 12px; font-weight: 500; color: var(--shell-text);
   cursor: pointer; text-align: left; font-family: inherit;
 }
-.subheader__explore-item:hover { background: var(--shell-hover); }
+.subheader__explore-item:hover { background: var(--pai-indigo-tint); }
 
 .subheader__spacer { flex: 1; }
 .subheader__filter-group {
@@ -727,6 +616,13 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 }
 .subheader__filter-pill--active { cursor: pointer; }
 .subheader__filter-pill--open { background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); }
+.subheader__filter-pill--saved {
+  background: var(--ctrl-selected-bg); border-color: var(--pai-indigo); color: var(--pai-indigo);
+}
+.subheader__filter-pill-saved-icon { flex-shrink: 0; }
+.subheader__filter-pill-saved-name {
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* ── Active Filter Preview Panel ─────────────────────────────────── */
 .afp-backdrop {
@@ -742,6 +638,18 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
    in both admin.css and library.css, either of which can load after this file. */
 .ds-modal-title.afp-reset-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
 .afp-reset-modal-title svg { flex-shrink: 0; }
+.afp-reset-modal-copy { margin: 0 0 16px; }
+.afp-reset-implicit-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 12px; border-radius: 4px;
+  background: var(--shell-raised); cursor: pointer;
+}
+.afp-reset-implicit-row input[type="checkbox"] {
+  width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
+  accent-color: var(--pai-indigo); cursor: pointer;
+}
+.afp-reset-implicit-row > span { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--shell-text); }
+.afp-reset-implicit-hint { font-size: 11px; font-weight: 400; color: var(--shell-text-muted); line-height: 1.4; }
 .afp-panel {
   position: fixed;
   top: var(--afp-top, 95px);
@@ -793,6 +701,17 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 /* Body */
 .afp-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 .afp-empty { font-size: 13px; color: var(--shell-text-muted); margin: 0; }
+
+/* Saved-filter-applied banner — shown above the entity tree so it's visible
+   the moment the panel opens, not just from the Filter > Saved Filters tab. */
+.afp-saved-filter-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--pai-indigo-tint); border: 1px solid rgba(99,96,216,0.25);
+  border-radius: 4px; padding: 8px 12px;
+}
+.afp-saved-filter-banner__icon { color: var(--pai-indigo); flex-shrink: 0; }
+.afp-saved-filter-banner__label { font-size: 12px; font-weight: 500; color: var(--shell-text-muted); }
+.afp-saved-filter-banner__name { font-size: 13px; font-weight: 600; color: var(--pai-indigo); flex: 1; }
 
 /* Entity tree block */
 .afp-entity-block { display: flex; flex-direction: column; gap: 8px; }
@@ -1080,3 +999,69 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
   flex: 1;
   overflow: hidden;
 }
+
+/* ── Help & Support panel — right-side sliding panel, topbar account menu ── */
+.help-panel-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(1px);
+  z-index: 600;
+}
+.help-panel {
+  position: fixed; top: 0; right: 0; height: 100vh;
+  width: min(400px, 90vw);
+  background: var(--card-bg);
+  border-left: 1px solid var(--card-border);
+  border-radius: 8px 0 0 8px;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.16);
+  z-index: 601;
+  display: flex; flex-direction: column;
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.help-panel__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0;
+}
+.help-panel__title { font-size: 16px; font-weight: 700; color: var(--shell-text); }
+.help-panel__close {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; padding: 4px;
+  border-radius: 4px; color: var(--shell-text-muted);
+}
+.help-panel__close:hover { background: var(--shell-hover); color: var(--shell-text); }
+.help-panel__body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.help-panel__section { display: flex; flex-direction: column; gap: 8px; }
+.help-panel__section-title { font-size: 13px; font-weight: 600; color: var(--shell-text); }
+.help-panel__section-desc { font-size: 12px; line-height: 1.5; color: var(--shell-text-muted); margin: 0; }
+.help-panel__divider { height: 1px; background: var(--shell-border); }
+
+.help-panel__resource-list { display: flex; flex-direction: column; gap: 4px; }
+.help-panel__resource {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px; border-radius: 4px; border: none; background: transparent;
+  text-decoration: none; cursor: pointer; text-align: left; width: 100%;
+}
+.help-panel__resource:hover:not(:disabled) { background: var(--shell-hover); }
+.help-panel__resource:disabled { cursor: default; opacity: 0.55; }
+.help-panel__resource-icon {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 4px;
+  background: var(--shell-raised); color: var(--shell-text-muted);
+}
+.help-panel__resource-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.help-panel__resource-label { font-size: 12px; font-weight: 600; color: var(--shell-text); }
+.help-panel__resource-sub { font-size: 11px; color: var(--shell-text-muted); }
+.help-panel__resource-badge {
+  flex-shrink: 0; font-size: 10px; font-weight: 600; text-transform: uppercase;
+  color: var(--shell-text-muted); background: var(--shell-raised);
+  border-radius: 4px; padding: 2px 6px;
+}
+
+.help-panel__tour-card { display: flex; gap: 12px; align-items: flex-start; }
+.help-panel__tour-icon {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 4px;
+  background: var(--pai-indigo-tint); color: var(--pai-indigo);
+}
+.help-panel__tour-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.help-panel__tour-btn { margin-top: 4px; width: 100%; }

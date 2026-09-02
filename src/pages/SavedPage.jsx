@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import { DSPillSearch, LibraryIcon, SavedIcon, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastCtx.jsx'
 import '../styles/admin.css'
 import '../styles/navigator.css'
 import '../styles/library.css'
+import '../styles/compliance.css'
 
 const IcTrashDelete = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,7 +29,7 @@ const IcCalendarSchedule = () => (
 
 // Workspace › Saved tab
 
-const SAVED_ROWS = [
+export const SAVED_ROWS = [
   { id: '1',  name: 'CISO Dashboard',                              isNew: true,  type: 'DASHBOARD', template: 'Executive Summary',   visibility: 'Private', status: 'Saved',     lastUpdated: '11 August 2025' },
   { id: '2',  name: 'Detailed Report on Software Vulnerabilities',               type: 'REPORT',    template: 'Executive Summary',   visibility: 'Public',  status: 'Scheduled', recipients: 2, lastUpdated: '21 July 2025',    hasCalendar: true },
   { id: '3',  name: 'Compliance Report',                                        type: 'REPORT',    template: 'Compliance',          visibility: 'Public',  status: 'Scheduled', recipients: 4, lastUpdated: '03 June 2025',    hasCalendar: true },
@@ -74,14 +75,6 @@ const IcGlobe = () => (
 // ── Avatar group ──────────────────────────────────────────────────
 const INITIALS = ['AB', 'CD', 'EF']
 
-// SAVED_ROWS only ever stored a recipient *count* (enough for the table's
-// avatar chips) with no backing emails — so reopening Manage Schedule on an
-// already-scheduled row had nothing to prefill the "To:" field with. Mocks
-// up the same a@mail.com/b@mail.com pattern already shown as the field's
-// placeholder, matching the row's existing recipient count.
-const mockRecipientEmails = (count) =>
-  Array.from({ length: count }, (_, i) => `${String.fromCharCode(97 + i)}@mail.com`).join(', ')
-
 function AvatarGroup({ count }) {
   const shown = Math.min(count, 3)
   const extra = count > 3 ? count - 3 : 0
@@ -100,7 +93,7 @@ function AvatarGroup({ count }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────
-function SavedPage() {
+function SavedPage({ typeLock }) {
   const {
     onNav,
     savedFilter, setSavedFilter,
@@ -118,6 +111,12 @@ function SavedPage() {
     if (row.type === 'REPORT') { onNav('workspace/report/executive-summary'); return }
     setEditDashboardSeed(row)
     onNav(`workspace/dashboard/edit-${row.id}`)
+  }
+
+  const handleView = (row) => {
+    if (row.type === 'REPORT') { onNav('workspace/report-preview/executive-summary'); return }
+    setEditDashboardSeed(row)
+    onNav(`workspace/dashboard/view-${row.id}`)
   }
 
   const [deletedIds, setDeletedIds] = useState(new Set())
@@ -146,17 +145,17 @@ function SavedPage() {
 
   const openScheduleModal = (row) => {
     setScheduleTarget(row)
-    setScheduleRecipients(row.recipientEmails || (row.recipients ? mockRecipientEmails(row.recipients) : ''))
+    setScheduleRecipients('')
     setScheduleSendCopy(true)
   }
   const handleSaveSchedule = () => {
-    const emails = scheduleRecipients.split(',').map(s => s.trim()).filter(Boolean)
-    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: emails.length, recipientEmails: emails.join(', '), hasCalendar: true, status: 'Scheduled' } }))
+    const count = scheduleRecipients.split(',').map(s => s.trim()).filter(Boolean).length
+    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: count, hasCalendar: true, status: 'Scheduled' } }))
     showToast({ type: 'success', msg: `Schedule updated for "${scheduleTarget.name}".` })
     setScheduleTarget(null)
   }
   const handleStopSchedule = () => {
-    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: undefined, recipientEmails: undefined, hasCalendar: false, status: 'Saved' } }))
+    setScheduleOverrides(prev => ({ ...prev, [scheduleTarget.id]: { recipients: undefined, hasCalendar: false, status: 'Saved' } }))
     showToast({ type: 'success', msg: `Schedule stopped for "${scheduleTarget.name}".` })
     setStopScheduleConfirmOpen(false)
     setScheduleTarget(null)
@@ -165,6 +164,15 @@ function SavedPage() {
   const [page, setPage]               = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (!openMenuId) return
+    const handler = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenuId(null) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenuId])
+
   const handleConfirmDelete = () => {
     if (!deleteTarget) return
     setDeletedIds(prev => new Set(prev).add(deleteTarget.id))
@@ -172,8 +180,14 @@ function SavedPage() {
     closeDeleteModal()
   }
 
+  // typeLock (derived from the current route, see WorkspacePage.jsx's
+  // savedTypeLock) overrides the page's own All/Dashboards/Reports pill
+  // filter entirely, rather than driving it through setSavedFilter, so it
+  // can't clobber that shared context state.
+  const effectiveFilter = typeLock ?? savedFilter
+
   const filtered = allRows.filter(row => {
-    const matchType   = savedFilter     === 'all' || (savedFilter     === 'dashboards' && row.type       === 'DASHBOARD') || (savedFilter     === 'reports' && row.type       === 'REPORT')
+    const matchType   = effectiveFilter === 'all' || (effectiveFilter === 'dashboards' && row.type       === 'DASHBOARD') || (effectiveFilter === 'reports' && row.type       === 'REPORT')
     const matchVis    = savedVisibility === 'all' || (savedVisibility === 'private'    && row.visibility === 'Private')   || (savedVisibility === 'public'  && row.visibility === 'Public')
     const matchSearch = savedSearch === '' || row.name.toLowerCase().includes(savedSearch.toLowerCase())
     return matchType && matchVis && matchSearch
@@ -194,7 +208,7 @@ function SavedPage() {
               <SavedIcon size={14} />
               Saved
             </button>
-            <button className="ds-tab has-icon" onClick={() => onNav('workspace/library')}>
+            <button className="ds-tab has-icon" onClick={() => onNav(typeLock ? `workspace/library-${typeLock}` : 'workspace/library')}>
               <LibraryIcon size={14} />
               Templates
             </button>
@@ -217,11 +231,13 @@ function SavedPage() {
 
           {/* Sub-filter bar */}
           <div className="lib-toolbar">
-            <div className="lib-pills">
-              <button className={`lib-pill${savedFilter === 'all'        ? ' active' : ''}`} onClick={() => setSavedFilter('all')}>All</button>
-              <button className={`lib-pill${savedFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setSavedFilter('dashboards')}>Dashboards</button>
-              <button className={`lib-pill${savedFilter === 'reports'    ? ' active' : ''}`} onClick={() => setSavedFilter('reports')}>Reports</button>
-            </div>
+            {!typeLock && (
+              <div className="lib-pills">
+                <button className={`lib-pill${savedFilter === 'all'        ? ' active' : ''}`} onClick={() => setSavedFilter('all')}>All</button>
+                <button className={`lib-pill${savedFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setSavedFilter('dashboards')}>Dashboards</button>
+                <button className={`lib-pill${savedFilter === 'reports'    ? ' active' : ''}`} onClick={() => setSavedFilter('reports')}>Reports</button>
+              </div>
+            )}
             <div className="lib-pills">
               <button className={`lib-vis-pill${savedVisibility === 'all'     ? ' active' : ''}`} onClick={() => setSavedVisibility('all')}>All</button>
               <button className={`lib-vis-pill${savedVisibility === 'private' ? ' active' : ''}`} onClick={() => setSavedVisibility('private')}>Private</button>
@@ -241,7 +257,7 @@ function SavedPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleRows.length > 0 ? visibleRows.map(row => (
+                  {visibleRows.length > 0 ? visibleRows.map((row, idx) => (
                     <tr key={row.id}>
                       {/* Name */}
                       <td className="ds-td">
@@ -291,38 +307,32 @@ function SavedPage() {
                       {/* Actions */}
                       <td className="ds-td">
                         <div className="row-actions">
-                          <button className="ds-icon-btn" title="View" onClick={() => onNav(row.type === 'REPORT' ? 'workspace/report-preview/executive-summary' : `workspace/dashboard/${row.id}`)}>
+                          <button className="ds-icon-btn" title="View" onClick={() => handleView(row)}>
                             <Ic size={14} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>} />
                           </button>
                           <button className="ds-icon-btn" title="Edit" onClick={() => handleEdit(row)}>
                             <Ic size={14} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>} />
                           </button>
-                          <button
-                            className="ds-icon-btn"
-                            title="Download"
-                            onClick={(e) => addDownload(`${row.name}.${row.type === 'REPORT' ? 'pdf' : 'csv'}`, e.currentTarget)}
-                          >
-                            <Ic size={14} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />
-                          </button>
-                          {row.hasCalendar && (
-                            <button className="ds-icon-btn" title="Schedule" onClick={() => openScheduleModal(row)}>
-                              <Ic size={14} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />
+                          <div ref={openMenuId === row.id ? menuRef : null} className="comp-sort-wrap">
+                            <button className="ds-icon-btn" title="More actions" onClick={() => setOpenMenuId(id => id === row.id ? null : row.id)}>
+                              <Ic size={14} path={<><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></>} />
                             </button>
-                          )}
-                          <button
-                            className="ds-icon-btn"
-                            title="Duplicate"
-                            onClick={() => handleDuplicate(row)}
-                          >
-                            <Ic size={14} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>} />
-                          </button>
-                          <button
-                            className="ds-icon-btn lib-td-delete"
-                            title="Delete"
-                            onClick={() => openDeleteModal(row.id, row.name)}
-                          >
-                            <Ic size={14} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>} />
-                          </button>
+                            {openMenuId === row.id && (
+                              <div className={`comp-dl-menu comp-dl-menu--wide${idx >= visibleRows.length - 2 ? ' comp-dl-menu--up' : ''}`}>
+                                <button
+                                  className="comp-dl-item"
+                                  onClick={(e) => { setOpenMenuId(null); addDownload(`${row.name}.${row.type === 'REPORT' ? 'pdf' : 'csv'}`, e.currentTarget) }}
+                                >
+                                  Download
+                                </button>
+                                {row.hasCalendar && (
+                                  <button className="comp-dl-item" onClick={() => { setOpenMenuId(null); openScheduleModal(row) }}>Schedule</button>
+                                )}
+                                <button className="comp-dl-item" onClick={() => { setOpenMenuId(null); handleDuplicate(row) }}>Duplicate</button>
+                                <button className="comp-dl-item danger" onClick={() => { setOpenMenuId(null); openDeleteModal(row.id, row.name) }}>Delete</button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

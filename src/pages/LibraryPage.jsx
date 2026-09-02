@@ -47,7 +47,7 @@ const SORT_OPTIONS = [
 ]
 
 // ── Main component ─────────────────────────────────────────────────
-function LibraryPage() {
+function LibraryPage({ typeLock }) {
   const {
     onNav, libraryFilter, setLibraryFilter,
     librarySearch, setLibrarySearch,
@@ -68,20 +68,26 @@ function LibraryPage() {
 
   const allQuickCards = [
     { title: 'Discover Dashboard',                             desc: 'Explore security metrics and insights.',                                                                                          tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/discover') },
-    { title: 'CISO Dashboard',                                 desc: 'Executive security overview.',                                                                                                    tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Client Subsidiary',                              desc: 'Overall security health status.',                                                                                                 tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'CISO Dashboard',                                 desc: 'Executive security overview.',                                                                                                    tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/ciso') },
+    { title: 'Client Subsidiary',                              desc: 'Overall security health status.',                                                                                                 tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/client-subsidiary') },
     { title: 'Executive Summary',                              desc: 'Summary of detected vulnerabilities and their severity levels.',                                                                  tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/executive-summary') },
     { title: 'Month over Month Comparison of Vulnerabilities', desc: 'Month-over-month analysis of vulnerability trends and severity changes.',                                                        tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/month-over-month') },
     { title: 'Detailed Report on Vulnerabilities',             desc: 'Comprehensive vulnerability inventory with detailed findings, statuses and vulnerability trends.',                               tag: 'REPORT',    actionLabel: 'Use Template',  action: () => onNav('workspace/report/vulnerabilities') },
-    { title: 'Device Attack Surface',                          desc: 'Consolidated device posture overview including health, vulnerability load, compliance state, and security activity.',            tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Risk Mitigation Queries',                        desc: 'Targeted views that surface remediation-ready items aligned with defined risk-reduction priorities.',                           tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
-    { title: 'Tracked Security Gaps',                          desc: 'Monitored list of unresolved weaknesses showing progress, ownership, and aging of outstanding security issues.',                tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/new') },
+    { title: 'Device Attack Surface',                          desc: 'Consolidated device posture overview including health, vulnerability load, compliance state, and security activity.',            tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/device-attack-surface') },
+    { title: 'Risk Mitigation Queries',                        desc: 'Targeted views that surface remediation-ready items aligned with defined risk-reduction priorities.',                           tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/risk-mitigation') },
+    { title: 'Tracked Security Gaps',                          desc: 'Monitored list of unresolved weaknesses showing progress, ownership, and aging of outstanding security issues.',                tag: 'DASHBOARD', actionLabel: 'Use Template', action: () => onNav('workspace/dashboard/security-gaps') },
   ]
 
+  // typeLock (derived from the current route, see WorkspacePage.jsx's
+  // savedTypeLock) overrides the page's own All/Dashboards/Reports pill
+  // filter entirely, rather than driving it through setLibraryFilter, so it
+  // can't clobber that shared context state.
+  const effectiveFilter = typeLock ?? libraryFilter
+
   const filteredCards = allQuickCards.filter(c => {
-    const matchesFilter = libraryFilter === 'all'
-      || (libraryFilter === 'dashboards' && c.tag === 'DASHBOARD')
-      || (libraryFilter === 'reports'    && c.tag === 'REPORT')
+    const matchesFilter = effectiveFilter === 'all'
+      || (effectiveFilter === 'dashboards' && c.tag === 'DASHBOARD')
+      || (effectiveFilter === 'reports'    && c.tag === 'REPORT')
     const matchesSearch = librarySearch === '' || c.title.toLowerCase().includes(librarySearch.toLowerCase())
     return matchesFilter && matchesSearch
   })
@@ -99,7 +105,7 @@ function LibraryPage() {
         {/* ── Tab bar ───────────────────────────────────────────── */}
         <div className="lib-tabbar">
           <div className="lib-tabbar-left">
-            <button className="ds-tab has-icon" onClick={() => onNav('workspace/saved')}>
+            <button className="ds-tab has-icon" onClick={() => onNav(typeLock ? `workspace/saved-${typeLock}` : 'workspace/saved')}>
               <SavedIcon size={14} />
               Saved
             </button>
@@ -127,11 +133,13 @@ function LibraryPage() {
           {/* Templates & Dashboards */}
           <div>
             <div className="lib-toolbar">
-              <div className="lib-pills">
-                <button className={`lib-pill${libraryFilter === 'all'        ? ' active' : ''}`} onClick={() => setLibraryFilter('all')}>All</button>
-                <button className={`lib-pill${libraryFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setLibraryFilter('dashboards')}>Dashboards</button>
-                <button className={`lib-pill${libraryFilter === 'reports'    ? ' active' : ''}`} onClick={() => setLibraryFilter('reports')}>Reports</button>
-              </div>
+              {!typeLock && (
+                <div className="lib-pills">
+                  <button className={`lib-pill${libraryFilter === 'all'        ? ' active' : ''}`} onClick={() => setLibraryFilter('all')}>All</button>
+                  <button className={`lib-pill${libraryFilter === 'dashboards' ? ' active' : ''}`} onClick={() => setLibraryFilter('dashboards')}>Dashboards</button>
+                  <button className={`lib-pill${libraryFilter === 'reports'    ? ' active' : ''}`} onClick={() => setLibraryFilter('reports')}>Reports</button>
+                </div>
+              )}
 
               {/* Sort dropdown */}
               <div className="lib-sort-wrap" ref={sortRef}>

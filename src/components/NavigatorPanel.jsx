@@ -3,15 +3,17 @@ import { Ic } from '../ui.jsx'
 import { createExchange } from './ReasoningEngine.jsx'
 import { BuildExchangeTurn, parseWidgetIntent, buildWidgetSpec, detectChartId, cleanWidgetTitle } from '../pages/NavigatorPage.jsx'
 import { useToastExit } from '../hooks/useToastExit.js'
+import { useSpeechToText } from '../hooks/useSpeechToText.js'
+import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Static data ───────────────────────────────────────────────────────
-const AGENTS = [
+export const AGENTS = [
   { id: 'a1', name: 'Risk Analyzer',      color: '#E8922A' },
   { id: 'a2', name: 'Compliance Auditor', color: '#E8922A' },
   { id: 'a3', name: 'Threat Hunter',      color: '#E8922A' },
 ]
 
-const CHAT_HISTORY = [
+export const CHAT_HISTORY = [
   { id: 'h1', label: 'High severity findings for host vm-prod-42', time: 'Just now',    active: true  },
   { id: 'h2', label: 'Identities with access to critical storage',  time: '2 hrs ago',  active: false },
   { id: 'h3', label: 'Summary of CVE-2024-11891 exposure',          time: 'Yesterday',  active: false },
@@ -56,6 +58,18 @@ const RESPONSE_TEXT = `vm-prod-42 has 14 open findings, of which 3 are critical 
 
 // ── Icons ─────────────────────────────────────────────────────────────
 const IcSend      = () => <Ic size={14} path={<><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></>} />
+const IcMic       = () => <Ic size={14} path={<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></>} />
+// Shown in place of IcMic while listening — an animated equalizer to signal
+// speech is actively being captured, since the static mic glyph alone
+// doesn't convey "recording in progress".
+const IcVoiceWave = () => (
+  <svg width="16" height="14" viewBox="0 0 16 14" className="nav-mic-wave" aria-hidden="true">
+    <rect x="0"    y="4" width="2.5" height="6"  rx="1.25" fill="currentColor" />
+    <rect x="4.5"  y="1" width="2.5" height="12" rx="1.25" fill="currentColor" />
+    <rect x="9"    y="3" width="2.5" height="8"  rx="1.25" fill="currentColor" />
+    <rect x="13.5" y="0" width="2.5" height="14" rx="1.25" fill="currentColor" />
+  </svg>
+)
 const IcPlus      = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/></>} />
 const IcX         = () => <Ic size={15} path={<><path d="M18 6 6 18M6 6l12 12"/></>} />
 const IcArrow     = () => <Ic size={12} path={<><path d="M5 12h14M12 5l7 7-7 7"/></>} />
@@ -86,6 +100,8 @@ const IcAlert     = () => <Ic size={14} path={<><circle cx="12" cy="12" r="10"/>
 const IcSource    = () => <Ic size={13} path={<><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></>} />
 const IcZap       = () => <Ic size={13} path={<><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></>} />
 const IcArrowUp   = () => <Ic size={14} path={<><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>} />
+const IcCursorClick = () => <Ic size={13} path={<><path d="M9.5 3.5 20 8l-4.5 1.9L14 15z"/><path d="M2 2l3 3M2 10h2M6 2v2"/></>} />
+const IcChevronDown = () => <Ic size={11} path={<><path d="m6 9 6 6 6-6"/></>} />
 
 const STEP_ICONS = [IcFile, IcGraph, IcSearch]
 
@@ -286,6 +302,7 @@ function ResponseCard({ query, onCopy, onExplore }) {
   const [showSources, setShowSources] = useState(false)
   const [feedbackNote, setNote]       = useState('')
   const [showNoteBox, setNoteBox]     = useState(false)
+  const [showSteps, setShowSteps]     = useState(false)
   const queryDate = extractQueryDate(query)
 
   const handleFeedback = (val) => {
@@ -300,12 +317,23 @@ function ResponseCard({ query, onCopy, onExplore }) {
       <div className="np-msg-avatar ai" aria-hidden="true"><NavIcon size={12} /></div>
       <div className="np-ai-response">
 
-        {/* Completed reasoning steps */}
-        <div className="np-steps">
-          {THINKING_STEPS.map((s, i) => (
-            <div key={i} className="np-step"><StepDone /><span>{s.text}</span></div>
-          ))}
-        </div>
+        {/* Completed reasoning steps — collapsed behind a "Thought for…" toggle */}
+        <button
+          type="button"
+          className="np-thought-toggle"
+          onClick={() => setShowSteps(s => !s)}
+          aria-expanded={showSteps}
+        >
+          <span>Thought for 1.2 seconds</span>
+          <IcChevronDown />
+        </button>
+        {showSteps && (
+          <div className="np-steps">
+            {THINKING_STEPS.map((s, i) => (
+              <div key={i} className="np-step"><StepDone /><span>{s.text}</span></div>
+            ))}
+          </div>
+        )}
 
         <div className="np-divider" />
 
@@ -400,8 +428,6 @@ function ResponseCard({ query, onCopy, onExplore }) {
           </div>
         )}
 
-        <div className="np-response-meta">3 steps · 1.2 s · Knowledge Graph</div>
-
         {onExplore && (
           <button className="np-explore-detail-btn" onClick={onExplore}>
             Explore in detail <IcArrow />
@@ -486,6 +512,11 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
   const taRef       = focusRef || internalRef
   const [showAgentMenu, setAgentMenu] = useState(false)
   const [agent, setAgent]             = useState(null)
+  const { showToast } = useToast()
+  const { listening: micOn, toggle: toggleMic, supported: micSupported } = useSpeechToText(
+    err => showToast({ type: 'error', msg: err === 'not-allowed' ? 'Microphone access was denied' : 'Voice input failed' })
+  )
+  const setValue = text => onChange({ target: { value: text } })
 
   const grow = useCallback(() => {
     const el = taRef.current
@@ -544,14 +575,26 @@ function Composer({ value, onChange, onSend, placeholder, focusRef }) {
               </span>
             )}
           </div>
-          <button
-            className="np-composer-send"
-            disabled={!value.trim()}
-            onClick={onSend}
-            aria-label="Send message"
-          >
-            <IcArrowUp />
-          </button>
+          <div className="np-composer-row-right">
+            <button
+              className={`np-composer-mic${micOn ? ' listening' : ''}`}
+              disabled={!micSupported}
+              onClick={() => toggleMic(value, setValue)}
+              aria-label={micOn ? 'Stop voice input' : 'Start voice input'}
+              aria-pressed={micOn}
+              title={micSupported ? (micOn ? 'Stop voice input' : 'Voice input') : 'Voice input not supported in this browser'}
+            >
+              {micOn ? <IcVoiceWave /> : <IcMic />}
+            </button>
+            <button
+              className="np-composer-send"
+              disabled={!value.trim()}
+              onClick={onSend}
+              aria-label="Send message"
+            >
+              <IcArrowUp />
+            </button>
+          </div>
         </div>
       </div>
       {showAgentMenu && (
@@ -759,7 +802,7 @@ function FirstRunHero({ onSend, suggestions = FIRSTRUN_SUGGESTIONS, pageLabel, c
 }
 
 // ── Home view ─────────────────────────────────────────────────────────
-function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', draftToken = 0 }) {
+function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', draftToken = 0, exploreActive = false, onToggleExplore }) {
   const [query, setQuery]   = useState(draftQuery)
   const [activeCtx, setCtx] = useState(new Set())
   const taRef               = useRef(null)
@@ -852,6 +895,24 @@ function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', dra
         )}
       </div>
 
+      <div className="np-bottom-actions">
+        <button
+          className="np-chat-quick-btn"
+          onClick={() => handleSend(pageCtx?.quick?.[0]?.query || 'Summarize current view')}
+          aria-label="Summarize the current page"
+        >
+          <IcSparkle /> Summarise page
+        </button>
+        <button
+          className={`np-chat-quick-btn${exploreActive ? ' active' : ''}`}
+          onClick={onToggleExplore}
+          aria-label="Click and explore: select a chart, table, or section to ask about"
+          aria-pressed={exploreActive}
+        >
+          <IcCursorClick /> Click and explore
+        </button>
+      </div>
+
       <Composer
         value={query}
         onChange={e => setQuery(e.target.value)}
@@ -864,53 +925,26 @@ function PanelHome({ onSend, isFirstRun, pageId, pageLabel, draftQuery = '', dra
 }
 
 // ── Chat quick bar ────────────────────────────────────────────────────
-function ChatQuickBar({ onSend }) {
-  const [showActions, setShowActions] = useState(false)
-
+// Summarize/Quick actions only make sense before a conversation has
+// started (that's PanelHome's job) — once there's an active exchange in
+// view, the only thing still useful here is starting a fresh explore pick.
+function ChatQuickBar({ exploreActive = false, onToggleExplore }) {
   return (
     <div className="np-chat-quickbar">
       <button
-        className="np-chat-quick-btn"
-        onClick={() => onSend('Summarize current view')}
-        aria-label="Summarize the current page"
+        className={`np-chat-quick-btn${exploreActive ? ' active' : ''}`}
+        onClick={onToggleExplore}
+        aria-label="Click and explore: select a chart, table, or section to ask about"
+        aria-pressed={exploreActive}
       >
-        <IcSparkle /> Summarize page
+        <IcCursorClick /> Click and explore
       </button>
-
-      <div className="np-chat-quick-actions-wrap">
-        <button
-          className={`np-chat-quick-btn${showActions ? ' active' : ''}`}
-          onClick={() => setShowActions(o => !o)}
-          aria-label="Show quick actions"
-          aria-expanded={showActions}
-          aria-haspopup="menu"
-        >
-          <IcZap /> Quick actions
-        </button>
-        {showActions && (
-          <Dropdown
-            onClose={() => setShowActions(false)}
-            className="np-dropdown--quick-actions"
-          >
-            {QUICK_ACTIONS.map((a, i) => (
-              <button
-                key={i}
-                className="np-dropdown-item"
-                onClick={() => { onSend(a.label); setShowActions(false) }}
-                role="menuitem"
-              >
-                <IcArrow /> {a.label}
-              </button>
-            ))}
-          </Dropdown>
-        )}
-      </div>
     </div>
   )
 }
 
 // ── Chat view ─────────────────────────────────────────────────────────
-function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, onExplore }) {
+function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, onExplore, exploreActive = false, onToggleExplore }) {
   const [followUp, setFollowUp] = useState('')
   const messagesRef             = useRef(null)
 
@@ -939,7 +973,7 @@ function PanelChat({ query, onNewChat, onSend, responseState, onRetry, onCopy, o
         {responseState === 'error'    && <ErrorCard onRetry={onRetry} />}
       </div>
 
-      <ChatQuickBar onSend={onSend} />
+      <ChatQuickBar exploreActive={exploreActive} onToggleExplore={onToggleExplore} />
 
       <Composer
         value={followUp}
@@ -1304,8 +1338,9 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, dockSide = 'right', forceFloatToken = 0, closing = false }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, draftAutoSend = false, dockSide = 'right', forceFloatToken = 0, exploreActive = false }) {
   const [view, setView]             = useState('home')
+  const handleToggleExplore = () => onNav?.('navigator-explore-toggle', { enabled: !exploreActive })
 
   // Enter the scripted assessment-builder chat when triggered externally
   useEffect(() => { if (builderMode) setView('builder') }, [builderMode])
@@ -1329,8 +1364,14 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
   useEffect(() => {
     if (!draftToken) return
-    setView('home')
-    setRespSt('done')
+    // A "click and explore" pick wants the question asked immediately, not
+    // just dropped into the composer for a second manual send.
+    if (draftAutoSend) {
+      handleSend(draftQuery)
+    } else {
+      setView('home')
+      setRespSt('done')
+    }
     if (viewModeRef.current === 'floating') {
       setFloatPos({ x: dockSide === 'left' ? 16 : window.innerWidth - panelWidth - 16, y: 60 })
     }
@@ -1517,7 +1558,6 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   return (
     <div
       style={panelStyle}
-      className={isFloating ? `np-panel-floating${closing ? ' np-panel-floating--closing' : ''}` : undefined}
       ref={panelRef}
       role="complementary"
       aria-label="Navigator AI assistant"
@@ -1725,7 +1765,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 ? <PromptDashboardBuilder key={`prompt:${builderContext.initialPrompt}`} builderApi={builderApi} initialPrompt={builderContext.initialPrompt} />
                 : <BuilderChat key={`${builderKind}:${builderContext?.widgetId ?? 'new'}`} builderApi={builderApi} builderKind={builderKind} builderContext={builderContext} />)
             : view === 'home'
-            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} draftQuery={draftQuery} draftToken={draftToken} />
+            ? <PanelHome onSend={handleSend} isFirstRun={isFirstRun} pageId={builderMode ? null : pageId} pageLabel={builderMode ? null : pageLabel} draftQuery={draftQuery} draftToken={draftToken} exploreActive={exploreActive} onToggleExplore={handleToggleExplore} />
             : <PanelChat
                 query={activeQuery}
                 onNewChat={handleNew}
@@ -1734,6 +1774,8 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
                 onRetry={handleRetry}
                 onCopy={handleCopy}
                 onExplore={handleExploreDetail}
+                exploreActive={exploreActive}
+                onToggleExplore={handleToggleExplore}
               />
           }
         </div>

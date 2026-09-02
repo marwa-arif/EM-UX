@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
-import LeftNav from './components/LeftNav.jsx'
+import { LeftNavHybrid } from './components/LeftNavAlt.jsx'
+import ProductTour from './components/ProductTour.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import KGPage from './pages/KGPage.jsx'
 import { FilterPanel } from './components/FilterPanel.jsx'
@@ -12,9 +13,12 @@ import WorkspacePage from './pages/WorkspacePage.jsx'
 import NavigatorPage from './pages/NavigatorPage.jsx'
 import UX3Page from './pages/UX3Page.jsx'
 import AdminPage from './pages/AdminPage.jsx'
-import { useAdminPanelState, AdminSettingsNav, AdminPanelContent, AdminConfirmModal } from './pages/admin/AdminPanelBody.jsx'
+import { useAdminPanelState, AdminPanelContent, AdminConfirmModal } from './pages/admin/AdminPanelBody.jsx'
+import UserSettingsPage from './pages/UserSettingsPage.jsx'
+import { useUserSettingsState } from './pages/settings/UserSettingsBody.jsx'
 import StudioHomePage from './pages/StudioHomePage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
+import ClickExploreOverlay from './components/ClickExploreOverlay.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
 import DiscoverDevicePage   from './pages/DiscoverDevicePage.jsx'
@@ -30,8 +34,8 @@ import SplashScreen           from './components/SplashScreen.jsx'
 import PasswordGate           from './components/PasswordGate.jsx'
 import { useAuthGate }        from './authGate.js'
 import { DownloadsProvider }  from './DownloadsContext.jsx'
+import { NavigatorActivityProvider } from './context/NavigatorActivityCtx.jsx'
 import { ToastProvider }      from './context/ToastCtx.jsx'
-import { SavedFiltersProvider } from './context/SavedFiltersCtx.jsx'
 import { toggleChipGroup, toChipsState } from './utils/crossFilter.js'
 
 // Deployed under a subpath on GitHub Pages (e.g. /EM-UX) — strip/prepend it
@@ -43,6 +47,11 @@ const stripBase = (pathname) => {
   return rest || '/';
 };
 const navPath = (path) => `${BASE}${path}`;
+
+// "Click and explore" picks a label off whatever data-nav-explore element the
+// user clicked — turn it into a draft question, same phrasing style as
+// ExposureOverviewPage's per-point buildDotQuestion, just generic to any type.
+const buildExploreQuestion = (label, type) => `Can you explain the "${label}" ${type || 'section'}?`;
 
 const FLOAT_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "floatEnabled": true,
@@ -365,9 +374,10 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               pageLabel={navigatorProps?.pageLabel}
               draftQuery={navigatorProps?.draftQuery}
               draftToken={navigatorProps?.draftToken}
+              draftAutoSend={navigatorProps?.draftAutoSend}
               dockSide={navigatorProps?.dockSide}
               forceFloatToken={navigatorProps?.forceFloatToken}
-              closing={navigatorProps?.closing}
+              exploreActive={navigatorProps?.exploreActive}
             />
           )}
         </div>
@@ -517,79 +527,93 @@ const _UNUSED = {
 const PAGE_META = {
   'exposure/overview': {
     title: 'Overview',
-    breadcrumb: ['Home', 'Exposure', 'Overview'],
+    breadcrumb: ['Insights', 'Exposure', 'Overview'],
     breadcrumbHrefs: [null, null, null],
   },
   'exposure/findings': {
     title: 'Findings',
-    breadcrumb: ['Home', 'Exposure', 'Findings'],
+    breadcrumb: ['Insights', 'Exposure', 'Findings'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/device': {
     title: 'Device',
-    breadcrumb: ['Home', 'Discover', 'Device'],
+    breadcrumb: ['Insights', 'Discover', 'Device'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/cloud': {
     title: 'Cloud',
-    breadcrumb: ['Home', 'Discover', 'Cloud'],
+    breadcrumb: ['Insights', 'Discover', 'Cloud'],
     breadcrumbHrefs: [null, null, null],
   },
   'discover/identity': {
     title: 'Identity',
-    breadcrumb: ['Home', 'Discover', 'Identity'],
+    breadcrumb: ['Insights', 'Discover', 'Identity'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance': {
     title: 'Compliance',
-    breadcrumb: ['Home', 'Report', 'Compliance'],
+    breadcrumb: ['Insights', 'Report', 'Compliance'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/assessments': {
     title: 'Assessments',
-    breadcrumb: ['Home', 'Report', 'Assessments'],
+    breadcrumb: ['Insights', 'Report', 'Assessments'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance-matrix': {
     title: 'Compliance Matrix',
-    breadcrumb: ['Home', 'Report', 'Compliance Matrix'],
+    breadcrumb: ['Insights', 'Report', 'Compliance Matrix'],
     breadcrumbHrefs: [null, null, null],
   },
   'report/compliance-findings': {
     title: 'Compliance Findings',
-    breadcrumb: ['Home', 'Report', 'Compliance Findings'],
+    breadcrumb: ['Insights', 'Report', 'Compliance Findings'],
     breadcrumbHrefs: [null, null, null],
   },
   'data-quality/overview': {
     title: 'Overview',
-    breadcrumb: ['Home', 'Data Quality', 'Overview'],
+    breadcrumb: ['Insights', 'Data Quality', 'Overview'],
     breadcrumbHrefs: [null, null, null],
   },
   'data-quality/in-depth': {
     title: 'In-Depth',
-    breadcrumb: ['Home', 'Data Quality', 'In-Depth'],
+    breadcrumb: ['Insights', 'Data Quality', 'In-Depth'],
     breadcrumbHrefs: [null, null, null],
   },
   'remediation/queue': {
     title: 'Queue',
-    breadcrumb: ['Home', 'Remediation', 'Queue'],
+    breadcrumb: ['Insights', 'Remediation', 'Queue'],
     breadcrumbHrefs: [null, null, null],
   },
   'remediation/closed': {
     title: 'Closed',
-    breadcrumb: ['Home', 'Remediation', 'Closed'],
+    breadcrumb: ['Insights', 'Remediation', 'Closed'],
     breadcrumbHrefs: [null, null, null],
   },
   kg: {
     title: 'Knowledge Graph',
-    breadcrumb: ['Home', 'Knowledge Graph'],
+    breadcrumb: ['Insights', 'Knowledge Graph'],
     breadcrumbHrefs: ['/knowledge-graph', null],
     onAdd: () => {},
   },
   navigator: {
     title: 'Navigator',
-    breadcrumb: ['Home', 'Navigator'],
+    breadcrumb: ['Insights', 'Navigator'],
     breadcrumbHrefs: [null, null],
+  },
+  // SubHeader is never rendered for these (isNavigatorRoute suppresses it —
+  // NavigatorPage draws its own header), so title/breadcrumb below are
+  // unused today. The entries still need to exist so `isKG`/the notFound
+  // guard treat these routes correctly instead of falling through to KG.
+  'navigator/history': {
+    title: 'History',
+    breadcrumb: ['Insights', 'Navigator', 'History'],
+    breadcrumbHrefs: [null, null, null],
+  },
+  'navigator/agents': {
+    title: 'Agents',
+    breadcrumb: ['Insights', 'Navigator', 'Agents'],
+    breadcrumbHrefs: [null, null, null],
   },
 };
 
@@ -601,6 +625,7 @@ function App() {
     if (path === '/knowledge-graph') return 'kg';
     if (path === '/') return 'navigator';
     if (path === '/admin') return 'navigator';
+    if (path === '/settings') return 'navigator';
     return path.slice(1) || 'navigator';
   });
   const [appMode, setAppMode] = useState(() => {
@@ -613,12 +638,27 @@ function App() {
   // where the user was.
   const [settingsOpen, setSettingsOpen] = useState(() => stripBase(window.location.pathname) === '/admin');
   const adminState = useAdminPanelState();
+  // Per-user Settings (Profile/Password/Notifications) — a separate flag from
+  // settingsOpen/adminState above, since it's a distinct destination from the
+  // org-wide Admin Panel: always a full-page takeover (see UserSettingsPage.jsx)
+  // rather than nested inside whichever shell was active.
+  const [userSettingsOpen, setUserSettingsOpen] = useState(() => stripBase(window.location.pathname) === '/settings');
+  const userSettingsState = useUserSettingsState();
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
+  const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('pai-theme') || 'light');
+  const [tourActive, setTourActive] = useState(false);
+  // Expanded by default on every route, including the Navigator landing
+  // route — an initial *value*, not a recurring rule, so that from here on
+  // navCollapsed is the single, ordinary source of truth the toggle already
+  // controls. Expanding or collapsing from here just persists via that same
+  // state, instead of a separate "auto-collapse on this route" check
+  // re-asserting itself over a preference the user already expressed by
+  // using the toggle.
   const [navCollapsed, setNavCollapsed] = useState(false);
   // Lets a click on a dropdown-capable LeftNav item force the sidebar open
   // even while auto-collapsed (e.g. on the Navigator route) so its children
@@ -630,10 +670,54 @@ function App() {
   // Home screen even when `current` is already 'navigator' (mid-chat) — a
   // plain setCurrent('navigator') wouldn't re-render since the value is unchanged.
   const [navigatorReset, setNavigatorReset] = useState(0);
+  // Which overlay (if any) NavigatorPage should land on once resetToken
+  // fires — null for a plain Home/chat landing, 'history'/'agents' for the
+  // rail flyout's History/Agents rows. Derived from `current` itself
+  // (routes are real: /navigator/history, /navigator/agents) rather than
+  // tracked as separate state, so it can never drift out of sync with the
+  // URL — see the id === 'navigator-page' branch below.
+  // Whether the full-page Navigator is showing its Home landing screen (vs.
+  // an active chat/build) — drives LeftNav's active-highlight suppression,
+  // so Navigator only "feels" like the current section once the user
+  // actually starts a conversation.
+  const [navigatorAtHome, setNavigatorAtHome] = useState(true);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
-  // True for the ~160ms zoom-out exit animation, before the floating panel actually unmounts
-  const [navigatorClosing, setNavigatorClosing] = useState(false);
+
+  // Auto-collapse whenever a docked right panel is open (Navigator in sidebar/
+  // builder mode, or the filter panel), to reclaim width it's actually
+  // occupying. Floating Navigator overlays content instead of consuming
+  // layout width, so it's exempt. Landing on the full-page Navigator route
+  // itself is deliberately NOT part of this recurring check — that would
+  // fight navCollapsed on every single visit (e.g. expand it on another
+  // page, then navigate into Navigator, only to have it snap back collapsed
+  // regardless). The ordinary navCollapsed toggle state is the only thing
+  // driving Navigator's collapse behavior, same as every other route.
+  //
+  // This (and the hover-peek hooks below) must live above every early
+  // `return` in this component (see the workspace/ux3/error/notFound
+  // branches further down) — hooks have to run in the same order on every
+  // render, and a conditional return skipping some of them is exactly the
+  // "rendered fewer hooks than expected" crash React throws.
+  const collapsedForNav = (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating))) && !navExpandOverride;
+
+  // Sidebar toggle (now in the Topbar, left of the logo): whenever the nav
+  // is currently collapsed (hidden, whatever the reason), pin it open via
+  // the escape-hatch override; whenever it's already pinned/expanded, this
+  // is what puts it back into its default collapsed-by-context state.
+  const toggleNavCollapse = () => {
+    if (collapsedForNav) {
+      // Clear the manual-collapse flag itself, not just the override — the
+      // override alone gets revoked on the very next navigation (handleNav's
+      // setNavExpandOverride(false)), which would silently re-reveal a
+      // still-true navCollapsed and collapse the sidebar right back.
+      setNavCollapsed(false);
+      setNavExpandOverride((o) => !o);
+    } else {
+      setNavExpandOverride(false);
+      setNavCollapsed((c) => !c);
+    }
+  };
   const [navigatorBuilderMode, setNavigatorBuilderMode] = useState(false);
   const [navigatorBuilderKind, setNavigatorBuilderKind] = useState('assessment');
   const [navigatorBuilderContext, setNavigatorBuilderContext] = useState(null);
@@ -642,12 +726,19 @@ function App() {
   // even if it's already open on a different draft.
   const [navigatorDraftQuery, setNavigatorDraftQuery] = useState('');
   const [navigatorDraftToken, setNavigatorDraftToken] = useState(0);
+  // True only for a "click and explore" pick — that flow should ask
+  // immediately rather than just prefilling the composer for a second send.
+  const [navigatorDraftAutoSend, setNavigatorDraftAutoSend] = useState(false);
   const [navigatorDock, setNavigatorDock] = useState('right');
   // Bumped whenever something that occupies the right side (e.g. the Trend
   // Explore drawer) opens while Navigator is docked as a sidebar — forces it
   // to switch to floating so the two don't fight over the same space,
   // without resetting whatever conversation is already in progress.
   const [navigatorForceFloatToken, setNavigatorForceFloatToken] = useState(0);
+  // "Click and explore" — while true, ClickExploreOverlay listens for a click
+  // on any data-nav-explore element in the current page and turns it into a
+  // navigator-ask draft; one-shot, so a pick (or navigating away) clears it.
+  const [navigatorExploreActive, setNavigatorExploreActive] = useState(false);
   const [assessmentBuilderApi, setAssessmentBuilderApi] = useState(null);
   const [dashboardBuilderApi, setDashboardBuilderApi] = useState(null);
   // Populated by Navigator's Build mode (and Ask/Research's "Add to Workspace")
@@ -660,6 +751,9 @@ function App() {
     dataConfig: { matchRoute: c => c === 'workspace/configure-screen', api: null },
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
+  // Explore mode is scoped to whatever page it was started on — leaving the
+  // page invalidates whatever was highlighted, so drop back to normal clicks.
+  useEffect(() => { setNavigatorExploreActive(false); }, [current]);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [filtersByPage, setFiltersByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
@@ -722,32 +816,9 @@ function App() {
     return () => document.removeEventListener('scroll', onScroll, true);
   }, []);
 
-  // Plays the floating Copilot's zoom-out animation, then unmounts it once it finishes —
-  // mirrors the zoom-in it plays on mount, instead of vanishing instantly like a plain toggle.
-  const closeNavigatorPanel = () => {
-    if (navigatorClosing) return;
-    setNavigatorClosing(true);
-    setTimeout(() => {
-      setRightPanel(prev => (prev === 'navigator' ? null : prev));
-      setNavigatorFloating(false);
-      setNavigatorBuilderMode(false);
-      setNavigatorBuilderKind('assessment');
-      setNavigatorBuilderContext(null);
-      setNavigatorClosing(false);
-    }, 160);
-  };
-
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
-    if (rightPanel === tabName) {
-      if (tabName === 'navigator' && navigatorFloating) {
-        closeNavigatorPanel();
-      } else {
-        setRightPanel(null);
-      }
-      return;
-    }
-    setRightPanel(tabName);
+    setRightPanel(prev => (prev === tabName ? null : tabName));
   };
 
   const handleModeChange = (mode) => {
@@ -762,6 +833,11 @@ function App() {
   };
 
   const handleNav = (id, data) => {
+    // LeftNav's Insights/Fabric Configuration groups sit side by side now
+    // (no more EM/Studio switcher), so a click there carries which page-set
+    // it belongs to — sync appMode before the normal id-based routing below
+    // picks the actual page, instead of requiring a separate mode-switch step.
+    if (data?.forceMode && data.forceMode !== appMode) setAppMode(data.forceMode);
     setNavExpandOverride(false);
     // Any navigation other than opening/closing Settings itself should back
     // it out first — clicking a primary-nav item while Settings is nested
@@ -799,9 +875,14 @@ function App() {
       setNavigatorBuilderMode(false);
       setNavigatorDock(data?.dock === 'left' ? 'left' : 'right');
       setNavigatorDraftQuery(data?.query || '');
+      setNavigatorDraftAutoSend(!!data?.autoSend);
       setNavigatorDraftToken(n => n + 1);
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       setRightPanel('navigator');
+      return;
+    }
+    if (id === 'navigator-explore-toggle') {
+      setNavigatorExploreActive(!!data?.enabled);
       return;
     }
     if (id === 'navigator-ensure-floating') {
@@ -813,12 +894,13 @@ function App() {
       }
       return;
     }
-    if (id === 'navigator-page') {
+    if (id === 'navigator-page' || id === 'navigator/history' || id === 'navigator/agents') {
       setRightPanel(null);
-      setNavigatorQuery(data || '');
+      setNavigatorQuery(id === 'navigator-page' ? (data || '') : '');
       setNavigatorReset(n => n + 1);
-      setCurrent('navigator');
-      history.pushState(null, '', navPath('/navigator'));
+      const route = id === 'navigator-page' ? 'navigator' : id;
+      setCurrent(route);
+      history.pushState(null, '', navPath(`/${route}`));
       return;
     }
     // Hand-off from Navigator (Build mode's "Add to Workspace", or Ask/
@@ -869,6 +951,22 @@ function App() {
       history.pushState(null, '', navPath(url));
       return;
     }
+    if (id === 'user-settings-page') {
+      setRightPanel(null);
+      setUserSettingsOpen(true);
+      history.pushState(null, '', navPath('/settings'));
+      return;
+    }
+    if (id === 'user-settings-exit') {
+      setUserSettingsOpen(false);
+      let url;
+      if (current === 'workspace') url = '/workspace';
+      else if (current.startsWith('workspace/')) url = `/${current}`;
+      else if (current === 'kg') url = '/knowledge-graph';
+      else url = `/${current}`;
+      history.pushState(null, '', navPath(url));
+      return;
+    }
     if (id === 'kg') {
       setKgFocusEntity(data || null);
     }
@@ -889,20 +987,6 @@ function App() {
     else url = `/${id}`;
     history.pushState(null, '', navPath(url));
   };
-
-  // "/" → open Navigator Copilot, unless the user is typing in a field
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
-      const el = e.target;
-      const isTyping = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
-      if (isTyping) return;
-      e.preventDefault();
-      handleNav('navigator');
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [handleNav]);
 
   // Per-page filter accessors
   const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
@@ -930,13 +1014,7 @@ function App() {
     <RightPanelShell
       tab={rightPanel}
       onTabSwitch={openRightTab}
-      onClose={() => {
-        if (rightPanel === 'navigator' && navigatorFloating) {
-          closeNavigatorPanel();
-        } else {
-          setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null);
-        }
-      }}
+      onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
       visitedTabs={visitedTabs}
       filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
         if (merge) {
@@ -961,13 +1039,28 @@ function App() {
         pageLabel: PAGE_META[current]?.title || null,
         draftQuery: navigatorDraftQuery,
         draftToken: navigatorDraftToken,
+        draftAutoSend: navigatorDraftAutoSend,
         dockSide: navigatorDock,
         forceFloatToken: navigatorForceFloatToken,
-        closing: navigatorClosing,
+        exploreActive: navigatorExploreActive,
       }}
       navigatorFloating={navigatorFloating}
     />
   );
+
+  if (userSettingsOpen) {
+    return (
+      <>
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
+        <UserSettingsPage onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} state={userSettingsState} />
+      </>
+    );
+  }
 
   if (current === 'workspace' || current.startsWith('workspace/')) {
     return (
@@ -994,6 +1087,7 @@ function App() {
             seedDashboard={dashboardSeed}
             appMode={appMode}
             onModeChange={handleModeChange}
+            initialCollapsed={navCollapsed}
           />
         )}
       </>
@@ -1033,13 +1127,8 @@ function App() {
   const pageMeta = PAGE_META[current] || PAGE_META.kg;
   const isKG = current === 'kg' || !PAGE_META[current];
   const showingAssessmentBuilder = current === 'report/assessments' && assessmentBuilderOpen;
-  const isNavigatorRoute = current === 'navigator';
-  // Auto-collapse whenever a docked right panel is open (Navigator in sidebar/
-  // builder mode, or the filter panel) or the full-page Navigator route is
-  // active, to reclaim width. Floating Navigator overlays content instead of
-  // consuming layout width, so it's exempt. Never overrides the user's manual
-  // preference once Navigator/the panel closes.
-  const collapsed = (navCollapsed || (rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)) || isNavigatorRoute) && !navExpandOverride;
+  const isNavigatorRoute = current === 'navigator' || current.startsWith('navigator/');
+  const navigatorOverlay = current === 'navigator/history' ? 'history' : current === 'navigator/agents' ? 'agents' : null;
 
   return (
     <div className="app-shell">
@@ -1049,42 +1138,31 @@ function App() {
           <PasswordGate onUnlock={unlock} />
         </div>
       )}
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} />
+      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
-        <LeftNav
+        <LeftNavHybrid
           current={current}
           onNav={handleNav}
-          collapsed={settingsOpen || collapsed}
-          onToggleCollapse={() => {
-            if (isNavigatorRoute) {
-              setNavExpandOverride((o) => !o);
-            } else {
-              setNavExpandOverride(false);
-              setNavCollapsed((c) => !c);
-            }
-          }}
-          onExpand={() => setNavExpandOverride(true)}
-          mode={appMode}
-          onModeChange={handleModeChange}
+          navigatorAtHome={isNavigatorRoute && navigatorAtHome}
+          consoleActive={settingsOpen}
+          adminActiveSection={adminState.activeSection}
+          onAdminSelect={adminState.setActiveSection}
+          collapsed={collapsedForNav}
+          onToggleCollapse={toggleNavCollapse}
         />
 
         {settingsOpen ? (
-          <>
-            <aside className="settings-panel">
-              <AdminSettingsNav activeSection={adminState.activeSection} onSelect={adminState.setActiveSection} />
-            </aside>
-            <main className="exp-main exp-main--col admin-main">
-              <AdminPanelContent state={adminState} onNav={handleNav} onClose={() => handleNav('admin-exit')} />
-            </main>
-          </>
+          <main className="exp-main exp-main--col admin-main">
+            <AdminPanelContent state={adminState} onNav={handleNav} onClose={() => handleNav('admin-exit')} />
+          </main>
         ) : appMode === 'studio' ? (
           <main className="exp-main exp-main--row studio-main">
             <div className="exp-content-col">
               {!isNavigatorRoute && (
                 <SubHeader
                   title="Studio"
-                  breadcrumb={['Home']}
+                  breadcrumb={['Insights']}
                   breadcrumbHrefs={[null]}
                   showMenu={false}
                   showExplore={false}
@@ -1093,7 +1171,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -1107,7 +1185,7 @@ function App() {
               {!isNavigatorRoute && (
                 <SubHeader
                   title={showingAssessmentBuilder ? 'Assessment Builder' : pageMeta.title}
-                  breadcrumb={showingAssessmentBuilder ? ['Home', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
+                  breadcrumb={showingAssessmentBuilder ? ['Insights', 'Report', 'Assessments', 'New Assessment'] : pageMeta.breadcrumb}
                   breadcrumbHrefs={showingAssessmentBuilder ? [null, null, null, null] : pageMeta.breadcrumbHrefs}
                   breadcrumbClicks={showingAssessmentBuilder ? [undefined, undefined, () => setAssessmentBuilderOpen(false)] : [() => handleNav('exposure/overview')]}
                   leading={undefined}
@@ -1135,7 +1213,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} onNav={handleNav} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
                 {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}
@@ -1143,18 +1221,8 @@ function App() {
                 {current === 'discover/identity'   && <DiscoverIdentityPage onNav={handleNav} crossFilters={filtersByPage['discover/identity']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/identity', chips)} />}
                 {current === 'report/compliance'        && <CompliancePage expanded={complianceExpanded} onExpandChange={setComplianceExpanded} onNav={handleNav} />}
                 {current === 'report/assessments'       && <AssessmentsPage onOpenCopilotBuilder={() => handleNav('navigator-builder')} onBuilderApiReady={setAssessmentBuilderApi} builderOpen={assessmentBuilderOpen} onBuilderOpenChange={setAssessmentBuilderOpen} onNav={handleNav} />}
-                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => {
-                  setFiltersByPage(prev => ({
-                    ...prev,
-                    'report/compliance-findings': toChipsState([
-                      { attrId: 'framework',           key: 'Framework',    value: filter.frameworkName },
-                      { attrId: 'compliance-function', key: filter.level,   value: filter.col },
-                      { attrId: 'compliance-group',    key: filter.groupBy, value: filter.row, score: filter.score },
-                    ]),
-                  }));
-                  handleNav('report/compliance-findings');
-                }} />}
-                {current === 'report/compliance-findings'  && <ComplianceFindingsPage crossFilters={filtersByPage['report/compliance-findings']?.chips ?? []} onNav={handleNav} />}
+                {current === 'report/compliance-matrix'    && <ComplianceMatrixPage onCellClick={filter => { setMatrixFilter(filter); handleNav('report/compliance-findings'); }} />}
+                {current === 'report/compliance-findings'  && <ComplianceFindingsPage filter={matrixFilter} onClearFilter={() => setMatrixFilter(null)} onNav={handleNav} />}
                 {current === 'data-quality/overview'       && <DataQualityOverviewPage onNav={handleNav} crossFilters={filtersByPage['data-quality/overview']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('data-quality/overview', chips)} />}
                 {current === 'data-quality/in-depth'       && <DataQualityInDepthPage onNav={handleNav} />}
                 {!isKG && !isNavigatorRoute && current !== 'exposure/overview' && current !== 'exposure/findings' && current !== 'discover/device' && current !== 'discover/cloud' && current !== 'discover/identity' && current !== 'report/compliance' && current !== 'report/assessments' && current !== 'report/compliance-matrix' && current !== 'report/compliance-findings' && current !== 'data-quality/overview' && current !== 'data-quality/in-depth' && <ComingSoon />}
@@ -1192,6 +1260,14 @@ function App() {
       )}
 
       <AdminConfirmModal confirmAction={adminState.confirmAction} onClose={() => adminState.setConfirmAction(null)} />
+
+      <ProductTour active={tourActive} onExit={() => setTourActive(false)} onNav={handleNav} currentPage={current} />
+
+      <ClickExploreOverlay
+        active={navigatorExploreActive}
+        onPick={(label, type) => handleNav('navigator-ask', { query: buildExploreQuestion(label, type), autoSend: true })}
+        onExit={() => setNavigatorExploreActive(false)}
+      />
     </div>
   );
 }
@@ -1199,13 +1275,13 @@ function App() {
 function AppWithBoundary() {
   return (
     <ToastProvider>
-      <SavedFiltersProvider>
-        <DownloadsProvider>
+      <DownloadsProvider>
+        <NavigatorActivityProvider>
           <ErrorBoundary>
             <App />
           </ErrorBoundary>
-        </DownloadsProvider>
-      </SavedFiltersProvider>
+        </NavigatorActivityProvider>
+      </DownloadsProvider>
     </ToastProvider>
   );
 }
