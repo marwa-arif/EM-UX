@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDropdownExit } from '../hooks/useDropdownExit.js';
 
 export default function DSDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -22,8 +20,8 @@ export default function DSDropdown({ value, onChange, options }) {
           <path d="M2 3.5L5 6.5L8 3.5"/>
         </svg>
       </button>
-      {visible && (
-        <div className={`ds-dropdown-panel${closing ? ' ds-dropdown-panel--closing' : ''}`}>
+      {open && (
+        <div className="ds-dropdown-panel">
           {options.map(opt => (
             <button
               key={opt}

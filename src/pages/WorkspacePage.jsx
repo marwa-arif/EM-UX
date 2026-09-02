@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react'
 import '../styles/shell.css'
 import '../styles/filter-panel.css'
 import Topbar from '../components/Topbar.jsx'
-import LeftNav from '../components/LeftNav.jsx'
+import { LeftNavHybrid } from '../components/LeftNavAlt.jsx'
 import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import { WorkspaceProvider } from '../context/WorkspaceCtx.jsx'
 import LibraryPage from './LibraryPage.jsx'
-import SavedPage from './SavedPage.jsx'
+import SavedPage, { SAVED_ROWS } from './SavedPage.jsx'
 import DashboardCanvas, { EXEC_SUMMARY_TEMPLATE, VULN_DETAIL_TEMPLATE, MOM_TEMPLATE } from './DashboardCanvas.jsx'
 import DataConfigPage from './DataConfigPage.jsx'
 import ReportPreviewPage from './ReportPreviewPage.jsx'
@@ -21,19 +21,28 @@ const REPORT_TITLES = {
   'workspace/report/month-over-month':  'Month over Month Report',
 }
 
-export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange }) {
+export default function WorkspacePage({ onNav, initialRoute = 'workspace/library', theme = 'light', onToggleTheme, onBuilderApiReady, onOpenCopilotBuilder, rightPanelSlot, rightPanelOpen = false, navigatorActive = false, seedDashboard = null, appMode, onModeChange, initialCollapsed = false }) {
   const [current, setCurrent] = useState(
     initialRoute === 'workspace' ? 'workspace/saved' : initialRoute
   )
-  // Remembers whichever workspace list tab (Saved or Templates) the user was
-  // last on, so "back"/"cancel"/"leave" out of the dashboard/report builder
-  // returns to where they came from instead of always landing on Saved.
+  // Remembers whichever workspace list route (Saved or Templates, each
+  // optionally locked to -dashboards/-reports, see savedTypeLock below) the
+  // user was last on, so "back"/"cancel"/"leave" out of the dashboard/report
+  // builder returns to the exact same locked view instead of always landing
+  // on the unlocked Saved tab.
+  const isListRoute = (id) => /^workspace\/(saved|library)(-dashboards|-reports)?$/.test(id)
   const [listOrigin, setListOrigin] = useState(
-    current === 'workspace/library' ? 'workspace/library' : 'workspace/saved'
+    isListRoute(current) ? current : 'workspace/saved'
   )
   const dashboardBuilderRef = useRef(null)
   useEffect(() => { onBuilderApiReady?.(dashboardBuilderRef) }, [])
-  const [collapsed, setCollapsed] = useState(false)
+  // Seeded from App.jsx's own manual-collapse flag (see its `navCollapsed`
+  // and the <WorkspacePage initialCollapsed={navCollapsed}> call site) — App
+  // and WorkspacePage mount entirely separate LeftNavHybrid/Topbar trees, so
+  // without this, navigating here from a manually-collapsed App-tree page
+  // (e.g. clicking Workspace on the rail) always reset back to expanded,
+  // since this state defaulted to false on every fresh mount.
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [navExpandOverride, setNavExpandOverride] = useState(false)
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
@@ -44,39 +53,71 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // itself with that dashboard's widgets/scope instead of starting blank.
   const [editDashboardSeed, setEditDashboardSeed] = useState(null)
 
-  const handleNav = (id) => {
+  // `data` (e.g. the query string LeftNavAlt.jsx's Navigator preview passes
+  // for a specific recent chat) has to be forwarded through both branches —
+  // dropping it here silently reduces that call to a bare, query-less
+  // 'navigator-page' navigation, landing on a blank new chat instead of the
+  // chat that was actually clicked.
+  const handleNav = (id, data) => {
     if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
-      onNav(id)
+      onNav(id, data)
       return
     }
     if (id.startsWith('workspace/report/') && !id.startsWith('workspace/report-preview/')) {
       localStorage.removeItem('pai-excel-warn-dismissed')
     }
     const resolved = id === 'workspace' ? 'workspace/saved' : id
-    if (resolved === 'workspace/saved' || resolved === 'workspace/library') {
+    if (isListRoute(resolved)) {
       setListOrigin(resolved)
     }
     setCurrent(resolved)
-    onNav(resolved)
+    onNav(resolved, data)
   }
 
   const isEditDashboard   = current.startsWith('workspace/dashboard/edit-')
+  const isViewDashboard   = current.startsWith('workspace/dashboard/view-')
   const isSeededDashboard = current.startsWith('workspace/dashboard/new-')
   const isDashboard     = current.startsWith('workspace/dashboard')
   const isReport        = current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/')
   const isReportPreview = current.startsWith('workspace/report-preview/')
   const isConfigPage    = current === 'workspace/configure-screen'
   const isReportPage    = isReport || isReportPreview
+  // Option 4's Workspace nav section (Dashboards/Report Centre rows) routes
+  // here with a -dashboards/-reports suffix instead of a separate page —
+  // SavedPage/LibraryPage read this to hide their own All/Dashboards/
+  // Reports pill filter and lock the list to just that type.
+  const isSavedPage   = current === 'workspace/saved' || current === 'workspace/saved-dashboards' || current === 'workspace/saved-reports'
+  const isLibraryPage = current === 'workspace/library' || current === 'workspace/library-dashboards' || current === 'workspace/library-reports'
+  const savedTypeLock = !(isSavedPage || isLibraryPage) ? null
+    : current.endsWith('-dashboards') ? 'dashboards'
+    : current.endsWith('-reports') ? 'reports'
+    : null
 
   // Once the user navigates away from the edit-* route, drop the seed so it
   // isn't mistakenly picked up by the next dashboard opened (e.g. "New
   // Dashboard"). Keyed off the route rather than DashboardCanvas's own mount
   // so it can't race the title/seed read above.
   useEffect(() => {
-    if (!isEditDashboard && editDashboardSeed) setEditDashboardSeed(null)
+    if (!isEditDashboard && !isViewDashboard && editDashboardSeed) setEditDashboardSeed(null)
   }, [current])
 
-  const dashTitle   = isEditDashboard && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')
+  // SavedPage's own Edit/View buttons set the seed *before* navigating (see
+  // its handleEdit/handleView), so it's already correct by the time this
+  // runs. But an edit-*/view-* route can also be reached directly — e.g. the
+  // LeftNav's Workspace hover preview (LeftNavAlt.jsx's openSavedItem) opens
+  // one from wherever the user currently is, with no seed set at all — so
+  // resolve it here from the id in the route whenever it's missing/stale,
+  // rather than falling back to a generic "New Dashboard" title.
+  useEffect(() => {
+    if (!isEditDashboard && !isViewDashboard) return
+    const rowId = current.slice(current.lastIndexOf('-') + 1)
+    if (editDashboardSeed && editDashboardSeed.id === rowId) return
+    const row = SAVED_ROWS.find(r => r.id === rowId)
+    if (row) setEditDashboardSeed(row)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current])
+
+  const dashTitle   = (isEditDashboard || isViewDashboard) && editDashboardSeed ? editDashboardSeed.name : (DASHBOARD_TITLES[current] ?? 'New Dashboard')
   const reportTitle = isReport
     ? (customReportTitles[current] ?? REPORT_TITLES[current] ?? 'Report Template')
     : isReportPreview
@@ -116,28 +157,41 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     'Workspace'
 
   const pageBreadcrumb =
-    isDashboard     ? ['Home', 'Workspace', dashTitle] :
-    isReport        ? ['Home', 'Workspace', reportTitle] :
-    isReportPreview ? ['Home', 'Workspace', reportTitle] :
-    isConfigPage    ? ['Home', 'Workspace', 'Configure Screen'] :
-    ['Home', 'Workspace']
+    isDashboard     ? ['Configuration', dashTitle] :
+    isReport        ? ['Insights', 'Workspace', reportTitle] :
+    isReportPreview ? ['Insights', 'Workspace', reportTitle] :
+    isConfigPage    ? ['Insights', 'Workspace', 'Configure Screen'] :
+    ['Insights', 'Workspace']
 
   const pageBreadcrumbClicks =
-    isDashboard || isReportPage || isConfigPage
-      ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
-      : [() => handleNav('exposure/overview')]
+    isDashboard
+      ? [() => handleNav(listOrigin)]
+      : isReportPage || isConfigPage
+        ? [() => handleNav('exposure/overview'), () => handleNav(listOrigin)]
+        : [() => handleNav('exposure/overview')]
+
+  const navCollapsed = (collapsed || rightPanelOpen) && !navExpandOverride
+
+  // Same generalized pin/unpin behavior as App.jsx's toggleNavCollapse.
+  const toggleNavCollapse = () => {
+    if (navCollapsed) {
+      setNavExpandOverride(o => !o)
+    } else {
+      setNavExpandOverride(false)
+      setCollapsed(c => !c)
+    }
+  }
 
   return (
     <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} />
         <div className="wp-body">
-          <LeftNav
+          <LeftNavHybrid
             current={current}
             onNav={handleNav}
-            collapsed={(collapsed || rightPanelOpen) && !navExpandOverride}
-            onToggleCollapse={() => { setNavExpandOverride(false); setCollapsed(c => !c) }}
-            onExpand={() => setNavExpandOverride(true)}
+            collapsed={navCollapsed}
+            onToggleCollapse={toggleNavCollapse}
             mode={appMode}
             onModeChange={onModeChange}
           />
@@ -159,12 +213,12 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
             />
             <div className="wp-main-body">
               <div className="wp-main-content">
-                {current === 'workspace/saved'
-                  ? <SavedPage />
+                {isSavedPage
+                  ? <SavedPage typeLock={savedTypeLock} />
                   : isConfigPage
                     ? <DataConfigPage onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                     : isDashboard
-                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} />
+                      ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} templateId={templateId} onOpenCopilotBuilder={onOpenCopilotBuilder} seedWidgets={isSeededDashboard ? seedDashboard?.widgets : undefined} seedName={isSeededDashboard ? seedDashboard?.name : undefined} backTarget={listOrigin} viewMode={isViewDashboard} />
                       : isReport
                         ? <DashboardCanvas ref={dashboardBuilderRef} key={current} onNav={handleNav} reportMode reportTitle={reportTitle} templateId={reportTemplateId} onNameChange={n => setCustomReportTitles(prev => ({ ...prev, [current]: n }))} onOpenCopilotBuilder={onOpenCopilotBuilder} backTarget={listOrigin} />
                         : isReportPreview
@@ -174,7 +228,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
                               template={reportTemplate}
                               onBack={() => handleNav(previewBack)}
                             />
-                          : <LibraryPage />
+                          : <LibraryPage typeLock={savedTypeLock} />
                 }
               </div>
               {isReport && (

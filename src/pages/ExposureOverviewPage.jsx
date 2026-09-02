@@ -4,8 +4,6 @@ import '../styles/exposure.css'
 import '../styles/compliance.css'
 import '../styles/device.css'
 import TablePagination from '../components/TablePagination.jsx'
-import TimeRangeTabs from '../components/TimeRangeTabs.jsx'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
 
 // ── Data ──────────────────────────────────────────────────────────
 const GROUP_BY_OPTIONS = [
@@ -15,9 +13,9 @@ const GROUP_BY_OPTIONS = [
 
 const GROUP_BY_DATA = {
   'Exposure Category': [
-    { name: 'Control Gap',            score: 584, exposurePct: 49,  findingsPct: 46,  assetsPct: 100 },
-    { name: 'Misconfiguration',       score: 558, exposurePct: 0.4, findingsPct: 0.4, assetsPct: 0.4 },
-    { name: 'Software Vulnerability', score: 502, exposurePct: 51,  findingsPct: 54,  assetsPct: 7   },
+    { name: 'Software Vulnerability', score: 852, exposurePct: 55, findingsPct: 58, assetsPct: 55 },
+    { name: 'Control Gap',            score: 158, exposurePct: 44, findingsPct: 41, assetsPct: 40 },
+    { name: 'Misconfiguration',       score: 108, exposurePct: 1,  findingsPct: 1,  assetsPct: 5  },
   ],
   'Asset Origin': [
     { name: 'Cloud-Native',  score: 712, exposurePct: 38, findingsPct: 41, assetsPct: 35 },
@@ -83,7 +81,19 @@ const GROUP_BY_DATA = {
   ],
 };
 
-function scoreColor(v) { return v >= 740 ? 'var(--pai-red-high)' : 'var(--pai-high-fg)'; }
+function scoreColor(v) {
+  if (v >= 750) return 'var(--pai-crit-fg)';
+  if (v >= 500) return 'var(--pai-high-fg)';
+  if (v >= 250) return 'var(--pai-med-fg)';
+  return 'var(--pai-low-fg)';
+}
+// Same 0/250/500/750 breakpoints as the "Exposure Score Range" legend above.
+function scoreBand(v) {
+  if (v >= 750) return { label: 'Critical Risk', mod: 'critical' };
+  if (v >= 500) return { label: 'High Risk', mod: 'high' };
+  if (v >= 250) return { label: 'Medium Risk', mod: 'medium' };
+  return { label: 'Low Risk', mod: 'low' };
+}
 function pctColor(pct) {
   if (pct >= 80) return 'var(--pai-crit-fg)';
   if (pct >= 50) return 'var(--pai-high-fg)';
@@ -436,16 +446,17 @@ function Bubble({
               <IcExplore /> Explore
             </button>
           )}
-          <div className="exp-bubble-tooltip-card">
-            <div className="exp-bubble-tooltip-stat">
+          <div className="exp-bubble-tooltip-card exp-bubble-tooltip-card--col">
+            <div className="exp-bubble-tooltip-stat exp-bubble-tooltip-stat--primary">
               <span className="exp-bubble-tooltip-accent" style={{ background: color }} />
               <div className="exp-bubble-tooltip-text">
                 <span className="exp-bubble-tooltip-label"><IcSumExposure /> Sum of Exposure</span>
-                <span className="exp-bubble-tooltip-value">{sumExposure}</span>
+                <span className="exp-bubble-tooltip-value" style={{ color }}>{sumExposure}</span>
               </div>
             </div>
+            <div className="exp-bubble-tooltip-divider" />
             <div className="exp-bubble-tooltip-stat">
-              <span className={`exp-bubble-tooltip-accent ${secondaryLabel === 'Total Assets' ? 'exp-bubble-tooltip-accent--amber' : 'exp-bubble-tooltip-accent--indigo'}`} />
+              <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--neutral" />
               <div className="exp-bubble-tooltip-text">
                 <span className="exp-bubble-tooltip-label">{secondaryIcon} {secondaryLabel}</span>
                 <span className="exp-bubble-tooltip-value">{secondaryValue}</span>
@@ -467,7 +478,7 @@ const cx = GAUGE_SIZE / 2;
 const cy = GAUGE_SIZE / 2;
 
 const W_TICK = 1.4;
-const GAUGE_SCORE = 912;
+const GAUGE_SCORE = 460;
 
 const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
   const a = (i / TICK_COUNT) * 2 * Math.PI;
@@ -486,10 +497,11 @@ const ticks = Array.from({ length: TICK_COUNT }, (_, i) => {
 function EnterpriseScore({ onOpenTrend }) {
   const innerDia = (INNER_R - 6) * 2;
   const [hovered, setHovered] = useState(false);
+  const { label: riskLabel, mod: riskMod } = scoreBand(GAUGE_SCORE);
   return (
-    <div className="exp-gauge-wrap">
+    <div className="exp-gauge-wrap" data-tour="page-exposure-gauge">
       <div
-        className="exp-gauge exp-gauge-float"
+        className={`exp-gauge exp-gauge-float exp-gauge--${riskMod}`}
         style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -502,8 +514,8 @@ function EnterpriseScore({ onOpenTrend }) {
             <span className="exp-gauge-denom">/1000</span>
           </div>
           <span className="exp-gauge-label">Exposure Score</span>
-          <div className="exp-gauge-risk-badge">
-            <span className="exp-gauge-risk-text">High Risk</span>
+          <div className={`exp-gauge-risk-badge exp-gauge-risk-badge--${riskMod}`}>
+            <span className="exp-gauge-risk-text">{riskLabel}</span>
           </div>
           <button className="exp-gauge-trend" onClick={() => onOpenTrend && onOpenTrend()}>
             <IcTrendDown color="#21929B" size={13} />
@@ -515,23 +527,25 @@ function EnterpriseScore({ onOpenTrend }) {
         {hovered && (
           <div className="exp-bubble-tooltip exp-bubble-tooltip--below">
             <div className="exp-bubble-tooltip-card exp-bubble-tooltip-card--col">
+              <span className="exp-bubble-tooltip-heading">Score Breakdown</span>
+              <div className="exp-bubble-tooltip-stat exp-bubble-tooltip-stat--primary">
+                <span className="exp-bubble-tooltip-accent" style={{ background: scoreColor(GAUGE_SCORE) }} />
+                <div className="exp-bubble-tooltip-text">
+                  <span className="exp-bubble-tooltip-label"><IcSumExposure /> Sum Of Exposure</span>
+                  <span className="exp-bubble-tooltip-value" style={{ color: scoreColor(GAUGE_SCORE) }}>835.1M</span>
+                </div>
+              </div>
+              <div className="exp-bubble-tooltip-divider" />
               <div className="exp-bubble-tooltip-card-row">
                 <div className="exp-bubble-tooltip-stat">
-                  <span className="exp-bubble-tooltip-accent" style={{ background: 'var(--pai-crit-fg)' }} />
-                  <div className="exp-bubble-tooltip-text">
-                    <span className="exp-bubble-tooltip-label"><IcSumExposure /> Sum Of Exposure</span>
-                    <span className="exp-bubble-tooltip-value">835.1M</span>
-                  </div>
-                </div>
-                <div className="exp-bubble-tooltip-stat">
-                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--amber" />
+                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--neutral" />
                   <div className="exp-bubble-tooltip-text">
                     <span className="exp-bubble-tooltip-label"><IcTotalAssets /> Total Assets</span>
                     <span className="exp-bubble-tooltip-value">132,605</span>
                   </div>
                 </div>
                 <div className="exp-bubble-tooltip-stat">
-                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--indigo" />
+                  <span className="exp-bubble-tooltip-accent exp-bubble-tooltip-accent--neutral" />
                   <div className="exp-bubble-tooltip-text">
                     <span className="exp-bubble-tooltip-label"><IcTotalFindings /> Total Findings</span>
                     <span className="exp-bubble-tooltip-value">1.6M</span>
@@ -563,16 +577,16 @@ function ExposureOverviewSection({ onNav }) {
   const attackSurface = [
     { score: 966, severity: 'H', navIcon: 'nav-discover-cloud',    label: 'Cloud',    size: 100,
       sumExposure: '92.6M',  secondaryLabel: 'Total Assets', secondaryValue: '11,436', secondaryIcon: <IcTotalAssets />, exploreTarget: 'discover/cloud' },
-    { score: 893, severity: 'H', navIcon: 'nav-discover-device',   label: 'Device',   size: 100,
+    { score: 124, severity: 'L', navIcon: 'nav-discover-device',   label: 'Device',   size: 78,
       sumExposure: '757.2M', secondaryLabel: 'Total Assets', secondaryValue: '54,685', secondaryIcon: <IcTotalAssets />, exploreTarget: 'discover/device' },
     { score: 601, severity: 'M', navIcon: 'nav-discover-identity', label: 'Identity', size: 86,
       sumExposure: '66.3M',  secondaryLabel: 'Total Assets', secondaryValue: '71,457', secondaryIcon: <IcTotalAssets />, exploreTarget: 'discover/identity' },
   ];
 
   const expCategories = [
-    { score: 937, severity: 'H', icon: <IcExposure />, label: 'Control Gap',            size: 100,
+    { score: 158, severity: 'L', icon: <IcExposure />, label: 'Control Gap',            size: 78,
       sumExposure: '413.2M', secondaryLabel: 'Total Findings', secondaryValue: '727,760', secondaryIcon: <IcTotalFindings /> },
-    { score: 732, severity: 'M', icon: <IcExposure />, label: 'Software Vulnerability', size: 86,
+    { score: 852, severity: 'H', icon: <IcExposure />, label: 'Software Vulnerability', size: 100,
       sumExposure: '422.0M', secondaryLabel: 'Total Findings', secondaryValue: '860,059', secondaryIcon: <IcTotalFindings /> },
     { score: 108, severity: 'L', icon: <IcExposure />, label: 'Misconfiguration',        size: 78,
       sumExposure: '2,344',  secondaryLabel: 'Total Findings', secondaryValue: '4',       secondaryIcon: <IcTotalFindings /> },
@@ -588,13 +602,13 @@ function ExposureOverviewSection({ onNav }) {
         <Bubble {...items[0]} index={indexOffset} onNav={onNav} tooltipBelow />
         <Bubble {...items[1]} index={indexOffset + 1} onNav={onNav} tooltipBelow />
       </div>
-      <Bubble {...items[2]} index={indexOffset + 2} onNav={onNav} />
+      <Bubble {...items[2]} index={indexOffset + 2} onNav={onNav} tooltipBelow />
     </div>
   );
 
   return (
     <>
-    <div className="card exp-card">
+    <div className="card exp-card" data-tour="page-exposure-card">
       <div className="exp-ov-hdr exp-ov-hdr--open">
         <div className="exp-ov-hdr-left">
           <span className="exp-ov-hdr-title">Exposure Overview</span>
@@ -638,15 +652,15 @@ function ExposureOverviewSection({ onNav }) {
           </div>
         ))}
 
-        <div className="exp-ov-col">
+        <div className="exp-ov-col" data-nav-explore="chart" data-nav-label="Enterprise Score">
           <EnterpriseScore onOpenTrend={openTrendDrawer} />
           {colLabel('Enterprise Score', 'The Enterprise Score represents the overall exposure level of the organization. It is calculated based on the scores of all findings across the organization. The calculation uses a root mean square (RMS) method, which gives more weight to higher-risk findings, ensuring that critical issues have a greater impact on the overall score.')}
         </div>
-        <div className="exp-ov-col">
+        <div className="exp-ov-col" data-nav-explore="chart" data-nav-label="Attack Surface">
           <BubbleTriangle items={attackSurface} indexOffset={0} />
           {colLabel('Attack Surface', 'The attack surface score is derived as the root mean square (RMS) of the asset exposure scores across each asset within an attack surface, enabling security teams to pinpoint high-risk areas and prioritize remediation efforts more effectively.')}
         </div>
-        <div className="exp-ov-col">
+        <div className="exp-ov-col" data-nav-explore="chart" data-nav-label="Exposure Categories">
           <BubbleTriangle items={expCategories} indexOffset={3} />
           {colLabel('Exposure Categories', (
             <>
@@ -950,7 +964,13 @@ function TrendExploreDrawer({ onClose, onNav }) {
       <div className={`comp-drawer${closing ? ' comp-drawer--closing' : ''}`}>
         <div className="exp-trend-drawer-header">
           <span className="exp-trend-drawer-title">Trend Explore</span>
-          <TimeRangeTabs value={tRange} onChange={changeRange}>
+          <div className="comp-time-pills-wrap">
+            {['1W', '1M', '3M', '6M', '1Y'].map(t => (
+              <button key={t}
+                className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`}
+                onClick={() => changeRange(t)}
+              >{t}</button>
+            ))}
             <div className="exp-custom-range-wrap" ref={customPickerRef}>
               <button
                 className={`comp-time-pill${tRange === 'CUSTOM' ? ' comp-time-pill--active' : ''}`}
@@ -972,7 +992,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
                 </div>
               )}
             </div>
-          </TimeRangeTabs>
+          </div>
           <div className="exp-trend-drawer-by">
             Exposure by
             <SelectDropdown value={exposureBy} onChange={setExposureBy} options={EXPOSURE_BY_OPTIONS} />
@@ -1119,7 +1139,6 @@ function MiniBar({ pct }) {
 function SelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -1137,8 +1156,8 @@ function SelectDropdown({ value, onChange, options }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {visible && (
-        <div className={`comp-sort-menu${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className="comp-sort-menu">
           {options.map(opt => (
             <button
               key={opt}
@@ -1179,7 +1198,7 @@ export default function ExposureOverviewPage({ onNav }) {
     <div className="page">
       <ExposureOverviewSection onNav={onNav} />
 
-      <div className="card exp-contrib-card">
+      <div className="card exp-contrib-card" data-nav-explore="table" data-nav-label="Exposure Breakdown by Category">
         <div className="exp-contrib-hdr">
           <div className="exp-contrib-hdr-left">
             <span className="exp-contrib-title">Exposure by</span>

@@ -1,0 +1,34 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Click and explore — Navigator's page-wide "click a chart/table/section
+   to ask about it" mode. See ClickExploreOverlay.jsx.
+   ───────────────────────────────────────────────────────────────────── */
+.nex-banner {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 400;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 8px 8px 16px; border-radius: 44px;
+  background: var(--pai-surface, #fff);
+  border: 1px solid var(--shell-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  font-size: 12px; font-weight: 500; color: var(--shell-text);
+}
+.nex-banner-cancel {
+  padding: 6px 16px; border-radius: 44px; border: none;
+  background: rgba(99,96,216,0.12); color: var(--pai-indigo);
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s;
+}
+.nex-banner-cancel:hover { background: rgba(99,96,216,0.2); }
+
+.nex-highlight {
+  position: fixed; z-index: 390; pointer-events: none;
+  border: 2px solid var(--pai-indigo); border-radius: 4px;
+  background: rgba(99,96,216,0.06);
+  transition: top 0.08s, left 0.08s, width 0.08s, height 0.08s;
+}
+.nex-highlight-tag {
+  position: absolute; top: -32px; left: 0;
+  padding: 4px 12px; border-radius: 44px;
+  background: var(--pai-indigo); color: #fff;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}

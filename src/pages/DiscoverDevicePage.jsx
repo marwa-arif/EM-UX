@@ -6,7 +6,6 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { AssessmentDrawer } from './CompliancePage.jsx'
 import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import { makeDiscoverRecords, aggregateBySource, aggregateByType, aggregateByCriticality, fakeAssessmentId } from '../data/discoverRecords.js'
 import '../styles/device.css'
 import '../styles/compliance.css'
@@ -22,7 +21,6 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -40,8 +38,8 @@ function SelectDropdown({ value, onChange, options }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {visible && (
-        <div className={`comp-sort-menu comp-sort-menu--right${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className="comp-sort-menu comp-sort-menu--right">
           {options.map(opt => (
             <button
               key={opt}
@@ -563,7 +561,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
             onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
           >
           {dashboardMode && hoveredWidget === 'total' && <DdbControls onEdit={() => onEditWidget?.('total')} />}
-          <div className="card dev-card">
+          <div className="card dev-card" data-nav-explore="chart" data-nav-label="Total Devices Trend">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
@@ -653,7 +651,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
             >
             {dashboardMode && hoveredWidget === 'source' && <DdbControls onEdit={() => onEditWidget?.('source')} />}
-            <div className="card dev-card dev-source-card">
+            <div className="card dev-card dev-source-card" data-nav-explore="chart" data-nav-label="Data Source">
               <div className="dev-card-title">Data Source</div>
               <div
                 className="dev-chart-fill"
@@ -730,7 +728,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               onMouseLeave={() => dashboardMode && setHoveredWidget(null)}
             >
             {dashboardMode && hoveredWidget === 'type' && <DdbControls onEdit={() => onEditWidget?.('type')} />}
-            <div className="card dev-card dev-type-card">
+            <div className="card dev-card dev-type-card" data-nav-explore="chart" data-nav-label="Assets by Type">
               <div className="dev-card-title">Type</div>
               <div
                 className="dev-donut-wrap"
@@ -814,9 +812,10 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 value={insightSearch}
                 onChange={v => { setInsightSearch(v); setInsightPage(1); }}
                 placeholder="Search assessments…"
+                dataTour="page-discover-search"
               />
             </div>
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-tour="page-discover-table" data-nav-explore="table" data-nav-label="Key Security Insights">
               <table className="ds-table dev-insights-table">
                 <thead>
                   <tr>
@@ -886,7 +885,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               <span className="dev-card-title">Criticality Insights</span>
             </div>
 
-            <div className="dev-crit-bar-section">
+            <div className="dev-crit-bar-section" data-nav-explore="section" data-nav-label="Criticality Insights">
               <div className="dev-stacked-bar">
                 {activeCriticality.map((c, i) => (
                   <div
@@ -941,7 +940,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
               />
             </div>
 
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Assets by Criticality Score">
               <table className="ds-table dev-asset-table">
                 <thead>
                   <tr>

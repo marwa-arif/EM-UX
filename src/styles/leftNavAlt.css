@@ -1,0 +1,369 @@
+/* ── LeftNav Alt (Option 2) ──────────────────────────────────────────
+   Insights renders the same per-entity NavItem accordion as Option 1
+   (LeftNav.jsx) — one row with its own icon + chevron, expanding inline to
+   its children — under a single "Insights" umbrella header. Reuses Option
+   1's outer shell classes (.leftnav/.nav-item*, all in shell.css) wholesale
+   for the expanded state.
+
+   Whole-nav collapse (the Topbar toggle) is the one place Option 2 diverges
+   from Option 1's mechanic: instead of hiding behind Option 1's
+   .leftnav--collapsed/.leftnav--peek (width:0 + hover-peek overlay), it
+   stays visible at a persistent 52px icon-only rail — see .leftnav-alt--rail
+   and LeftNavAlt.jsx's compactContent. */
+.leftnav-alt__group { margin-bottom: 4px; }
+.leftnav.leftnav-alt--rail { width: 52px; overflow-x: hidden; }
+
+/* Rail-collapsed Insights accordion — mirrors the expanded view's per-entity
+   NavItem accordion (see LeftNavAlt.jsx's RailAccordionRow) but icon-only: a
+   section icon (Exposure/Discover/Report/Data Quality) toggles its children
+   icons inline below it via the same measured max-height animation
+   NavItem's own .nav-item__children uses, closing with a divider so an
+   opened group's rows read as clearly separate from the next (still-
+   collapsed) section icon. Knowledge Graph has no children, so it renders
+   as a plain leaf row exactly as it does everywhere else.
+   Section-icon tooltip text flips between "Expand X"/"Collapse X" (built in
+   JS, not CSS) since a compact row has no visible label to convey that. */
+.nav-item__rail-caret {
+  position: absolute;
+  color: var(--shell-text-muted);
+  opacity: 0;
+  transition: opacity 120ms;
+  pointer-events: none;
+}
+.nav-item__btn--rail-expandable:hover .nav-item__rail-caret { opacity: 1; }
+/* Open: hint sits top-right (mirrored so its flush corner still lands in
+   the corner), and stays visible without hovering — it's the only cue a
+   collapsed rail has that this section is currently expanded. Closed
+   (about to expand): hint sits bottom-right, rotated 180deg, hover-only —
+   just a preview of the action, not a persistent state. No position/
+   rotation transition — corner-to-corner is a jump, not a slide. */
+.nav-item__btn--rail-expandable[aria-expanded="true"] .nav-item__rail-caret {
+  top: 4px;
+  right: 4px;
+  transform: scaleX(-1);
+  opacity: 1;
+}
+.nav-item__btn--rail-expandable[aria-expanded="false"] .nav-item__rail-caret {
+  right: 4px;
+  bottom: 4px;
+  transform: rotate(180deg);
+}
+
+/* Master headers ("Insights", "Fabric Configuration") sit a level above the
+   per-entity sub-headers (Exposure, Discover, ...) nested under them — a
+   darker grey than the shared .leftnav__section-label default (shell-text-
+   faint) marks that hierarchy; hover darkens one step further, matching the
+   step .leftnav__section-label:hover takes from its own lighter default. */
+.leftnav__section-label.leftnav-alt__top-header { color: var(--shell-text-muted); }
+.leftnav__section-label.leftnav-alt__top-header:hover { color: var(--shell-text-2); }
+
+/* Icon-only rail tooltip — white pill + subtle drop shadow, CSS :hover only
+   (no JS show/hide), instant fade-in (no native `title` hover delay).
+   position:fixed (not absolute): .leftnav__body needs overflow-y:auto to
+   scroll a tall icon list, and CSS resolves overflow-x:visible to auto
+   whenever the other axis isn't visible — clipping an absolutely-positioned
+   tooltip to the 52px rail. position:fixed's containing block is the
+   viewport, so it isn't subject to that ancestor's overflow clipping;
+   omitting `top` keeps the tooltip at the button's own static (in-flow)
+   vertical position, so this still needs no JS — :hover remains the only
+   trigger. */
+.nav-item__btn--rail-collapsed { position: relative; }
+/* [data-tooltip] guard on both rules below: LeftNavHybrid's Row can render
+   this class with no data-tooltip attribute at all (hideTooltip, see
+   LeftNavAlt.jsx) for a row whose hover already opens something
+   self-labeled (the Navigator/Workspace preview). Without the
+   guard, `content: attr(data-tooltip)` on a missing attribute still
+   evaluates to an empty string, not `none` — so the ::after box (padding,
+   background, shadow, border-radius) rendered anyway on hover, just with
+   no text in it: a small blank white pill overlapping whatever real
+   content sat at that same fixed left:60px position (the preview flyout's
+   own title, in this case). The attribute selector means an element with
+   no data-tooltip has no matching ::after rule at all. */
+.nav-item__btn--rail-collapsed[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: fixed;
+  left: 60px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.nav-item__btn--rail-collapsed[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Option 4 — icon rail + collapsible contextual panel ─────────────
+   .leftnav-split is the flex wrapper (rail + panel) that replaces a single
+   .leftnav element at the call site; the rail itself reuses Option 2's
+   .leftnav-alt--rail (52px, same Row/compact tooltip treatment) verbatim.
+   The panel's width animates 0 -> 240px the same way .rp-shell does
+   (shell.css) — its content stays mounted through the close transition
+   (see `lastSection` in LeftNavAlt.jsx) so the row list doesn't vanish
+   before the width has visibly collapsed. */
+.leftnav-split {
+  display: flex;
+  flex-shrink: 0;
+  height: 100%;
+}
+.leftnav-split--peek {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  height: calc(100vh - var(--topbar-height));
+  z-index: 45;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  animation: leftnavPeekIn 140ms ease-out;
+}
+.leftnav-split__panel {
+  position: relative;
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  background: var(--card-bg);
+  border-right: 1px solid var(--shell-border);
+  transition: width 200ms cubic-bezier(0.4,0,0.2,1);
+}
+.leftnav-split__panel--open { width: 240px; }
+/* Drag-collapsed sliver — width itself comes from the inline style
+   (LeftNavAlt.jsx sets it to PANEL_COLLAPSED_WIDTH, 12px) so it can track a
+   live drag; this just lets the handle's own tooltip escape the panel's
+   overflow:hidden, same reasoning as the rail's fixed-position tooltip
+   above. Settling at 12px instead of animating back to 0 like a full close
+   keeps the handle in place as a persistent "drag or click to reopen"
+   affordance — same convention as Teams' own collapsed channel list. */
+.leftnav-split__panel--collapsed { overflow: visible; }
+/* Suppresses the width transition mid-drag so the panel tracks the pointer
+   1:1 instead of chasing it — re-enabled the instant the drag ends. */
+.leftnav-split__panel--dragging { transition: none; }
+.leftnav-split__panel-inner {
+  width: 240px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.leftnav-split__panel-header {
+  flex-shrink: 0;
+  height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--shell-border);
+}
+.leftnav-split__panel-title { font-size: 12px; font-weight: 600; color: var(--shell-text); }
+/* Same sidebar-toggle glyph as Option 2's own "Collapse sidebar" row
+   (IcPanelToggle, LeftNav.jsx) instead of a plain close/X — this button
+   minimizes the panel to the drag handle below, it doesn't deselect the
+   open section, so the sidebar-toggle icon reads truer than a close mark. */
+.leftnav-split__panel-collapse {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border: none; border-radius: 6px; background: none; cursor: pointer;
+  color: var(--shell-text-muted);
+}
+.leftnav-split__panel-collapse:hover { background: var(--shell-hover); color: var(--shell-text); }
+/* Same dark-pill tooltip convention as the rail's own ::after (data-tooltip
+   above) but position:absolute, not fixed — this button sits inside
+   .leftnav-split__panel-inner (its own overflow:hidden is for the row list's
+   vertical scroll), and top+right keeps the tooltip within the panel's
+   240px width instead of needing to escape it. */
+.leftnav-split__panel-collapse::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-split__panel-collapse:hover::after { opacity: 1; }
+
+/* Right-edge drag handle — grab it and drag left to collapse the panel to
+   the sliver below, same global-listener/col-resize mechanic as
+   NavigatorPanel.jsx's own .np-resize-handle. Inset fully inside the panel
+   (not straddling the border like filter-panel.css's own resize handles do)
+   because .leftnav-split__panel clips with overflow:hidden — a handle that
+   overhangs the edge would have its outer half clipped and un-hittable. */
+.leftnav-split__panel-resizer {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+  cursor: col-resize; z-index: 10;
+}
+.leftnav-split__panel-resizer:hover { background: var(--shell-hover); }
+
+/* Collapsed sliver — a full-height button standing in for the panel; click
+   or drag it back out to reopen at PANEL_WIDTH. The tooltip mirrors the
+   rail's own dark hover-tooltip (.nav-item__btn--rail-collapsed::after
+   above) but is fixed-positioned relative to the sliver's own known offset
+   (52px rail + 12px sliver + 8px gap) rather than the rail's 60px, since it
+   sits one column further right. */
+.leftnav-split__panel-handle {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  border: none; background: none; cursor: col-resize; padding: 0;
+  position: relative;
+}
+.leftnav-split__panel-handle:hover { background: var(--shell-hover); }
+.leftnav-split__panel-grip {
+  width: 2px; height: 32px; border-radius: 2px;
+  background: var(--shell-border);
+}
+.leftnav-split__panel-handle:hover .leftnav-split__panel-grip { background: var(--shell-text-muted); }
+.leftnav-split__panel-handle::after {
+  content: attr(data-tooltip);
+  position: fixed;
+  left: 72px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-split__panel-handle:hover::after { opacity: 1; }
+.leftnav-split__panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+.leftnav-split__group { margin-bottom: 8px; }
+.leftnav-split__group-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--shell-text-faint); padding: 8px 8px 4px;
+}
+.leftnav-split__row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px; border: none; border-radius: 6px; background: none;
+  font-family: inherit; font-size: 12px; color: var(--shell-text-2); text-align: left; cursor: pointer;
+}
+.leftnav-split__row:hover { background: var(--shell-hover); color: var(--shell-text); }
+.leftnav-split__row--active { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
+.leftnav-split__row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leftnav-split__row-meta { flex-shrink: 0; font-size: 11px; color: var(--shell-text-faint); }
+/* Status pill for a chat that's still generating a response elsewhere (e.g.
+   the user asked a question in Navigator, then switched to a dashboard
+   before it finished) — same pulsing-dot convention as the reasoning
+   engine's own .tac-status-dot (navigator.css), so "still working" reads
+   the same way here as it does inside the chat itself. */
+.nav-chat-status-pill {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--shell-accent); background: var(--shell-active);
+  border-radius: 4px; padding: 3px 6px;
+}
+.nav-chat-status-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  background: var(--shell-accent);
+  animation: tac-dot-pulse 1.4s ease infinite;
+}
+.leftnav-split__viewall {
+  display: block; width: 100%; margin-top: 4px; padding: 8px;
+  border: none; border-radius: 6px; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 500; color: var(--shell-accent); text-align: left; cursor: pointer;
+}
+.leftnav-split__viewall:hover { background: var(--shell-hover); }
+.leftnav-split__newchat {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-bottom: 8px; padding: 8px 12px;
+  border: 1px solid var(--ctrl-border); border-radius: 8px; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 500; color: var(--shell-text-2); cursor: pointer;
+}
+.leftnav-split__newchat:hover { background: var(--shell-hover); border-color: var(--shell-accent); color: var(--shell-accent); }
+
+/* ── Option 5 (hybrid) — preview flyout ────────────────────────────────
+   Reuses Option 4's panel-header/title/body classes for visual parity, but
+   this is a floating, hover-driven popover (position:fixed, opens on
+   mouseenter/focus, closes on mouseleave/blur/Escape — see LeftNavHybrid's
+   openPreview/scheduleClosePreview), not a permanently docked 240px panel —
+   it previews a category or Navigator's recent chats without reserving
+   layout width. A *click* on Insights/Fabric's own rail icon bypasses this
+   entirely and expands the full nav instead (see handleRailClick). */
+.leftnav-hybrid__flyout {
+  position: fixed;
+  left: 52px;
+  top: var(--topbar-height);
+  width: 220px;
+  max-height: calc(100vh - var(--topbar-height) - 16px);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.20);
+  z-index: 55;
+  animation: leftnavPeekIn 140ms ease-out;
+}
+
+/* Navigator preview's header actions (New chat / Chats / Agents) — same
+   icon-button treatment and dark-pill tooltip convention as
+   .leftnav-split__panel-collapse below, just three of them side by side
+   instead of one. */
+.leftnav-hybrid__header-actions { display: flex; align-items: center; gap: 2px; }
+.leftnav-hybrid__icon-btn {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border: none; border-radius: 6px; background: none; cursor: pointer;
+  color: var(--shell-text-muted);
+}
+.leftnav-hybrid__icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+.leftnav-hybrid__icon-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 60;
+}
+.leftnav-hybrid__icon-btn:hover::after { opacity: 1; }
+/* New report/New dashboard use raster assets with their own baked-in
+   purple fill (assets/icons/new-report.svg, template-add.svg) — masked to
+   background-color:currentColor here so they pick up the icon button's own
+   grey (and its hover shade) instead, matching IcNewChat's plain currentColor
+   stroke in the Navigator preview's header actions. */
+.leftnav-hybrid__icon-btn-mask {
+  width: 13px; height: 13px; display: inline-block; background-color: currentColor;
+  mask-size: contain; -webkit-mask-size: contain;
+  mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
+  mask-position: center; -webkit-mask-position: center;
+}
+

@@ -1695,7 +1695,6 @@
   border-radius: 8px;
   padding: 12px;
 }
-.fp-saved-drag-card__delete-btn { margin-left: 4px; }
 .fp-saved-drag-card__body {
   display: flex;
   gap: 8px;
@@ -2821,9 +2820,3 @@
 
 .gfa-attr__search { padding: 0 0 8px; }
 .gfa-empty-hint { font-size: 12px; color: var(--pai-fg3); padding: 4px 0 8px; font-style: italic; margin: 0; }
-
-/* Compound selector needed: .ds-modal-title{color:var(--shell-text)} is defined in
-   admin.css/library.css, either of which may load after this file — combine both
-   classes so this wins unambiguously regardless of import order. */
-.ds-modal-title.fp-delete-modal-title { display: inline-flex; align-items: center; gap: 8px; color: var(--pai-crit-fg); }
-.fp-delete-modal-title svg { flex-shrink: 0; }

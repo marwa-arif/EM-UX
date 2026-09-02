@@ -5,7 +5,6 @@ import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import { AssessmentDrawer } from './CompliancePage.jsx'
 import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import { makeDiscoverRecords, aggregateBySource, aggregateByType, aggregateByCriticality, fakeAssessmentId } from '../data/discoverRecords.js'
 import '../styles/device.css'
 import '../styles/compliance.css'
@@ -21,7 +20,6 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -39,8 +37,8 @@ function SelectDropdown({ value, onChange, options }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {visible && (
-        <div className={`comp-sort-menu comp-sort-menu--right${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className="comp-sort-menu comp-sort-menu--right">
           {options.map(opt => (
             <button
               key={opt}
@@ -504,7 +502,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
         <div className="dev-col-left">
 
           {/* Total stat + trend chart */}
-          <div className="card dev-card">
+          <div className="card dev-card" data-nav-explore="chart" data-nav-label="Total Assets Trend">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
@@ -587,7 +585,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
           <div className="dev-bottom-row">
 
             {/* Data Source */}
-            <div className="card dev-card dev-source-card">
+            <div className="card dev-card dev-source-card" data-nav-explore="chart" data-nav-label="Data Source">
               <div className="dev-card-title">Data Source</div>
               <div className="dev-chart-fill">
                 <ResponsiveContainer width="100%" height="100%">
@@ -652,7 +650,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
             </div>
 
             {/* Type + Donut */}
-            <div className="card dev-card dev-type-card">
+            <div className="card dev-card dev-type-card" data-nav-explore="chart" data-nav-label="Assets by Type">
               <div className="dev-card-title">Type</div>
               <div className="dev-donut-wrap">
                 <ResponsiveContainer width="100%" height="100%">
@@ -719,7 +717,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
                 placeholder="Search assessments…"
               />
             </div>
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Key Security Insights">
               <table className="ds-table dev-insights-table">
                 <thead>
                   <tr>
@@ -780,7 +778,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
               <span className="dev-card-title">Criticality Insights</span>
             </div>
 
-            <div className="dev-crit-bar-section">
+            <div className="dev-crit-bar-section" data-nav-explore="section" data-nav-label="Criticality Insights">
               <div className="dev-stacked-bar">
                 {activeCriticality.map((c, i) => (
                   <div
@@ -827,7 +825,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
               />
             </div>
 
-            <div className="ds-table-wrap dev-no-hscroll">
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Assets by Criticality Score">
               <table className="ds-table">
                 <thead>
                   <tr>

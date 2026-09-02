@@ -937,7 +937,7 @@ function DetailsTable({ rows, totalCount, search, onSearch, onRowClick }) {
 
   const displayRows = rows.slice((page - 1) * rowsPerPage, page * rowsPerPage);
   return (
-    <div className="kg-details-card">
+    <div className="kg-details-card" data-nav-explore="table" data-nav-label="Details">
       {/* header bar */}
       <div className="kg-details-header">
         <div className="kg-details-title">
@@ -1426,7 +1426,7 @@ function SankeyView() {
       </div>
 
       {/* Chart */}
-      <div className="kg-sankey-chart-wrap">
+      <div className="kg-sankey-chart-wrap" data-nav-explore="chart" data-nav-label="Data Sources">
         <div ref={containerRef} className="kg-sankey-inner">
           <svg
             width={svgW} height={H}
@@ -1626,7 +1626,7 @@ function SankeyView() {
 function EntityKpiGrid() {
   const entities = Object.entries(ENTITY_TYPES).sort((a, b) => a[1].label.localeCompare(b[1].label));
   return (
-    <div className="kg-kpi-grid">
+    <div className="kg-kpi-grid" data-nav-explore="section" data-nav-label="Entities Summary">
       {entities.map(([id, def]) => {
             const frags = def.fragments || def.count;
             const pct = frags ? (def.count / frags) * 100 : 100;
@@ -2324,7 +2324,7 @@ export default function KGPage({ focusEntity } = {}) {
         </div>}
 
         {/* Graph + zoom rail — Relationships tab only */}
-        {!summaryCollapsed && summaryTab === 'Relationships' && <div className="kg-relationships-canvas-wrap">
+        {!summaryCollapsed && summaryTab === 'Relationships' && <div className="kg-relationships-canvas-wrap" data-nav-explore="chart" data-nav-label="Relationship Graph">
           <GraphCanvas
             selected={selected}
             selectedEdgeKey={selectedEdgeKey}

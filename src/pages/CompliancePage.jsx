@@ -2,9 +2,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell } from 'recharts'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
-import TimeRangeTabs from '../components/TimeRangeTabs.jsx'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
-import { FindingDrawer } from './ComplianceFindingsPage.jsx'
 import '../styles/compliance.css'
 import '../styles/drawer.css'
 import '../styles/active-filter-panel.css'
@@ -353,96 +350,96 @@ const FW_CONTROLS = {
 }
 
 const FINDINGS_ROWS = [
-  { title: 'FIM not enabled', entity: 'WORK-KFI900.ACNA.CORP.COM',      evidence: 'File Integrity Monitoring: Not Enabled', status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'FIM not enabled', entity: 'WORK-KFI900.ACNA.CORP.COM',      evidence: 'Origin: [MS Defender, MS Azure AD, Tenable.sc, ServiceNow]', status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'scf',      control: 'END-06',    desc: 'Endpoint File Integrity Monitoring (FIM)' },
       { key: 'nist_csf', control: 'DE.CM-09',  desc: 'Computing hardware and software, runtime environments, and their data' },
       { key: 'pci_dss',  control: '2.2.6',     desc: 'System security parameters are configured to prevent misuse.' },
       { key: 'nist_800', control: 'SI-7',       desc: 'Software, Firmware, and Information Integrity' },
     ]},
-  { title: 'Full disk encryption not enforced', entity: '172.16.147.186',                  evidence: 'Full Disk Encryption Status: Disabled',                      status: 'Open',  type: 'device', criticality: 'Critical',
+  { title: 'Full disk encryption not enforced', entity: '172.16.147.186',                  evidence: 'Origin: [Qualys]',                                           status: 'Open',  criticality: 'Critical',
     frameworks: [
       { key: 'nist_csf', control: 'PR.DS-01',  desc: 'The confidentiality, integrity, and availability of data-at-rest are protected' },
       { key: 'pci_dss',  control: '3.4.1',     desc: 'Primary account numbers are secured with strong cryptography' },
     ]},
-  { title: 'Security configuration baseline drift', entity: '10.126.184.252',                  evidence: 'Configuration Baseline Compliance: Drifted',                 status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'Security configuration baseline drift', entity: '10.126.184.252',                  evidence: 'Origin: [Qualys]',                                           status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'nist_800', control: 'CM-6',       desc: 'Configuration settings for information technology products' },
       { key: 'cis',      control: 'CIS-4.1',    desc: 'Establish and maintain a secure configuration process' },
       { key: 'cmmc_2',   control: 'CM.L2-3.4.1',desc: 'Establish and maintain baseline configurations' },
     ]},
-  { title: 'Malware protection not configured', entity: 'VM-TSR92112',                     evidence: 'Malware Protection Status: Not Configured',                 status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'Malware protection not configured', entity: 'VM-TSR92112',                     evidence: 'Origin: [Wiz]',                                              status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'scf',      control: 'END-06',    desc: 'Endpoint File Integrity Monitoring (FIM)' },
       { key: 'nist_csf', control: 'DE.CM-09',  desc: 'Computing hardware and software, runtime environments, and their data' },
       { key: 'hipaa',    control: '164.312(c)', desc: 'Integrity controls for electronic protected health information' },
       { key: 'iso_27001',control: 'A.12.2',    desc: 'Protection against malware' },
     ]},
-  { title: 'Account management non-compliance', entity: 'VM-TSR45197',                     evidence: 'Account Review Status: Overdue',                             status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'Account management non-compliance', entity: 'VM-TSR45197',                     evidence: 'Origin: [MS Intune, MS Azure AD]',                           status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'nist_800', control: 'AC-2',       desc: 'Account Management' },
       { key: 'pci_dss',  control: '8.2.1',      desc: 'All user IDs and authentication credentials are managed' },
     ]},
-  { title: 'Incident handling capability gap', entity: 'WORK-DOU537.ACNA.CORP.COM',       evidence: 'Incident Response Plan: Not Documented',                     status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'Incident handling capability gap', entity: 'WORK-DOU537.ACNA.CORP.COM',       evidence: 'Origin: [MS Defender, MS Azure AD, ServiceNow]',             status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'cmmc_2',   control: 'IR.L2-3.6.1',desc: 'Establish an operational incident-handling capability' },
       { key: 'nist_csf', control: 'RS.CO-02',   desc: 'Incidents are reported consistent with established criteria' },
       { key: 'iso_27001',control: 'A.16.1',     desc: 'Management of information security incidents and improvements' },
     ]},
-  { title: 'Vulnerability scan overdue', entity: '10.215.233.210',                  evidence: 'Last Vulnerability Scan Date: 2025-11-02',                   status: 'Open',  type: 'device', criticality: 'Critical',
+  { title: 'Vulnerability scan overdue', entity: '10.215.233.210',                  evidence: 'Origin: [Qualys]',                                           status: 'Open',  criticality: 'Critical',
     frameworks: [
       { key: 'scf',      control: 'VUL-02',    desc: 'Vulnerability Scanning' },
       { key: 'nist_800', control: 'RA-5',       desc: 'Vulnerability Monitoring and Scanning' },
       { key: 'pci_dss',  control: '11.3.1',     desc: 'Internal vulnerability scans are performed' },
       { key: 'cis',      control: 'CIS-7.1',    desc: 'Perform automated vulnerability scans of enterprise assets' },
     ]},
-  { title: 'Asset not in managed inventory', entity: 'WORK-VNR355.ACNA.CORP.COM',       evidence: 'CMDB Asset Record: Not Found',                              status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'Asset not in managed inventory', entity: 'WORK-VNR355.ACNA.CORP.COM',       evidence: 'Origin: [MS Defender, MS Azure AD, Tenable.sc, ServiceNow]', status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'nist_csf', control: 'ID.AM-01',   desc: 'Inventories of hardware managed by the organization are maintained' },
       { key: 'cis',      control: 'CIS-1.1',    desc: 'Establish and maintain detailed enterprise asset inventory' },
     ]},
-  { title: 'Personnel screening controls missing', entity: 'VM-TSR73501',                     evidence: 'Background Check Status: Not Completed',                     status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'Personnel screening controls missing', entity: 'VM-TSR73501',                     evidence: 'Origin: [MS Intune, MS Azure AD]',                           status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'hipaa',    control: '164.308(a)', desc: 'Administrative safeguards for workforce security' },
       { key: 'nist_800', control: 'PS-3',       desc: 'Personnel Screening' },
       { key: 'iso_27001',control: 'A.7.1',     desc: 'Prior to employment — background verification checks' },
     ]},
-  { title: 'Network boundary protection failure', entity: 'PAI-DEMO-PROD-CAST-63537D6F',     evidence: 'Security Group Rule: 0.0.0.0/0 Open on Port 22',            status: 'Open',  type: 'device', criticality: 'Critical',
+  { title: 'Network boundary protection failure', entity: 'PAI-DEMO-PROD-CAST-63537D6F',     evidence: 'Origin: [AWS]',                                              status: 'Open',  criticality: 'Critical',
     frameworks: [
       { key: 'nist_csf', control: 'PR.AC-05',   desc: 'Network integrity is protected, incorporating network segregation' },
       { key: 'pci_dss',  control: '1.3.1',      desc: 'Inbound traffic to the cardholder data environment is restricted' },
       { key: 'cmmc_2',   control: 'SC.L2-3.13.1',desc: 'Monitor, control, and protect communications at external boundaries' },
       { key: 'nist_800', control: 'SC-7',       desc: 'Boundary Protection' },
     ]},
-  { title: 'Malware detection not deployed', entity: 'WORK-FLR646.ACNA.CORP.COM',       evidence: 'Endpoint Detection Agent: Not Installed',                    status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'Malware detection not deployed', entity: 'WORK-FLR646.ACNA.CORP.COM',       evidence: 'Origin: [MS Defender, Tenable.sc]',                          status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'scf',      control: 'END-03',    desc: 'Endpoint Protection' },
       { key: 'nist_csf', control: 'DE.CM-04',  desc: 'Malicious code is detected' },
     ]},
-  { title: 'Anti-malware solution outdated', entity: 'WORK-JRF656228.ACNA.CORP.COM',    evidence: 'Anti-Malware Signature Date: 2024-02-11',                    status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'Anti-malware solution outdated', entity: 'WORK-JRF656228.ACNA.CORP.COM',    evidence: 'Origin: [MS Defender]',                                      status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'nist_800', control: 'SI-3',       desc: 'Malicious Code Protection' },
       { key: 'cis',      control: 'CIS-10.1',   desc: 'Deploy and maintain anti-malware software' },
       { key: 'pci_dss',  control: '5.2.1',      desc: 'Anti-malware solution deployed on all system components' },
     ]},
-  { title: 'Cybersecurity role assignment gap', entity: 'WORK-BQN304189.ACNA.CORP.COM',    evidence: 'Security Owner Assigned: No',                               status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'Cybersecurity role assignment gap', entity: 'WORK-BQN304189.ACNA.CORP.COM',    evidence: 'Origin: [ServiceNow]',                                       status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'nist_csf', control: 'GV.RR-02',   desc: 'Roles and responsibilities for cybersecurity risk management' },
       { key: 'iso_27001',control: 'A.6.1',     desc: 'Internal organization — information security roles' },
     ]},
-  { title: 'Penetration testing overdue', entity: 'WORK-FMJ966.ACNA.CORP.COM',       evidence: 'Last Penetration Test Date: 2024-08-15',                    status: 'Open',  type: 'device', criticality: 'Critical',
+  { title: 'Penetration testing overdue', entity: 'WORK-FMJ966.ACNA.CORP.COM',       evidence: 'Origin: [Qualys, Wiz]',                                      status: 'Open',  criticality: 'Critical',
     frameworks: [
       { key: 'scf',      control: 'VUL-06',    desc: 'Penetration Testing' },
       { key: 'pci_dss',  control: '11.4.1',     desc: 'Penetration testing methodology is defined, documented and implemented' },
       { key: 'nist_800', control: 'CA-8',       desc: 'Penetration Testing' },
       { key: 'cmmc_2',   control: 'CA.L2-3.12.1',desc: 'Periodically assess security controls in organizational systems' },
     ]},
-  { title: 'Authentication management non-compliance', entity: 'WORK-BQN304182.ACNA.CORP.COM',    evidence: 'Password Policy Compliance: Failed',                        status: 'Open',  type: 'device', criticality: 'High',
+  { title: 'Authentication management non-compliance', entity: 'WORK-BQN304182.ACNA.CORP.COM',    evidence: 'Origin: [MS Azure AD]',                                      status: 'Open',  criticality: 'High',
     frameworks: [
       { key: 'nist_csf', control: 'PR.AA-01',   desc: 'Identities and credentials for authorized users are managed' },
       { key: 'nist_800', control: 'IA-5',       desc: 'Authenticator Management' },
     ]},
-  { title: 'MFA not enabled', entity: 'WORK-YPS497248.ACNA.CORP.COM',    evidence: 'MFA Enforcement Status: Disabled',                          status: 'Open',  type: 'device', criticality: 'Medium',
+  { title: 'MFA not enabled', entity: 'WORK-YPS497248.ACNA.CORP.COM',    evidence: 'Origin: [MS Intune]',                                        status: 'Open',  criticality: 'Medium',
     frameworks: [
       { key: 'hipaa',    control: '164.312(d)', desc: 'Person or entity authentication controls' },
       { key: 'nist_800', control: 'IA-2',       desc: 'Identification and Authentication (Organizational Users)' },
@@ -473,9 +470,7 @@ const TREE_DATA = [
         children: [
           {
             id: 'gv_po_01', name: 'GV.PO-01: Policy for managing cybersecurity risks is established based on organizational requirements', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Medium',
-            children: [
-              { id: 'gv_po_01_a', name: 'Cybersecurity policy is documented and approved by executive leadership', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Low', isLeaf: true },
-            ],
+            children: [],
           },
         ],
       },
@@ -487,176 +482,30 @@ const TREE_DATA = [
       {
         id: 'id_am', name: 'ID.AM: Asset Management', closed: 189570, open: 102110, pct: 64, rating: 'Moderate', criticality: 'Critical',
         children: [
-          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', criticality: 'High',     children: [
-              { id: 'id_am_01_a', name: 'All hardware assets are inventoried in the CMDB',                 closed: 100000, open: 50000, pct: 67, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'id_am_01_b', name: 'Newly provisioned devices are auto-enrolled into inventory',      closed: 74747,  open: 44561, pct: 63, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ] },
-          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', criticality: 'Medium',   children: [
-              { id: 'id_am_02_a', name: 'Software and SaaS assets are inventoried and reconciled monthly',  closed: 25000, open: 9000, pct: 74, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-              { id: 'id_am_02_b', name: 'Unauthorized/shadow IT applications are flagged for review',        closed: 14548, open: 6137, pct: 70, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-            ] },
-          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', criticality: 'Low',    children: [
-              { id: 'id_am_03_a', name: 'Network communication baselines are documented and kept current', closed: 1, open: 0, pct: 100, rating: 'Compliant', criticality: 'Low', isLeaf: true },
-            ] },
-          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     criticality: 'Critical', children: [
-              { id: 'id_am_07_a', name: 'Sensitive data types are classified and mapped to storage locations', closed: 1200, open: 2000, pct: 38, rating: 'Weak', criticality: 'Critical', isLeaf: true },
-              { id: 'id_am_07_b', name: 'Data inventory metadata is reviewed on a recurring cadence',           closed: 1708, open: 1222, pct: 58, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ] },
-          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', criticality: 'Medium',   children: [
-              { id: 'id_am_08_a', name: 'Asset lifecycle stage (procured/active/EOL) is tracked in the CMDB', closed: 8000, open: 2500, pct: 76, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-              { id: 'id_am_08_b', name: 'End-of-life assets are decommissioned per defined SLA',              closed: 3914, open: 1827, pct: 68, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ] },
+          { id: 'id_am_01', name: 'ID.AM-01: Inventories of hardware managed by the organization are maintained',                         closed: 174747, open: 94561, pct: 64, rating: 'Moderate', criticality: 'High',     children: [] },
+          { id: 'id_am_02', name: 'ID.AM-02: Inventories of software, services, and systems managed by the organization are maintained',  closed: 39548,  open: 15137, pct: 72, rating: 'Moderate', criticality: 'Medium',   children: [] },
+          { id: 'id_am_03', name: 'ID.AM-03: Representations of the organization\'s authorized network communication are maintained',      closed: 1,      open: 0,     pct: 100, rating: 'Compliant', criticality: 'Low',    children: [] },
+          { id: 'id_am_07', name: 'ID.AM-07: Inventories of data and corresponding metadata for designated data types are maintained',    closed: 2908,   open: 3222,  pct: 47, rating: 'Weak',     criticality: 'Critical', children: [] },
+          { id: 'id_am_08', name: 'ID.AM-08: Systems, hardware, software, services, and data are managed throughout their life cycles',   closed: 11914,  open: 4327,  pct: 73, rating: 'Moderate', criticality: 'Medium',   children: [] },
         ],
       },
       {
         id: 'id_ra', name: 'ID.RA: Risk Assessment', closed: 30375, open: 17490, pct: 63, rating: 'Moderate', criticality: 'High',
-        children: [
-          {
-            id: 'id_ra_01', name: 'ID.RA-01: Vulnerabilities in assets are identified, validated, and recorded', closed: 18000, open: 11000, pct: 62, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'id_ra_01_a', name: 'Vulnerability scans are performed on a recurring schedule',                       closed: 10000, open: 6000, pct: 63, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'id_ra_01_b', name: 'Identified vulnerabilities are validated and logged in the vulnerability register', closed: 8000,  open: 5000, pct: 62, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-          {
-            id: 'id_ra_05', name: 'ID.RA-05: Threats, vulnerabilities, likelihoods, and impacts are used to understand inherent risk and inform risk response prioritization', closed: 12375, open: 6490, pct: 66, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'id_ra_05_a', name: 'Risk register reflects current threat and vulnerability likelihood scoring', closed: 7000, open: 4000, pct: 64, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'id_ra_05_b', name: 'Risk response priorities are reviewed by risk owners quarterly',            closed: 5375, open: 2490, pct: 68, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-        ],
+        children: [],
       },
     ],
   },
   {
     id: 'pr', name: 'PR: Protect', closed: 7123443, open: 393013, pct: 94, rating: 'Strong', criticality: 'Medium',
-    children: [
-      {
-        id: 'pr_aa', name: 'PR.AA: Identity Management, Authentication, and Access Control', closed: 5000000, open: 200000, pct: 96, rating: 'Strong', criticality: 'Low',
-        children: [
-          {
-            id: 'pr_aa_01', name: 'PR.AA-01: Identities and credentials for authorized users, services, and hardware are managed by the organization', closed: 3000000, open: 100000, pct: 97, rating: 'Strong', criticality: 'Low',
-            children: [
-              { id: 'pr_aa_01_a', name: 'User accounts are provisioned through an approved identity lifecycle process', closed: 1800000, open: 60000, pct: 97, rating: 'Strong', criticality: 'Low', isLeaf: true },
-              { id: 'pr_aa_01_b', name: 'Credentials are revoked within 24 hours of employee termination',              closed: 1200000, open: 40000, pct: 97, rating: 'Strong', criticality: 'Low', isLeaf: true },
-            ],
-          },
-          {
-            id: 'pr_aa_05', name: 'PR.AA-05: Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed', closed: 2000000, open: 100000, pct: 95, rating: 'Strong', criticality: 'Low',
-            children: [
-              { id: 'pr_aa_05_a', name: 'Access permissions follow least-privilege and are reviewed periodically', closed: 1300000, open: 70000, pct: 95, rating: 'Strong', criticality: 'Low', isLeaf: true },
-              { id: 'pr_aa_05_b', name: 'Privileged access requires just-in-time elevation and approval',         closed: 700000,  open: 30000, pct: 96, rating: 'Strong', criticality: 'Low', isLeaf: true },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'pr_ds', name: 'PR.DS: Data Security', closed: 2123443, open: 193013, pct: 92, rating: 'Strong', criticality: 'Low',
-        children: [
-          {
-            id: 'pr_ds_01', name: 'PR.DS-01: The confidentiality, integrity, and availability of data-at-rest are protected', closed: 1200000, open: 120000, pct: 91, rating: 'Strong', criticality: 'Low',
-            children: [
-              { id: 'pr_ds_01_a', name: 'Data at rest is encrypted using approved cryptographic standards', closed: 750000, open: 80000, pct: 90, rating: 'Strong', criticality: 'Low', isLeaf: true },
-              { id: 'pr_ds_01_b', name: 'Encryption key rotation follows defined policy intervals',        closed: 450000, open: 40000, pct: 92, rating: 'Strong', criticality: 'Low', isLeaf: true },
-            ],
-          },
-          {
-            id: 'pr_ds_02', name: 'PR.DS-02: The confidentiality, integrity, and availability of data-in-transit are protected', closed: 923443, open: 73013, pct: 93, rating: 'Strong', criticality: 'Low',
-            children: [
-              { id: 'pr_ds_02_a', name: 'Data in transit is encrypted using TLS 1.2 or higher',            closed: 600000, open: 50000, pct: 92, rating: 'Strong', criticality: 'Low', isLeaf: true },
-              { id: 'pr_ds_02_b', name: 'Unencrypted protocols are disabled on production endpoints',      closed: 323443, open: 23013, pct: 93, rating: 'Strong', criticality: 'Low', isLeaf: true },
-            ],
-          },
-        ],
-      },
-    ],
+    children: [],
   },
   {
     id: 'de', name: 'DE: Detect', closed: 284102, open: 198430, pct: 58, rating: 'Moderate', criticality: 'High',
-    children: [
-      {
-        id: 'de_cm', name: 'DE.CM: Continuous Monitoring', closed: 200000, open: 150000, pct: 57, rating: 'Moderate', criticality: 'High',
-        children: [
-          {
-            id: 'de_cm_01', name: 'DE.CM-01: Networks and network services are monitored to find potentially adverse events', closed: 120000, open: 90000, pct: 57, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'de_cm_01_a', name: 'Network traffic is monitored for anomalous connections',      closed: 70000, open: 50000, pct: 58, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'de_cm_01_b', name: 'IDS/IPS alerts are triaged within defined SLAs',                closed: 50000, open: 40000, pct: 56, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-          {
-            id: 'de_cm_09', name: 'DE.CM-09: Computing hardware and software, runtime environments, and their data are monitored to find potentially adverse events', closed: 80000, open: 60000, pct: 57, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'de_cm_09_a', name: 'Endpoint telemetry is continuously collected from managed devices',          closed: 50000, open: 35000, pct: 59, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'de_cm_09_b', name: 'Unmanaged devices connecting to the network are flagged for review',        closed: 30000, open: 25000, pct: 55, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'de_ae', name: 'DE.AE: Adverse Event Analysis', closed: 84102, open: 48430, pct: 63, rating: 'Moderate', criticality: 'High',
-        children: [
-          {
-            id: 'de_ae_02', name: 'DE.AE-02: Potentially adverse events are analyzed to better understand associated activities', closed: 50000, open: 28430, pct: 64, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'de_ae_02_a', name: 'Security events are correlated across log sources in the SIEM',      closed: 32000, open: 18000, pct: 64, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'de_ae_02_b', name: 'Analysts document root cause for closed adverse-event tickets',      closed: 18000, open: 10430, pct: 63, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-          {
-            id: 'de_ae_07', name: 'DE.AE-07: Cyber threat intelligence and other contextual information are integrated into the analysis', closed: 34102, open: 20000, pct: 63, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'de_ae_07_a', name: 'Threat intelligence feeds are ingested into the detection pipeline', closed: 20102, open: 12000, pct: 63, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'de_ae_07_b', name: 'IOC matches trigger automated enrichment workflows',                 closed: 14000, open: 8000,  pct: 64, rating: 'Moderate', criticality: 'High', isLeaf: true },
-            ],
-          },
-        ],
-      },
-    ],
+    children: [],
   },
   {
     id: 'rs', name: 'RS: Respond', closed: 71245, open: 28910, pct: 71, rating: 'Moderate', criticality: 'Medium',
-    children: [
-      {
-        id: 'rs_ma', name: 'RS.MA: Incident Management', closed: 45000, open: 18000, pct: 71, rating: 'Moderate', criticality: 'Medium',
-        children: [
-          {
-            id: 'rs_ma_01', name: 'RS.MA-01: The incident response plan is executed once an incident is declared', closed: 28000, open: 10000, pct: 74, rating: 'Moderate', criticality: 'Medium',
-            children: [
-              { id: 'rs_ma_01_a', name: 'Incident response plan is invoked upon declared incidents',       closed: 18000, open: 6000, pct: 75, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-              { id: 'rs_ma_01_b', name: 'Post-incident reviews are completed within 10 business days',    closed: 10000, open: 4000, pct: 71, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-            ],
-          },
-          {
-            id: 'rs_ma_02', name: 'RS.MA-02: Incidents are categorized and prioritized', closed: 17000, open: 8000, pct: 68, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'rs_ma_02_a', name: 'Incidents are triaged and assigned a severity within 1 hour of detection', closed: 10000, open: 5000, pct: 67, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'rs_ma_02_b', name: 'Incident priority is re-evaluated as new evidence emerges',               closed: 7000,  open: 3000, pct: 70, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'rs_co', name: 'RS.CO: Incident Response Reporting and Communication', closed: 26245, open: 10910, pct: 71, rating: 'Moderate', criticality: 'Medium',
-        children: [
-          {
-            id: 'rs_co_02', name: 'RS.CO-02: Internal and external stakeholders are notified of incidents', closed: 15000, open: 6000, pct: 71, rating: 'Moderate', criticality: 'High',
-            children: [
-              { id: 'rs_co_02_a', name: 'Stakeholders are notified per the communication plan within SLA', closed: 9000, open: 4000, pct: 69, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'rs_co_02_b', name: 'Regulatory notification timelines are tracked and met',           closed: 6000, open: 2000, pct: 75, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-            ],
-          },
-          {
-            id: 'rs_co_03', name: 'RS.CO-03: Information is shared with designated internal and external stakeholders per the response plan', closed: 11245, open: 4910, pct: 70, rating: 'Moderate', criticality: 'Medium',
-            children: [
-              { id: 'rs_co_03_a', name: 'Incident details are shared with relevant ISACs where applicable', closed: 6245, open: 2910, pct: 68, rating: 'Moderate', criticality: 'High', isLeaf: true },
-              { id: 'rs_co_03_b', name: 'Lessons learned are distributed to affected business units',      closed: 5000, open: 2000, pct: 71, rating: 'Moderate', criticality: 'Medium', isLeaf: true },
-            ],
-          },
-        ],
-      },
-    ],
+    children: [],
   },
 ]
 
@@ -1277,7 +1126,6 @@ function SemiDonutChart({ pct, rating, width = 482 }) {
           outerRadius={outerR}
           dataKey="value"
           strokeWidth={0}
-          isAnimationActive={false}
         >
           <Cell fill="var(--shell-raised)" />
         </Pie>
@@ -1293,7 +1141,6 @@ function SemiDonutChart({ pct, rating, width = 482 }) {
             dataKey="value"
             strokeWidth={0}
             cornerRadius={Math.round(ringW / 2)}
-            isAnimationActive={false}
           >
             <Cell fill={color} />
           </Pie>
@@ -1401,7 +1248,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
   const [findingsPage, setFindingsPage]       = useState(1)
   const [findingsPerPage, setFindingsPerPage] = useState(10)
   const [remediationRow, setRemediationRow]   = useState(null) // { i, rect }
-  const [findingDrawerRow, setFindingDrawerRow] = useState(null)
   const [fwPopover, setFwPopover]             = useState(null) // { rect } — overview frameworks popover
   const [createTicketEntity, setCreateTicketEntity] = useState(null) // null = closed, string = entity pre-fill
   const [ctTitle, setCtTitle]           = useState('')
@@ -1636,7 +1482,14 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                       Warning (75)
                     </span>
                   </div>
-                  <TimeRangeTabs value={tRange} onChange={setTRange} />
+                  <div className="comp-time-pills-wrap">
+                    {['1W','1M','3M','6M','1Y'].map(t => (
+                      <button key={t}
+                        className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`}
+                        onClick={() => setTRange(t)}
+                      >{t}</button>
+                    ))}
+                  </div>
                 </div>
                 <div className="comp-drawer-chart-wrap">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1680,7 +1533,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                         }}
                         itemStyle={{ color: 'var(--pai-teal)' }}
                         cursor={false}
-                        isAnimationActive={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
@@ -1688,7 +1540,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                         stroke="var(--pai-teal)" strokeWidth={2}
                         fill="url(#drawerAreaFill)" dot={false}
                         activeDot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }}
-                        isAnimationActive={false}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -1767,7 +1618,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                 </thead>
                 <tbody>
                   {FINDINGS_ROWS.slice((findingsPage - 1) * findingsPerPage, findingsPage * findingsPerPage).map((row, i) => (
-                    <tr key={i} className="comp-drawer-tr--clickable" onClick={() => setFindingDrawerRow(row)}>
+                    <tr key={i}>
                       <td>
                         <div className="comp-table-entity-cell">
                           <EntityBadge type="device" />
@@ -1781,7 +1632,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                           <button
                             className="comp-drawer-action-icon comp-drawer-action-icon--indigo"
                             title="Explore"
-                            onClick={e => { e.stopPropagation(); onNav && onNav('kg', { type: 'host', label: row.entity }) }}
+                            onClick={() => onNav && onNav('kg', { type: 'host', label: row.entity })}
                           >
                             <IcExploreAction />
                           </button>
@@ -1789,7 +1640,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
                             className="comp-drawer-action-icon"
                             title="Remediation Actions"
                             onClick={e => {
-                              e.stopPropagation()
                               const rect = e.currentTarget.getBoundingClientRect()
                               setRemediationRow(remediationRow?.i === i ? null : { i, rect })
                             }}
@@ -1814,11 +1664,6 @@ function AssessmentDrawer({ node, onClose, onNav }) {
 
         </div>
       </div>
-
-      {/* Finding detail drawer */}
-      {findingDrawerRow && (
-        <FindingDrawer row={findingDrawerRow} onClose={() => setFindingDrawerRow(null)} stacked />
-      )}
 
       {/* Remediation popup */}
       {remediationRow !== null && (
@@ -1972,7 +1817,6 @@ function FunctionDrawer({ node, level, onClose }) {
   const [findingsPage, setFindingsPage]         = useState(1)
   const [findingsPerPage, setFindingsPerPage]   = useState(10)
   const [remediationRow, setRemediationRow]     = useState(null)
-  const [findingDrawerRow, setFindingDrawerRow] = useState(null)
   const [fwPopover, setFwPopover]               = useState(null)
   const [createTicketEntity, setCreateTicketEntity] = useState(null)
   const [ctTitle, setCtTitle]                     = useState('')
@@ -2189,7 +2033,11 @@ function FunctionDrawer({ node, level, onClose }) {
                       Warning (75)
                     </span>
                   </div>
-                  <TimeRangeTabs value={tRange} onChange={setTRange} />
+                  <div className="comp-time-pills-wrap">
+                    {['1W','1M','3M','6M','1Y'].map(t => (
+                      <button key={t} className={`comp-time-pill${tRange === t ? ' comp-time-pill--active' : ''}`} onClick={() => setTRange(t)}>{t}</button>
+                    ))}
+                  </div>
                 </div>
                 <div className="comp-drawer-chart-wrap">
                   <ResponsiveContainer width="100%" height="100%">
@@ -2214,11 +2062,10 @@ function FunctionDrawer({ node, level, onClose }) {
                         contentStyle={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 6, fontSize: 11, padding: '4px 10px', fontFamily: 'Inter,system-ui', color: 'var(--shell-text)' }}
                         itemStyle={{ color: 'var(--pai-teal)' }}
                         cursor={false}
-                        isAnimationActive={false}
                       />
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={50} stroke="var(--pai-crit-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
                       {trendMetric === 'Compliance Score' && <ReferenceLine y={75} stroke="var(--pai-med-fg)" strokeDasharray="5 3" strokeWidth={1.5} />}
-                      <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2} fill="url(#fnDrawerFill)" dot={false} activeDot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2} fill="url(#fnDrawerFill)" dot={false} activeDot={{ r: 4, fill: 'var(--pai-teal)', strokeWidth: 0 }} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -2290,7 +2137,7 @@ function FunctionDrawer({ node, level, onClose }) {
                 </thead>
                 <tbody>
                   {FINDINGS_ROWS.slice((findingsPage - 1) * findingsPerPage, findingsPage * findingsPerPage).map((row, i) => (
-                    <tr key={i} className="comp-drawer-tr--clickable" onClick={() => setFindingDrawerRow(row)}>
+                    <tr key={i}>
                       <td>
                         <div className="comp-table-entity-cell">
                           <EntityBadge type="device" />
@@ -2301,14 +2148,13 @@ function FunctionDrawer({ node, level, onClose }) {
                       <td><span className="comp-drawer-status-open">{row.status}</span></td>
                       <td>
                         <div className="comp-drawer-action-btns">
-                          <button className="comp-drawer-action-icon comp-drawer-action-icon--indigo" title="Explore" onClick={e => e.stopPropagation()}>
+                          <button className="comp-drawer-action-icon comp-drawer-action-icon--indigo" title="Explore">
                             <IcExploreAction />
                           </button>
                           <button
                             className="comp-drawer-action-icon"
                             title="Remediation Actions"
                             onClick={e => {
-                              e.stopPropagation()
                               const rect = e.currentTarget.getBoundingClientRect()
                               setRemediationRow(remediationRow?.i === i ? null : { i, rect })
                             }}
@@ -2333,11 +2179,6 @@ function FunctionDrawer({ node, level, onClose }) {
 
         </div>
       </div>
-
-      {/* Finding detail drawer */}
-      {findingDrawerRow && (
-        <FindingDrawer row={findingDrawerRow} onClose={() => setFindingDrawerRow(null)} stacked />
-      )}
 
       {/* Remediation popup */}
       {remediationRow !== null && (
@@ -2465,55 +2306,23 @@ function FunctionDrawer({ node, level, onClose }) {
 }
 
 // ── Tree row renderer ─────────────────────────────────────────────
-// Matches the fixed height of .comp-tree-cell-inner — every tree row is this tall.
-const TREE_ROW_HEIGHT = 52
-
-function findTreeNode(nodes, id) {
-  for (const n of nodes) {
-    if (n.id === id) return n
-    if (n.children) {
-      const found = findTreeNode(n.children, id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-// Ids of rows that are (or are about to become) rendered under `node`, given the current expanded map.
-// Used both right before `node` collapses (they're still mounted) and right after it expands (they're newly mounted).
-function visibleDescendantIds(node, expanded) {
-  const ids = []
-  if (node.children) {
-    for (const child of node.children) {
-      ids.push(child.id)
-      if (expanded[child.id]) ids.push(...visibleDescendantIds(child, expanded))
-    }
-  }
-  return ids
-}
-
-function collectRows(nodes, level, expanded, closingIds, openingIds, parentIsLast, ancestorClosing = false, ancestorOpening = false) {
+function collectRows(nodes, level, expanded, parentIsLast) {
   const result = []
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]
     const isLast = i === nodes.length - 1
     const hasChildren = node.children && node.children.length > 0
-    const isExpanded = !!expanded[node.id]
-    const selfClosing = closingIds.has(node.id)
-    const selfOpening = openingIds.has(node.id)
-    // Only descendants of the toggled node animate — the toggled row itself stays put.
-    const isClosing = ancestorClosing
-    const isEntering = ancestorOpening
-    result.push({ node, level, isLast, hasChildren, isOpen: isExpanded, isClosing, isEntering, parentIsLast: [...parentIsLast] })
-    if ((isExpanded || selfClosing) && hasChildren) {
-      result.push(...collectRows(node.children, level + 1, expanded, closingIds, openingIds, [...parentIsLast, isLast], ancestorClosing || selfClosing, ancestorOpening || selfOpening))
+    const isOpen = !!expanded[node.id]
+    result.push({ node, level, isLast, hasChildren, isOpen, parentIsLast: [...parentIsLast] })
+    if (isOpen && hasChildren) {
+      result.push(...collectRows(node.children, level + 1, expanded, [...parentIsLast, isLast]))
     }
   }
   return result
 }
 
-function TreeRows({ nodes, expanded, closingIds, openingIds, collapseHeights, growHeights, rowRefs, onToggle, onLeafClick, onExpand, showTrend }) {
-  const flatRows = collectRows(nodes, 0, expanded, closingIds, openingIds, [])
+function TreeRows({ nodes, expanded, onToggle, onLeafClick, onExpand, showTrend }) {
+  const flatRows = collectRows(nodes, 0, expanded, [])
 
   const sectionEnds = new Set()
   for (let i = 0; i < flatRows.length; i++) {
@@ -2524,26 +2333,13 @@ function TreeRows({ nodes, expanded, closingIds, openingIds, collapseHeights, gr
 
   return (
     <>
-      {flatRows.map(({ node, level, isLast, hasChildren, isOpen, isClosing, isEntering, parentIsLast }, i) => {
+      {flatRows.map(({ node, level, isLast, hasChildren, isOpen, parentIsLast }, i) => {
         const indent = level * 20 + 8
         const isSectionEnd = sectionEnds.has(i)
 
-        const collapseHeight = collapseHeights[node.id]
-        const growHeight = growHeights[node.id]
-        const collapseStyle = isClosing && collapseHeight !== undefined
-          ? { height: `${collapseHeight}px`, overflow: 'hidden', transition: 'height 180ms ease' }
-          : isEntering && growHeight !== undefined
-          ? { height: `${growHeight}px`, overflow: 'hidden', transition: 'height 260ms ease' }
-          : undefined
-
         return (
-          <tr
-            key={node.id}
-            ref={el => { if (el) rowRefs.current[node.id] = el; else delete rowRefs.current[node.id] }}
-            className={`comp-tree-row${isSectionEnd ? ' comp-tree-row--section-end' : ''}${isClosing ? ' comp-tree-row--closing' : ''}${isEntering ? ' comp-tree-row--entering' : ''}`}
-          >
+          <tr key={node.id} className={`comp-tree-row${isSectionEnd ? ' comp-tree-row--section-end' : ''}`}>
             <td>
-              <div className="comp-tree-collapse" style={collapseStyle}>
               <div className="comp-tree-cell-inner">
               {parentIsLast.slice(0, -1).map((pIsLast, l) =>
                 !pIsLast ? (
@@ -2564,38 +2360,27 @@ function TreeRows({ nodes, expanded, closingIds, openingIds, collapseHeights, gr
                 {node.isLeaf ? (
                   <span className={`comp-leaf-icon comp-leaf-icon--${node.rating.toLowerCase()}`} title={`Rating: ${node.rating}`}>{node.rating[0]}</span>
                 ) : (
-                  <button className={`comp-domain-expand${isOpen ? ' comp-domain-expand--open' : ''}`} onClick={e => { e.stopPropagation(); onToggle(node.id) }}>
-                    <IcChevronRight />
+                  <button className="comp-domain-expand" onClick={e => { e.stopPropagation(); onToggle(node.id) }}>
+                    {isOpen ? <IcChevronDown /> : <IcChevronRight />}
                   </button>
                 )}
                 <span className="comp-tree-name" title={node.name}>{node.name}</span>
               </div>
               </div>
-              </div>
             </td>
             <td className="right">
-              <div className="comp-tree-collapse" style={collapseStyle}>
-              <div className="comp-tree-cell-inner" style={{ justifyContent: 'flex-end' }}>
               <div className="comp-count-cell">
                 <span className="comp-count-val">{node.closed.toLocaleString()}</span>
                 <div className="comp-count-dot comp-count-dot--green" />
               </div>
-              </div>
-              </div>
             </td>
             <td className="right">
-              <div className="comp-tree-collapse" style={collapseStyle}>
-              <div className="comp-tree-cell-inner" style={{ justifyContent: 'flex-end' }}>
               <div className="comp-count-cell">
                 <span className="comp-count-val">{node.open.toLocaleString()}</span>
                 {node.open > 0 && <div className="comp-count-dot comp-count-dot--red" />}
               </div>
-              </div>
-              </div>
             </td>
             <td>
-              <div className="comp-tree-collapse" style={collapseStyle}>
-              <div className="comp-tree-cell-inner">
               {showTrend ? (
                 <div className="comp-posture-cell comp-posture-cell--trend">
                   <Sparkline pct={node.pct} seed={node.id.charCodeAt(0) * 31 + node.pct} />
@@ -2611,15 +2396,9 @@ function TreeRows({ nodes, expanded, closingIds, openingIds, collapseHeights, gr
                   <span className="comp-posture-pct" style={{ '--comp-posture-pct-color': ratingColor(node.rating) }}>{node.pct}%</span>
                 </div>
               )}
-              </div>
-              </div>
             </td>
             <td>
-              <div className="comp-tree-collapse" style={collapseStyle}>
-              <div className="comp-tree-cell-inner">
               <span className={`comp-rating-badge ${ratingClass(node.rating)}`}>{node.rating}</span>
-              </div>
-              </div>
             </td>
           </tr>
         )
@@ -2640,7 +2419,6 @@ const SORT_OPTIONS = [
 function SortDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -2659,8 +2437,8 @@ function SortDropdown({ value, onChange }) {
       >
         <IcSort /> Sort
       </button>
-      {visible && (
-        <div className={`comp-sort-menu${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className="comp-sort-menu">
           {SORT_OPTIONS.map(opt => (
             <button
               key={opt.id}
@@ -2679,7 +2457,6 @@ function SortDropdown({ value, onChange }) {
 function SelectDropdown({ value, onChange, options, placeholder = 'Select…', fullWidth = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -2702,8 +2479,8 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
-      {visible && (
-        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ''}${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ''}`}>
           {options.map(opt => {
             const v = typeof opt === 'string' ? opt : opt.value
             const l = typeof opt === 'string' ? opt : opt.label
@@ -2799,11 +2576,6 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
   const [expandedLocal, setExpandedLocal] = useState({})
   const expanded = expandedProp ?? expandedLocal
   const setExpanded = onExpandChange ?? setExpandedLocal
-  const [closingIds, setClosingIds] = useState(() => new Set())
-  const [openingIds, setOpeningIds] = useState(() => new Set())
-  const [collapseHeights, setCollapseHeights] = useState({})
-  const [growHeights, setGrowHeights] = useState({})
-  const rowRefs = useRef({})
   const [drawerNode, setDrawerNode]       = useState(null)
   const [funcDrawerNode, setFuncDrawerNode] = useState(null)
   const [collapsed, setCollapsed]         = useState(false)
@@ -2812,70 +2584,16 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
   const [fwSortBy, setFwSortBy]     = useState('default')
   const fwSearchRef = useRef(null)
 
-  const activeTree = FRAMEWORK_TREES[selectedFw] ?? null
-
   const onToggle = useCallback(id => {
-    const willClose = !!expanded[id]
-    if (willClose) {
-      const targetNode = findTreeNode(activeTree ?? [], id)
-      const descendantIds = targetNode ? visibleDescendantIds(targetNode, expanded) : []
-
-      // Measure each closing row's current rendered height, then collapse to 0 next frame
-      // so the browser has a concrete starting height to transition from (not "auto").
-      const measured = {}
-      descendantIds.forEach(did => {
-        const el = rowRefs.current[did]
-        if (el) measured[did] = el.getBoundingClientRect().height
-      })
-      setCollapseHeights(h => ({ ...h, ...measured }))
-      requestAnimationFrame(() => {
-        setCollapseHeights(h => {
-          const next = { ...h }
-          descendantIds.forEach(did => { if (did in next) next[did] = 0 })
-          return next
-        })
-      })
-
-      setClosingIds(c => new Set(c).add(id))
-      setTimeout(() => {
-        setClosingIds(c => { if (!c.has(id)) return c; const next = new Set(c); next.delete(id); return next })
-        setCollapseHeights(h => {
-          const next = { ...h }
-          descendantIds.forEach(did => { delete next[did] })
-          return next
-        })
-      }, 200)
-    } else {
-      const targetNode = findTreeNode(activeTree ?? [], id)
-      const descendantIds = targetNode ? visibleDescendantIds(targetNode, expanded) : []
-
-      setOpeningIds(o => new Set(o).add(id))
-      // Mount the new rows collapsed (height 0), then grow into the tree table's standard
-      // row height (comp-tree-cell-inner is a fixed 52px) for a real height transition
-      // rather than an instant pop-in. A fixed target avoids measuring scrollHeight through
-      // an already-collapsed (overflow:hidden) wrapper, which would just read back 0.
-      setGrowHeights(g => { const next = { ...g }; descendantIds.forEach(did => { next[did] = 0 }); return next })
-      requestAnimationFrame(() => {
-        setGrowHeights(g => {
-          const next = { ...g }
-          descendantIds.forEach(did => { if (did in next) next[did] = TREE_ROW_HEIGHT })
-          return next
-        })
-      })
-
-      setTimeout(() => {
-        setOpeningIds(o => { if (!o.has(id)) return o; const next = new Set(o); next.delete(id); return next })
-        setGrowHeights(g => { const next = { ...g }; descendantIds.forEach(did => { delete next[did] }); return next })
-      }, 280)
-    }
-    setExpanded(prev => ({ ...prev, [id]: !willClose }))
-  }, [expanded, setExpanded, activeTree])
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   const onExpand = useCallback((node, level) => {
     if (node.isLeaf) setDrawerNode(node)
     else setFuncDrawerNode({ node, level })
   }, [])
 
+  const activeTree = FRAMEWORK_TREES[selectedFw] ?? null
   const visibleFunctions = activeTree
     ? applySortToNodes(
         activeTree.filter(f => f.name.toLowerCase().includes(search.toLowerCase())),
@@ -2936,7 +2654,10 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                 <div
                   key={fw.id}
                   className={`comp-fw-card comp-fw-card--mini ${isSelected ? 'comp-fw-card--selected' : 'comp-fw-card--default'}`}
-                  style={{ '--fw-rgb': cardRgb(fw.pct) }}
+                  style={isSelected ? {
+                    '--fw-rgb': cardRgb(fw.pct),
+                    background: `linear-gradient(180deg, rgba(${cardRgb(fw.pct)},0.15) 0%, rgba(247,249,252,0) 100%)`
+                  } : undefined}
                   onClick={() => setSelectedFw(fw.id)}
                 >
                   <FwLogo meta={fw.meta} icon={FW_ICONS[fw.id]} darkIcon={FW_ICONS_DARK[fw.id]} />
@@ -2948,7 +2669,10 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
               <div
                 key={fw.id}
                 className={`comp-fw-card ${isSelected ? 'comp-fw-card--selected' : 'comp-fw-card--default'}`}
-                style={{ '--fw-rgb': cardRgb(fw.pct) }}
+                style={isSelected ? {
+                  '--fw-rgb': cardRgb(fw.pct),
+                  background: `linear-gradient(90deg, rgba(${cardRgb(fw.pct)},0.10) 0%, rgba(247,249,252,0) 100%)`
+                } : undefined}
                 onClick={() => setSelectedFw(fw.id)}
               >
                 <div className="comp-fw-card__top">
@@ -2981,11 +2705,18 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
         <div className="comp-top-row">
 
           {/* Score card */}
-          <div className="card comp-score-card">
+          <div className="card comp-score-card" data-nav-explore="chart" data-nav-label="Compliance Score Trend">
             {/* Header row */}
             <div className="comp-score-header">
               <span className="comp-score-label">Score</span>
-              <TimeRangeTabs value={timeRange} onChange={setTimeRange} />
+              <div className="comp-time-pills">
+                {['1W','1M','3M','6M','1Y'].map(t => (
+                  <button key={t}
+                    className={`comp-time-pill${timeRange === t ? ' comp-time-pill--active' : ''}`}
+                    onClick={() => setTimeRange(t)}
+                  >{t}</button>
+                ))}
+              </div>
             </div>
 
             {/* Body: stats left, chart right */}
@@ -3048,7 +2779,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
           </div>
 
           {/* Worst Performing Assessments */}
-          <div className="card comp-rating-card">
+          <div className="card comp-rating-card" data-nav-explore="section" data-nav-label="Worst Performing Assessments">
             <div className="comp-rating-header">
               <div className="comp-rating-title">Worst Performing Assessments (Top 10)</div>
               <div className="comp-rating-col-labels">
@@ -3108,7 +2839,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
             </div>
           </div>
 
-          <div className="comp-domain-table-wrap">
+          <div className="comp-domain-table-wrap" data-nav-explore="table" data-nav-label="Function Compliance Breakdown">
             <table className="comp-domain-table">
               <colgroup>
                 <col />
@@ -3136,11 +2867,6 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                   <TreeRows
                     nodes={visibleFunctions}
                     expanded={expanded}
-                    closingIds={closingIds}
-                    openingIds={openingIds}
-                    collapseHeights={collapseHeights}
-                    growHeights={growHeights}
-                    rowRefs={rowRefs}
                     onToggle={onToggle}
                     onLeafClick={setDrawerNode}
                     onExpand={onExpand}

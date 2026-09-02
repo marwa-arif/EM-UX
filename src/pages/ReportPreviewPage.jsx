@@ -492,7 +492,7 @@ function WidgetRow({ row }) {
     return (
       <div className="dc-report-kpi-row">
         {row.widgets.map(w => (
-          <div key={w.id} className="dc-report-kpi-item">
+          <div key={w.id} className="dc-report-kpi-item" data-nav-explore="section" data-nav-label={w.label}>
             <WidgetCard widget={w} isEditing={false} onEdit={() => {}} onRequestDelete={() => {}} reportMode printMode />
           </div>
         ))}
@@ -501,7 +501,11 @@ function WidgetRow({ row }) {
   }
   const isTable = row.widget.chartId === 'table'
   return (
-    <div className={`dc-report-chart-row${isTable ? ' dc-report-chart-row--table' : ''}`}>
+    <div
+      className={`dc-report-chart-row${isTable ? ' dc-report-chart-row--table' : ''}`}
+      data-nav-explore={isTable ? 'table' : 'chart'}
+      data-nav-label={row.widget.label}
+    >
       <WidgetCard
         widget={row.widget}
         isEditing={false}

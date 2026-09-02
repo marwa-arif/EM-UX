@@ -7,7 +7,6 @@ import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldCo
 import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useToast } from '../context/ToastCtx.jsx'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import '../styles/compliance.css'
 import '../styles/navigator.css'
 import '../styles/kg.css'
@@ -132,28 +131,6 @@ function mockEntityId(seed) {
   return (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).padEnd(32, '0')
 }
 
-// ROWS carries no real Business Unit / Region field (mock data), so a "Business Unit"/
-// "Region" chip from the Compliance Matrix hand-off is matched against a deterministic
-// hash-assigned label instead — same label vocabulary as ComplianceMatrixPage's row groups,
-// so a chip built from a matrix cell click always lines up with at least a few rows here.
-const BU_LIST = ['Zone B Workstation', 'Zone B Omega Server', 'Zone A Workstation', 'Zone A Server', 'Zone A Protect', 'Shared Unity', 'Sales & Marketing', 'Research & Development', 'Project Management', 'Production Services', 'Product Management']
-const REGION_LIST = ['North America', 'EMEA', 'APAC', 'Latin America', 'Middle East']
-
-function assignedLabel(list, seed) {
-  return list[parseInt(mockEntityId(seed).slice(0, 4), 16) % list.length]
-}
-
-// Matches a row against a single Compliance Matrix "group" chip (Business Unit / Region /
-// Entity Type). Framework and Function chips are contextual only — this mock ROWS data has
-// no per-row framework/control mapping to filter against.
-function matchesGroupChip(row, chip) {
-  if (!chip) return true
-  if (chip.key === 'Entity Type') return (ENTITY_TYPE_LABEL[row.type] || 'Multiple') === chip.value
-  if (chip.key === 'Region') return assignedLabel(REGION_LIST, `${row.entity}|region`) === chip.value
-  if (chip.key === 'Business Unit') return assignedLabel(BU_LIST, `${row.entity}|bu`) === chip.value
-  return true
-}
-
 // Trail can hold this drawer's own 'finding' items plus 'assetEntity'/'record' items produced
 // by drilling into the Host/Assessment leaves — delegate those two kinds to AssetDetailDrawer's
 // own describe function instead of re-deriving the same icon/label logic here.
@@ -255,7 +232,7 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
 
   return (
     <DrawerLayout trail={trail} activeIndex={activeIndex} onNavigateTrail={onNavigateTrail} describe={describeCfpTrailItem}>
-      <div className="kg-dp-header">
+      <div className="kg-dp-header" data-nav-explore="chart" data-nav-label="Finding Relationships">
         <div className="kg-dp-title-row">
           <div className="kg-dp-title-body">
             <div className="kg-dp-name-row">
@@ -392,13 +369,13 @@ function FindingDetailContent({ row, onNavigate, trail, activeIndex, onNavigateT
   )
 }
 
-export function FindingDrawer({ row, onClose, stacked = false }) {
+function FindingDrawer({ row, onClose }) {
   const drawer = useDrawerNav({ kind: 'finding', row })
   const top = drawer.history[drawer.index]
   const trailProps = { trail: drawer.history, activeIndex: drawer.index, onNavigateTrail: drawer.goToIndex }
 
   return (
-    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing} stacked={stacked}>
+    <DrawerShell onClose={() => drawer.close(onClose)} closing={drawer.closing}>
       {top.kind === 'finding' ? (
         <FindingDetailContent key={drawer.index} row={top.row} onNavigate={drawer.navigate} {...trailProps} />
       ) : top.kind === 'assetEntity' ? (
@@ -427,7 +404,6 @@ function Toggle({ checked, onChange }) {
 function SelectDropdown({ value, onChange, options, placeholder = 'Select…', fullWidth = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const { visible, closing } = useDropdownExit(open)
 
   useEffect(() => {
     if (!open) return
@@ -450,8 +426,8 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select…', f
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
-      {visible && (
-        <div className={`comp-sort-menu${fullWidth ? ' cfp-sort-menu--full' : ''}${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className={`comp-sort-menu${fullWidth ? ' cfp-sort-menu--full' : ''}`}>
           {options.map(opt => {
             const v = typeof opt === 'string' ? opt : opt.value
             const l = typeof opt === 'string' ? opt : opt.label
@@ -477,52 +453,34 @@ const TOTAL_ALL  = 1391872
 
 
 const ROWS = [
-  { title: 'Devices with End-of-Life OS',           entity: 'WORK-ZOA825.ACNA.CORP.COM',    type: 'device',   evidence: 'OS: Ubuntu 18.04.6 18 64-bit x64, End of Life Date: 2023-05-31' },
-  { title: 'Malware scan overdue',                  entity: 'WORK-CZS929.ACNA.CORP.COM',    type: 'device',   evidence: 'AV Scan SLA Breach Duration: 42 days, AV Last Scan Date: 2025-05-28' },
-  { title: 'Authentication factors not configured', entity: 'ANN PHELPS',                   type: 'identity', evidence: 'Authentication Methods Registered: 0, Authentication Factors: []' },
-  { title: 'MFA not enabled',                       entity: 'SERVER-POR119',                type: 'multi',    evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
+  { title: 'Devices with End-of-Life OS',           entity: 'WORK-ZOA825.ACNA.CORP.COM',    type: 'device',   evidence: 'OS: Ubuntu 18.04.6 18 64-bit x64, End of Life Date: null' },
+  { title: 'Malware scan overdue',                  entity: 'WORK-CZS929.ACNA.CORP.COM',    type: 'device',   evidence: 'AV Scan SLA Breach Duration: null, AV Last Scan Date: null' },
+  { title: 'Authentication factors not configured', entity: 'ANN PHELPS',                   type: 'identity', evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
+  { title: 'MFA not enabled',                       entity: 'SERVER-POR119',                type: 'multi',    evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
   { title: 'Full disk encryption not enforced',     entity: 'AWSEC22135',                   type: 'cloud',    evidence: 'Full Disk Encryption Status: false' },
-  { title: 'Vulnerability scan overdue',            entity: 'WORK-TWP190.ACNA.CORP.COM',    type: 'device',   evidence: 'VM Last Scan Date: 2025-04-30, VM Scan SLA Breach Duration: 68 days' },
+  { title: 'Vulnerability scan overdue',            entity: 'WORK-TWP190.ACNA.CORP.COM',    type: 'device',   evidence: 'VM Last Scan Date: null, VM Scan SLA Breach Duration: null' },
   { title: 'Unaccountable devices',                 entity: 'WORK-NWG159.ACNA.CORP.COM',    type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'Unaccountable devices',                 entity: 'WORK-SYJ357206.ACNA.CORP.COM', type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'EDR agent not fully functional',        entity: 'LSERVER-B2709K.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
-  { title: 'No login activity',                     entity: 'VM-TSR11632.ACNA.CORP.COM',    type: 'device',   evidence: 'Days Since Last Login: 214' },
-  { title: 'Authentication factors not configured', entity: 'JAMES PATRICK',                type: 'identity', evidence: 'Authentication Methods Registered: 0, Authentication Factors: []' },
+  { title: 'No login activity',                     entity: 'VM-TSR11632.ACNA.CORP.COM',    type: 'device',   evidence: 'Days Since Last Login: null' },
+  { title: 'Authentication factors not configured', entity: 'JAMES PATRICK',                type: 'identity', evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
   { title: 'Host firewall disabled',                entity: 'WORK-WJM234233.ACNA.CORP.COM', type: 'device',   evidence: 'Firewall Status: false' },
-  { title: 'MFA not enabled',                       entity: 'LSERVER-O2240Z',               type: 'multi',    evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
+  { title: 'MFA not enabled',                       entity: 'LSERVER-O2240Z',               type: 'multi',    evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
   { title: 'FIM not enabled',                       entity: 'VM-TSR51049',                  type: 'device',   evidence: 'EDR FIM Policy Status: false' },
   { title: 'EDR agent not fully functional',        entity: 'LSERVER-Z3903P.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
   { title: 'Unaccountable devices',                 entity: 'WORK-LNQ285177.ACNA.CORP.COM', type: 'device',   evidence: 'Active Owner Count: 0' },
   { title: 'Patch management overdue',              entity: 'PAI-DEMO-PROD-CAST-63537D6F',  type: 'cloud',    evidence: 'Patch Status: overdue, Days Since Last Patch: 214' },
-  { title: 'No login activity',                     entity: 'SARAH CONNORS',                type: 'identity', evidence: 'Days Since Last Login: 176' },
+  { title: 'No login activity',                     entity: 'SARAH CONNORS',                type: 'identity', evidence: 'Days Since Last Login: null' },
   { title: 'Host firewall disabled',                entity: '10.126.184.252',               type: 'device',   evidence: 'Firewall Status: false' },
-  { title: 'Vulnerability scan overdue',            entity: 'VM-TSR45197',                  type: 'device',   evidence: 'VM Last Scan Date: 2025-05-12, VM Scan SLA Breach Duration: 53 days' },
+  { title: 'Vulnerability scan overdue',            entity: 'VM-TSR45197',                  type: 'device',   evidence: 'VM Last Scan Date: null, VM Scan SLA Breach Duration: null' },
   { title: 'Devices with End-of-Life OS',           entity: 'WORK-FLR646.ACNA.CORP.COM',   type: 'device',   evidence: 'OS: Windows Server 2008 R2, End of Life Date: 2020-01-14' },
-  { title: 'Malware scan overdue',                  entity: 'WORK-JRF656228.ACNA.CORP.COM', type: 'device',   evidence: 'AV Scan SLA Breach Duration: 29 days, AV Last Scan Date: 2025-06-10' },
-  { title: 'MFA not enabled',                       entity: 'WORK-BQN304189.ACNA.CORP.COM', type: 'device',   evidence: 'Authentication Methods Registered: 1, Authentication Factors: [Password]' },
+  { title: 'Malware scan overdue',                  entity: 'WORK-JRF656228.ACNA.CORP.COM', type: 'device',   evidence: 'AV Scan SLA Breach Duration: null, AV Last Scan Date: null' },
+  { title: 'MFA not enabled',                       entity: 'WORK-BQN304189.ACNA.CORP.COM', type: 'device',   evidence: 'Authentication Methods Registered: null, Authentication Factors: []' },
   { title: 'FIM not enabled',                       entity: 'WORK-FMJ966.ACNA.CORP.COM',   type: 'device',   evidence: 'EDR FIM Policy Status: false' },
   { title: 'EDR agent not fully functional',        entity: 'WORK-BQN304182.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: false' },
 ]
 
-// Compliant counterpart to ROWS — surfaced only when "Include Passed Findings" is on,
-// so a fully-compliant Compliance Matrix cell (score 100) has something to show besides
-// an empty table.
-const PASSED_ROWS = [
-  { title: 'Devices running supported OS',        entity: 'WORK-QRX221.ACNA.CORP.COM',    type: 'device',   evidence: 'OS: Windows 11 23H2, End of Life Date: 2028-10-10' },
-  { title: 'Malware scan current',                entity: 'WORK-HVK442.ACNA.CORP.COM',    type: 'device',   evidence: 'AV Scan SLA Breach Duration: 0 days, AV Last Scan Date: 2025-08-01' },
-  { title: 'Authentication factors configured',    entity: 'LINDA MORROW',                 type: 'identity', evidence: 'Authentication Methods Registered: 2, Authentication Factors: [Password, TOTP]' },
-  { title: 'MFA enabled',                          entity: 'SERVER-KTN228',                type: 'multi',    evidence: 'Authentication Methods Registered: 2, Authentication Factors: [Password, TOTP]' },
-  { title: 'Full disk encryption enforced',        entity: 'AWSEC24471',                   type: 'cloud',    evidence: 'Full Disk Encryption Status: true' },
-  { title: 'Vulnerability scan current',           entity: 'WORK-DPL307.ACNA.CORP.COM',    type: 'device',   evidence: 'VM Last Scan Date: 2025-08-05, VM Scan SLA Breach Duration: 0 days' },
-  { title: 'Devices accounted for',                entity: 'WORK-YEC118.ACNA.CORP.COM',    type: 'device',   evidence: 'Active Owner Count: 1' },
-  { title: 'EDR agent fully functional',           entity: 'LSERVER-T4417Q.ACNA.CORP.COM', type: 'device',   evidence: 'EDR Fully Functional: true' },
-  { title: 'Recent login activity',                entity: 'PRIYA NATARAJAN',              type: 'identity', evidence: 'Days Since Last Login: 2' },
-  { title: 'Host firewall enabled',                entity: '10.126.184.201',               type: 'device',   evidence: 'Firewall Status: true' },
-  { title: 'FIM enabled',                          entity: 'VM-TSR68820',                  type: 'device',   evidence: 'EDR FIM Policy Status: true' },
-  { title: 'Patch management current',             entity: 'PAI-DEMO-PROD-CAST-91824A2B',  type: 'cloud',    evidence: 'Patch Status: current, Days Since Last Patch: 4' },
-]
-
-export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
+export default function ComplianceFindingsPage({ filter = null, onClearFilter, onNav }) {
   const [inclClosed, setInclClosed]     = useState(false)
   const [search, setSearch]             = useState('')
   const [page, setPage]                 = useState(1)
@@ -537,8 +495,8 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
   const downloadRef = useRef(null)
   const { addDownload } = useDownloads()
 
-  // Reset to page 1 whenever the active filters change
-  useEffect(() => { setPage(1) }, [crossFilters])
+  // Reset to page 1 whenever filter changes
+  useEffect(() => { setPage(1) }, [filter])
 
   useEffect(() => {
     if (!downloadOpen) return
@@ -563,35 +521,20 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
     showToast({ type, msg, duration: 3000 })
   }, [closeCreateTicket, showToast])
 
-  const groupChip = crossFilters.find(c => c.attrId === 'compliance-group')
-  const hasCrossFilters = crossFilters.length > 0
-  const isCompliantGroup = !!groupChip && groupChip.score === 100
-
-  // Apply the Compliance Matrix hand-off: match rows against the group-by chip (Entity
-  // Type / Business Unit / Region). ROWS is mock data with no real BU/Region field, so if
-  // the exact match comes up empty for a group that isn't fully compliant, fall back to a
-  // deterministic subset keyed off the chip's own value — a non-compliant matrix cell
-  // should never land on an empty table. A fully compliant (100%) cell legitimately has no
-  // open findings — "Include Passed Findings" is what surfaces its passed rows instead.
+  // Apply matrix filter: match rows whose entity type loosely maps to the selected column/row
   const filteredRows = (() => {
-    let openRows = groupChip ? ROWS.filter(row => matchesGroupChip(row, groupChip)) : ROWS
-    if (groupChip && isCompliantGroup) {
-      openRows = []
-    } else if (groupChip && openRows.length === 0) {
-      const seed = parseInt(mockEntityId(groupChip.value).slice(0, 4), 16)
-      openRows = ROWS.filter((_, i) => (i + seed) % 3 === 0)
-    }
-
-    let rows = openRows
-    if (inclClosed) {
-      let passedRows = groupChip ? PASSED_ROWS.filter(row => matchesGroupChip(row, groupChip)) : PASSED_ROWS
-      if (groupChip && passedRows.length === 0) {
-        const seed = parseInt(mockEntityId(`${groupChip.value}|passed`).slice(0, 4), 16)
-        passedRows = PASSED_ROWS.filter((_, i) => (i + seed) % 2 === 0)
-      }
-      rows = [...openRows, ...passedRows.map(r => ({ ...r, passed: true }))]
-    }
-
+    let rows = filter
+      ? ROWS.filter(row => {
+          const rowMatch = filter.row ? row.entity.toLowerCase().includes(filter.row.toLowerCase()) ||
+            (filter.groupBy === 'Entity Type' && (
+              (filter.row === 'Host / Device'  && row.type === 'device') ||
+              (filter.row === 'Cloud Account'  && row.type === 'cloud') ||
+              (filter.row === 'Identity'       && row.type === 'identity') ||
+              (filter.row === 'Storage'        && row.type === 'storage')
+            )) : true
+          return rowMatch
+        })
+      : ROWS
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       rows = rows.filter(r => [r.title, r.entity, r.evidence].join(' ').toLowerCase().includes(q))
@@ -599,7 +542,7 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
     return rows
   })()
 
-  const total = hasCrossFilters
+  const total = filter
     ? filteredRows.length
     : inclClosed ? TOTAL_ALL : TOTAL_OPEN
 
@@ -618,10 +561,12 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
               Findings Details ({total.toLocaleString()})
             </span>
             <div className="cfp-header-actions">
-              <label className="comp-drawer-incl-label">
-                Include Passed Findings
-                <Toggle checked={inclClosed} onChange={v => { setInclClosed(v); setPage(1) }} />
-              </label>
+              {!filter && (
+                <label className="comp-drawer-incl-label">
+                  Include Passed Findings
+                  <Toggle checked={inclClosed} onChange={v => { setInclClosed(v); setPage(1) }} />
+                </label>
+              )}
               <DSPillSearch value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search Any" width={200} />
               <div ref={downloadRef} className="comp-dl-wrap">
                 <button className="comp-dl-btn" onClick={() => setDownloadOpen(o => !o)}>
@@ -638,32 +583,37 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
             </div>
           </div>
 
+          {/* Active filter bar */}
+          {filter && (
+            <div className="cfp-filter-bar">
+              <span className="cfp-filter-label">Filtered by:</span>
+              <span className="cfp-filter-chip">{filter.frameworkName}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--shell-text-muted)" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              <span className="cfp-filter-chip">{filter.col}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--shell-text-muted)" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+              <span className="cfp-filter-chip">{filter.groupBy}: {filter.row}</span>
+              <button className="cfp-filter-clear" onClick={onClearFilter}>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+                </svg>
+                Clear filter
+              </button>
+            </div>
+          )}
+
           {/* Table */}
-          <div className="ds-table-wrap cfp-table-wrap">
+          <div className="ds-table-wrap cfp-table-wrap" data-nav-explore="table" data-nav-label="Compliance Findings">
             <table className="ds-table">
               <thead>
                 <tr>
-                  <th className="ds-th cfp-th-title">Finding Title</th>
-                  <th className="ds-th cfp-th-entities">Associated Entities</th>
+                  <th className="ds-th">Finding Title</th>
+                  <th className="ds-th">Associated Entities</th>
                   <th className="ds-th">Evidence</th>
-                  <th className="ds-th cfp-th-status">Status</th>
+                  <th className="ds-th">Status</th>
                   <th className="ds-th cfp-th-actions">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {visibleRows.length === 0 && (
-                  <tr className="cfp-tr--empty">
-                    <td className="cfp-table-empty" colSpan={5}>
-                      <div className="cfp-table-empty-emoji">🚦</div>
-                      <div className="cfp-table-empty-heading">No Data… For Now!</div>
-                      <div className="cfp-table-empty-subtext">
-                        {search.trim()
-                          ? 'No records match your current filters. Try adjusting your search.'
-                          : 'No failed findings for this selection — everything in scope has passed.'}
-                      </div>
-                    </td>
-                  </tr>
-                )}
                 {visibleRows.map((row, i) => (
                   <tr key={i} className="cfp-tr--clickable" onClick={() => setFindingDrawerRow(row)}>
                     <td className="ds-td cfp-td-title">{row.title}</td>
@@ -675,28 +625,24 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
                     </td>
                     <td className="ds-td cfp-td-evidence">{row.evidence}</td>
                     <td className="ds-td">
-                      {row.passed
-                        ? <span className="comp-drawer-status-closed">Passed</span>
-                        : <span className="comp-drawer-status-open">Open</span>}
+                      <span className="comp-drawer-status-open">Open</span>
                     </td>
                     <td className="ds-td">
                       <div className="cfp-td-actions">
-                        {!row.passed && (
-                          <button
-                            className="comp-drawer-action-icon"
-                            title="Remediation"
-                            onClick={e => {
-                              e.stopPropagation()
-                              const rect = e.currentTarget.getBoundingClientRect()
-                              const globalI = (page - 1) * rowsPerPage + i
-                              setRemediationRow(prev =>
-                                prev !== null && prev.i === globalI ? null : { i: globalI, rect }
-                              )
-                            }}
-                          >
-                            <IcRemediation />
-                          </button>
-                        )}
+                        <button
+                          className="comp-drawer-action-icon"
+                          title="Remediation"
+                          onClick={e => {
+                            e.stopPropagation()
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            const globalI = (page - 1) * rowsPerPage + i
+                            setRemediationRow(prev =>
+                              prev !== null && prev.i === globalI ? null : { i: globalI, rect }
+                            )
+                          }}
+                        >
+                          <IcRemediation />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -734,7 +680,7 @@ export default function ComplianceFindingsPage({ crossFilters = [], onNav }) {
                 <span className="comp-remediation-note">Note: AI-generated remediations offer valuable guidance, but we recommend verifying and validating before implementation.</span>
               </div>
               <div className="cfp-rem-actions">
-                <button className="comp-drawer-kg-btn" onClick={() => openCreateTicket(filteredRows[remediationRow.i]?.entity ?? '', filteredRows[remediationRow.i]?.title ?? '')}>
+                <button className="comp-drawer-kg-btn" onClick={() => openCreateTicket(ROWS[remediationRow.i]?.entity ?? '', ROWS[remediationRow.i]?.title ?? '')}>
                   Create Ticket
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>

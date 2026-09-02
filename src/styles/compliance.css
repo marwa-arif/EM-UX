@@ -146,10 +146,6 @@
   box-sizing: border-box;
 }
 
-.comp-fw-card--mini::after {
-  background: linear-gradient(180deg, rgba(var(--fw-rgb),0.15) 0%, rgba(247,249,252,0) 100%);
-}
-
 .comp-fw-mini-pct {
   font-size: 11px;
   font-weight: 600;
@@ -167,41 +163,26 @@
 }
 
 /* ── Framework card ──────────────────────────────────────────────── */
-/* The card's own background always stays the neutral gradient; the "selected" tint and
-   border ring are separate pseudo-elements that fade in/out via opacity, since browsers
-   can't smoothly interpolate between two different gradient values on `background` itself. */
 .comp-fw-card {
-  position: relative;
   border-radius: 12px;
   padding: 16px 12px;
   cursor: pointer;
   transition: opacity 150ms;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #F8F8F8 0%, #FBFCFF 100%);
-  border: 1px solid transparent;
 }
 
 .comp-fw-card--default {
+  background: linear-gradient(180deg, #F8F8F8 0%, #FBFCFF 100%);
+  border: 1px solid transparent;
   opacity: 0.6;
 }
 
 .comp-fw-card--selected {
+  border: 1px solid transparent;
   opacity: 1;
+  position: relative;
 }
-
-.comp-fw-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  background: linear-gradient(90deg, rgba(var(--fw-rgb),0.10) 0%, rgba(247,249,252,0) 100%);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  pointer-events: none;
-}
-.comp-fw-card--selected::after { opacity: 1; }
-
-.comp-fw-card::before {
+.comp-fw-card--selected::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -212,10 +193,7 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 200ms ease;
 }
-.comp-fw-card--selected::before { opacity: 1; }
 
 .comp-fw-card--default:hover { opacity: 1; border-color: transparent; }
 
@@ -275,7 +253,6 @@
   color: var(--shell-text);
   line-height: 24px;
   white-space: nowrap;
-  transition: color 150ms ease;
 }
 
 .comp-fw-name--muted {
@@ -414,9 +391,13 @@
   color: var(--shell-text);
 }
 
+.comp-time-pills {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .comp-time-pill {
-  position: relative;
-  z-index: 1;
   height: 22px;
   padding: 0 8px;
   border-radius: 44px;
@@ -427,30 +408,16 @@
   font-weight: 500;
   font-family: inherit;
   color: var(--shell-text-muted);
-  transition: color 150ms ease;
+  transition: color 120ms, border-color 120ms;
 }
 
 .comp-time-pill:hover { color: var(--shell-text); }
 
 .comp-time-pill--active {
   color: var(--shell-text);
-}
-
-/* Sliding highlight — mirrors kg-seg-thumb (SegmentedTabs): the active pill's
-   background/border/shadow live on this thumb, which moves left/right between
-   tabs instead of each pill cross-fading its own background in place. */
-.comp-time-pill-thumb {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 0;
-  border-radius: 44px;
-  border: 1px solid var(--shell-border);
+  border-color: var(--shell-border);
   background: var(--card-bg);
   box-shadow: 0 1px 4px rgba(0,0,0,0.10);
-  box-sizing: border-box;
-  pointer-events: none;
-  transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1), opacity 150ms ease;
 }
 
 .comp-score-body {
@@ -808,30 +775,6 @@
 
 .comp-domain-expand:hover { background: var(--shell-border); }
 
-.comp-domain-expand svg { transition: transform 160ms ease; }
-.comp-domain-expand--open svg { transform: rotate(90deg); }
-
-/* ── Accordion row enter/exit ────────────────────────────────────── */
-.comp-tree-row--entering td {
-  overflow: hidden;
-  animation: comp-tree-row-enter 260ms ease both;
-}
-
-.comp-tree-row--closing td {
-  overflow: hidden;
-  animation: comp-tree-row-exit 180ms ease both;
-}
-
-@keyframes comp-tree-row-enter {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes comp-tree-row-exit {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
 .comp-posture-expand {
   width: 18px;
   height: 18px;
@@ -902,20 +845,13 @@
   z-index: 100;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: var(--radius-dropdown, 8px);
-  box-shadow: var(--shadow-popup, 0 4px 16px rgba(0,0,0,0.12));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   padding: 4px;
   min-width: 180px;
   display: flex;
   flex-direction: column;
   gap: 1px;
-  animation: dropdown-menu-in 160ms cubic-bezier(.2,.8,.2,1);
-  transform-origin: top;
-}
-
-.comp-sort-menu--closing {
-  animation: dropdown-menu-out 150ms ease forwards;
-  pointer-events: none;
 }
 
 .comp-sort-item {
@@ -991,12 +927,11 @@
   right: 0;
   background: var(--card-bg);
   border: 1px solid var(--shell-border);
-  border-radius: var(--radius-dropdown, 8px);
-  box-shadow: var(--shadow-popup, 0 4px 12px rgba(0,0,0,0.10));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
   padding: 4px;
   z-index: 100;
   min-width: 110px;
-  animation: fade-up 0.15s ease;
 }
 
 .comp-dl-item {
@@ -1020,13 +955,17 @@
 .comp-dl-menu--wide { min-width: 170px; }
 .comp-dl-menu--wide .comp-dl-item { white-space: nowrap; }
 
+.comp-dl-menu--up { top: auto; bottom: calc(100% + 4px); }
+
+.comp-dl-item.danger { color: var(--pai-crit-fg); }
+.comp-dl-item.danger:hover { background: var(--pai-crit-bg, rgba(209,35,41,0.1)); }
+
 /* ── Posture cell ────────────────────────────────────────────────── */
 .comp-posture-cell {
   display: flex;
   align-items: center;
   gap: 8px;
   height: 36px;
-  width: 100%;
 }
 
 .comp-posture-cell--trend {
@@ -1172,11 +1111,13 @@
 }
 
 /* ── Dark theme overrides ─────────────────────────────────────────── */
-/* Applies to every card (not just --default) — the selected tint is a separate
-   ::after overlay (see .comp-fw-card::after) that layers on top in both themes. */
-html.theme-dark .comp-fw-card {
+html.theme-dark .comp-fw-card--default {
   background: linear-gradient(180deg, #1E1E1E 0%, #1A1D22 100%);
   border-color: #333333;
+}
+
+html.theme-dark .comp-fw-card--selected {
+  background: linear-gradient(90deg, rgba(217,139,29,0.12) 0%, rgba(247,249,252,0.04) 100%);
 }
 
 /* ── Assessment drawer ───────────────────────────────────────────── */
@@ -1462,11 +1403,6 @@ html.theme-dark .comp-fw-card {
 .comp-drawer-table tr:last-child td { border-bottom: none; }
 .comp-drawer-table tr:hover td { background: var(--shell-hover); }
 
-/* Only rows wired to open the finding detail drawer (comp-drawer-tr--clickable)
-   get the click affordance — cursor + primary-cell hover color. */
-.comp-drawer-table tr.comp-drawer-tr--clickable { cursor: pointer; }
-.comp-drawer-table tr.comp-drawer-tr--clickable:hover .comp-table-entity-name { color: var(--pai-indigo); }
-
 .comp-fw-overflow-btn {
   width: 22px;
   height: 22px;
@@ -1556,18 +1492,6 @@ html.theme-dark .comp-fw-card {
   border-radius: 44px;
   border: 1px solid var(--pai-red-high);
   color: var(--pai-red-high);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.comp-drawer-status-closed {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 44px;
-  border: 1px solid var(--pai-green);
-  color: var(--pai-green);
   font-size: 10px;
   font-weight: 600;
 }
@@ -2756,7 +2680,6 @@ html.theme-dark .comp-fw-logo-img--dark {
 }
 
 .comp-time-pills-wrap {
-  position: relative;
   display: flex;
   gap: 2px;
   flex-shrink: 0;
@@ -3086,6 +3009,55 @@ html.theme-dark .comp-fw-logo-img--dark {
   min-width: 160px;
 }
 
+.cfp-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--shell-border);
+  background: rgba(99,96,216,0.04);
+  flex-shrink: 0;
+}
+
+.cfp-filter-label {
+  font-size: 11px;
+  color: var(--shell-text-muted);
+  font-weight: 500;
+}
+
+.cfp-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 44px;
+  background: rgba(99,96,216,0.10);
+  border: 1px solid rgba(99,96,216,0.25);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pai-indigo);
+}
+
+.cfp-filter-clear {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 44px;
+  border: none;
+  background: transparent;
+  color: var(--shell-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cfp-filter-clear:hover { color: var(--shell-text); }
+
 .cfp-table-wrap {
   flex: 1;
   overflow-y: auto;
@@ -3097,27 +3069,16 @@ html.theme-dark .comp-fw-logo-img--dark {
   z-index: 2;
 }
 
-/* Fixed layout so toggling "Include Passed Findings" (which changes row content/count,
-   including emptying the Action cell for passed rows) can't reflow column widths — with
-   the default auto layout, column widths are recomputed from each render's content. Only
-   Evidence is left unsized so it absorbs whatever width the other columns don't use. */
-.cfp-table-wrap .ds-table { table-layout: fixed; }
-
 /* `.ds-th` (navigator.css) is a single class, same specificity as `.cfp-th-actions`
    alone — cascade order between the two stylesheets isn't guaranteed, so combine
    both classes on the selector to win unambiguously regardless of import order. */
-.cfp-th-title    { width: 320px; }
-.cfp-th-entities { width: 340px; }
-.cfp-th-status   { width: 100px; }
-.cfp-th-actions  { width: 44px; }
+.cfp-th-actions { width: 44px; }
 .ds-th.cfp-th-actions { text-align: center; }
 
 .cfp-td-title {
   font-weight: 500;
   color: var(--shell-text);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .cfp-tr--clickable { cursor: pointer; }
@@ -3137,37 +3098,6 @@ html.theme-dark .comp-fw-logo-img--dark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Static message, not an interactive row — suppress the generic
-   `.ds-table tbody tr:hover td` hover highlight (workspace.css) so it doesn't read as
-   clickable. `height` (not min-height — browsers ignore min-height/max-height on
-   table-cell/table-row boxes) plus the inherited `.ds-td` vertical-align:middle center
-   the block within the table's remaining space instead of it hugging the header. */
-.cfp-table-wrap .ds-table tbody tr.cfp-tr--empty:hover td { background: transparent; }
-.cfp-tr--empty { height: 420px; }
-
-.cfp-table-empty {
-  text-align: center;
-  padding: 48px 24px;
-  white-space: normal;
-}
-
-.cfp-table-empty-emoji {
-  font-size: 28px;
-  margin-bottom: 12px;
-}
-
-.cfp-table-empty-heading {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--shell-text);
-  margin-bottom: 8px;
-}
-
-.cfp-table-empty-subtext {
-  font-size: 12px;
-  color: var(--shell-text-muted);
 }
 
 .cfp-td-actions {

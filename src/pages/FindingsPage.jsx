@@ -11,7 +11,6 @@ import { DrawerShell, DrawerLayout, RecordDetailContent, RelNodeSection, fieldCo
 import { ENTITY_TYPES, EntityGlyph, ASSET_ENTITY_TYPE_KEY } from '../components/entityTypes.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
-import { useDropdownExit } from '../hooks/useDropdownExit.js'
 import { useToast } from '../context/ToastCtx.jsx'
 
 // ── Group-by select dropdown (comp-sort pattern, matches other dashboards) ──
@@ -23,7 +22,6 @@ const IcChevron = () => (
 function SelectDropdown({ value, onChange, options, fullWidth = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const { visible, closing } = useDropdownExit(open);
 
   useEffect(() => {
     if (!open) return;
@@ -41,8 +39,8 @@ function SelectDropdown({ value, onChange, options, fullWidth = false }) {
         <span>{value}</span>
         <IcChevron />
       </button>
-      {visible && (
-        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}${closing ? ' comp-sort-menu--closing' : ''}`}>
+      {open && (
+        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ' comp-sort-menu--right'}`}>
           {options.map(opt => (
             <button
               key={opt}
@@ -1243,7 +1241,7 @@ const IcChevD = () => (
 // ── Remediate Now widget ──────────────────────────────────────────
 function ActNowWidget({ onRemediate, onNav }) {
   return (
-    <div className="card fin-actnow-card">
+    <div className="card fin-actnow-card" data-nav-explore="section" data-nav-label="Remediate Now">
       <div className="fin-intel-hdr">
         <span className="fin-intel-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9373C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1280,7 +1278,7 @@ function ActNowWidget({ onRemediate, onNav }) {
 // ── Program Status widget ─────────────────────────────────────────
 function ProgramStatusWidget() {
   return (
-    <div className="card fin-ops-card">
+    <div className="card fin-ops-card" data-nav-explore="section" data-nav-label="Exposure & Remediation">
       <div className="fin-intel-hdr">
         <span className="fin-intel-title">Exposure & Remediation</span>
         <span className="fin-intel-badge fin-intel-badge-neutral">This week</span>
@@ -1342,6 +1340,8 @@ function StackedBarChart({ title, rows, xLabel, onSegClick }) {
     <div
       className="card fin-chart-card fin-chart-card--rel"
       onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}
+      data-nav-explore="chart"
+      data-nav-label={title}
     >
       <div className="fin-chart-title">{title}</div>
       <div className="fin-sbc-rows">
@@ -1509,7 +1509,7 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
 
         {/* Right: Security Posture Summary */}
         <div className="fin-right-col">
-          <div className="card fin-posture-card">
+          <div className="card fin-posture-card" data-nav-explore="chart" data-nav-label="Security Posture Summary">
             <div className="fin-posture-hdr">
               <span className="fin-posture-title">Security Posture Summary</span>
               <div className="fin-posture-groupby">
@@ -1537,7 +1537,7 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
       </div>
 
       {/* ── Bottom: failed findings table ── */}
-      <div className="card fin-table-section">
+      <div className="card fin-table-section" data-nav-explore="table" data-nav-label="Failed Findings">
         <div className="fin-table-hdr">
           <span className="fin-table-title">
             Failed Findings <span className="fin-table-count">({totalWeight.toLocaleString()})</span>
@@ -1549,7 +1549,7 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
               placeholder="Search Any"
               width={200}
             />
-            <button className="ds-btn sz-md t-outline" onClick={(e) => addDownload('Exposure-Factors-Report.xlsx', e.currentTarget)}>
+            <button className="ds-btn sz-md t-outline" onClick={(e) => addDownload('Exposure-Factors-Report.xlsx', e.currentTarget)} data-tour="page-findings-export">
               <IcDownload /> Download Exposure Factors
             </button>
             <div ref={downloadRef} className="comp-dl-wrap">
@@ -1566,12 +1566,12 @@ export default function FindingsPage({ onNav, crossFilters = [], onToggleFilter 
           </div>
         </div>
 
-        <div className="ds-table-wrap">
+        <div className="ds-table-wrap" data-tour="page-findings-table">
           <table className="ds-table fin-findings-table">
             <thead>
               <tr>
                 {['Exposure Category', 'Finding Title', 'Associated Entities', 'Evidence', 'Impact', 'Likelihood', 'Exposure Score', 'Finding Exposure Severity'].map(h => (
-                  <th key={h} className="ds-th">
+                  <th key={h} className="ds-th" data-tour={h === 'Finding Exposure Severity' ? 'page-findings-severity' : undefined}>
                     <span className="ds-th-inner">{h} <IcSort /></span>
                   </th>
                 ))}
