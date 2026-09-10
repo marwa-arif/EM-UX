@@ -33,6 +33,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.22.1] — 2026-09-10
+### Changed
+- Reconciled `feature/studio-workspace` with `develop`'s PR #23/#24/#25 history (MRA Security Risk route repair, `MatrixDropdown.jsx` fix) after merging `origin/develop`
+
+---
+
 ## [0.22.0] — 2026-09-10
 ### Added
 - `CopilotFab` floating launcher, auto-repositions around any right-docked panel/drawer (Filter Panel, Widget Settings, Add Widget, Help & Support, Navigator, Findings/Compliance drawers) and rotates contextual/generic hint messages

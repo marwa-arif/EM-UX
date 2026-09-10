@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.22.1",
+    "date": "2026-09-10",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Reconciled `feature/studio-workspace` with `develop`'s PR #23/#24/#25 history (MRA Security Risk route repair, `MatrixDropdown.jsx` fix) after merging `origin/develop`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.22.0",
     "date": "2026-09-10",
     "changes": {
