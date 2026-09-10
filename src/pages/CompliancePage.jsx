@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell } from 'recharts'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 import TablePagination from '../components/TablePagination.jsx'
@@ -2454,48 +2455,81 @@ function SortDropdown({ value, onChange }) {
   )
 }
 
-function SelectDropdown({ value, onChange, options, placeholder = 'Select…', fullWidth = false }) {
+// `portal` renders the open menu into document.body instead of as a normal
+// child — for a trigger sitting inside a clipped/scrolling ancestor (e.g. a
+// modal with overflow:hidden for its rounded corners), a normal child menu
+// gets cut off no matter which direction it opens; openUp alone doesn't fix
+// that since the ancestor still clips it. Opt-in and off by default so the
+// many existing non-modal call sites (open within normal document flow)
+// keep their exact current behavior.
+function SelectDropdown({ value, onChange, options, placeholder = 'Select…', fullWidth = false, openUp = false, portal = false }) {
   const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState(null)
   const ref = useRef(null)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const handler = e => {
+      const inWrap = ref.current && ref.current.contains(e.target)
+      const inMenu = portal && menuRef.current && menuRef.current.contains(e.target)
+      if (!inWrap && !inMenu) setOpen(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [open, portal])
 
   const label = options.find(o => o === value || o.value === value)
   const displayLabel = label ? (typeof label === 'string' ? label : label.label) : placeholder
+
+  const handleToggle = () => {
+    if (!open && portal && ref.current) {
+      const r = ref.current.getBoundingClientRect()
+      setMenuPos({ top: r.bottom + 6, left: r.left, width: r.width })
+    }
+    setOpen(o => !o)
+  }
+
+  // top/left/width are runtime-calculated pixel positions — must stay inline.
+  // z-index is bumped above .sfm-dialog's 10006 (highest modal in this app),
+  // since a portaled menu is now a document.body sibling, not a nested
+  // descendant that would otherwise inherit the modal's stacking context.
+  const portalPosVars = portal && menuPos ? { position: 'fixed', top: `${menuPos.top}px`, left: `${menuPos.left}px`, width: `${menuPos.width}px`, zIndex: 10010 } : undefined
+
+  const menu = open && (
+    <div
+      ref={portal ? menuRef : undefined}
+      className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ''}${openUp && !portal ? ' comp-sort-menu--up' : ''}`}
+      style={portalPosVars}
+    >
+      {options.map(opt => {
+        const v = typeof opt === 'string' ? opt : opt.value
+        const l = typeof opt === 'string' ? opt : opt.label
+        return (
+          <button
+            key={v}
+            className={`comp-sort-item${v === value ? ' comp-sort-item--selected' : ''}`}
+            onClick={() => { onChange(v); setOpen(false) }}
+          >
+            {l}
+          </button>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div ref={ref} className={`comp-sort-wrap${fullWidth ? ' comp-sort-wrap--full' : ''}`}>
       <button
         className={`comp-sort-btn comp-select-btn${open ? ' comp-sort-btn--active' : ''}${fullWidth ? ' comp-select-btn--full' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={handleToggle}
       >
         <span>{displayLabel}</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="m6 9 6 6 6-6"/>
         </svg>
       </button>
-      {open && (
-        <div className={`comp-sort-menu${fullWidth ? ' comp-sort-menu--full' : ''}`}>
-          {options.map(opt => {
-            const v = typeof opt === 'string' ? opt : opt.value
-            const l = typeof opt === 'string' ? opt : opt.label
-            return (
-              <button
-                key={v}
-                className={`comp-sort-item${v === value ? ' comp-sort-item--selected' : ''}`}
-                onClick={() => { onChange(v); setOpen(false) }}
-              >
-                {l}
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {portal ? (menu && ReactDOM.createPortal(menu, document.body)) : menu}
     </div>
   )
 }

@@ -961,6 +961,14 @@
   gap: 12px;
   padding: 16px;
 }
+/* Viewing a saved dashboard: match Discover's own page padding (.page in
+   global.css) now that the bordered canvas card + its own 20px grid
+   padding are gone — otherwise the two paddings stack into an oversized
+   gap between the SubHeader and the widgets. */
+.dc-layout--view {
+  padding: 12px 0 12px 12px;
+  gap: 0;
+}
 
 /* ── Canvas area ───────────────────────────────────────────────────────── */
 .dc-canvas-wrap {
@@ -973,6 +981,15 @@
   border: 1px solid var(--shell-border);
   border-radius: 8px;
   overflow: hidden;
+}
+/* A saved dashboard being viewed drops the bordered "canvas card" frame —
+   only the widgets themselves (each already its own white card) should
+   show, same as Discover's dashboards. */
+.dc-canvas-wrap--view {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
 }
 
 /* ── Floating canvas toolbar (Undo / Redo / Zoom) ─────────────────────── */
@@ -1168,7 +1185,9 @@
   background-size: 24px 24px;
 }
 
-.dc-canvas-body--plain {}
+.dc-canvas-body--plain {
+  background-image: none;
+}
 
 /* ── Report-mode canvas: centers the grid ─────────────────────────── */
 .dc-canvas-body--report {
@@ -1253,6 +1272,19 @@
   outline: none; background: var(--card-bg);
 }
 .sfm-form-input:focus { border-color: var(--pai-indigo); }
+.sfm-form-input.has-error { border-color: var(--pai-crit-fg); }
+.sfm-required { color: var(--pai-crit-fg); margin-left: 2px; }
+.sfm-field-error { font-size: 12px; color: var(--pai-crit-fg); }
+.sfm-select-full .comp-sort-wrap { width: 100%; }
+.sfm-select-full .comp-sort-btn.comp-select-btn {
+  width: 100%; height: 38px; padding: 0 12px; box-sizing: border-box;
+  border: 1px solid var(--pai-border-strong); border-radius: 8px;
+  font-size: 14px; font-weight: 400; color: var(--pai-fg1);
+  background: var(--card-bg); justify-content: space-between;
+}
+.sfm-new-section-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.sfm-new-section-row .sfm-form-input { flex: 1; }
+.sfm-new-section-btn { height: 32px; padding: 0 14px; font-size: 13px; flex-shrink: 0; }
 .sfm-form-row { display: flex; gap: 12px; }
 .sfm-form-row .sfm-form-field { flex: 1; }
 .sfm-form-field--xs { flex: 0 0 80px !important; }

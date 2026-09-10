@@ -23,7 +23,7 @@ export const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId, implicitConfig }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -186,6 +186,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               onClose={() => setFilterPillOpen(false)}
               position={pillPos}
               pageId={pageId}
+              implicitConfig={implicitConfig}
             />
           )}
 

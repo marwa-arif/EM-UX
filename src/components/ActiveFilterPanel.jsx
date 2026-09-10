@@ -318,14 +318,33 @@ export function SaveFilterModal({ onClose, onSave }) {
   )
 }
 
+// Turns a saved Workspace dashboard's scope (dashboardScopes: GF_ENTITIES rows;
+// dashboardScopeAttrs: { [entityId]: { [attr]: { mode, values } } }, both set via
+// DashboardCanvas's DashboardScopeModal/ScopeAttrsPanel) into the entityTree +
+// per-entity implicit-filter shape this panel renders — the dashboard's scope
+// becomes this view's locked filters, the same role PAGE_AFP_CONFIG plays for
+// Discover's static pages, just computed per-dashboard instead of per-route.
+export function buildDashboardScopeImplicitConfig(dashboardScopes = [], dashboardScopeAttrs = {}) {
+  const entityTree = dashboardScopes.map(e => ({ entity: e.label, relation: null }))
+  const perEntityImplicitFilters = {}
+  dashboardScopes.forEach(e => {
+    const attrs = dashboardScopeAttrs[e.id] || {}
+    const rows = Object.entries(attrs).map(([key, cfg]) => ({
+      key, mode: (cfg.mode || 'Include').toUpperCase(), values: cfg.values || [],
+    }))
+    if (rows.length) perEntityImplicitFilters[e.label] = rows
+  })
+  return { entityTree, perEntityImplicitFilters, implicitFindingFilters: [] }
+}
+
 // ── Active Filter Panel ───────────────────────────────────────────────────────
-export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId }) {
+export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId, implicitConfig }) {
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [resetImplicitToo, setResetImplicitToo] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
 
-  const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
+  const { entityTree, implicitEntityFilters, implicitFindingFilters, perEntityImplicitFilters } = implicitConfig || getAfpConfig(pageId)
 
   const savedFilterIdx  = activeFilters.findIndex(f => f.attrId === 'saved-filter')
   const savedFilterChip = savedFilterIdx >= 0 ? activeFilters[savedFilterIdx] : null
@@ -397,6 +416,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
             // of once per entity in the tree (entityTree can have several `relation`s, e.g.
             // the fallback ENTITY_TREE, which would otherwise repeat the same chips N times).
             const isFirstRelated   = relation && entityIdx === entityTree.findIndex(e => e.relation)
+            const entityImplicit   = perEntityImplicitFilters ? (perEntityImplicitFilters[entity] || []) : implicitEntityFilters
 
             return (
               <div key={entity} className="afp-entity-block">
@@ -417,7 +437,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                             <button className="afp-fc-remove" title="Remove filter" onClick={() => attr.indices.slice().reverse().forEach(idx => onRemove?.(idx))}>×</button>
                           </span>
                         ))}
-                        {implicitFilters && implicitEntityFilters.map(f => (
+                        {implicitFilters && entityImplicit.map(f => (
                           <span key={f.key} className="afp-filter-chip">
                             <span className="afp-fc-label">{f.key}</span>
                             <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
