@@ -40,8 +40,15 @@ All notable UI changes are tracked here.
 - Navigator rail item opens the inline guided-builder panel instead of the floating Navigator panel while a dashboard/report is being built
 - Dashboard widget KPI aggregation operations and value-size options; Excel/PDF export icons on `DashboardCanvas`
 ### Changed
+- Merged `develop` (v0.21.1) into `feature/studio-workspace`, reconciling this branch's v0.22.0 bump with develop's independent v0.21.1 merge
 - Merged `feature/studio-workspace` left-nav/dashboard work with the hover-flyout left nav and multi-entity graph filter changes
 - `Topbar` no longer takes `navigatorActive`/`showNavigatorButton` — Navigator entry now lives in `CopilotFab`
+
+---
+
+## [0.21.1] — 2026-09-02
+### Changed
+- Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix.
 
 ---
 
@@ -58,6 +65,12 @@ All notable UI changes are tracked here.
 ### Fixed
 - Pie/donut dashboard widgets and their legends no longer overlap or clip when resized down; fixed a duplicate/conflicting `.cr-pie-legend` CSS rule causing inconsistent legend spacing.
 - Removed the stale "MRA Security Risk" report nav entry.
+
+---
+
+## [0.20.1] — 2026-09-02
+### Fixed
+- Repaired the develop build, broken since PR #23: removed the unfinished MRA Security Risk report route (page/styles were never committed) and added the missing `MatrixDropdown.jsx` component used by Compliance Matrix (also never committed).
 
 ---
 

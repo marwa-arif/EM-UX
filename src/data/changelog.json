@@ -10,8 +10,20 @@
         "Dashboard widget KPI aggregation operations and value-size options; Excel/PDF export icons on `DashboardCanvas`"
       ],
       "Changed": [
+        "Merged `develop` (v0.21.1) into `feature/studio-workspace`, reconciling this branch's v0.22.0 bump with develop's independent v0.21.1 merge",
         "Merged `feature/studio-workspace` left-nav/dashboard work with the hover-flyout left nav and multi-entity graph filter changes",
         "`Topbar` no longer takes `navigatorActive`/`showNavigatorButton` — Navigator entry now lives in `CopilotFab`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.21.1",
+    "date": "2026-09-02",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix."
       ],
       "Fixed": []
     }
@@ -34,6 +46,17 @@
       "Fixed": [
         "Pie/donut dashboard widgets and their legends no longer overlap or clip when resized down; fixed a duplicate/conflicting `.cr-pie-legend` CSS rule causing inconsistent legend spacing.",
         "Removed the stale \"MRA Security Risk\" report nav entry."
+      ]
+    }
+  },
+  {
+    "version": "0.20.1",
+    "date": "2026-09-02",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Repaired the develop build, broken since PR #23: removed the unfinished MRA Security Risk report route (page/styles were never committed) and added the missing `MatrixDropdown.jsx` component used by Compliance Matrix (also never committed)."
       ]
     }
   },
