@@ -7,6 +7,8 @@ import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
 import { GF_ENTITIES, getEntityAttrs } from '../components/FilterPanel.jsx'
 import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import { SelectDropdown } from './CompliancePage.jsx'
+import { SAVED_ROWS } from './SavedPage.jsx'
+import { INSIGHTS_MODEL } from '../components/LeftNav.jsx'
 import DiscoverDevicePage from './DiscoverDevicePage.jsx'
 import GridLayout from 'react-grid-layout/legacy'
 import 'react-grid-layout/css/styles.css'
@@ -4449,6 +4451,57 @@ const DASHBOARD_EDIT_SEED_BY_TEMPLATE = {
 }
 const DASHBOARD_EDIT_SEED_DEFAULT = { widgets: EXEC_SUMMARY_TEMPLATE.widgets, scopeId: 'host' }
 
+// Reserved names — the fixed set of core dashboard templates offered from the
+// Library (see LibraryPage.jsx's TEMPLATES / WorkspacePage's DASHBOARD_TITLES)
+// — a saved dashboard can't reuse one of these, on top of any name already
+// taken by another saved dashboard (see isDashboardNameTaken below).
+const CORE_DASHBOARD_TEMPLATE_NAMES = [
+  'Discover Dashboard', 'CISO Dashboard', 'Client Subsidiary',
+  'Device Attack Surface', 'Risk Mitigation Queries', 'Tracked Security Gaps',
+]
+
+// "Save Dashboard Under" — where a saved dashboard is reachable from besides
+// Workspace > Saved. Anything but 'workspace' also pins it as a real item in
+// that left-nav section (see withSavedDashboards in LeftNav.jsx, and
+// App.jsx's `${section}/saved-${id}` render branch).
+const SAVE_DASHBOARD_UNDER_OPTIONS = [
+  { value: 'workspace',     label: 'Workspace' },
+  { value: 'exposure',      label: 'Exposure' },
+  { value: 'discover',      label: 'Discover' },
+  { value: 'report',        label: 'Report' },
+  { value: 'data-quality',  label: 'Data Quality' },
+  { value: 'standalone',    label: 'Standalone Dashboard' },
+]
+
+// The built-in pages already living in each Insights section — none of these
+// were created via the dashboard builder (LCNC), but they occupy real nav
+// slots just the same, so pinning a same-named LCNC dashboard there would
+// show two identically-labeled items side by side. Derived from
+// INSIGHTS_MODEL itself (not a separately-maintained list) so it can't drift
+// out of sync with the actual nav. 'kg' has no children of its own (a solo
+// leaf) — its own label is the one reserved name for that section.
+const BUILT_IN_SECTION_PAGE_NAMES = Object.fromEntries(
+  INSIGHTS_MODEL.map(section => [section.id, (section.children ?? [section]).map(c => c.label)])
+)
+
+// Sentinel dropdown value for "+ Create New Section" — never itself stored
+// as a dashboard's navSection (see handleCreateSection below, which resolves
+// it to a real generated section id before that ever happens).
+const CREATE_SECTION_VALUE = '__create_new_section__'
+
+// Custom section ids are slugified from their label and namespaced under
+// 'custom-' so they can never collide with a fixed built-in id (exposure,
+// report, standalone, ...) even if someone names their section "Report" —
+// the label-uniqueness check in isSectionNameTaken below is what actually
+// blocks that, this is just a belt-and-suspenders guarantee at the id level.
+const slugifySection = (label, existingIds) => {
+  const base = 'custom-' + label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  let id = base || 'custom-section'
+  let n = 2
+  while (existingIds.has(id)) { id = `${base || 'custom-section'}-${n}`; n++ }
+  return id
+}
+
 // ── Month-over-Month timeline modal ─────────────────────────────────
 const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS_LIST  = [2023, 2024, 2025, 2026, 2027]
@@ -4710,7 +4763,7 @@ function DashboardCreateHero({ onCreateManually, onUseNavigator }) {
 }
 
 const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId = null, reportMode = false, reportTitle = '', onNameChange, onOpenCopilotBuilder, seedWidgets = null, seedName = '', backTarget = 'workspace/saved', viewMode = false }, ref) {
-  const { addSavedDashboard, editDashboardSeed } = useWorkspace()
+  const { addSavedDashboard, editDashboardSeed, savedDashboards, setEditDashboardSeed, customSections, addCustomSection } = useWorkspace()
   const { addDownload } = useDownloads()
   const { showToast } = useToast()
   const template = templateId === 'discover' ? DISCOVER_TEMPLATE
@@ -4723,7 +4776,12 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // the user navigates away from this edit-* route) so it isn't picked up
   // again by the next dashboard this canvas mounts for (e.g. "New Dashboard").
   const [editSeed] = useState(() => editDashboardSeed)
-  const editSeedEntry = editSeed ? (DASHBOARD_EDIT_SEED_BY_TEMPLATE[editSeed.template] ?? DASHBOARD_EDIT_SEED_DEFAULT) : null
+  // A real saved dashboard (created via handleDashboardSaved) carries its own
+  // widgets/scope — use those directly. Only the hardcoded SAVED_ROWS mock
+  // rows (no real content, just a `template` label) need the name-keyed
+  // lookup below to have anything to seed from.
+  const hasSavedContent = !!(editSeed && editSeed.widgets)
+  const editSeedEntry = (editSeed && !hasSavedContent) ? (DASHBOARD_EDIT_SEED_BY_TEMPLATE[editSeed.template] ?? DASHBOARD_EDIT_SEED_DEFAULT) : null
 
   // `seedWidgets`/`seedName` arrive when this canvas was just navigated to from
   // Navigator's Build mode (or Ask/Research's "Add to Workspace") — see
@@ -4733,6 +4791,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const [name, setName]       = useState(reportMode ? reportTitle : (seedName || template?.name || editSeed?.name || ''))
   const [widgets, setWidgets] = useState(() => {
     if (template) return template.widgets
+    if (hasSavedContent) return editSeed.widgets
     if (editSeedEntry) return editSeedEntry.widgets
     if (seedWidgets && seedWidgets.length) return seedWidgets
     return []
@@ -4746,10 +4805,14 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // have the graph-filter scope popup set before anything else — see the
   // "New Dashboard" flow from the Library.
   const isNewDashboard = !reportMode && !viewMode && !template && !editSeed && (!seedWidgets || !seedWidgets.length)
-  const [dashboardScopes, setDashboardScopes] = useState(() =>
-    editSeedEntry ? GF_ENTITIES.filter(e => e.id === editSeedEntry.scopeId) : []
+  const [dashboardScopes, setDashboardScopes] = useState(() => {
+    if (hasSavedContent) return editSeed.dashboardScopes ?? []
+    if (editSeedEntry) return GF_ENTITIES.filter(e => e.id === editSeedEntry.scopeId)
+    return []
+  })
+  const [dashboardScopeAttrs, setDashboardScopeAttrs] = useState(() =>
+    hasSavedContent ? (editSeed.dashboardScopeAttrs ?? {}) : {}
   )
-  const [dashboardScopeAttrs, setDashboardScopeAttrs] = useState({})
   const [scopeModalOpen, setScopeModalOpen] = useState(false)
   const [scopeMandatory, setScopeMandatory] = useState(false)
   // Set instead of committing directly whenever a scope edit (on a dashboard
@@ -4786,6 +4849,21 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const [saveModalOpen, setSaveModalOpen]   = useState(false)
   const [saveModalMode, setSaveModalMode]   = useState('save') // 'save' | 'save-as'
   const [saveNameDraft, setSaveNameDraft]   = useState('')
+  const [saveNameError, setSaveNameError]   = useState('')
+  // Seeded from the dashboard's own already-saved values (not just a modal
+  // draft) so a quick re-save — see handleToolbarSave below, which skips the
+  // modal entirely for an already-saved dashboard — persists the *existing*
+  // availability/section instead of silently resetting them to the defaults.
+  const [saveAvailabilityDraft, setSaveAvailabilityDraft] = useState(() => editSeed?.visibility ?? 'Private')
+  const [saveNavSectionDraft, setSaveNavSectionDraft] = useState(() => editSeed?.navSection ?? 'workspace')
+  // Inline "+ Create New Section" flow within the "Save Dashboard Under"
+  // field — a separate small draft rather than repurposing saveNavSectionDraft
+  // itself, so the dropdown can keep showing its previous real selection
+  // underneath while the user is mid-typing a new section name (Cancel just
+  // drops this without disturbing that).
+  const [creatingSection, setCreatingSection] = useState(false)
+  const [newSectionDraft, setNewSectionDraft] = useState('')
+  const [newSectionError, setNewSectionError] = useState('')
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   // Set by an external caller (WorkspacePage's guardNav, e.g. switching to a
   // different dashboard/nav item mid-creation) so the same discard-confirm
@@ -4798,25 +4876,120 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // something actually changes.
   const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) : null)
 
-  const openSaveModal = (mode) => { setSaveModalMode(mode); setSaveNameDraft(name); setSaveModalOpen(true) }
-  const handleDashboardSaved = (savedName) => {
+  const openSaveModal = (mode) => {
+    setSaveModalMode(mode)
+    setSaveNameDraft(name)
+    setSaveNameError('')
+    setSaveAvailabilityDraft(editSeed?.visibility ?? 'Private')
+    setSaveNavSectionDraft(editSeed?.navSection ?? 'workspace')
+    setSaveModalOpen(true)
+  }
+  // A name already used by another saved dashboard, one of the fixed Library
+  // template names, or a built-in page already living in the chosen "Save
+  // Dashboard Under" section is rejected — those are the other places a
+  // dashboard name shows up in the product, so a collision there is
+  // genuinely ambiguous, not just a cosmetic dupe (pinning a same-named LCNC
+  // dashboard next to an existing built-in page of that name, e.g. a new
+  // "Compliance" dashboard saved under Report where Compliance already
+  // exists, would show two identically-labeled items side by side in the
+  // nav). Excludes this dashboard's own current entry so re-saving it under
+  // its existing name still works.
+  // navSection is an explicit param (defaulting to the current draft state)
+  // rather than always reading saveNavSectionDraft directly — the "Save
+  // Dashboard Under" dropdown's onChange needs to re-validate against the
+  // section it's switching *to* in the same tick, before that state update
+  // has actually re-rendered.
+  const isDashboardNameTaken = (trimmedName, navSection = saveNavSectionDraft) => {
+    const lower = trimmedName.toLowerCase()
+    if (CORE_DASHBOARD_TEMPLATE_NAMES.some(n => n.toLowerCase() === lower)) return true
+    // "Standalone Dashboard" still lands right next to the real Knowledge
+    // Graph nav entry (see withSavedDashboards in LeftNav.jsx), so it still
+    // needs to check against that page's own name specifically.
+    const sectionPages = BUILT_IN_SECTION_PAGE_NAMES[navSection === 'standalone' ? 'kg' : navSection] ?? []
+    if (sectionPages.some(n => n.toLowerCase() === lower)) return true
+    const currentId = saveModalMode === 'save-as' ? null : dashboardId
+    return [...savedDashboards, ...SAVED_ROWS].some(d =>
+      d.type === 'DASHBOARD' && d.id !== currentId && d.name.trim().toLowerCase() === lower
+    )
+  }
+  const validateSaveName = (navSection = saveNavSectionDraft) => {
+    const trimmed = saveNameDraft.trim()
+    if (!trimmed) return true
+    if (isDashboardNameTaken(trimmed, navSection)) {
+      setSaveNameError('This name is already taken. Please choose a different one.')
+      return false
+    }
+    setSaveNameError('')
+    return true
+  }
+  // A new section's name can't collide with any existing "Save Dashboard
+  // Under" destination — the fixed ones (Workspace, Exposure, ... Standalone
+  // Dashboard) or another custom section already created — since either
+  // would show two identically-labeled entries in that same dropdown, and a
+  // built-in-section match would additionally show up twice in the nav
+  // itself (see BUILT_IN_SECTION_PAGE_NAMES's own per-page check above,
+  // which this doesn't duplicate — this is about the *section* name, that's
+  // about a *dashboard* name).
+  const isSectionNameTaken = (trimmedLabel) => {
+    const lower = trimmedLabel.toLowerCase()
+    return SAVE_DASHBOARD_UNDER_OPTIONS.some(o => o.label.toLowerCase() === lower)
+      || customSections.some(cs => cs.label.toLowerCase() === lower)
+  }
+  const handleCreateSection = () => {
+    const trimmed = newSectionDraft.trim()
+    if (!trimmed) { setNewSectionError('Section name is required.'); return }
+    if (isSectionNameTaken(trimmed)) {
+      setNewSectionError('This name is already taken. Please choose a different one.')
+      return
+    }
+    const id = slugifySection(trimmed, new Set(customSections.map(cs => cs.id)))
+    addCustomSection({ id, label: trimmed })
+    setSaveNavSectionDraft(id)
+    setCreatingSection(false)
+    setNewSectionDraft('')
+    setNewSectionError('')
+    if (saveNameDraft.trim()) validateSaveName(id)
+  }
+  // `mode` defaults to whatever the Save Dashboard modal was opened with, but
+  // is passed explicitly by the toolbar's quick re-save path (see
+  // handleToolbarSave) — saveModalMode can be stale left over from an earlier
+  // Save As in the same session, which would otherwise mint a fresh id on
+  // every subsequent quick save instead of updating the one already open.
+  const handleDashboardSaved = (savedName, mode = saveModalMode) => {
     setSaveModalOpen(false)
-    if (Math.random() < 0.2) {
+    // Mock-only simulated failure (no real backend here) — occasional, not
+    // routine, so it exercises the error-toast path without making saving
+    // itself unreliable.
+    if (Math.random() < 0.1) {
       showToast({ type: 'error', msg: 'Failed to save dashboard. Please try again.' })
       return
     }
-    const id = saveModalMode === 'save-as' ? `d-${Date.now()}` : (dashboardId ?? `d-${Date.now()}`)
+    const id = mode === 'save-as' ? `d-${Date.now()}` : (dashboardId ?? `d-${Date.now()}`)
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-    addSavedDashboard({
+    // Persist the actual builder state (widgets/scope), not just the table-row
+    // metadata — otherwise reopening this entry has nothing real to seed from
+    // and falls back to a generic template's widgets (see editSeedEntry below).
+    const savedEntry = {
       id, name: savedName, isNew: true, type: 'DASHBOARD',
-      template: template?.name ?? editSeed?.template ?? 'Custom', visibility: 'Private', status: 'Saved',
+      template: template?.name ?? editSeed?.template ?? 'Custom', visibility: saveAvailabilityDraft, status: 'Saved',
       lastUpdated: today,
+      widgets, dashboardScopes, dashboardScopeAttrs,
+      navSection: saveNavSectionDraft === 'workspace' ? null : saveNavSectionDraft,
+    }
+    flushSync(() => {
+      addSavedDashboard(savedEntry)
+      setDashboardId(id)
+      setName(savedName)
+      lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScopes, dashboardScopeAttrs })
     })
-    setDashboardId(id)
-    setName(savedName)
-    lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScopes, dashboardScopeAttrs })
     showToast({ type: 'success', msg: `"${savedName}" has been saved.` })
-    onNav('workspace/saved')
+    // Land on the dashboard itself rather than the list — seed
+    // editDashboardSeed the same way SavedPage's own View action does
+    // (see its handleView) so WorkspacePage doesn't fall back to resolving
+    // it from the hardcoded SAVED_ROWS mock list, which has no idea about a
+    // dashboard just saved this session.
+    setEditDashboardSeed(savedEntry)
+    onNav(`workspace/dashboard/view-${id}`)
   }
   const isDirty = !reportMode && !viewMode && !(widgets.length === 0 && !name.trim())
     && JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) !== lastSavedSnapshotRef.current
@@ -5336,12 +5509,16 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       className="dc-root"
       style={{ '--dc-bg-app': PAI.bgApp, '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint, '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}
     >
-      <div className="dc-layout">
+      <div className={`dc-layout${viewMode ? ' dc-layout--view' : ''}`}>
 
         {/* ── Canvas ── */}
-        <div className="dc-canvas-wrap">
+        <div className={`dc-canvas-wrap${viewMode ? ' dc-canvas-wrap--view' : ''}`}>
 
-          {/* Toolbar */}
+          {/* Toolbar — a saved dashboard being viewed (not built/edited) drops
+              this entirely, same as Discover's dashboards: just the SubHeader
+              (with its own "···" menu's Edit item, see WorkspacePage.jsx) then
+              the widgets, no builder chrome. */}
+          {!viewMode && (
           <div className={`dc-toolbar${toolbarStacked ? ' dc-toolbar--stacked' : ''}`} ref={toolbarOuterRef}>
             <div className="dc-toolbar-row dc-toolbar-row--top" ref={toolbarTopRowRef}>
               <button
@@ -5467,9 +5644,20 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
               <button
                 className="ds-btn sz-md t-primary"
+                title={(!reportMode && !viewMode && !isDirty) ? 'No changes to save' : undefined}
+                disabled={!reportMode && !viewMode && !isDirty}
                 onClick={() => {
                   if (viewMode) { onNav(`workspace/dashboard/edit-${dashboardId}`); return }
-                  if (!reportMode) { openSaveModal('save'); return }
+                  if (!reportMode) {
+                    // Already saved once (dashboardId exists) — name/availability/
+                    // section are already wired up, so just re-persist the
+                    // updated widgets/scope and toast, skipping the modal that
+                    // asks for those again. A never-saved dashboard still needs
+                    // the full modal (openSaveModal('save')) to get a name.
+                    if (dashboardId) { handleDashboardSaved(name, 'save'); return }
+                    openSaveModal('save')
+                    return
+                  }
                   const previewSlug = templateId === 'vulnerabilities' ? 'vulnerabilities'
                     : templateId === 'month-over-month' ? 'month-over-month'
                     : 'executive-summary'
@@ -5478,9 +5666,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               >{viewMode ? 'Edit' : reportMode ? 'Preview' : 'Save'}</button>
             </div>
           </div>
+          )}
 
           {/* Canvas body */}
-          <div className={`dc-canvas-body${templateId === 'discover' ? ' dc-canvas-body--plain' : ''}${reportMode ? ' dc-canvas-body--report' : ''}`}>
+          <div className={`dc-canvas-body${(templateId === 'discover' || viewMode) ? ' dc-canvas-body--plain' : ''}${reportMode ? ' dc-canvas-body--report' : ''}`}>
             {templateId === 'discover' ? (
               <DiscoverDevicePage
                 dashboardMode
@@ -5547,7 +5736,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                     cols={GRID_COLS}
                     rowHeight={ROW_UNIT_PX}
                     margin={[GRID_GAP_PX, GRID_GAP_PX]}
-                    containerPadding={[GRID_PAD_PX, GRID_PAD_PX]}
+                    containerPadding={viewMode ? [0, 0] : [GRID_PAD_PX, GRID_PAD_PX]}
                     width={gridWidth}
                     draggableHandle=".dc-action-btn--grab, .dc-widget-card-header, .cr-kg-title-row"
                     resizeHandles={['se']}
@@ -5695,7 +5884,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
             )}
           </div>
 
-          {templateId !== 'discover' && (
+          {templateId !== 'discover' && !viewMode && (
             <DashboardFloatingToolbar
               canUndo={canUndo}
               canRedo={canRedo}
@@ -5903,18 +6092,89 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
             </button>
           </div>
           <div className="sfm-body">
-            <p className="sfm-desc">Give your dashboard a name so you can find it later in your Saved list.</p>
             <div className="sfm-form-field">
-              <label className="sfm-form-label">Dashboard Name</label>
-              <input className="sfm-form-input" placeholder="Enter dashboard name..." value={saveNameDraft} onChange={e => setSaveNameDraft(e.target.value)} autoFocus />
+              <label className="sfm-form-label">Dashboard Name<span className="sfm-required">*</span></label>
+              <input
+                className={`sfm-form-input${saveNameError ? ' has-error' : ''}`}
+                placeholder="Enter name"
+                value={saveNameDraft}
+                onChange={e => { setSaveNameDraft(e.target.value); if (saveNameError) setSaveNameError('') }}
+                onBlur={() => validateSaveName()}
+                autoFocus
+              />
+              {saveNameError && <span className="sfm-field-error">{saveNameError}</span>}
+            </div>
+            <div className="sfm-form-field">
+              <label className="sfm-form-label">Availability</label>
+              <div className="sfm-select-full">
+                <SelectDropdown
+                  value={saveAvailabilityDraft}
+                  onChange={setSaveAvailabilityDraft}
+                  options={['Private', 'Public']}
+                  fullWidth
+                  portal
+                />
+              </div>
+            </div>
+            <div className="sfm-form-field">
+              <label className="sfm-form-label">Save Dashboard Under</label>
+              <div className="sfm-select-full">
+                <SelectDropdown
+                  value={creatingSection ? CREATE_SECTION_VALUE : saveNavSectionDraft}
+                  onChange={(next) => {
+                    if (next === CREATE_SECTION_VALUE) {
+                      setCreatingSection(true)
+                      setNewSectionDraft('')
+                      setNewSectionError('')
+                      return
+                    }
+                    setSaveNavSectionDraft(next)
+                    if (saveNameDraft.trim()) validateSaveName(next)
+                  }}
+                  options={[
+                    ...SAVE_DASHBOARD_UNDER_OPTIONS,
+                    ...customSections.map(cs => ({ value: cs.id, label: cs.label })),
+                    { value: CREATE_SECTION_VALUE, label: '+ Create New Section' },
+                  ]}
+                  fullWidth
+                  portal
+                />
+              </div>
+              {creatingSection && (
+                <div className="sfm-new-section-row">
+                  <input
+                    className={`sfm-form-input${newSectionError ? ' has-error' : ''}`}
+                    placeholder="New section name"
+                    value={newSectionDraft}
+                    onChange={e => { setNewSectionDraft(e.target.value); if (newSectionError) setNewSectionError('') }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCreateSection() } }}
+                    autoFocus
+                  />
+                  <button type="button" className="sfm-cancel sfm-new-section-btn" onClick={() => { setCreatingSection(false); setNewSectionDraft(''); setNewSectionError('') }}>Cancel</button>
+                  <button type="button" className="sfm-create sfm-new-section-btn" onClick={handleCreateSection}>Add</button>
+                </div>
+              )}
+              {newSectionError && <span className="sfm-field-error">{newSectionError}</span>}
+              {!creatingSection && saveNavSectionDraft !== 'workspace' && (
+                <p className="sfm-info-note">
+                  {saveNavSectionDraft === 'standalone'
+                    ? 'This dashboard will also appear in the left nav as its own item.'
+                    : <>This dashboard will also appear in the left nav under {[...SAVE_DASHBOARD_UNDER_OPTIONS, ...customSections.map(cs => ({ value: cs.id, label: cs.label }))].find(o => o.value === saveNavSectionDraft)?.label}{saveNavSectionDraft === 'exposure' ? ', right after Findings.' : '.'}</>
+                  }
+                </p>
+              )}
             </div>
           </div>
           <div className="sfm-footer">
             <button className="sfm-cancel" onClick={() => setSaveModalOpen(false)}>Cancel</button>
             <button
-              className="sfm-create"
+              className={`sfm-create${!saveNameDraft.trim() ? ' sfm-create--disabled' : ''}`}
               disabled={!saveNameDraft.trim()}
-              onClick={() => handleDashboardSaved(saveNameDraft.trim())}
+              onClick={() => {
+                const trimmed = saveNameDraft.trim()
+                if (!trimmed || !validateSaveName()) return
+                handleDashboardSaved(trimmed)
+              }}
             >Save</button>
           </div>
         </div>

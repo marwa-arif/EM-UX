@@ -33,6 +33,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.23.0] — 2026-09-10
+### Added
+- Save modal's "Save Dashboard Under" field can pin a saved dashboard as a real left-nav destination — nested inside Exposure/Discover/Report/Data Quality, as its own top-level "Standalone Dashboard" leaf, or under a new user-created section — instead of only appearing in Workspace > Saved
+- App-wide `SavedDashboardsCtx` so pinned/saved dashboards survive navigating out of Workspace instead of being lost on unmount
+### Changed
+- Saved page's Duplicate action routes through the real saved-dashboards/reports store (so a copy survives leaving the tab) and dedupes generated "(Copy)" names against every existing name instead of just appending a bare suffix
+- `ActiveFilterPanel` accepts a per-dashboard `implicitConfig` (built from a pinned dashboard's scope/scope-attrs) so a pinned dashboard's own scope becomes its locked filters, the same role static per-route `PAGE_AFP_CONFIG` plays elsewhere
+
+---
+
 ## [0.22.1] — 2026-09-10
 ### Changed
 - Reconciled `feature/studio-workspace` with `develop`'s PR #23/#24/#25 history (MRA Security Risk route repair, `MatrixDropdown.jsx` fix) after merging `origin/develop`

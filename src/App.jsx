@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import { LeftNavHybrid } from './components/LeftNavAlt.jsx'
+import { INSIGHTS_MODEL, withSavedDashboards } from './components/LeftNav.jsx'
+import DashboardCanvas from './pages/DashboardCanvas.jsx'
+import { WorkspaceProvider } from './context/WorkspaceCtx.jsx'
+import { SavedDashboardsProvider, useSavedDashboards } from './context/SavedDashboardsCtx.jsx'
 import ProductTour from './components/ProductTour.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import KGPage from './pages/KGPage.jsx'
 import { FilterPanel } from './components/FilterPanel.jsx'
+import { buildDashboardScopeImplicitConfig } from './components/ActiveFilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
@@ -618,6 +623,27 @@ const PAGE_META = {
   },
 };
 
+// A dashboard pinned to a left-nav section (see the Save modal's "Save
+// Dashboard Under" field, DashboardCanvas.jsx, and withSavedDashboards in
+// LeftNav.jsx) routes to `${section}/saved-${id}` — this supplies that
+// branch's breadcrumb label and its "back" destination, since those ids
+// aren't in PAGE_META (they're generated at save time, not fixed routes).
+const SAVED_DASHBOARD_SECTION = {
+  exposure:       { label: 'Exposure',        root: 'exposure/overview' },
+  discover:       { label: 'Discover',        root: 'discover/device' },
+  report:         { label: 'Report',          root: 'report/compliance' },
+  'data-quality': { label: 'Data Quality',    root: 'data-quality/overview' },
+  // "Standalone Dashboard" (see SAVE_DASHBOARD_UNDER_OPTIONS in
+  // DashboardCanvas.jsx) lands as its own top-level nav item, not nested
+  // under any section (see STANDALONE_ANCHOR_ID in LeftNav.jsx) — so unlike
+  // every other entry here, it has no section label to show as a breadcrumb
+  // middle segment. `label: null` tells the pinnedDashboard branch below to
+  // render a plain two-part "Insights > name" breadcrumb instead of three.
+  // Its "back"/edit destination is the Saved list, same as any other
+  // dashboard with no pinned section of its own.
+  standalone:     { label: null, root: 'workspace/saved' },
+};
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = stripBase(window.location.pathname);
@@ -648,6 +674,8 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
+  const { savedDashboards, customSections } = useSavedDashboards();
+  const insightsModel = useMemo(() => withSavedDashboards(INSIGHTS_MODEL, savedDashboards, customSections), [savedDashboards, customSections]);
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
@@ -757,7 +785,14 @@ function App() {
   const [dashboardSeed, setDashboardSeed] = useState(null);
   const BUILDER_SURFACES = {
     assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
-    dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
+    // Excludes workspace/dashboard/view-* — a saved dashboard being *viewed*
+    // (read-only, no toolbar — see DashboardCanvas's viewMode) isn't a build
+    // surface the way new/edit routes are; WorkspacePage's own isBuilderRoute
+    // makes the same distinction for its in-canvas discard-guard, and this
+    // must match it or the left-nav Navigator click (routed here once
+    // WorkspacePage's own check lets it fall through) wrongly opens the
+    // inline guided-builder panel instead of navigating to Navigator.
+    dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard') && !c.startsWith('workspace/dashboard/view-'), api: dashboardBuilderApi },
     dataConfig: { matchRoute: c => c === 'workspace/configure-screen', api: null },
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
@@ -853,13 +888,16 @@ function App() {
     // it out first — clicking a primary-nav item while Settings is nested
     // beside it is a normal "go here instead" action.
     if (settingsOpen && id !== 'admin-page' && id !== 'admin-exit') setSettingsOpen(false);
-    // Navigator and the dashboard builder are meant to work side by side —
-    // while a dashboard canvas is mounted (see BUILDER_SURFACES.dashboard),
-    // opening Navigator from anywhere (the CopilotFab bubble included, which
-    // calls this directly rather than through WorkspacePage) should open its
-    // inline guided-builder panel on top of the canvas, same as the canvas's
-    // own "Ask AI" button, instead of the standalone floating Navigator panel.
-    if ((id === 'navigator' || id === 'navigator-page') && BUILDER_SURFACES.dashboard.matchRoute(current) && dashboardBuilderApi?.current) {
+    // The CopilotFab bubble (id 'navigator') and the dashboard builder are
+    // meant to work side by side — while a dashboard canvas is mounted (see
+    // BUILDER_SURFACES.dashboard), the bubble opens its inline guided-builder
+    // panel on top of the canvas, same as the canvas's own "Ask AI" button,
+    // instead of the standalone floating Navigator panel. This must NOT catch
+    // 'navigator-page' (the LeftNav's plain Navigator item, routed here once
+    // WorkspacePage's own matching check lets it fall through) — that's
+    // ordinary top-level navigation and has to go through the normal
+    // discard-unsaved-changes guard, then land on the real Navigator page.
+    if (id === 'navigator' && BUILDER_SURFACES.dashboard.matchRoute(current) && dashboardBuilderApi?.current) {
       handleNav('navigator-builder', { kind: 'dashboard' });
       return;
     }
@@ -1140,6 +1178,75 @@ function App() {
     return <ErrorPage type="error" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
 
+  // A dashboard pinned to a left-nav section (see withSavedDashboards in
+  // LeftNav.jsx and the Save modal's "Save Dashboard Under" field) routes to
+  // `${section}/saved-${id}` for a section it nests inside (Exposure/
+  // Discover/Report/Data Quality), or the slash-free `standalone-saved-${id}`
+  // for one saved as its own individual top-level leaf ("Standalone
+  // Dashboard" in that field) — both generated at save time, so neither can
+  // live in PAGE_META's fixed table. Handled as its own early-return branch,
+  // same shape as the workspace/ux3 branches above, rather than threading
+  // through the PAGE_META/isKG chain below which only knows the fixed set of
+  // built-in pages.
+  const pinnedDashboard = savedDashboards.find(d => {
+    if (!d.navSection || d.navSection === 'workspace') return false
+    return d.navSection === 'standalone' ? current === `standalone-saved-${d.id}` : current === `${d.navSection}/saved-${d.id}`
+  }) ?? null;
+  if (pinnedDashboard) {
+    // A custom section (see the Save modal's "+ Create New Section") has no
+    // fixed entry in SAVED_DASHBOARD_SECTION and no landing page of its own
+    // to route "back" to — resolve its label from the reusable registry
+    // instead, and leave root unset so that breadcrumb segment renders as
+    // plain text rather than a link to nowhere.
+    const customSection = customSections.find(cs => cs.id === pinnedDashboard.navSection);
+    const section = SAVED_DASHBOARD_SECTION[pinnedDashboard.navSection]
+      ?? (customSection ? { label: customSection.label, root: null } : SAVED_DASHBOARD_SECTION.exposure);
+    // Standalone's null label means no section to show as a middle
+    // breadcrumb segment — "Insights > name" instead of "Insights > x > name".
+    const breadcrumb = section.label ? ['Insights', section.label, pinnedDashboard.name] : ['Insights', pinnedDashboard.name];
+    const breadcrumbClicks = section.label
+      ? [undefined, section.root ? () => handleNav(section.root) : undefined, undefined]
+      : [undefined, undefined];
+    return (
+      <div className="app-shell">
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
+        <Topbar onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
+        <div className="app-body">
+          <LeftNavHybrid
+            current={current}
+            onNav={handleNav}
+            collapsed={collapsedForNav}
+            onToggleCollapse={toggleNavCollapse}
+            insightsModel={insightsModel}
+          />
+          <main className="wp-main">
+            <SubHeader
+              title={pinnedDashboard.name}
+              breadcrumb={breadcrumb}
+              breadcrumbHrefs={breadcrumb.map(() => null)}
+              breadcrumbClicks={breadcrumbClicks}
+              onEdit={() => handleNav(`workspace/dashboard/edit-${pinnedDashboard.id}`)}
+              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs)}
+              showExplore={false}
+            />
+            <div className="wp-main-body">
+              <div className="wp-main-content">
+                <WorkspaceProvider onNav={handleNav} editDashboardSeed={pinnedDashboard} setEditDashboardSeed={() => {}}>
+                  <DashboardCanvas key={pinnedDashboard.id} onNav={handleNav} viewMode backTarget={section.root ?? 'workspace/saved'} />
+                </WorkspaceProvider>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
     return <ErrorPage type="notFound" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
@@ -1170,6 +1277,7 @@ function App() {
           onAdminSelect={adminState.setActiveSection}
           collapsed={collapsedForNav}
           onToggleCollapse={toggleNavCollapse}
+          insightsModel={insightsModel}
         />
 
         {settingsOpen ? (
@@ -1301,9 +1409,11 @@ function AppWithBoundary() {
     <ToastProvider>
       <DownloadsProvider>
         <NavigatorActivityProvider>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
+          <SavedDashboardsProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </SavedDashboardsProvider>
         </NavigatorActivityProvider>
       </DownloadsProvider>
     </ToastProvider>

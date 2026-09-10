@@ -125,6 +125,97 @@ export const INSIGHTS_MODEL = [
   ]},
 ];
 
+// A dashboard saved from the Workspace builder can be pinned to one of the
+// Insights sections above (see the Save modal's "Save Dashboard Under"
+// field) so it shows up as a real left-nav destination there, not just in
+// Workspace > Saved. Exposure's pinned dashboards insert right after
+// "Findings" — the one anchor point actually requested; every other section
+// just appends to the end of its existing children.
+const SAVED_DASHBOARD_ANCHOR = { exposure: 'exposure/findings' };
+
+// "Standalone Dashboard" (the Save modal's "Save Dashboard Under" field) is
+// deliberately not one of the nestable Insights sections above — a dashboard
+// saved this way becomes its own new top-level leaf, the same flat,
+// single-click treatment every section header gets, rather than being nested
+// a click deeper inside one. It's anchored right after Data Quality — the
+// last Insights section — in the list (not turned into a child of any
+// section — that would make it an expandable parent and bury the pinned
+// dashboard, plus make that section's own page unreachable through its icon
+// unless it grew a synthetic self-link child). Its id deliberately has no
+// '/' in it (unlike the nested-child ids below): a top-level item's
+// active/selected state is matched via `current.split('/')[0] === item.id`
+// (see LeftNavAlt.jsx's `activeParent`), which only works for a slash-free id.
+const STANDALONE_NAV_SECTION = 'standalone';
+const STANDALONE_ANCHOR_ID = 'data-quality';
+
+// A user-created section (the same "Save Dashboard Under" field's
+// "+ Create New Section" option, DashboardCanvas.jsx) behaves like Exposure/
+// Discover/Report/Data Quality — a real expandable parent — except it has no
+// built-in children of its own to start from, and it isn't one of the fixed
+// INSIGHTS_MODEL entries, so it's appended as a brand new top-level group at
+// the end of the list (after Data Quality/Standalone Dashboard) rather than
+// inserted into an existing one. `customSections` is the reusable registry
+// (SavedDashboardsCtx.jsx) — a section only actually renders here once at
+// least one saved dashboard references it again; being in that registry just
+// keeps it pickable from the dropdown even if it's briefly empty.
+const isFixedNavSection = (id) => id === STANDALONE_NAV_SECTION || INSIGHTS_MODEL.some(s => s.id === id);
+
+export function withSavedDashboards(model, savedDashboards, customSections = []) {
+  const nestedBySection = {};
+  // Both a "Standalone Dashboard" leaf and a custom section's group get
+  // appended after Data Quality, in a single shared list — they need one
+  // combined ordering, not two separate passes (one always inserting
+  // standalone leaves, then a second always appending every custom section
+  // after them), or a dashboard saved standalone *after* a custom section
+  // already existed would still show up before it.
+  const appended = [];
+  const groupBySection = {};
+  // savedDashboards is newest-first (addSavedDashboard prepends each new
+  // entry) — walk it oldest-first so `appended`'s order matches actual save
+  // order. A custom section's position is set by its *first* dashboard;
+  // later dashboards saved into the same section just add a child there
+  // without moving it.
+  const chronological = [...savedDashboards].reverse();
+  for (const d of chronological) {
+    if (!d.navSection || d.navSection === 'workspace') continue;
+    if (d.navSection === STANDALONE_NAV_SECTION) {
+      appended.push({ id: `standalone-saved-${d.id}`, label: d.name, icon: 'saved', solo: true });
+    } else if (isFixedNavSection(d.navSection)) {
+      (nestedBySection[d.navSection] ??= []).push({ id: `${d.navSection}/saved-${d.id}`, label: d.name, icon: 'saved' });
+    } else {
+      let group = groupBySection[d.navSection];
+      if (!group) {
+        const label = customSections.find(cs => cs.id === d.navSection)?.label ?? d.navSection;
+        group = { id: d.navSection, label, icon: 'saved', children: [] };
+        groupBySection[d.navSection] = group;
+        appended.push(group);
+      }
+      group.children.push({ id: `${d.navSection}/saved-${d.id}`, label: d.name, icon: 'saved' });
+    }
+  }
+  if (Object.keys(nestedBySection).length === 0 && appended.length === 0) return model;
+
+  let result = model.map(section => {
+    const extra = nestedBySection[section.id];
+    if (!extra) return section;
+    const existing = section.children ?? [];
+    const anchor = SAVED_DASHBOARD_ANCHOR[section.id];
+    const anchorIdx = anchor ? existing.findIndex(c => c.id === anchor) : -1;
+    const children = anchorIdx >= 0
+      ? [...existing.slice(0, anchorIdx + 1), ...extra, ...existing.slice(anchorIdx + 1)]
+      : [...existing, ...extra];
+    return { ...section, children };
+  });
+
+  if (appended.length) {
+    const anchorIdx = result.findIndex(s => s.id === STANDALONE_ANCHOR_ID);
+    result = anchorIdx >= 0
+      ? [...result.slice(0, anchorIdx + 1), ...appended, ...result.slice(anchorIdx + 1)]
+      : [...result, ...appended];
+  }
+  return result;
+}
+
 // "Fabric Configuration" — Studio's real pillars per StudioHomePage (same
 // naming as UX3LeftNav.jsx's STUDIO_CATEGORIES), now a second always-visible
 // group instead of a separate mode reached via a switcher. None have

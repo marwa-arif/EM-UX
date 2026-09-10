@@ -2814,6 +2814,13 @@ html.theme-dark .comp-fw-logo-img--dark {
   width: 100%;
   left: 0;
 }
+/* Opens above the trigger instead of below — for a dropdown that's the last
+   field in a scrollable container (e.g. a modal body with overflow-y:auto),
+   where opening downward would get clipped by that ancestor's overflow. */
+.comp-sort-menu--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
 .comp-sort-menu--scrollable {
   max-height: 220px;
   overflow-y: auto;

@@ -184,7 +184,7 @@ const TOP_ITEM_FLYOUT_CHILDREN = { navigator: NAVIGATOR_FLYOUT_CHILDREN, workspa
 //   - Drag-to-resize between 52px and 220px (and a third, fully-hidden
 //     sliver state past that) is removed for now, may come back later —
 //     the Topbar toggle is the only way to collapse/expand this nav.
-export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, consoleActive = false, adminActiveSection, onAdminSelect, navigatorAtHome = false }) {
+export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, consoleActive = false, adminActiveSection, onAdminSelect, navigatorAtHome = false, insightsModel = INSIGHTS_MODEL }) {
   // No navigatorAtHome suppression here — Navigator's home landing is the
   // one screen a user is on immediately after a fresh load, so leaving its
   // rail icon unhighlighted there read as "nothing shows I'm on this page"
@@ -215,7 +215,7 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
     return () => document.removeEventListener('keydown', onKey);
   }, [railFlyoutOpen]);
 
-  const insightsIds = new Set(INSIGHTS_MODEL.map(e => e.id));
+  const insightsIds = new Set(insightsModel.map(e => e.id));
 
   // Expanded state: Insights and Fabric Configuration collapse independently
   // — same Set-of-collapsed-keys mechanic Classic's own LeftNav.jsx uses,
@@ -327,7 +327,7 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
               isCollapsed={collapsedTopSections.has('insights')}
               onClick={() => toggleTopSection('insights')}
             />
-            {!collapsedTopSections.has('insights') && INSIGHTS_MODEL.map(item => (
+            {!collapsedTopSections.has('insights') && insightsModel.map(item => (
               <NavItem
                 key={item.id}
                 item={item}
@@ -419,7 +419,7 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
               );
             })}
             <div className="leftnav__divider" />
-            {renderCompactInsightsGroup(INSIGHTS_MODEL, 'em')}
+            {renderCompactInsightsGroup(insightsModel, 'em')}
             <div className="leftnav__divider" />
             {/* Fabric Configuration renders as four flat icons here, same as
                 the expanded view's FABRIC_MODEL.map — no accordion, since
