@@ -305,6 +305,9 @@
 .ds-modal-title.dc-download-modal-title { display: inline-flex; align-items: center; gap: 8px; }
 .dc-download-modal-title svg { flex-shrink: 0; }
 
+.ds-modal-title.dc-scope-confirm-modal-title { display: inline-flex; align-items: center; gap: 8px; }
+.dc-scope-confirm-modal-title svg { flex-shrink: 0; }
+
 /* Modal-standard overrides: field label 14px/500, field input 14px — scoped to modal
    bodies only, since .dc-field-label is also used outside modals (widget settings panel). */
 .ds-modal-body .dc-field-label { font-size: 14px; font-weight: 500; }
@@ -419,28 +422,6 @@
   background-position: right 10px center;
 }
 
-/* ── SizeButtons ───────────────────────────────────────────────────────── */
-.dc-size-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.dc-size-btn {
-  flex: 1;
-  height: 32px;
-  background: var(--dc-sizebtn-bg);
-  border: 1.5px solid var(--dc-sizebtn-border);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: inherit;
-  white-space: nowrap;
-  overflow: hidden;
-  color: var(--dc-sizebtn-color);
-  transition: border-color 120ms, color 120ms, background 120ms;
-}
-
 /* ── WidgetSettingsPanel ───────────────────────────────────────────────── */
 .dc-panel {
   width: 348px;
@@ -511,9 +492,82 @@
   border-top: 1px solid var(--shell-border);
   padding: 12px;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dc-panel-footer-actions {
+  display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/* ── Values count banner (classification charts' Apply row) ──────────────
+   --neutral/--warn follow the design system's "Callout" component (Figma
+   node 55378:192325): 12px radius, 12px padding, icon column + text column
+   at 8px gap, headline/description stacked at 4px. --warn reuses the
+   existing --pai-warn-bg/--pai-med-fg pair already defined for this exact
+   warning-callout pattern elsewhere in the app. */
+.dc-values-banner--neutral,
+.dc-values-banner--warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.dc-values-banner--neutral {
+  background: var(--shell-raised);
+}
+
+.dc-values-banner--warn {
+  background: var(--pai-warn-bg);
+}
+
+.dc-values-banner__icon {
+  display: flex;
+  align-items: center;
+  height: 20px;
   flex-shrink: 0;
+  color: var(--pai-med-fg);
+}
+
+.dc-values-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dc-values-banner__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--dc-fg1);
+}
+
+.dc-values-banner__title strong {
+  font-weight: 600;
+}
+
+.dc-values-banner--warn .dc-values-banner__title {
+  color: var(--pai-med-fg);
+}
+
+.dc-values-banner__desc {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--dc-fg3);
+}
+
+.dc-values-banner--warn .dc-values-banner__desc {
+  color: var(--pai-med-fg);
 }
 
 /* ── Axis row (pie / non-pie data fields) ─────────────────────────────── */
@@ -703,6 +757,7 @@
 }
 
 .dc-widget-card {
+  position: relative;
   background: var(--card-bg);
   border: var(--dc-card-border);
   border-radius: 4px;
@@ -715,6 +770,58 @@
   transition: border-color 150ms;
   min-width: 0;
   overflow: hidden;
+}
+
+/* Drag-to-nest target — shown on whichever OTHER top-level widget a dragged
+   widget is currently hovering over (see DashboardCanvas's top-level
+   GridLayout onDrag). Purple (not the drag system's usual indigo) so it
+   reads as a distinct behavior from a plain reorder, matching the dashed
+   indigo .react-grid-placeholder shown underneath at the same time. */
+.dc-widget-card--nest-target {
+  border: 2px solid var(--pai-purple) !important;
+  background: color-mix(in srgb, var(--pai-purple) 6%, var(--card-bg));
+}
+
+.dc-nest-target-label {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--pai-purple);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Drag-out-to-canvas hint — shown only once a dragged nested widget has
+   actually crossed its container's bounds (see NestedWidgetGrid), confirming
+   the drop that's about to happen rather than narrating the whole drag. */
+.dc-nested-dragout-hint {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--pai-purple) 12%, var(--card-bg));
+  border: 1px solid var(--pai-purple);
+  color: var(--pai-purple);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* KPI cards have no internal scroll content, and the trend pill's hover
+   tooltip needs to escape the card bounds instead of being clipped. */
+.dc-widget-card--kpi {
+  overflow: visible;
 }
 
 .dc-widget-card-header {
@@ -732,6 +839,10 @@
   gap: 8px;
 }
 
+.dc-widget-card-title-row--center {
+  justify-content: center;
+}
+
 .dc-widget-card-title {
   font-size: 14px;
   font-weight: 600;
@@ -744,6 +855,10 @@
   margin-top: 2px;
 }
 
+.dc-widget-card-desc--center {
+  text-align: center;
+}
+
 .dc-widget-card-body {
   flex: 1;
   min-height: 0;
@@ -751,6 +866,83 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.dc-widget-card-body--kpi {
+  overflow: visible;
+}
+
+/* A container's grid cell (widget.gh) is kept auto-sized to fit its own
+   content plus its packed nested children (see requiredContainerGh in
+   DashboardCanvas.jsx), so this is normally a no-op — it's only a ceiling-
+   case safety net for when that total is clamped at MAX_GH. */
+.dc-widget-card-body--has-nested {
+  overflow-y: auto;
+  /* Without this, the scrollbar toggling in/out as react-grid-layout's
+     default height transition animates through the overflow threshold
+     changes this element's available content width mid-animation — which
+     feeds straight into the nested grid's own ResizeObserver-based width
+     measurement, which re-renders it at the new width, which can shift its
+     content height again, retriggering the scrollbar toggle. Reserving the
+     gutter unconditionally breaks that loop: width stays constant whether
+     or not a scrollbar is actually needed. */
+  scrollbar-gutter: stable;
+}
+
+/* Caps a container's own chart content to its true base height (its own
+   heightId preset) instead of the ChartRender wrapper's usual `flex: 1`
+   stretching it to fill the full, now-inflated, card height — the nested
+   area below gets the rest of that height instead of a big empty gap
+   above it. Its own display:flex keeps ChartRender's internal flex:1
+   filling exactly this fixed box, same as it fills the whole card
+   normally. */
+.dc-widget-own-content {
+  height: var(--dc-own-content-h);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Nested widgets: report mode ─────────────────────────────────────────
+   Report mode has no grid/drag interaction anywhere on the page, so its
+   nested widgets render as a plain static stack instead of a live grid —
+   each still reuses the full WidgetCard (WidgetCardImpl with `nested`), so
+   it gets the same chart rendering as any top-level widget. */
+.dc-nested-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Nested widgets: interactive grid ────────────────────────────────────
+   A container's own react-grid-layout instance (see NestedWidgetGrid) —
+   same relative-positioning role as .dc-grid/.dc-grid-inner for the
+   top-level canvas, just scoped to the parent card's own width instead of
+   the whole dashboard, so nested widgets can be dragged/resized side by
+   side within it. */
+.dc-nested-grid-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: 12px;
+  flex-shrink: 0;
+}
+
+.dc-nested-grid-inner {
+  position: relative;
+}
+
+/* Live placeholder shown inside a container while a nested widget is being
+   added into it — the nested equivalent of .dc-preview-col, which needs a
+   real grid cell (width/height:100%) to size against; this instead gets an
+   explicit height matching the in-progress widget's selected height preset. */
+.dc-nested-add-preview {
+  width: 100%;
+  height: var(--dc-nested-add-h);
+  margin-top: 12px;
+  flex-shrink: 0;
 }
 
 /* ── DashboardCanvas root ──────────────────────────────────────────────── */
@@ -1012,52 +1204,19 @@
   height: auto;
 }
 
-/* Hide redundant card title (cr-kpi-label already shows the name) */
-.dc-report-kpi-item .dc-widget-card-header {
-  display: none;
-}
-
-/* Value on top, label below — swap DOM order via flex order */
 .dc-report-kpi-item .cr-kpi-meta {
   flex-direction: column;
 }
 .dc-report-kpi-item .cr-kpi-value {
-  order: 1;
-  font-size: 28px;
-  color: var(--shell-text);
-}
-.dc-report-kpi-item .cr-kpi-label {
-  order: 2;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--shell-text);
-  margin-top: 2px;
-}
-.dc-report-kpi-item .cr-kpi-value {
   font-size: 16px;
-}
-.dc-report-kpi-item .cr-kpi-label {
-  font-size: 14px;
+  color: var(--shell-text);
 }
 .dc-report-kpi-item .cr-kpi-badge {
-  order: 3;
   margin-top: 6px;
   background: none;
   padding: 0;
   border-radius: 0;
   font-weight: 500;
-  color: var(--shell-text-muted);
-}
-.dc-report-kpi-item .cr-kpi-badge__trend {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--cr-trend-color);
-  font-weight: 600;
-}
-.dc-report-kpi-item .cr-kpi-badge__suffix {
-  color: var(--shell-text-muted);
-  font-weight: 400;
 }
 
 /* Hide sparkline in report KPIs */
@@ -1602,20 +1761,50 @@
 .cr-kpi-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
   padding: 8px 4px 4px;
   flex-shrink: 0;
 }
 
-.cr-kpi-label {
-  font-size: var(--kpi-label-size, 11px);
-  color: var(--shell-text-muted);
-}
-
 .cr-kpi-value {
-  font-size: var(--kpi-val-size, 36px);
   font-weight: 700;
   color: var(--cr-kpi-accent, var(--pai-indigo));
+  line-height: 1;
+}
+
+.cr-kpi-cols {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cr-kpi-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Two-value layout: value/sep/value share row 1 (so "/" lines up with the
+   values, not the pills below), each pill sits in row 2 under its own value. */
+.cr-kpi-cols--split {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  justify-items: center;
+  row-gap: 8px;
+}
+
+.cr-kpi-pill-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.cr-kpi-sep {
+  color: var(--shell-text-muted);
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -1627,7 +1816,6 @@
   border-radius: 44px;
   font-size: 11px;
   font-weight: 600;
-  align-self: flex-start;
   background: var(--cr-trend-bg);
   color: var(--cr-trend-color);
 }
@@ -1806,7 +1994,8 @@
 }
 
 .cr-bar-legend-wrap {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 8px 8px 4px;
@@ -1826,16 +2015,19 @@
 }
 .cr-bar-legend {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  justify-content: center;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 8px;
+  scrollbar-width: thin;
 }
 
 .cr-bar-legend-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .cr-bar-legend-dot {
@@ -1847,9 +2039,13 @@
 }
 
 .cr-bar-legend-name {
+  flex: 1;
   font-size: 11px;
   color: var(--pai-fg1);
   font-family: Inter, system-ui;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── ChartRender: radar overlay-series legend ─────────────────────────── */
@@ -1884,10 +2080,21 @@
   font-size: 11px;
   color: var(--pai-fg3);
   font-family: Inter, system-ui;
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .cr-bar-legend-pct {
-  display: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pai-fg1);
+  font-family: Inter, system-ui;
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 
@@ -1982,6 +2189,108 @@
   min-width: max-content;
 }
 
+.cr-kg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  container-type: inline-size;
+  container-name: cr-kg-toolbar;
+}
+
+.cr-kg-toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* Card title, folded into the same row as the search/Add Column/Download
+   controls — see DashboardCanvas's WidgetCardImpl, which suppresses its own
+   header title for table/agg-table widgets and passes `title` here instead,
+   so the two never render twice. Matches .dc-widget-card-title's type scale
+   so it reads the same as every other widget's heading. */
+.cr-kg-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Search bar, Add Column and Download all sit on one line, all 32px tall
+   (.ds-pill-search's own height) — sz-md (not sz-sm) is what gives the
+   buttons that same 32px so nothing looks mismatched next to the pill. */
+.cr-kg-search-wrap {
+  position: relative;
+  flex: 0 1 180px;
+  min-width: 32px;
+}
+
+.cr-kg-search-wrap .ds-pill-search {
+  width: 100%;
+  min-width: 32px;
+  box-sizing: border-box;
+}
+
+.cr-kg-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Narrow widget: collapse the search pill down to just its icon so Add
+   Column / Download still fit on the same line — expands back on focus,
+   or whenever it already holds a typed value (its clear "x" is present).
+   The input keeps a zero size instead of `display:none` so it stays
+   focusable — clicking the icon (see ChartRender's onClick) still works
+   to expand it, which a fully hidden input could never receive.
+   Expanding it back in *flex flow* would just fight Add Column/Download
+   for the same now-scarce row space (there's no room to give it back at
+   this width) — so it pops out as an absolutely-positioned overlay above
+   the table instead of pushing its siblings. */
+@container cr-kg-toolbar (max-width: 320px) {
+  .cr-kg-search-wrap {
+    flex-basis: 32px;
+    overflow: visible;
+  }
+  .cr-kg-search-wrap:not(:focus-within):not(:has(.ds-pill-search__clear)) {
+    cursor: pointer;
+  }
+  .cr-kg-search-wrap:not(:focus-within):not(:has(.ds-pill-search__clear)) .ds-pill-search {
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: center;
+  }
+  .cr-kg-search-wrap:not(:focus-within):not(:has(.ds-pill-search__clear)) .ds-pill-search__input {
+    flex: 0 0 0;
+    width: 0;
+    padding: 0;
+    margin: 0;
+    opacity: 0;
+  }
+  .cr-kg-search-wrap:not(:focus-within):not(:has(.ds-pill-search__clear)) .ds-pill-search__icon {
+    margin-left: 0;
+  }
+  .cr-kg-search-wrap:is(:focus-within, :has(.ds-pill-search__clear)) .ds-pill-search {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: max(180px, 100%) !important;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+}
+
+.cr-kg-td--empty {
+  text-align: center;
+  color: var(--shell-text-muted);
+  padding: 20px 8px;
+}
+
 /* icon column overrides on top of ds-th / ds-td */
 .cr-kg-th--icon {
   width: 28px;
@@ -2036,6 +2345,69 @@
   align-items: center;
 }
 
+.dc-chip-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 1px;
+  color: var(--shell-text-muted);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.dc-chip-edit:hover {
+  color: var(--shell-accent);
+}
+
+/* ── Aggregated Table: Add Group / Add Aggregate modal fields ───────────── */
+.dc-required-asterisk {
+  color: var(--pai-crit-fg);
+}
+
+.dc-agg-col-group {
+  padding-bottom: 16px;
+}
+
+.dc-add-row-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: none;
+  background: var(--dc-indigo);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dc-modal-field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dc-modal-field-label span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-text);
+  white-space: nowrap;
+}
+
+.dc-modal-field-optional {
+  font-weight: 400;
+  color: var(--shell-text-muted);
+  margin-left: 4px;
+}
+
+.dc-modal-field-label-line {
+  flex: 1;
+  height: 1px;
+  background: var(--shell-border);
+}
+
 .dc-share-add-row {
   display: flex;
   justify-content: flex-end;
@@ -2067,6 +2439,35 @@
 
 .dc-chip-x:hover {
   color: var(--shell-text);
+}
+
+.dc-widget-filter-chips-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dc-widget-filter-chips-row .dc-chips {
+  margin-top: 0;
+}
+
+.dc-chip-reset-all {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Inter', system-ui;
+  color: var(--shell-accent);
+  white-space: nowrap;
+}
+
+.dc-chip-reset-all:hover {
+  text-decoration: underline;
 }
 
 /* ── Dashboard panel: Column dropdown ───────────────────────────────────── */
@@ -2485,7 +2886,7 @@
 
 .dc-gf-modal {
   width: min(1020px, 92vw);
-  height: 580px;
+  height: min(680px, 90vh);
   background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 16px 40px rgba(5, 32, 81, 0.18);
@@ -2581,19 +2982,12 @@
   font-weight: 500;
 }
 
-.dc-gf-attr-radio {
-  width: 14px;
-  height: 14px;
+.dc-gf-attr-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 1.5px solid var(--shell-border);
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.dc-gf-attr-radio--on {
-  border-color: var(--dc-indigo);
   background: var(--dc-indigo);
-  box-shadow: inset 0 0 0 3px var(--card-bg);
+  flex-shrink: 0;
 }
 
 .dc-gf-attr-name {
@@ -2631,6 +3025,14 @@
   overflow: hidden;
   padding: 16px 20px;
   gap: 12px;
+}
+
+/* Attribute-only pickers (mode="attr") apply to the whole attribute, not a
+   specific value — the Values panel is shown for context but not usable. */
+.dc-gf-right--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .dc-gf-val-heading {
@@ -2744,17 +3146,128 @@
   color: var(--dc-indigo);
 }
 
-.dc-gf-filters-section {
-  flex-shrink: 0;
-  border-top: 1px solid var(--shell-border);
-  padding-top: 10px;
+.dc-gf-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dc-gf-action-btn:disabled:hover {
+  border-color: var(--shell-border);
+  color: var(--dc-fg3);
 }
 
-.dc-gf-filters-label {
-  font-size: 13px;
+/* Active Filter Preview — persistent bar below the body (both attribute-list
+   and graph views), modeled on the page-level Graph Filter's bottom preview
+   bar: a label row plus an entity-grouped tree of every filter built so far. */
+.dc-gf-preview-section {
+  flex-shrink: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border-top: 1px solid var(--shell-border);
+  padding: 10px 20px;
+  background: var(--shell-bg, #f9f9f9);
+  /* The app hides scrollbars globally (global.css), which leaves a capped,
+     overflowing list with no visible cue it scrolls — override back to a
+     visible thin scrollbar here so a full filter list doesn't read as cut off. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--shell-border) transparent;
+}
+.dc-gf-preview-section::-webkit-scrollbar { width: 6px; height: 6px; }
+.dc-gf-preview-section::-webkit-scrollbar-track { background: transparent; }
+.dc-gf-preview-section::-webkit-scrollbar-thumb { background: var(--shell-border); border-radius: 44px; }
+.dc-gf-preview-section::-webkit-scrollbar-thumb:hover { background: var(--dc-fg3); }
+
+.dc-gf-preview-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dc-fg1);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dc-gf-preview-empty {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.dc-gf-preview-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.dc-gf-preview-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dc-gf-preview-entity-pill {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 44px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  font-size: 11px;
   font-weight: 600;
   color: var(--dc-fg1);
 }
+
+.dc-gf-preview-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dc-gf-preview-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 44px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dc-fg1);
+}
+
+.dc-gf-preview-branch-text {
+  white-space: nowrap;
+}
+
+.dc-gf-filter-chip-badge {
+  padding: 2px 8px;
+  border-radius: 44px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: var(--status-info-bg, rgba(99,96,216,0.10));
+  color: var(--dc-indigo);
+}
+
+.dc-gf-filter-chip-badge--exclude {
+  background: var(--pai-crit-bg, rgba(220,38,38,0.10));
+  color: var(--pai-crit-fg, #DC2626);
+}
+
+.dc-gf-filter-chip-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 14px;
+  color: var(--shell-text-muted);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.dc-gf-filter-chip-x:hover { color: var(--dc-fg1); }
 
 /* Footer */
 .dc-gf-footer {
@@ -2766,6 +3279,26 @@
   flex-shrink: 0;
 }
 
+.dc-gf-reset-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: none;
+  border: 1px solid var(--pai-crit-fg, #DC2626);
+  border-radius: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--pai-crit-fg, #DC2626);
+  transition: background 150ms, color 150ms;
+  margin-right: auto;
+}
+.dc-gf-reset-btn:hover:not(:disabled) { background: var(--pai-crit-fg, #DC2626); color: #fff; }
+.dc-gf-reset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── DashboardScopeModal ──────────────────────────────────────────── */
 .dc-scope-modal {
   max-width: 560px;
@@ -2773,10 +3306,14 @@
 }
 
 /* Add Attributes step reuses the Graph Filter modal's two-column attribute
-   list + values grid, which needs the wider Graph Filter modal proportions. */
+   list + values grid, which needs the wider Graph Filter modal proportions —
+   and, now that it also carries an Active Filter Preview tree and a Reset
+   all filters button like GraphFilterModal, the same fixed modal height so
+   there's room for both without the attribute/value lists growing the modal. */
 .dc-scope-modal--wide {
   max-width: 1020px;
   width: min(1020px, 92vw);
+  height: min(720px, 90vh);
 }
 
 .dc-scope-modal__hint {
@@ -2881,34 +3418,39 @@
   gap: 8px;
 }
 
-.dc-scope-attr-tab__badge {
-  background: var(--pai-indigo);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-}
-
 /* ScopeAttrsPanel reuses .dc-gf-left/.dc-gf-right (built for the fixed-height
-   GraphFilterModal) — give it an explicit height here too so their
-   `flex: 1` + `overflow-y: auto` lists actually scroll instead of growing
-   the modal to fit all attributes/values. */
+   GraphFilterModal) — flex:1 inside the fixed-height .dc-scope-modal--wide
+   modal (see below) so their own `flex: 1` + `overflow-y: auto` lists
+   actually scroll instead of growing the modal to fit all attributes/values,
+   leaving room below for the Active Filter Preview + footer. */
 .dc-gf-attrs-body {
   display: flex;
-  height: 480px;
+  flex: 1;
+  min-height: 0;
 }
 
 /* This view's ds-modal-body drops the usual 20px padding — .dc-gf-left/
    .dc-gf-right (built for the edge-to-edge GraphFilterModal) should fill
-   the modal directly instead of sitting inset inside another bordered box. */
+   the modal directly instead of sitting inset inside another bordered box.
+   Stretched to fill the fixed-height modal so .dc-gf-attrs-body's flex:1
+   has real space to size against. */
 .ds-modal-body--flush {
   padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Same Active Filter Preview tree as GraphFilterModal, reused inline inside
+   the "Set Dashboard Scope" step's own padded ds-modal-body — drop the
+   block's own horizontal padding/background so it doesn't nest a second
+   inset panel inside the modal's existing padding. */
+.dc-gf-preview-section--inline {
+  padding: 12px 0 0;
+  background: none;
+  margin-top: 4px;
+  max-height: 140px;
 }
 
 /* ── Widget Filter chips ──────────────────────────────────────────── */
@@ -2974,42 +3516,57 @@
 }
 
 /* ── Info tooltip ────────────────────────────────────────────────── */
+/* DS icon-button trigger (ds-icon-btn: circular hitbox, hover fill) — the
+   plain unstyled 13x13 glyph this used to be didn't read as an interactive
+   "info" affordance the way every other icon trigger in the app does. */
 .dc-info-tooltip {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   color: var(--shell-text-muted);
   cursor: default;
   margin-left: 4px;
   vertical-align: middle;
+  transition: background 120ms, color 120ms;
 }
 
-.dc-info-tooltip::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--tooltip-bg);
-  color: var(--tooltip-fg);
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.5;
-  white-space: normal;
-  max-width: 260px;
+.dc-info-tooltip:hover,
+.dc-info-tooltip:focus-visible {
+  background: var(--shell-hover);
+  color: var(--shell-text);
+  outline: none;
+}
+
+/* Rendered into document.body (see InfoTooltip's createPortal), positioned
+   from the icon's own getBoundingClientRect — not a CSS ::after — so the
+   Widget Settings panel's overflow (clipping any in-flow absolutely
+   positioned child, regardless of which way it's anchored) can't cut it
+   off. Right-anchored (grows left) and bottom-anchored (grows up) from the
+   icon's top-right corner, since every call site sits close to the panel's
+   right edge. */
+.dc-info-tooltip__portal {
+  position: fixed;
+  transform: translate(-100%, -100%);
+  max-width: 280px;
   width: max-content;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  /* White card, matching ExposureOverviewPage's own info-icon tooltip
+     (.exp-info-tip-card in exposure.css) rather than the dark .dc-tip
+     bubble used for toolbar/icon tooltips elsewhere in this file. */
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: normal;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.12s;
-  z-index: 300;
-}
-
-.dc-info-tooltip:hover::after {
-  opacity: 1;
+  z-index: 9999;
 }
 
 /* ── Generic tooltip wrapper ─────────────────────────────────────── */
@@ -3024,16 +3581,18 @@
   top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--tooltip-bg);
-  color: var(--tooltip-fg);
-  font-size: 11px;
+  /* White card, matching ExposureOverviewPage's own info-icon tooltip
+     (.exp-info-tip-card in exposure.css) — the DS-standard tooltip look
+     app-wide, not the dark bubble this used to be. */
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: nowrap;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.12s;
@@ -3063,6 +3622,38 @@
   left: auto;
   right: 0;
   transform: none;
+}
+
+/* Segmented-tab label tooltip (e.g. the KPI value-size picker's Auto/S/M/L/XL
+   initials) — same visual as .dc-tip, scoped separately since SegmentedTabs
+   is a shared component other pages use without this stylesheet loaded. */
+.kg-seg-tip {
+  position: relative;
+}
+.kg-seg-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  /* White card, matching ExposureOverviewPage's own info-icon tooltip
+     (.exp-info-tip-card in exposure.css) — same fix as .dc-tip above. */
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 300;
+}
+.kg-seg-btn:hover .kg-seg-tip::after {
+  opacity: 1;
 }
 
 /* ── Axis row with trailing action button ────────────────────────── */
@@ -3183,8 +3774,6 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
 }
 .cr-pie-legend__dot {
   width: 8px;
@@ -3194,9 +3783,12 @@
 }
 .cr-pie-legend__label {
   flex: 1;
+  min-width: 0;
   font-size: 11px;
   color: var(--shell-text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cr-pie-legend__count {
   font-size: 11px;
@@ -3385,6 +3977,7 @@
 .dc-icon-muted { opacity: 0.45; }
 .dc-mt8  { margin-top: 8px; }
 .dc-mt12 { margin-top: 12px; }
+.dc-mb16 { margin-bottom: 16px; }
 .dc-axis-row--mt8 { margin-top: 8px; }
 .dc-field-label--icon-row {
   display: flex;

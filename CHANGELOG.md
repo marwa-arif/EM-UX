@@ -33,6 +33,18 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.22.0] — 2026-09-10
+### Added
+- `CopilotFab` floating launcher, auto-repositions around any right-docked panel/drawer (Filter Panel, Widget Settings, Add Widget, Help & Support, Navigator, Findings/Compliance drawers) and rotates contextual/generic hint messages
+- Discard-unsaved-changes guard on Workspace nav while a dashboard/report is mid-build, matching the canvas's own Back button behavior
+- Navigator rail item opens the inline guided-builder panel instead of the floating Navigator panel while a dashboard/report is being built
+- Dashboard widget KPI aggregation operations and value-size options; Excel/PDF export icons on `DashboardCanvas`
+### Changed
+- Merged `feature/studio-workspace` left-nav/dashboard work with the hover-flyout left nav and multi-entity graph filter changes
+- `Topbar` no longer takes `navigatorActive`/`showNavigatorButton` — Navigator entry now lives in `CopilotFab`
+
+---
+
 ## [0.21.0] — 2026-09-02
 ### Added
 - Collapsed left-nav rail: Exposure/Discover/Report/Data Quality and Navigator/Workspace now show their children in a hover flyout instead of expanding inline — this is now the only collapsed-rail behavior (the earlier inline-accordion option is removed).

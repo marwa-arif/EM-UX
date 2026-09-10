@@ -131,7 +131,7 @@
 .kg-dp-icon-stack-line--tail::before { width: 1px; background: var(--shell-border, #E6E6E6); }
 /* Relationship dot — overlaps the line at its midpoint (absolutely positioned so it drops out
    of the line's flex layout instead of sitting beside it) between two entities. Hovering it
-   shows a DS-style dark tooltip (CSS :hover only, no JS show/hide) naming the relationship,
+   shows a DS-style white-card tooltip (CSS :hover only, no JS show/hide) naming the relationship,
    e.g. "Host has Vulnerability" — never the browser's native title tooltip. */
 .kg-dp-icon-stack-rel-dot {
   position: absolute; top: 50%; left: 50%; z-index: 1;
@@ -147,8 +147,9 @@
   transform: translate(8px, -50%);
   white-space: nowrap;
   font-size: 11px; font-weight: 500; font-family: inherit;
-  color: var(--card-bg, #fff);
-  background: var(--shell-text, #101010);
+  color: var(--shell-text, #101010);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   border-radius: 4px; padding: 4px 8px;
   pointer-events: none; opacity: 0;
   transition: opacity 120ms;

@@ -10,9 +10,9 @@ import {
   CartesianGrid,
   XAxis, YAxis,
   Tooltip, ResponsiveContainer,
-  LabelList,
 } from 'recharts'
 import { PAI } from '../ui.jsx'
+import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
 
 // ── DS palette ────────────────────────────────────────────────────
 const GRID  = 'var(--shell-border)'
@@ -108,12 +108,22 @@ const DEFAULT_HOR_BAR = [
   { label: 'Virtual',        value: 0,  count: '1'      },
 ]
 
+// 12 rows (not just enough to fill one page) so a freshly-added Table widget
+// shows a real pagination footer by default, same as Aggregated Table's own
+// mock data (see buildAggTableMockData in DashboardCanvas.jsx).
 const DEFAULT_KG_TABLE = [
   { type: 'Workstation',    displayLabel: 'WORK-VYO830.AC...'   },
   { type: 'Network Device', displayLabel: '10.218.172.231'       },
   { type: 'Workstation',    displayLabel: 'WORK-KFG815.AC...'   },
   { type: 'Server',         displayLabel: 'SERVER-YHB308.A...'  },
   { type: 'Workstation',    displayLabel: 'WORK-IDI341182.A...' },
+  { type: 'Mobile',         displayLabel: 'MOB-QRX204.AC...'    },
+  { type: 'Network Device', displayLabel: '10.218.172.245'      },
+  { type: 'Server',         displayLabel: 'SERVER-PLM912.A...'  },
+  { type: 'Workstation',    displayLabel: 'WORK-ZXC556.AC...'   },
+  { type: 'Hypervisor',     displayLabel: 'HYP-BNM773.AC...'    },
+  { type: 'Server',         displayLabel: 'SERVER-JKL481.A...'  },
+  { type: 'Other',          displayLabel: '10.218.172.309'      },
 ]
 
 // ── Severity icon (triangle warning) ─────────────────────────────
@@ -127,11 +137,65 @@ function SevIcon() {
   )
 }
 
+// ── Trend arrow icon — shared by every "change %" indicator ─────────
+// (KPI trend pills and the pie/donut legend's per-segment change badge)
+// so they can never visually drift apart the way two separate inline
+// SVGs would.
+function TrendArrowIcon({ up }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      {up
+        ? <><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></>
+        : <><path d="M2.50586 4.84669L6.10893 8.44976L8.51098 6.04771L13.3151 10.8518" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></>
+      }
+    </svg>
+  )
+}
+
+// ── Shared axis tick styling ────────────────────────────────────────
+// One font size for every chart's axis ticks (category and numeric alike)
+// so a bar/stack chart's axis reads the same size regardless of which of
+// ChartRender's several bar-chart branches renders it.
+const AXIS_TICK_FONT_SIZE = 10
+
+// Category axes (entity names, data-source names, ...) truncate long labels
+// to a single line with an ellipsis instead of Recharts' default behavior of
+// wrapping a category tick onto multiple lines — wrapping reads as broken
+// layout ("Network Device" splitting into "Network"/"Device") and the exact
+// wrap point isn't consistent across chart types the way a character-based
+// truncation is. `maxChars` is a plain character-count approximation of the
+// axis's own allotted pixel width (~7px/char at 10px Inter), not a measured
+// truncation — good enough for mock/dashboard labels, not exact.
+function truncateLabel(value, maxChars) {
+  const str = String(value ?? '')
+  return str.length > maxChars ? `${str.slice(0, maxChars - 1)}…` : str
+}
+
+// Shared category-axis tick renderer — used anywhere a bar/stack chart's
+// axis carries entity/category names (as opposed to the numeric value axis,
+// which keeps Recharts' default tick since numbers are already short and
+// pre-formatted via tickFormatter). `angle`/`dy` reproduce the rotated
+// bottom-axis label some charts use; omit for a straight, unrotated tick.
+function CategoryTick({ x, y, payload, maxChars = 12, angle = 0, dy = 0, textAnchor }) {
+  return (
+    <text
+      x={x} y={y} dy={dy}
+      textAnchor={textAnchor || (angle ? 'end' : 'middle')}
+      transform={angle ? `rotate(${angle}, ${x}, ${y})` : undefined}
+      fontSize={AXIS_TICK_FONT_SIZE}
+      fill={TG}
+      fontFamily="Inter,system-ui"
+    >
+      {truncateLabel(payload.value, maxChars)}
+    </text>
+  )
+}
+
 // ── Source YAxis tick ─────────────────────────────────────────────
 function SourceTick({ x, y, payload }) {
   return (
-    <text x={x} y={y} dy={4} textAnchor="end" fontSize={9} fill="var(--shell-text-muted)" fontFamily="Inter,system-ui">
-      {payload.value}
+    <text x={x} y={y} dy={4} textAnchor="end" fontSize={AXIS_TICK_FONT_SIZE} fill="var(--shell-text-muted)" fontFamily="Inter,system-ui">
+      {truncateLabel(payload.value, 12)}
     </text>
   )
 }
@@ -259,12 +323,12 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false, seri
           >
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              tick={<CategoryTick maxChars={12} angle={-35} dy={4} />}
               axisLine={false} tickLine={false}
               interval={0} angle={-35} textAnchor="end" dy={4}
             />
             <YAxis
-              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              tick={{ fontSize: AXIS_TICK_FONT_SIZE, fill: TG, fontFamily: 'Inter,system-ui' }}
               axisLine={false} tickLine={false}
               tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
             />
@@ -415,7 +479,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false, serie
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              tick={{ fontSize: AXIS_TICK_FONT_SIZE, fill: TG, fontFamily: 'Inter,system-ui' }}
               axisLine={false} tickLine={false}
               tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
             />
@@ -423,7 +487,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false, serie
               type="category"
               dataKey="name"
               width={90}
-              tick={{ fontSize: 8, fill: TG, fontFamily: 'Inter,system-ui' }}
+              tick={<CategoryTick maxChars={12} textAnchor="end" dy={4} />}
               axisLine={false} tickLine={false}
             />
             <Tooltip
@@ -605,7 +669,7 @@ function GaugeArc({ value, markerValue }) {
 
 // ── ChartRender ───────────────────────────────────────────────────
 // Props:
-//   chartId        – 'pie' | 'line' | 'hor-bar' | 'vert-bar' | 'stack-vert' | 'stack-hor' | 'table' | 'kpi'
+//   chartId        – 'pie' | 'line' | 'hor-bar' | 'vert-bar' | 'stack-vert' | 'stack-hor' | 'table' | 'agg-table' | 'kpi'
 //   showLegend     – show legend row (pie); default true
 //   showTotalCount – show "Total / n" in pie center; default true
 //   showPctChange  – show % change badges in pie legend; default false
@@ -646,13 +710,24 @@ export function ChartRender({
   radarSeries,
   description,
   cardHeight = 260,
+  cardCols = 6,
   printMode = false,
   reportTotal = 0,
-  fontSize = 'medium',
+  valueFontSize = 'auto',
   compact = false,
   onSegmentClick,
+  enableAddColumn = false,
+  enableDownload = false,
+  title,
 }) {
-  const kpiFontScale = fontSize === 'small' ? 0.8 : fontSize === 'large' ? 1.25 : 1
+  const [kgDlOpen, setKgDlOpen] = useState(false)
+  const kgDlRef = useRef(null)
+  useEffect(() => {
+    if (!kgDlOpen) return
+    const handler = e => { if (kgDlRef.current && !kgDlRef.current.contains(e.target)) setKgDlOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [kgDlOpen])
   // ── SVG tooltip state ──────────────────────────────────────────
   const [svgTip, setSvgTip] = useState(null)
   const onSvgMove = (e) => {
@@ -664,38 +739,68 @@ export function ChartRender({
 
   // ── KPI ─────────────────────────────────────────────────────────
   if (chartId === 'kpi' && data) {
-    const accent      = chartColors?.['Accent'] || 'var(--pai-indigo)'
-    const valSize     = Math.max(18, Math.min(36, cardHeight * 0.138)) * kpiFontScale
-    const labelSize   = Math.max(9,  Math.min(11, cardHeight * 0.042)) * kpiFontScale
-    const simValSize  = Math.max(20, Math.min(44, cardHeight * 0.169)) * kpiFontScale
-    const gapSize     = Math.max(4,  Math.min(10, cardHeight * 0.04))
-    const trendColor = data.trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
-    const trendBg    = data.trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
+    const accent = chartColors?.['Accent'] || 'var(--pai-indigo)'
+    const VALUE_SIZE_PX = { small: 18, medium: 24, large: 32, xl: 40 }
+    // "Auto" scales off the widget's own box instead of a fixed size: height
+    // sets the base (same curve the whole card used to scale by), width
+    // (in grid columns, 3-12) nudges it up/down for very narrow/wide widgets.
+    const valSize = valueFontSize === 'auto'
+      ? Math.round(Math.max(22, Math.min(46, cardHeight * 0.2)) * Math.max(0.85, Math.min(1.3, cardCols / 6)))
+      : (VALUE_SIZE_PX[valueFontSize] || VALUE_SIZE_PX.small)
+    const gapSize  = Math.max(4, Math.min(10, cardHeight * 0.04))
+
+    // Trend pill: icon + % in one colored pill (green = up-good, red = down-bad,
+    // neutral hyphen when trendUp is null/undefined, i.e. no change). Hover
+    // reveals the previous-period value via the shared dc-tip tooltip pattern.
+    const trendPill = (trendUp, trendText, prevValue) => {
+      if (!trendText) return null
+      const isNeutral = trendUp == null
+      const color = isNeutral ? 'var(--shell-text-muted)' : trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
+      const bg    = isNeutral ? 'var(--shell-raised, rgba(120,120,120,0.12))' : trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
+      return (
+        <span
+          className={prevValue != null ? 'cr-kpi-badge dc-tip' : 'cr-kpi-badge'}
+          data-tip={prevValue != null ? `Previous month value = ${prevValue}` : undefined}
+          style={{ '--cr-trend-bg': bg, '--cr-trend-color': color }}
+        >
+          {isNeutral ? '–' : <TrendArrowIcon up={trendUp} />}
+          {trendText}
+        </span>
+      )
+    }
+
+    // "Show Total Count" adds the denominator this value was drawn from
+    // (e.g. "6 / 54,555") — only rendered when the widget actually has one;
+    // never fabricated from the primary value itself.
+    const compValue  = showTotalCount && data.totalValue != null ? data.totalValue : null
+    const primaryPill = showPctChange ? trendPill(data.trendUp, data.trend, data.prevValue) : null
+    const compPill    = showPctChange && compValue != null
+      ? trendPill(data.totalTrendUp, data.totalTrend, data.totalPrevValue)
+      : null
+
+    // Two-value layout is a 2-row grid — value/sep/value share row 1 so the
+    // "/" sits level with the values themselves, and each pill sits in row 2
+    // directly under its own value, instead of a flex column whose sep ends
+    // up vertically centered against the *whole* value+pill stack.
+    const valuesBlock = compValue != null ? (
+      <div className="cr-kpi-cols cr-kpi-cols--split">
+        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent, gridColumn: 1, gridRow: 1 }}>{data.value}</span>
+        <span className="cr-kpi-sep" style={{ fontSize: valSize, gridColumn: 2, gridRow: 1 }}>/</span>
+        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent, gridColumn: 3, gridRow: 1 }}>{compValue}</span>
+        {primaryPill && <div className="cr-kpi-pill-cell" style={{ gridColumn: 1, gridRow: 2 }}>{primaryPill}</div>}
+        {compPill && <div className="cr-kpi-pill-cell" style={{ gridColumn: 3, gridRow: 2 }}>{compPill}</div>}
+      </div>
+    ) : (
+      <div className="cr-kpi-col">
+        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent }}>{data.value}</span>
+        {primaryPill}
+      </div>
+    )
 
     if (data.trendData) {
       return (
-        <div className="cr-kpi-root" style={{ '--cr-kpi-accent': accent, '--kpi-val-size': `${valSize}px`, '--kpi-label-size': `${labelSize}px` }}>
-          {!compact && (
-            <div className="cr-kpi-meta">
-              <span className="cr-kpi-label">{data.label}</span>
-              <span className="cr-kpi-value">{data.value}</span>
-              {data.trend && (
-                <span
-                  className="cr-kpi-badge"
-                  style={{ '--cr-trend-bg': trendBg, '--cr-trend-color': trendColor }}
-                >
-                  <span className="cr-kpi-badge__trend">
-                    {data.trendUp
-                      ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}><path d="M2.50586 4.84669L6.10893 8.44976L8.51098 6.04771L13.3151 10.8518" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.1223 11.0764H13.5244V8.67437" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    }
-                    {data.trend}
-                  </span>
-                  <span className="cr-kpi-badge__suffix"> {data.trendSuffix || 'from last month'}</span>
-                </span>
-              )}
-            </div>
-          )}
+        <div className="cr-kpi-root" style={{ '--cr-kpi-accent': accent }}>
+          {!compact && <div className="cr-kpi-meta">{valuesBlock}</div>}
           <div className="cr-kpi-chart">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.trendData} margin={compact ? { top: 2, right: 2, bottom: 2, left: 2 } : { top: 8, right: 8, bottom: 0, left: -30 }}>
@@ -731,13 +836,7 @@ export function ChartRender({
 
     return (
       <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: gapSize, fontFamily: 'Inter,system-ui' }}>
-        <span style={{ fontSize: labelSize, color: 'var(--shell-text-muted)' }}>{data.label}</span>
-        <span style={{ fontSize: simValSize, fontWeight: 700, color: accent, lineHeight: 1 }}>{data.value}</span>
-        {data.trend && (
-          <span style={{ background: trendBg, borderRadius: 100, padding: '3px 12px', fontSize: labelSize, fontWeight: 600, color: trendColor }}>
-            {data.trendUp ? '↑' : '↓'} {data.trend} {data.trendSuffix || 'from last month'}
-          </span>
-        )}
+        {valuesBlock}
       </div>
     )
   }
@@ -758,7 +857,7 @@ export function ChartRender({
       { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
     ]
     const raw   = data || DEFAULT_RAW
-    const sz    = 200
+    const sz    = 150
     const total = raw.reduce((s, d) => s + d.value, 0)
     const segs  = raw.map((d, i) => ({ ...d, color: chartColors?.[d.label] || d.color || DCOLS[i % DCOLS.length] }))
 
@@ -768,7 +867,13 @@ export function ChartRender({
 
     return (
       <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 10px', flexShrink: 0 }}>
+        {/* Same calc(var(--dc-card-height) - 90px) band the bar/stack charts
+            reserve for their plot (.cr-bar-chart-area(--with-legend) in
+            dashboard.css) — the donut itself stays a fixed size, but the
+            zone it's centered in now scales with the card the same way, so
+            a pie widget's chart-area/legend-area split matches a same-height
+            bar widget's instead of handing the legend a much larger share. */}
+        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'relative', width: sz, height: sz }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -818,8 +923,10 @@ export function ChartRender({
                 <span className="cr-pie-legend__pct">{d.pct}</span>
                 {showPctChange && (
                   d.change > 0
-                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: 'var(--pai-green)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>↗ {d.change}%</span>
-                    : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: 'var(--pai-green)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}><TrendArrowIcon up={true} />{d.change}%</span>
+                    : d.change < 0
+                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}><TrendArrowIcon up={false} />{Math.abs(d.change)}%</span>
+                      : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
                 )}
               </div>
             ))}
@@ -1011,12 +1118,12 @@ export function ChartRender({
             <BarChart
               data={horChartData}
               layout="vertical"
-              margin={{ top: 4, right: 100, bottom: xLabel ? 28 : 8, left: 0 }}
+              margin={{ top: 4, right: 16, bottom: xLabel ? 28 : 8, left: 0 }}
               barSize={14}
             >
               <XAxis
                 type="number"
-                tick={{ fontSize: 9, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={{ fontSize: AXIS_TICK_FONT_SIZE, fill: TG, fontFamily: 'Inter,system-ui' }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
                 label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
@@ -1024,7 +1131,7 @@ export function ChartRender({
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 10, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={<CategoryTick maxChars={15} textAnchor="end" dy={4} />}
                 width={110}
                 axisLine={false}
                 tickLine={false}
@@ -1032,15 +1139,6 @@ export function ChartRender({
               {!printMode && <Tooltip content={<BarTooltip total={horTotal} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />}
               <Bar dataKey="value" radius={[0, 3, 3, 0]} isAnimationActive={false}>
                 {horChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                <LabelList
-                  dataKey="value"
-                  position="right"
-                  formatter={(v) => {
-                    const pct = horRef > 0 ? (v / horRef * 100).toFixed(2) : '0'
-                    return `${v.toLocaleString()} (${pct}%)`
-                  }}
-                  style={{ fontSize: 11, fill: '#1a1a1a', fontFamily: 'Inter,system-ui', fontWeight: 600 }}
-                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -1107,13 +1205,13 @@ export function ChartRender({
               <CartesianGrid vertical={false} stroke="var(--shell-border)" strokeDasharray="0" />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={<CategoryTick maxChars={10} />}
                 axisLine={false} tickLine={false}
                 interval={0}
                 label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: TG, fontFamily: 'Inter,system-ui' }}
+                tick={{ fontSize: AXIS_TICK_FONT_SIZE, fill: TG, fontFamily: 'Inter,system-ui' }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
                 width={yLabel ? 52 : 40}
@@ -1154,7 +1252,7 @@ export function ChartRender({
   }
 
   // ── Table ────────────────────────────────────────────────────────
-  if (chartId === 'table') {
+  if (chartId === 'table' || chartId === 'agg-table') {
     if (data && Array.isArray(data) && data[0]?.text) {
       return (
         <div className="cr-insights-root">
@@ -1298,8 +1396,10 @@ export function ChartRender({
       )
     }
 
-    // KG-style table: type/displayLabel data or default
-    const allRows = (data && Array.isArray(data) && data.length > 0 && data[0]?.type)
+    // KG-style table: type/displayLabel data, or aggregated-table rows
+    // (grouped/aggregated values, no `type` field to sniff), or default
+    const isAggTable = chartId === 'agg-table'
+    const allRows = (data && Array.isArray(data) && data.length > 0 && (isAggTable || data[0]?.type))
       ? data
       : DEFAULT_KG_TABLE
     const tableCols = (columns && columns.length > 0) ? columns : ['Type', 'Display Label']
@@ -1308,25 +1408,79 @@ export function ChartRender({
     const [kgPage, setKgPage] = useState(1)
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [kgRows, setKgRows] = useState(10)
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [kgSearch, setKgSearch] = useState('')
+    const query = kgSearch.trim().toLowerCase()
+    const filteredRows = query
+      ? allRows.filter(r => tableCols.some(col => String(kgCellValue(r, col)).toLowerCase().includes(query)))
+      : allRows
     const kgStart   = (kgPage - 1) * kgRows
-    const pagedRows = allRows.slice(kgStart, kgStart + kgRows)
+    const pagedRows = filteredRows.slice(kgStart, kgStart + kgRows)
 
     return (
       <div className="cr-kg-root">
+        {!printMode && (
+          <div className="cr-kg-toolbar cr-kg-title-row">
+            {title != null && <span className="cr-kg-title">{title}</span>}
+            <div className="cr-kg-toolbar-spacer" />
+            <div
+              className="cr-kg-search-wrap"
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => { if (e.target === e.currentTarget || e.target.closest('.ds-pill-search__icon')) e.currentTarget.querySelector('input')?.focus() }}
+            >
+              <DSPillSearch value={kgSearch} onChange={v => { setKgSearch(v); setKgPage(1) }} placeholder="Search Any" width="100%" />
+            </div>
+            {enableAddColumn && (
+              <button className="ds-btn sz-md t-outline cr-kg-toolbar-btn" disabled onMouseDown={e => e.stopPropagation()}>
+                Add Column
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            )}
+            {enableDownload && (
+              <div ref={kgDlRef} className="comp-sort-wrap" onMouseDown={e => e.stopPropagation()}>
+                <button
+                  className="ds-btn sz-md t-outline cr-kg-toolbar-btn"
+                  disabled
+                  onClick={() => setKgDlOpen(o => !o)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Download
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`comp-dl-chevron${kgDlOpen ? ' comp-dl-chevron--open' : ''}`}><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                {kgDlOpen && (
+                  <div className="comp-dl-menu">
+                    <button className="comp-dl-item" onClick={() => setKgDlOpen(false)}>CSV</button>
+                    <button className="comp-dl-item" onClick={() => setKgDlOpen(false)}>Excel</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         <div className="cr-kg-scroll">
           <table className="ds-table cr-kg-table">
             <thead>
               <tr>
-                <th className="ds-th cr-kg-th--icon" />
+                {!isAggTable && <th className="ds-th cr-kg-th--icon" />}
                 {tableCols.map(col => <th key={col} className="ds-th">{col}</th>)}
               </tr>
             </thead>
             <tbody>
-              {pagedRows.map((r, i) => (
+              {pagedRows.length === 0 ? (
+                <tr>
+                  <td className="ds-td cr-kg-td--empty" colSpan={tableCols.length + (isAggTable ? 0 : 1)}>No records match this search.</td>
+                </tr>
+              ) : pagedRows.map((r, i) => (
                 <tr key={i}>
-                  <td className="ds-td cr-kg-td--icon">
-                    <img src="assets/icons/explore.svg" width={12} height={12} alt="" />
-                  </td>
+                  {!isAggTable && (
+                    <td className="ds-td cr-kg-td--icon">
+                      <img src="assets/icons/explore.svg" width={12} height={12} alt="" />
+                    </td>
+                  )}
                   {tableCols.map(col => (
                     <td key={col} className={`ds-td${col === 'Display Label' ? ' cr-kg-td--label' : ''}`}>
                       {kgCellValue(r, col)}
@@ -1338,7 +1492,7 @@ export function ChartRender({
           </table>
         </div>
         <TablePagination
-          total={allRows.length}
+          total={filteredRows.length}
           page={kgPage}
           rowsPerPage={kgRows}
           onPageChange={setKgPage}
@@ -1371,7 +1525,7 @@ export function ChartRender({
 
     const isMulti   = seriesDef.length > 1
     const axisProps = {
-      tick: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' },
+      tick: { fontSize: AXIS_TICK_FONT_SIZE, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' },
       axisLine: false,
       tickLine: false,
     }

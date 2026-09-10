@@ -58,7 +58,7 @@ const UserIcon = () => (
   </svg>
 );
 
-function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse }) {
+function Topbar({ onNav, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -133,18 +133,6 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
       </button>
 
       <div className="topbar__spacer" />
-
-      {showNavigatorButton && (
-        <button
-          className={`topbar__navigator${navigatorActive ? ' active' : ''}`}
-          onClick={() => onNav?.('navigator')}
-          title="Navigator"
-          aria-label="Navigator"
-          data-tour="topbar-navigator"
-        >
-          <span className="topbar__navigator-icon" />
-        </button>
-      )}
 
       <VersionBadge />
 

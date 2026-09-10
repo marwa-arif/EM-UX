@@ -377,11 +377,24 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
           <>
             {TOP_ITEMS.map(item => {
               const isActive = activeParent === item.id;
+              // Navigator mid-chat/build is the one case this flyout *is*
+              // a redundant preview of where the user already is: its
+              // "New chat"/History/Agents rows now sit right beside
+              // Navigator's own already-expanded sidebar (see NavigatorPage's
+              // sidebarCollapsed effect + App.jsx's matching main-nav
+              // auto-collapse on chat start), close enough that a hover
+              // meant for that sidebar can pop this one open instead — and
+              // clicking its "New chat" silently discards the conversation,
+              // reading as an unexplained "redirect to new chat". Suppressed
+              // only for this exact overlap; every other rail item (and
+              // Navigator itself from any other page, or at its own Home)
+              // keeps the always-available flyout described below.
+              const suppressFlyout = item.id === 'navigator' && isActive && !navigatorAtHome;
               return (
                 <RailFlyoutRow
                   key={item.id}
                   entity={{ ...item, children: TOP_ITEM_FLYOUT_CHILDREN[item.id] }}
-                  isOpen={railFlyoutOpen === item.id}
+                  isOpen={!suppressFlyout && railFlyoutOpen === item.id}
                   isActive={isActive}
                   activeId={activeId}
                   // A plain click still lands on the section's own default
@@ -396,8 +409,10 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
                   // section, not a redundant preview of where you already
                   // are — matching Insights entities, whose own flyout
                   // (renderCompactInsightsGroup) never gates on isActive
-                  // either.
-                  onOpen={() => openRailFlyout(item.id)}
+                  // either. (suppressFlyout above is a narrower, separate
+                  // exception for one specific overlap, not a reversal of
+                  // this.)
+                  onOpen={() => { if (!suppressFlyout) openRailFlyout(item.id); }}
                   onClose={scheduleCloseRailFlyout}
                   onNavigateChild={(id) => navigateFromRailFlyout(id)}
                 />

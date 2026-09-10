@@ -79,16 +79,14 @@ const IcPlus          = () => <Ic size={14} path={<><path d="M12 5v14M5 12h14"/>
 const IcStar           = () => <Ic size={13} path={<><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
 // Hamburger glyph — same three-line shape as NavigatorPanel.jsx's IcMenu.
 // `flip` is accepted but unused: a hamburger has no directionality, unlike
-// the old box+chevron glyph this replaced. np-sidebar-expand-btn now shows
-// this as its resting-state icon (collapsed, not hovered) and swaps to
-// IcSidebarExpand on hover via CSS — see np-sidebar-expand-icon--default/
-// --hover in navigator.css.
+// the old box+chevron glyph this replaced. Used by the pinned sidebar's own
+// np-collapse-btn-icon; np-sidebar-expand-btn (Home/ChatView/BuildView, for
+// re-expanding a collapsed sidebar) uses IcSidebarExpand instead, below.
 const IcSidebarCollapse = ({ flip = false }) => (
   <Ic size={14} path={<><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>} />
 );
 // Provided assets (expand-navigator.svg / collapse-navigator.svg) — chevron
 // pointing at a bar, direction matching which way the sidebar slides.
-// IcSidebarExpand is np-sidebar-expand-btn's hover-only icon (see above);
 // IcSidebarCollapseChevron is np-sidebar-toggle-btn's icon once the sidebar
 // is actually pinned open.
 function IcSidebarExpand() {
@@ -772,7 +770,7 @@ function HomeTabs({ chats, onSelectChat, onViewAllChats, agents, onRunAgent, onV
   );
 }
 
-function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onSelectChat, onViewAllChats, onRunAgent, onViewAllAgents, sidebarCollapsed, onExpandSidebar, onSidebarHoverEnter, onSidebarHoverLeave }) {
+function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onSelectChat, onViewAllChats, onRunAgent, onViewAllAgents }) {
   const [query, setQuery] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
@@ -796,19 +794,6 @@ function HomeView({ onSend, mode, onModeChange, onOpenAgents, agents, chats, onS
 
   return (
     <div className="hv-shell">
-      {sidebarCollapsed && (
-        <button
-          className="np-sidebar-expand-btn hv-sidebar-expand-btn"
-          onClick={onExpandSidebar}
-          onMouseEnter={onSidebarHoverEnter}
-          onMouseLeave={onSidebarHoverLeave}
-          title="Expand sidebar"
-          aria-label="Expand sidebar"
-        >
-          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
-          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
-        </button>
-      )}
       <div className="hv-bg">
         <div className="hv-bg-blob hv-bg-blob-1" />
         <div className="hv-bg-blob hv-bg-blob-2" />
@@ -1305,8 +1290,7 @@ function ChatView({ query, mode = 'ask', onGoHome, onNav, runningAgent, sidebarC
           title="Expand sidebar"
           aria-label="Expand sidebar"
         >
-          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
-          <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
+          <IcSidebarExpand />
         </button>
       )}
       {editingTitle ? (
@@ -1827,8 +1811,7 @@ function BuildView({ initialQuery, onGoHome, onNav, sidebarCollapsed = false, on
             title="Expand sidebar"
             aria-label="Expand sidebar"
           >
-            <span className="np-sidebar-expand-icon np-sidebar-expand-icon--default"><IcSidebarCollapse /></span>
-            <span className="np-sidebar-expand-icon np-sidebar-expand-icon--hover"><IcSidebarExpand /></span>
+            <IcSidebarExpand />
           </button>
         )}
         <div className="build-name-wrap">
@@ -2546,6 +2529,13 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
+  // Starting a chat/build reclaims the main app nav's width (see App.jsx's
+  // onHomeStateChange wiring), so expand Navigator's own history sidebar
+  // into that freed space instead of leaving it collapsed to an icon rail.
+  useEffect(() => {
+    if (view === 'chat' || view === 'build') setSidebarCollapsed(false);
+  }, [view]);
+
   // initialOverlay ('history'|'agents'|null) lands the page on the History
   // or Agents list instead of Home/chat — driven by the left rail's
   // Navigator flyout (LeftNavAlt.jsx's NAVIGATOR_FLYOUT_CHILDREN). Always
@@ -2663,10 +2653,6 @@ export default function NavigatorPage({ initialQuery = '', resetToken = 0, initi
             onViewAllChats={openHistoryPage}
             onRunAgent={handleRunAgent}
             onViewAllAgents={openAgentsList}
-            sidebarCollapsed={sidebarCollapsed}
-            onExpandSidebar={toggleSidebarCollapse}
-            onSidebarHoverEnter={openSidebarHoverPeek}
-            onSidebarHoverLeave={scheduleSidebarHoverClose}
           />
         )}
         {view === 'chat' && (

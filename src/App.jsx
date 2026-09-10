@@ -18,6 +18,7 @@ import UserSettingsPage from './pages/UserSettingsPage.jsx'
 import { useUserSettingsState } from './pages/settings/UserSettingsBody.jsx'
 import StudioHomePage from './pages/StudioHomePage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
+import CopilotFab from './components/CopilotFab.jsx'
 import ClickExploreOverlay from './components/ClickExploreOverlay.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
@@ -681,6 +682,15 @@ function App() {
   // so Navigator only "feels" like the current section once the user
   // actually starts a conversation.
   const [navigatorAtHome, setNavigatorAtHome] = useState(true);
+  // Starting a chat/build in Navigator reclaims the main nav's width for its
+  // own history sidebar (see NavigatorPage.jsx's matching sidebarCollapsed
+  // effect) — a one-time transition off Home, not a recurring "always
+  // collapsed on this route" rule, so it doesn't fight a manual re-expand
+  // the way the comment above collapsedForNav explicitly avoids.
+  const handleNavigatorHomeStateChange = useCallback((atHome) => {
+    setNavigatorAtHome(atHome);
+    if (!atHome) setNavCollapsed(true);
+  }, []);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
 
@@ -843,6 +853,16 @@ function App() {
     // it out first — clicking a primary-nav item while Settings is nested
     // beside it is a normal "go here instead" action.
     if (settingsOpen && id !== 'admin-page' && id !== 'admin-exit') setSettingsOpen(false);
+    // Navigator and the dashboard builder are meant to work side by side —
+    // while a dashboard canvas is mounted (see BUILDER_SURFACES.dashboard),
+    // opening Navigator from anywhere (the CopilotFab bubble included, which
+    // calls this directly rather than through WorkspacePage) should open its
+    // inline guided-builder panel on top of the canvas, same as the canvas's
+    // own "Ask AI" button, instead of the standalone floating Navigator panel.
+    if ((id === 'navigator' || id === 'navigator-page') && BUILDER_SURFACES.dashboard.matchRoute(current) && dashboardBuilderApi?.current) {
+      handleNav('navigator-builder', { kind: 'dashboard' });
+      return;
+    }
     if (id === 'navigator') {
       setNavigatorViewMode('floating');
       setNavigatorFloating(true);
@@ -1138,7 +1158,7 @@ function App() {
           <PasswordGate onUnlock={unlock} />
         </div>
       )}
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
+      <Topbar onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
         <LeftNavHybrid
@@ -1171,7 +1191,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={handleNavigatorHomeStateChange} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -1213,7 +1233,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={handleNavigatorHomeStateChange} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
                 {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}
@@ -1268,6 +1288,10 @@ function App() {
         onPick={(label, type) => handleNav('navigator-ask', { query: buildExploreQuestion(label, type), autoSend: true })}
         onExit={() => setNavigatorExploreActive(false)}
       />
+
+      {!showSplash && !locked && (!isNavigatorRoute || settingsOpen) && (
+        <CopilotFab onClick={() => handleNav('navigator')} active={rightPanel === 'navigator'} pageContext={settingsOpen ? null : pageMeta?.title} />
+      )}
     </div>
   );
 }

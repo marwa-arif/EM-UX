@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import '../styles/shell.css'
 import '../styles/filter-panel.css'
 import Topbar from '../components/Topbar.jsx'
+import CopilotFab from '../components/CopilotFab.jsx'
 import { LeftNavHybrid } from '../components/LeftNavAlt.jsx'
 import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
@@ -71,12 +72,48 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // itself with that dashboard's widgets/scope instead of starting blank.
   const [editDashboardSeed, setEditDashboardSeed] = useState(null)
 
+  // Set right before replaying a nav the user already confirmed through the
+  // dashboard/report builder's own "Discard unsaved changes?" modal (see
+  // guardNav below), so that replay isn't gated a second time.
+  const bypassNavGuardRef = useRef(false)
+
   // `data` (e.g. the query string LeftNavAlt.jsx's Navigator preview passes
   // for a specific recent chat) has to be forwarded through both branches —
   // dropping it here silently reduces that call to a bare, query-less
   // 'navigator-page' navigation, landing on a blank new chat instead of the
   // chat that was actually clicked.
   const handleNav = (id, data) => {
+    const resolved = id === 'workspace' ? 'workspace/saved' : id
+    // Mid-creating/editing a dashboard or report renders DashboardCanvas —
+    // switching to any other destination (a different LeftNav section,
+    // another saved dashboard, even leaving Workspace entirely) would
+    // otherwise unmount it silently. Route that switch through the same
+    // discard-confirm modal the canvas's own Back button uses, unless this
+    // call is itself the confirmed replay.
+    const isBuilderRoute = (current.startsWith('workspace/dashboard') && !current.startsWith('workspace/dashboard/view-')) ||
+      (current.startsWith('workspace/report/') && !current.startsWith('workspace/report-preview/'))
+
+    // Navigator and the canvas are meant to work side by side while
+    // building — clicking the Navigator rail item here should open the same
+    // inline guided-builder panel as this canvas's own "Ask AI" button
+    // (onOpenCopilotBuilder), not the standalone floating Navigator panel,
+    // and never the discard-unsaved-changes prompt below, since nothing is
+    // actually being navigated away from. The LeftNav's "Navigator" item
+    // actually fires 'navigator-page' (its navigateId, see TOP_ITEMS in
+    // LeftNav.jsx) rather than 'navigator' — guard both.
+    if ((id === 'navigator' || id === 'navigator-page') && isBuilderRoute) {
+      onOpenCopilotBuilder?.({})
+      return
+    }
+
+    if (!bypassNavGuardRef.current && isBuilderRoute && resolved !== current) {
+      const api = dashboardBuilderRef.current
+      if (api?.guardNav && !api.guardNav(() => { bypassNavGuardRef.current = true; handleNav(id, data) })) {
+        return
+      }
+    }
+    bypassNavGuardRef.current = false
+
     if (id === 'exposure/overview' || id === 'home' || !id.startsWith('workspace')) {
       onNav(id, data)
       return
@@ -84,7 +121,6 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     if (id.startsWith('workspace/report/') && !id.startsWith('workspace/report-preview/')) {
       localStorage.removeItem('pai-excel-warn-dismissed')
     }
-    const resolved = id === 'workspace' ? 'workspace/saved' : id
     if (isListRoute(resolved)) {
       setListOrigin(resolved)
     }
@@ -203,7 +239,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   return (
     <WorkspaceProvider onNav={handleNav} editDashboardSeed={editDashboardSeed} setEditDashboardSeed={setEditDashboardSeed}>
       <div className="wp-root">
-        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navigatorActive={navigatorActive} showNavigatorButton navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} />
+        <Topbar theme={theme} onToggleTheme={onToggleTheme} onNav={handleNav} navCollapsed={navCollapsed} onToggleNavCollapse={toggleNavCollapse} />
         <div className="wp-body">
           <LeftNavHybrid
             current={current}
@@ -267,6 +303,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
           </main>
           {rightPanelSlot}
         </div>
+        <CopilotFab onClick={() => handleNav('navigator')} active={navigatorActive} pageContext={pageTitle} />
       </div>
     </WorkspaceProvider>
   )

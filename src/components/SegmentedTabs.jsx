@@ -5,20 +5,24 @@ import React, { useState, useRef, useEffect } from 'react';
 // with a sliding indigo thumb and label color that flips on the active
 // segment.
 export default function SegmentedTabs({ value, options, onChange, fullWidth, height = 32 }) {
+  // Options are plain strings everywhere else this is used; a KPI-style size
+  // picker (Auto/S/M/L/XL) additionally needs a short label distinct from
+  // its value plus a hover tooltip, so objects are accepted too.
+  const opts = options.map(o => typeof o === 'string' ? { value: o, label: o } : o);
   const containerRef = useRef(null);
   const btnRefs = useRef([]);
   const labelRefs = useRef([]);
   const [thumb, setThumb] = useState({ left: 3, width: 0 });
 
   useEffect(() => {
-    const idx = options.indexOf(value);
+    const idx = opts.findIndex(o => o.value === value);
     const btn = btnRefs.current[idx];
     if (btn) {
       // Thumb fills the active tab exactly — container has no padding,
       // so the pill spans the full button bounds.
       setThumb({ left: btn.offsetLeft, width: btn.offsetWidth });
     }
-  }, [value, options.join('|')]);
+  }, [value, opts.map(o => o.value).join('|')]);
 
   return (
     <div
@@ -35,16 +39,16 @@ export default function SegmentedTabs({ value, options, onChange, fullWidth, hei
           opacity: thumb.width ? 1 : 0,
         }}
       />
-      {options.map((o, i) => {
-        const active = o === value;
+      {opts.map((o, i) => {
+        const active = o.value === value;
         // Dividers between segments are hidden — the sliding thumb already
         // indicates active state clearly enough on its own.
         const showDivider = false;
         return (
           <button
-            key={o}
+            key={o.value}
             ref={el => btnRefs.current[i] = el}
-            onClick={() => onChange && onChange(o)}
+            onClick={() => onChange && onChange(o.value)}
             className={[
               'kg-seg-btn',
               active ? 'kg-seg-btn--active' : '',
@@ -53,7 +57,11 @@ export default function SegmentedTabs({ value, options, onChange, fullWidth, hei
             ].filter(Boolean).join(' ')}
           >
             {showDivider && <span className="kg-seg-divider" />}
-            <span ref={el => labelRefs.current[i] = el}>{o}</span>
+            <span
+              ref={el => labelRefs.current[i] = el}
+              className={o.tooltip ? 'kg-seg-tip' : undefined}
+              data-tip={o.tooltip || undefined}
+            >{o.label}</span>
           </button>
         );
       })}
