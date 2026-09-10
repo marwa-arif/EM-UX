@@ -1127,7 +1127,6 @@ function FPSubTooltip({ sub, children }) {
       {show && (
         <span className="fp-sub-tooltip-bubble">
           {`Type is the attribute of the entity ${sub}`}
-          <span className="fp-sub-tooltip-caret" />
         </span>
       )}
     </span>
@@ -2833,7 +2832,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
                 <span className="gf-implicit-label">Implicit Filters</span>
               </label>
               <button className="gf-reset-btn" onClick={handleReset}>
-                Reset
+                Reset all filters
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               </button>
               <button
@@ -3297,7 +3296,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
           <div className="fp-footer__row">
             <button onClick={() => { gfRef.current?.reset(); setGfResetToken(t => t + 1); }} className="fp-footer-btn fp-footer-btn--danger">
               <span className="fp-mask-icon" />
-              Reset
+              Reset all filters
             </button>
             <button
               onClick={() => gfRef.current?.apply()}

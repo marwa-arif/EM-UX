@@ -13,7 +13,7 @@ function UserSettingsPage({ onNav, theme, onToggleTheme, state }) {
 
   return (
     <div className="app-shell">
-      <Topbar onNav={onNav} theme={theme} onToggleTheme={onToggleTheme} showNavigatorButton={false} />
+      <Topbar onNav={onNav} theme={theme} onToggleTheme={onToggleTheme} />
       <div className="app-body">
         <aside className="settings-panel">
           <UserSettingsNav activeSection={state.activeSection} onSelect={state.setActiveSection} />

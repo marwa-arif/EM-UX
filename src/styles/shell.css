@@ -218,27 +218,6 @@
 }
 .notif-panel__dl-retry:hover { background: var(--danger-bg); }
 
-.topbar__navigator {
-  width: 32px; height: 32px; padding: 0; flex-shrink: 0;
-  border: none; border-radius: 44px;
-  background: linear-gradient(90deg, #467FCD, #47ADCB); /* brand gradient — intentional fixed values */
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.topbar__navigator-icon {
-  display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
-  background-color: #fff;
-  -webkit-mask-image: url('/assets/icons/Navigator icon.svg');
-  mask-image: url('/assets/icons/Navigator icon.svg');
-  -webkit-mask-size: contain; mask-size: contain;
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-position: center; mask-position: center;
-}
-.topbar__navigator.active {
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
-}
-
-
 /* ── LeftNav ─────────────────────────────────────────────────────── */
 /* The pinned/collapsed sidebar — always mounted, in flow. Collapsing just
    animates width down to 0 (uniform, linear, identical transition whichever
@@ -565,6 +544,7 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 .subheader__explore-btn--open {
   background: var(--pai-indigo-secondary); border-color: #C9C7F2; color: var(--pai-indigo-secondary-fg);
 }
+.subheader__explore-btn[disabled] { cursor: not-allowed; pointer-events: none; opacity: 0.4; }
 .subheader__explore-dropdown {
   position: absolute; top: 34px; left: 0;
   background: var(--card-bg); border: 1px solid var(--pai-border);
@@ -789,7 +769,8 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
   content: attr(data-tooltip);
   position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
   white-space: nowrap; font-size: 11px; font-weight: 400;
-  color: var(--card-bg); background: var(--shell-text);
+  color: var(--shell-text); background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   border-radius: 4px; padding: 4px 8px;
   pointer-events: none; opacity: 0; transition: opacity 150ms;
 }
@@ -964,13 +945,17 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
 
 /* ── Copilot FAB — floating Navigator launcher, bottom-right ────────
    Circular per the icon-button exception to the 44px CTA radius rule
-   (matches ds-icon-btn precedent). Fill is the same brand gradient
-   already used for the Navigator button's border (#467FCD → #47ADCB,
-   "intentional fixed values" — see .topbar__navigator-label); a plain
-   card-bg fill left the icon's own matching gradient too low-contrast
-   to read, so the icon is forced solid white via filter instead.
+   (matches ds-icon-btn precedent). Fill is the brand gradient
+   (#467FCD → #47ADCB, "intentional fixed values", same precedent as
+   the old topbar Navigator button this replaces); a plain card-bg
+   fill left the icon's own matching gradient too low-contrast to
+   read, so the icon is forced solid white via filter instead.
    Sits below the floating panel (z-index 300) and toasts (9999) so
-   it never covers active overlays. */
+   it never covers active overlays. `right` is set inline by
+   CopilotFab.jsx — when a docked side panel (rp-shell/wp-filter-drawer/
+   dc-panel) reaches into this corner the FAB slides left to clear it
+   instead of disappearing, so it's transitioned here rather than left
+   as a static offset. */
 .copilot-fab {
   position: fixed;
   right: 24px;
@@ -983,14 +968,79 @@ html.theme-dark .nav-item__icon--selected { filter: none; color: var(--shell-acc
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(16,16,16,0.18), 0 2px 8px rgba(16,16,16,0.12);
-  transition: filter 150ms, transform 150ms;
+  transition: filter 150ms, transform 150ms, right 250ms cubic-bezier(0.4,0,0.2,1);
   z-index: 220;
 }
-.copilot-fab img { filter: brightness(0) invert(1); }
+.copilot-fab img { filter: brightness(0) invert(1); position: relative; z-index: 1; }
 .copilot-fab:hover { filter: brightness(1.08); transform: scale(1.05); }
 .copilot-fab:active { transform: scale(0.97); }
+.copilot-fab.active { box-shadow: 0 0 0 2px rgba(99,96,216,0.35), 0 8px 24px rgba(16,16,16,0.18); }
+
+/* Periodic glossy light pass across the icon — a soft "\"-tilted streak
+   (rotate(-45deg)) translated bottom-left → top-right, i.e. the band's own
+   slant runs perpendicular to its direction of travel (the classic scan-
+   line shine look), then parked off-circle the rest of the cycle rather
+   than animating continuously. */
+.copilot-fab__shine {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 90px;
+  margin: -45px 0 0 -7px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.28), transparent);
+  transform: translate(-50px, 50px) rotate(-45deg);
+  animation: copilotFabShine 7s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes copilotFabShine {
+  0%   { transform: translate(-50px, 50px) rotate(-45deg); }
+  14%  { transform: translate(50px, -50px) rotate(-45deg); }
+  100% { transform: translate(50px, -50px) rotate(-45deg); }
+}
+
+/* ── Copilot hint bubble — rotating invite next to the FAB ───────────
+   Anchored 12px above the FAB on the same right edge (both share the
+   inline `right` offset CopilotFab.jsx computes) so it stays paired with
+   the FAB as it slides left to clear a docked panel. Follows the same
+   speech-bubble convention as NavigatorPage's own .cv-user-bubble/
+   .np-msg-bubble: one squared corner (bottom-right, toward the FAB below
+   it) stands in for a tail instead of a separate pseudo-element triangle.
+   Messages are kept short by design (see GENERIC_MESSAGES/
+   contextualMessages in CopilotFab.jsx) so a single line never needs
+   truncating. */
+@keyframes copilotHintIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.copilot-hint {
+  position: fixed;
+  bottom: 84px;
+  z-index: 220;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+  padding: 8px 12px;
+  border-radius: 12px 12px 4px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(16,16,16,0.18), 0 2px 8px rgba(16,16,16,0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  animation: copilotHintIn 200ms ease-out;
+  transition: right 250ms cubic-bezier(0.4,0,0.2,1);
+}
+.copilot-hint__body {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--shell-text);
+  margin: 0;
+  white-space: nowrap;
+}
 
 .wp-filter-drawer__inner {
   width: 400px;

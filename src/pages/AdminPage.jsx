@@ -1,5 +1,6 @@
 import React from 'react'
 import Topbar from '../components/Topbar.jsx'
+import CopilotFab from '../components/CopilotFab.jsx'
 import '../styles/device.css'
 import { useAdminPanelState, AdminSettingsNav, AdminPanelContent, AdminConfirmModal } from './admin/AdminPanelBody.jsx'
 
@@ -25,6 +26,8 @@ function AdminPage({ onNav, theme, onToggleTheme }) {
       </div>
 
       <AdminConfirmModal confirmAction={state.confirmAction} onClose={() => state.setConfirmAction(null)} />
+
+      <CopilotFab onClick={() => onNav?.('navigator')} pageContext="Admin Settings" />
     </div>
   );
 }

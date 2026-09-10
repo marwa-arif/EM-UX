@@ -22,33 +22,24 @@
   display: inline-flex;
   align-items: center;
 }
+/* White card, matching ExposureOverviewPage's own info-icon tooltip
+   (.exp-info-tip-card in exposure.css) — the DS-standard tooltip look. */
 .fp-sub-tooltip-bubble {
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--pai-fg1);
-  color: var(--card-bg);
-  font-size: 11px;
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
   font-weight: 400;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
   white-space: nowrap;
   z-index: 200;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  line-height: 1.4;
-}
-.fp-sub-tooltip-caret {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid var(--pai-fg1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  line-height: 1.6;
 }
 
 /* ── FPCheckbox ──────────────────────────────────────────────────── */

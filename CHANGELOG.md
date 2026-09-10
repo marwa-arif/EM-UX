@@ -33,6 +33,25 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.22.1] — 2026-09-10
+### Changed
+- Reconciled `feature/studio-workspace` with `develop`'s PR #23/#24/#25 history (MRA Security Risk route repair, `MatrixDropdown.jsx` fix) after merging `origin/develop`
+
+---
+
+## [0.22.0] — 2026-09-10
+### Added
+- `CopilotFab` floating launcher, auto-repositions around any right-docked panel/drawer (Filter Panel, Widget Settings, Add Widget, Help & Support, Navigator, Findings/Compliance drawers) and rotates contextual/generic hint messages
+- Discard-unsaved-changes guard on Workspace nav while a dashboard/report is mid-build, matching the canvas's own Back button behavior
+- Navigator rail item opens the inline guided-builder panel instead of the floating Navigator panel while a dashboard/report is being built
+- Dashboard widget KPI aggregation operations and value-size options; Excel/PDF export icons on `DashboardCanvas`
+### Changed
+- Merged `develop` (v0.21.1) into `feature/studio-workspace`, reconciling this branch's v0.22.0 bump with develop's independent v0.21.1 merge
+- Merged `feature/studio-workspace` left-nav/dashboard work with the hover-flyout left nav and multi-entity graph filter changes
+- `Topbar` no longer takes `navigatorActive`/`showNavigatorButton` — Navigator entry now lives in `CopilotFab`
+
+---
+
 ## [0.21.1] — 2026-09-02
 ### Changed
 - Merged `develop` into `feature/ui-updates`, reconciling this branch's v0.21.0 bump with develop's independent v0.20.1 hotfix.

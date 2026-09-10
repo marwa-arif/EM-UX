@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import UX3LeftNav from './ux3/UX3LeftNav.jsx'
 import Topbar from '../components/Topbar.jsx'
+import CopilotFab from '../components/CopilotFab.jsx'
 import SubHeader from '../components/SubHeader.jsx'
 import { FilterPanel } from '../components/FilterPanel.jsx'
 import ClientServersV3 from './ux3/ClientServersV3.jsx'
@@ -169,6 +170,8 @@ function UX3Page({ onNav, initialRoute, theme, onToggleTheme, settingsOpen, admi
         </main>
         )}
       </div>
+
+      <CopilotFab onClick={() => onNav?.('navigator')} pageContext={settingsOpen ? null : label} />
     </div>
   );
 }

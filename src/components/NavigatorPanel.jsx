@@ -1354,6 +1354,17 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
     ? { x: dockSide === 'left' ? 16 : window.innerWidth - 400 - 16, y: 60 }
     : { x: 0, y: 0 })
+  // Floating mode only: plays a genie-style shrink-toward-the-launcher-FAB
+  // exit animation before the parent actually unmounts this panel, mirroring
+  // the codebase's existing drawer-closing-class pattern (DiscoverDevicePage's
+  // dev-drawer, DrawerShell's comp-drawer) rather than cutting the animation
+  // short by unmounting immediately on click.
+  const [floatClosing, setFloatClosing] = useState(false)
+  const handleClose = useCallback(() => {
+    if (viewMode !== 'floating') { onClose?.(); return }
+    setFloatClosing(true)
+    setTimeout(() => onClose?.(), 320)
+  }, [onClose, viewMode])
 
   // A fresh "ask about X" request (e.g. clicking a trend chart point) bumps
   // draftToken — drop back to the composer with the new draft loaded, and
@@ -1558,6 +1569,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   return (
     <div
       style={panelStyle}
+      className={isFloating ? `np-genie${floatClosing ? ' np-genie--closing' : ''}` : undefined}
       ref={panelRef}
       role="complementary"
       aria-label="Navigator AI assistant"
@@ -1665,7 +1677,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
               )}
             </div>
 
-            <button className="np-icon-btn" onClick={onClose} aria-label="Close Navigator">
+            <button className="np-icon-btn" onClick={handleClose} aria-label="Close Navigator">
               <IcX />
             </button>
           </div>

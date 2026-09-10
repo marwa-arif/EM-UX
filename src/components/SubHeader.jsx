@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import ActiveFilterPanel, { SaveFilterModal } from './ActiveFilterPanel.jsx'
 
-const EXPLORE_GROUPS = [
+export const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
     { label: 'Overview',            id: 'exposure/overview',          icon: 'nav-overview' },
     { label: 'Findings',            id: 'exposure/findings',          icon: 'nav-findings' },
