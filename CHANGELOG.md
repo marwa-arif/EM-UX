@@ -33,6 +33,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.23.1] — 2026-09-11
+### Fixed
+- Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href="/EM-UX/">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app
+
+---
+
 ## [0.23.0] — 2026-09-10
 ### Added
 - Save modal's "Save Dashboard Under" field can pin a saved dashboard as a real left-nav destination — nested inside Exposure/Discover/Report/Data Quality, as its own top-level "Standalone Dashboard" leaf, or under a new user-created section — instead of only appearing in Workspace > Saved

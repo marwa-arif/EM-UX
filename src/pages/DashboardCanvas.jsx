@@ -1084,7 +1084,7 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
                       onClick={() => selectEntity(entity.id)}
                     >
                       <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
-                        <img src={`/assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+                        <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
                         <span className="gf-node__count">{entity.count.toLocaleString()}</span>
                       </div>
                       <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>
@@ -1284,7 +1284,7 @@ function ScopeAttrsPanel({ entities, filters, onFiltersChange }) {
               return (
                 <div key={entity.id} className="gf-node" onClick={() => selectEntity(entity.id)}>
                   <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
-                    <img src={`/assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+                    <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
                     <span className="gf-node__count">{entity.count.toLocaleString()}</span>
                   </div>
                   <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>{entity.label}</span>
@@ -1449,7 +1449,7 @@ function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters
                 onClick={() => toggleEntity(entity.id)}
               >
                 <span className="dc-scope-node__circle">
-                  <img src={`/assets/icons/${entity.file}`} width={20} height={20} alt="" />
+                  <img src={`assets/icons/${entity.file}`} width={20} height={20} alt="" />
                   {attrCount(entity.id) > 0 && <span className="dc-scope-node__attr-badge">{attrCount(entity.id)}</span>}
                 </span>
                 <span className="dc-scope-node__label">{entity.label}</span>
@@ -5549,7 +5549,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                   </span>
                   <span className="dc-scope-icon">
                     {dashboardScopes.length
-                      ? <img src={`/assets/icons/${dashboardScopes[0].file}`} width={16} height={16} alt="" className="dc-scope-icon-img" />
+                      ? <img src={`assets/icons/${dashboardScopes[0].file}`} width={16} height={16} alt="" className="dc-scope-icon-img" />
                       : <img src="assets/icons/lcnc/graph-filter.svg" width={20} height={20} alt="" className="dc-scope-icon-img" />}
                   </span>
                 </button>

@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.23.1",
+    "date": "2026-09-11",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href=\"/EM-UX/\">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app"
+      ]
+    }
+  },
+  {
     "version": "0.23.0",
     "date": "2026-09-10",
     "changes": {

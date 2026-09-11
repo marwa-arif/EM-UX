@@ -1102,7 +1102,7 @@ function initNodePositions(ids) {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function FPAttrIcon({ icon, size = 16 }) {
-  return <img src={`/assets/icons/${icon}.svg`} width={size} height={size} alt="" className="fp-attr-icon" />;
+  return <img src={`assets/icons/${icon}.svg`} width={size} height={size} alt="" className="fp-attr-icon" />;
 }
 
 function FPDragHandle() {
@@ -1219,7 +1219,7 @@ function FPSavedCard({ item, selected, applied, onSelect }) {
           </div>
         </div>
         {item.pinned && (
-          <img src="/assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-card__pin" />
+          <img src="assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-card__pin" />
         )}
       </div>
     </div>
@@ -1260,7 +1260,7 @@ function GFNode({ entity, selected, inPath, dimmed, hovered, style, onMouseDown,
       onMouseLeave={onMouseLeave}
     >
       <div className={circleClass} style={entVars}>
-        <img src={`/assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+        <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
         <span className="gf-node__count">{entity.count.toLocaleString()}</span>
       </div>
       <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`} style={entVars}>
@@ -1285,7 +1285,7 @@ function GFPaletteNode({ entity, selected, highlighted, dimmed, onClick, onMouse
       onMouseLeave={onMouseLeave}
     >
       <div className="gf-pnode__circle">
-        <img src={`/assets/icons/${entity.file}`} width={16} height={16} alt="" className="gf-pnode__img" />
+        <img src={`assets/icons/${entity.file}`} width={16} height={16} alt="" className="gf-pnode__img" />
       </div>
       <span className="gf-pnode__label">{entity.label}</span>
     </div>
@@ -1529,7 +1529,7 @@ function GFAttrsPanel({ entityId, onClose, filters, onFiltersChange }) {
       <div className="gf-attrs-panel-header">
         <div className="gf-attrs-entity-info">
           <div className="gf-attrs-entity-swatch" style={{ '--ent-tint': entity?.tint, '--ent-stroke': entity?.stroke }}>
-            {entity && <img src={`/assets/icons/${entity.file}`} width={14} height={14} alt="" />}
+            {entity && <img src={`assets/icons/${entity.file}`} width={14} height={14} alt="" />}
           </div>
           <span className="gf-attrs-entity-name">{entity?.label}</span>
         </div>
@@ -1714,7 +1714,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
       {/* Entity identity strip */}
       <div className="gfa-entity-strip">
         <div className="gfa-entity-swatch" style={{ '--ent-tint': entity?.tint, '--ent-stroke': entity?.stroke }}>
-          {entity && <img src={`/assets/icons/${entity.file}`} width={14} height={14} alt="" />}
+          {entity && <img src={`assets/icons/${entity.file}`} width={14} height={14} alt="" />}
         </div>
         <span className="gfa-entity-name">{entity?.label ?? entityId}</span>
         {appliedCount > 0 && <span className="gfa-applied-badge">{appliedCount}</span>}
@@ -2348,7 +2348,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
               <div key={entityId} className="gf-preview-entity-group">
                 <div className="gf-preview-entity-label" style={{ '--ent-tint': entity?.tint, '--ent-stroke': entity?.stroke }}>
                   <div className="gf-preview-entity-swatch">
-                    {entity && <img src={`/assets/icons/${entity.file}`} width={11} height={11} alt="" />}
+                    {entity && <img src={`assets/icons/${entity.file}`} width={11} height={11} alt="" />}
                   </div>
                   {entity?.label}
                 </div>
@@ -2990,7 +2990,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
       <div className="fp-header">
         {!embedded && (
           <button onClick={onClose} className="fp-header__close-btn">
-            <img src="/assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
+            <img src="assets/icons/sidebar-collapse.svg" width={18} height={18} alt="" />
           </button>
         )}
         <div className="fp-header__tabs">
@@ -3146,7 +3146,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                           </div>
                         </div>
                         {item.pinned && (
-                          <img src="/assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-drag-card__pin" />
+                          <img src="assets/icons/pin.svg" width={16} height={16} alt="" className="fp-saved-drag-card__pin" />
                         )}
                       </div>
                     </div>
@@ -3166,7 +3166,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
               </div>
               <button className="fp-view-all-btn">
                 View all
-                <img src="/assets/icons/explore.svg" width={16} height={16} alt="" />
+                <img src="assets/icons/explore.svg" width={16} height={16} alt="" />
               </button>
             </div>
             <div className="fp-saved-section">
