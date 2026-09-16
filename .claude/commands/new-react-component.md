@@ -1,9 +1,9 @@
-Fetch these files first:
-1. https://anthu211.github.io/design-system-2.0/ds/tokens/colors.json
-2. https://anthu211.github.io/design-system-2.0/ds/tokens/spacing.json
-3. https://anthu211.github.io/design-system-2.0/ds/tokens/typography.json
+Read these local files first (never WebFetch — this directory is checked out locally in this repo):
+1. design-system-2.0/ds/tokens/colors.json
+2. design-system-2.0/ds/tokens/spacing.json
+3. design-system-2.0/ds/tokens/typography.json
 
-Then read $ARGUMENTS and fetch only what the component needs:
+Then read $ARGUMENTS and read only what the component needs:
 - Table/list → tables.json + badges.json
 - Form/input → inputs.json + modals.json
 - Button/action → buttons.json
@@ -14,11 +14,11 @@ Then read $ARGUMENTS and fetch only what the component needs:
 - Toast/alert → feedback.json
 - Tabs → tabs.json
 - Tooltip/accordion/progress/steps/avatar/skeleton → utilities.json
-- Full page/dashboard → ALSO fetch https://anthu211.github.io/design-system-2.0/ds/react.txt
+- Full page/dashboard → ALSO read design-system-2.0/ds/react.md
 
-All JSON base URL: https://anthu211.github.io/design-system-2.0/ds/components/
+All JSON files under: design-system-2.0/ds/components/
 
-Do not fetch files for component types not in the request.
+Do not read files for component types not in the request.
 
 The user's requirement is: $ARGUMENTS
 
@@ -33,7 +33,7 @@ Generate a React component and save it as a `.tsx` file in the current directory
 - Lucide React — all icons; never emoji or text symbols
 - Recharts — charts only: AreaChart, BarChart, LineChart; never canvas or D3
 
-## Design Rules (apply without fetching ds/core.txt)
+## Design Rules (apply without reading ds/core.md)
 - Colors: CSS variables only — never hardcode hex (use values from colors.json)
 - Spacing: 4pt grid only — 4, 8, 12, 16, 20, 24, 32, 48px. Any other value is a bug.
 - Buttons: `rounded-[44px]` always. Cards/wrappers: `rounded-[4px]` only. Never `rounded-md`, `rounded-lg`, `rounded-xl`, `rounded-full`, `shadow-lg`.
@@ -58,7 +58,7 @@ Generate a React component and save it as a `.tsx` file in the current directory
 
 ## Steps
 1. **Parse**: component name · persona (from table above) · filename (PascalCase .tsx)
-2. **Build**: use exact class names and patterns from the fetched component JSONs. Named + default export both.
+2. **Build**: use exact class names and patterns from the component JSONs already read. Named + default export both.
 3. **Save**: write to `[PascalCaseName].tsx` in the current directory.
 
 Report: filename · persona · Radix primitives used · key decisions

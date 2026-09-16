@@ -1,22 +1,22 @@
-Fetch ALL of these URLs fully before doing anything:
-1. https://anthu211.github.io/design-system-2.0/ds/rules.json
-2. https://anthu211.github.io/design-system-2.0/ds/tokens/colors.json
-3. https://anthu211.github.io/design-system-2.0/ds/tokens/spacing.json
-4. https://anthu211.github.io/design-system-2.0/ds/tokens/typography.json
-5. https://anthu211.github.io/design-system-2.0/ds/components/buttons.json
-6. https://anthu211.github.io/design-system-2.0/ds/components/tables.json
-7. https://anthu211.github.io/design-system-2.0/ds/components/badges.json
-8. https://anthu211.github.io/design-system-2.0/ds/components/modals.json
-9. https://anthu211.github.io/design-system-2.0/ds/components/inputs.json
-10. https://anthu211.github.io/design-system-2.0/ds/components/feedback.json
-11. https://anthu211.github.io/design-system-2.0/ds/components/states.json
-12. https://anthu211.github.io/design-system-2.0/ds/components/charts.json
-13. https://anthu211.github.io/design-system-2.0/ds/components/cards.json
-14. https://anthu211.github.io/design-system-2.0/ds/components/utilities.json
-15. https://anthu211.github.io/design-system-2.0/ds/components/tabs.json
-16. https://anthu211.github.io/design-system-2.0/ds/core.txt
+Read ALL of these local files fully before doing anything (never WebFetch — this directory is checked out locally in this repo):
+1. design-system-2.0/ds/rules.json
+2. design-system-2.0/ds/tokens/colors.json
+3. design-system-2.0/ds/tokens/spacing.json
+4. design-system-2.0/ds/tokens/typography.json
+5. design-system-2.0/ds/components/buttons.json
+6. design-system-2.0/ds/components/tables.json
+7. design-system-2.0/ds/components/badges.json
+8. design-system-2.0/ds/components/modals.json
+9. design-system-2.0/ds/components/inputs.json
+10. design-system-2.0/ds/components/feedback.json
+11. design-system-2.0/ds/components/states.json
+12. design-system-2.0/ds/components/charts.json
+13. design-system-2.0/ds/components/cards.json
+14. design-system-2.0/ds/components/utilities.json
+15. design-system-2.0/ds/components/tabs.json
+16. design-system-2.0/ds/core.md
 
-Do not proceed until every URL above is fully fetched and read.
+Do not proceed until every file above is fully read.
 
 ---
 
@@ -26,7 +26,7 @@ $ARGUMENTS
 
 ---
 
-Return a `✅ PASS` / `❌ FAIL` checklist using the fetched files as the source of truth. For every FAIL, give the exact fix referencing the specific rule or token.
+Return a `✅ PASS` / `❌ FAIL` checklist using the files already read as the source of truth. For every FAIL, give the exact fix referencing the specific rule or token.
 
 ## Shell & Structure
 - [ ] Topbar `#131313` with PAI logo image — no "Prevalent AI" text
