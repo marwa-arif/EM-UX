@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.24.0",
+    "date": "2026-09-16",
+    "changes": {
+      "Added": [
+        "Control Plane: Environment Directory (list, detail, manual add, coverage reconciliation) under Admin Panel"
+      ],
+      "Changed": [],
+      "Fixed": [
+        "Dark theme token overhaul (shell/card/control surfaces) and hardcoded white badge backgrounds replaced with `var(--card-bg)` across compliance, data-quality, library, drawer, and shell styles"
+      ]
+    }
+  },
+  {
     "version": "0.23.1",
     "date": "2026-09-11",
     "changes": {
