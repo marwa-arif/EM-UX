@@ -9,7 +9,7 @@
   overflow: hidden;
   gap: 16px;
   padding: 16px 0 16px 16px;
-  background: var(--ctrl-bg);
+  background: var(--shell-bg);
 }
 
 /* ── Sidebar: entity picker ───────────────────────────────────────── */
@@ -100,7 +100,7 @@ html.theme-dark .dq-entity-badge {
   overflow-x: hidden;
   overscroll-behavior: none;
   scrollbar-gutter: stable;
-  background: var(--ctrl-bg);
+  background: var(--shell-bg);
   padding: 0 12px 12px 0;
   display: flex;
   flex-direction: column;
@@ -383,7 +383,7 @@ html.theme-dark .dq-entity-badge {
   box-sizing: border-box;
   gap: 16px;
   padding: 16px;
-  background: var(--ctrl-bg);
+  background: var(--shell-bg);
 }
 
 /* ── Header row: entity picker · completeness tab · legend ──────────── */

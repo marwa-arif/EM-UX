@@ -7,7 +7,7 @@
 .lib-shell {
   flex: 1; overflow: auto;
   padding: 16px 0 16px 16px;
-  background: var(--ctrl-bg);
+  background: var(--shell-bg);
 }
 .lib-card {
   background: var(--card-bg);
@@ -144,7 +144,7 @@
 .lib-quick-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
 
 .lib-quick-body         { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.lib-quick-icon         { width: 40px; height: 40px; border-radius: 8px; background: #ECF8FD; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lib-quick-icon         { width: 40px; height: 40px; border-radius: 8px; background: var(--pai-teal-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .lib-quick-icon--report { background: rgba(217,139,29,0.10); }
 .lib-quick-title        { font-size: 13px; font-weight: 400; color: var(--shell-text); line-height: 1.4; }
 .lib-quick-desc         { font-size: 11px; color: var(--shell-text-muted); line-height: 1.6; flex: 1; }
@@ -155,7 +155,7 @@
   display: flex; align-items: center; justify-content: space-between;
 }
 .lib-quick-badge         { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 44px; letter-spacing: 0.05em; text-transform: uppercase; }
-.lib-quick-badge--dash   { background: #ECF8FD; color: var(--pai-teal); }
+.lib-quick-badge--dash   { background: var(--pai-teal-bg); color: var(--pai-teal); }
 .lib-quick-badge--report { background: rgba(217,139,29,0.12); color: var(--pai-high-fg); }
 
 /* ─── Quick actions toolbar ──────────────────────────────────────── */
@@ -322,7 +322,7 @@
 
 /* Type badge */
 .lib-type-badge        { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-.lib-type-badge--dash  { background: #ECF8FD; color: var(--pai-teal-dark); }
+.lib-type-badge--dash  { background: var(--pai-teal-bg); color: var(--pai-teal-dark); }
 .lib-type-badge--rep   { background: rgba(249,115,22,0.10); color: var(--pai-orange); }
 
 /* Visibility cell */
@@ -339,7 +339,7 @@
 .dcp-shell {
   flex: 1; overflow: hidden;
   padding: 16px 0 16px 16px;
-  background: var(--ctrl-bg);
+  background: var(--shell-bg);
 }
 .dcp-card {
   height: 100%; display: flex; flex-direction: column;
@@ -433,7 +433,7 @@
 }
 .dcp-canvas-frame {
   width: 100%; height: 100%;
-  border: none; background: #fff;
+  border: none; background: var(--card-bg);
 }
 
 /* File name chip — bottom-left overlay */

@@ -2140,17 +2140,17 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 }
 
 .comp-matrix-badge--green {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--pai-green);
 }
 
 .comp-matrix-badge--red {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--pai-crit-fg);
 }
 
 .comp-matrix-badge--neutral {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--comp-badge-color, var(--shell-text-muted));
 }
 
