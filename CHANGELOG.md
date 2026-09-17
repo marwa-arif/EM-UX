@@ -35,6 +35,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.24.1] — 2026-09-17
+### Fixed
+- Favicon icon color changed from purple (`#6360D8`) to white
+
+---
+
 ## [0.24.0] — 2026-09-16
 ### Added
 - Control Plane: Environment Directory (list, detail, manual add, coverage reconciliation) under Admin Panel

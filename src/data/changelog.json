@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.24.1",
+    "date": "2026-09-17",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Favicon icon color changed from purple (`#6360D8`) to white"
+      ]
+    }
+  },
+  {
     "version": "0.24.0",
     "date": "2026-09-16",
     "changes": {
