@@ -24,12 +24,44 @@ All notable UI changes are tracked here.
 <!-- pull: 2026-07-28 11:40 | branch: feature/ui-updates | dc8a629 Merge remote-tracking branch 'origin/feature/ui-updates' -->
 <!-- pull: 2026-08-03 18:03 | branch: feature/ui-updates | bf4d4b0 Merge remote-tracking branch 'origin/feature/ui-updates' into develop -->
 <!-- pull: 2026-08-17 10:21 | branch: feature/studio-workspace | 3e7e8da chore: bump to v0.19.0 -->
+<!-- pull: 2026-08-21 14:26 | branch: leftmenu-testing | dcb3dc8 feat: extend left-nav rework — Workspace typeLock, sidebar collapse parity, breadcrumb rename -->
+<!-- pull: 2026-09-16 17:40 | branch: feature/control-plane | 45283b9 Merge origin/develop into feature/control-plane (Marwa's PR #26/#27) -->
 ## [Unreleased]
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
 ### Changed
 ### Fixed
+
+---
+
+## [0.25.0] — 2026-09-18
+### Added
+- rp-shell Filter panel: live "Matching records" count in the Quick/Saved Filters footer, updating as filter values are selected.
+- rp-shell Filter panel: "Apply to all pages" toggle (with info tooltip) that applies the current filter across every page instead of just the current one.
+- rp-shell Filter panel: "Save current filter" action in the Saved Filters tab, adding the active Quick Filter selection to Recent Filters.
+### Changed
+- Filter panel footer restyled into a single card (icon + accent-colored count, active-state toggle label) instead of separate floating elements.
+
+---
+
+## [0.24.1] — 2026-09-17
+### Fixed
+- Favicon icon color changed from purple (`#6360D8`) to white
+
+---
+
+## [0.24.0] — 2026-09-16
+### Added
+- Control Plane: Environment Directory (list, detail, manual add, coverage reconciliation) under Admin Panel
+### Fixed
+- Dark theme token overhaul (shell/card/control surfaces) and hardcoded white badge backgrounds replaced with `var(--card-bg)` across compliance, data-quality, library, drawer, and shell styles
+
+---
+
+## [0.23.1] — 2026-09-11
+### Fixed
+- Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href="/EM-UX/">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app
 
 ---
 

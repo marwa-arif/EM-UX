@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "in=$(cat); f=$(echo \"$in\" | jq -r '.tool_input.file_path // empty'); s=$(echo \"$in\" | jq -r '.session_id // empty'); case \"$f\" in *design-system-2.0*) touch \"/tmp/claude-ds-check-$s\" ;; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "in=$(cat); f=$(echo \"$in\" | jq -r '.tool_input.file_path // empty'); s=$(echo \"$in\" | jq -r '.session_id // empty'); case \"$f\" in *src/pages/*|*src/styles/*|*src/components/*) m=\"/tmp/claude-ds-check-$s\"; if [ ! -f \"$m\" ]; then jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Per project CLAUDE.md: read design-system-2.0/ds/context.json (and needed DS module files under design-system-2.0/ds/) before editing UI files under src/pages, src/styles, or src/components. Read it now, then retry this edit. (Skip this if you already fetched DS context via a slash command like /new-page, /new-component, /new-react-component, /ux-review, /persona-check, or /audit-page in this session.)\"}}'; fi ;; esac",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "in=$(cat); u=$(echo \"$in\" | jq -r '.tool_input.url // empty'); case \"$u\" in *design-system-2.0*) jq -n '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Per project CLAUDE.md: the design system is local, never WebFetch. Read the matching file under design-system-2.0/ds/ in this repo instead (same path, no https://anthu211.github.io/ prefix).\"}}' ;; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

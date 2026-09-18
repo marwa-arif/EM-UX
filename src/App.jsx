@@ -1046,8 +1046,9 @@ function App() {
     history.pushState(null, '', navPath(url));
   };
 
-  // Per-page filter accessors
-  const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
+  // Per-page filter accessors — an "apply to all pages" filter (stored under the
+  // __all__ sentinel) overrides whatever the current page's own filter is.
+  const curPageFilters   = filtersByPage.__all__ || filtersByPage[current] || { count: 0, chips: [] };
   const activeFilterCount = curPageFilters.count;
   const activeFilters     = curPageFilters.chips;
 
@@ -1074,15 +1075,21 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
       visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
-        if (merge) {
+      filterProps={{ pageId: current, onApply: (c, chips, merge = false, applyToAllPages = false) => {
+        if (applyToAllPages) {
+          setFiltersByPage(prev => ({ ...prev, __all__: { count: c, chips: chips || [] } }));
+        } else if (merge) {
           setFiltersByPage(prev => {
             const cur = prev[current] || { count: 0, chips: [] };
             const merged = [...cur.chips, ...(chips || [])];
-            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
           });
         } else {
-          setPageFilters(current, c, chips || []);
+          setFiltersByPage(prev => {
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: c, chips: chips || [] } };
+          });
         }
       }}}
       navigatorProps={{
@@ -1322,13 +1329,17 @@ function App() {
                   activeFilters={activeFilters}
                   onRemoveFilter={(idx) => {
                     setFiltersByPage(prev => {
-                      const cur = prev[current] || { count: 0, chips: [] };
+                      const key = prev.__all__ ? '__all__' : current;
+                      const cur = prev[key] || { count: 0, chips: [] };
                       const updated = cur.chips.filter((_, i) => i !== idx);
-                      return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                      return { ...prev, [key]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
                   }}
                   onClearFilters={() => {
-                    setPageFilters(current, 0, []);
+                    setFiltersByPage(prev => {
+                      const key = prev.__all__ ? '__all__' : current;
+                      return { ...prev, [key]: { count: 0, chips: [] } };
+                    });
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}

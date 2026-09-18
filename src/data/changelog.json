@@ -1,5 +1,55 @@
 [
   {
+    "version": "0.25.0",
+    "date": "2026-09-18",
+    "changes": {
+      "Added": [
+        "rp-shell Filter panel: live \"Matching records\" count in the Quick/Saved Filters footer, updating as filter values are selected.",
+        "rp-shell Filter panel: \"Apply to all pages\" toggle (with info tooltip) that applies the current filter across every page instead of just the current one.",
+        "rp-shell Filter panel: \"Save current filter\" action in the Saved Filters tab, adding the active Quick Filter selection to Recent Filters."
+      ],
+      "Changed": [
+        "Filter panel footer restyled into a single card (icon + accent-colored count, active-state toggle label) instead of separate floating elements."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.24.1",
+    "date": "2026-09-17",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Favicon icon color changed from purple (`#6360D8`) to white"
+      ]
+    }
+  },
+  {
+    "version": "0.24.0",
+    "date": "2026-09-16",
+    "changes": {
+      "Added": [
+        "Control Plane: Environment Directory (list, detail, manual add, coverage reconciliation) under Admin Panel"
+      ],
+      "Changed": [],
+      "Fixed": [
+        "Dark theme token overhaul (shell/card/control surfaces) and hardcoded white badge backgrounds replaced with `var(--card-bg)` across compliance, data-quality, library, drawer, and shell styles"
+      ]
+    }
+  },
+  {
+    "version": "0.23.1",
+    "date": "2026-09-11",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href=\"/EM-UX/\">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app"
+      ]
+    }
+  },
+  {
     "version": "0.23.0",
     "date": "2026-09-10",
     "changes": {
