@@ -133,6 +133,27 @@ function getPageAttrs(pageId) {
   return entry;
 }
 
+// Total record count each page's data set starts from, used to preview how many
+// records the currently-selected filters would leave once applied.
+const PAGE_BASE_TOTALS = {
+  'kg':                          15730247,
+  'discover/device':                48210,
+  'discover/cloud':                 48210,
+  'discover/identity':              48210,
+  'exposure/overview':              62480,
+  'exposure/findings':              62480,
+  'report/compliance':              18340,
+  'report/assessments':             18340,
+  'report/compliance-matrix':       18340,
+  'report/compliance-findings':     18340,
+  'workspace/report':               27650,
+};
+const DEFAULT_BASE_TOTAL = 25000;
+function estimateResultCount(pageId, filterCount) {
+  const base = PAGE_BASE_TOTALS[pageId] ?? DEFAULT_BASE_TOTAL;
+  return Math.max(1, Math.round(base * Math.pow(0.55, filterCount)));
+}
+
 const GF_ENABLED_PAGES = new Set([
   'kg',
   'exposure/overview', 'exposure/findings',
@@ -1242,6 +1263,16 @@ function FPStepper({ value, onChange, min = 1, max = 20 }) {
   );
 }
 
+function FPToggle({ checked, onChange }) {
+  return (
+    <label className="fp-toggle-wrap" onClick={() => onChange(!checked)}>
+      <span className={`fp-toggle-track${checked ? ' fp-toggle-track--on' : ''}`}>
+        <span className="fp-toggle-thumb" />
+      </span>
+    </label>
+  );
+}
+
 // ── Graph filter node ─────────────────────────────────────────────────────────
 function GFNode({ entity, selected, inPath, dimmed, hovered, style, onMouseDown, onClick, onMouseEnter, onMouseLeave }) {
   const entVars = {
@@ -1901,21 +1932,37 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
   const [showAddHide,       setShowAddHide]       = useState(false);
   const [shownEntityIds,    setShownEntityIds]    = useState(() => new Set(GF_DEFAULT_SHOWN));
   const [implicitOn,        setImplicitOn]        = useState(false);
-  const [size,              setSize]              = useState({ w: 600 });
+  const [size,              setSize]              = useState({ w: 760 });
+  const [zoom,              setZoom]              = useState(1);
   const setEntityAttrFilters = onEntityAttrFiltersChange;
   const [selectedNode,      setSelectedNode]      = useState(null); // { pathIdx, nodeIdx }
+
+  const zoomIn  = () => setZoom(z => Math.min(1.5, Math.round((z + 0.25) * 100) / 100));
+  const zoomOut = () => setZoom(z => Math.max(0.5, Math.round((z - 0.25) * 100) / 100));
 
   const canvasRef = useRef(null);
   const panelRef  = useRef(null);
   const dragRef   = useRef(null);   // canvas pan drag
   const opRef     = useRef(null);   // panel drag/resize operation
 
+  // Measure the canvas's visible height so the node row can be vertically centered
+  const [canvasH, setCanvasH] = useState(0);
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const update = () => setCanvasH(el.clientHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const visibleEntities = GF_ENTITIES.filter(e => shownEntityIds.has(e.id));
 
   // Layout constants
-  const NODE_SLOT    = 96;
-  const ENTITY_ROW_Y = 24;
-  const PATH_Y0      = 180;
+  const NODE_SLOT         = 96;
+  const ENTITY_ROW_Y_BASE = 24;
+  const PATH_Y0_BASE      = 180;
   const LEVEL_H      = 140;
   const CIRCLE_TOP   = 0;
   const CIRCLE_BOT   = 38;
@@ -1924,17 +1971,29 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
   // Distribute visible entities evenly across the panel width
   const n = visibleEntities.length;
   const TOP_SLOT_W = n > 0 ? Math.max(NODE_SLOT, size.w / n) : NODE_SLOT;
-  const SIZER_W    = n * TOP_SLOT_W + FAN_PAD + NODE_SLOT;
+  const contentW   = n * TOP_SLOT_W;
+  // Center the node row when it fits inside the panel; otherwise it stays left-aligned and scrollable
+  const rowOffsetX = Math.max(0, (size.w - contentW) / 2);
+  const SIZER_W    = contentW + 2 * rowOffsetX + FAN_PAD + NODE_SLOT;
+
+  const maxPathLength = paths.length > 0 ? Math.max(...paths.map(p => p.length)) : 1;
+  // Center the node rows vertically when they fit inside the canvas; otherwise stays top-anchored and scrollable
+  const neededH = maxPathLength <= 1
+    ? ENTITY_ROW_Y_BASE + CIRCLE_BOT + 40
+    : PATH_Y0_BASE + (maxPathLength - 1) * LEVEL_H + CIRCLE_BOT + 40;
+  const rowOffsetY   = Math.max(0, (canvasH - neededH) / 2);
+  const ENTITY_ROW_Y = ENTITY_ROW_Y_BASE + rowOffsetY;
+  const PATH_Y0      = PATH_Y0_BASE + rowOffsetY;
 
   const slotCenterX = (entityId) => {
     const idx = visibleEntities.findIndex(e => e.id === entityId);
-    return idx >= 0 ? idx * TOP_SLOT_W + TOP_SLOT_W / 2 : 0;
+    return idx >= 0 ? rowOffsetX + idx * TOP_SLOT_W + TOP_SLOT_W / 2 : 0;
   };
 
   const activePath       = (activePathIdx !== null && paths[activePathIdx]) ? paths[activePathIdx] : [];
   const activeId         = activePath.length > 0 ? activePath[activePath.length - 1] : null;
   const activeRootIdx    = activePath.length > 0 ? visibleEntities.findIndex(e => e.id === activePath[0]) : -1;
-  const activePathSlotLeft = activeRootIdx >= 0 ? activeRootIdx * TOP_SLOT_W + (TOP_SLOT_W - NODE_SLOT) / 2 : 0;
+  const activePathSlotLeft = activeRootIdx >= 0 ? rowOffsetX + activeRootIdx * TOP_SLOT_W + (TOP_SLOT_W - NODE_SLOT) / 2 : 0;
 
   const hoveredPathIdx = hoveredId !== null ? paths.findIndex(p => p[0] === hoveredId) : -1;
   const hoveredIsRoot  = hoveredPathIdx >= 0;
@@ -1980,11 +2039,10 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
   const allConnections = paths.flatMap(p =>
     p.length < 2 ? [] : p.slice(0, -1).map((from, i) => ({ from, to: p[i + 1] }))
   );
-  const maxPathLength = paths.length > 0 ? Math.max(...paths.map(p => p.length)) : 1;
 
   const clusterHalfSpread = potentialNextIds.length > 0 ? (potentialNextIds.length - 1) / 2 * NODE_SLOT : 0;
   const clampedFanCenterX = potentialNextIds.length > 0
-    ? Math.min(Math.max(fanSrcX, NODE_SLOT / 2 + clusterHalfSpread), SIZER_W - NODE_SLOT / 2 - clusterHalfSpread)
+    ? Math.min(Math.max(fanSrcX, rowOffsetX + NODE_SLOT / 2 + clusterHalfSpread), SIZER_W - NODE_SLOT / 2 - clusterHalfSpread)
     : fanSrcX;
 
   const handleTopRowClick = (id) => {
@@ -2170,6 +2228,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
         onMouseLeave={() => { handleCanvasMouseUp(); setHoveredId(null); }}
         onClick={() => setSelectedNode(null)}
       >
+        <div className="gf-canvas-zoom-layer" style={{ zoom }}>
         <div className="gf-canvas-sizer" style={{ width: SIZER_W, minHeight: PATH_Y0 + (maxPathLength + 2) * LEVEL_H + 80 }} />
 
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
@@ -2225,7 +2284,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
           const inPath = pathIdx >= 0;
           return (
             <div key={entity.id} className="gf-entity-slot"
-              style={{ left: i * TOP_SLOT_W, top: ENTITY_ROW_Y, width: TOP_SLOT_W }}
+              style={{ left: rowOffsetX + i * TOP_SLOT_W, top: ENTITY_ROW_Y, width: TOP_SLOT_W }}
               onClick={(e) => { e.stopPropagation(); handleTopRowClick(entity.id); }}
               onMouseEnter={() => setHoveredId(entity.id)}>
               <GFNode entity={entity}
@@ -2239,7 +2298,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
 
         {paths.flatMap((p, pathIdx) => {
           const ri = visibleEntities.findIndex(e => e.id === p[0]);
-          const slotLeft = ri >= 0 ? ri * TOP_SLOT_W + (TOP_SLOT_W - NODE_SLOT) / 2 : 0;
+          const slotLeft = ri >= 0 ? rowOffsetX + ri * TOP_SLOT_W + (TOP_SLOT_W - NODE_SLOT) / 2 : 0;
           return p.slice(1).map((entityId, i) => {
             const nodeIdx = i + 1;
             const entity = GF_ENTITIES.find(e => e.id === entityId);
@@ -2281,7 +2340,32 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
           </div>
         )}
 
+        </div>{/* end gf-canvas-zoom-layer */}
       </div>{/* end gf-canvas-area */}
+
+        {/* Zoom controls — pinned to canvas-wrap, unaffected by canvas zoom/scroll */}
+        <div className="gf-canvas__zoom-controls">
+          <button
+            className="gf-canvas-btn"
+            title="Zoom in"
+            disabled={zoom >= 1.5}
+            onClick={(e) => { e.stopPropagation(); zoomIn(); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button
+            className="gf-canvas-btn"
+            title="Zoom out"
+            disabled={zoom <= 0.5}
+            onClick={(e) => { e.stopPropagation(); zoomOut(); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
 
         {/* Delete selected node button — above Add/Hide */}
         <button
@@ -2896,6 +2980,10 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   const [qdragOver,       setQdragOver]      = useState(null);
   const [sdragIdx,        setSdragIdx]       = useState(null);
   const [sdragOver,       setSdragOver]      = useState(null);
+  const [applyToAllPages, setApplyToAllPages] = useState(false);
+  const [customSavedItems, setCustomSavedItems] = useState([]);
+  const [savingFilter,    setSavingFilter]   = useState(false);
+  const [newFilterName,   setNewFilterName]  = useState('');
 
   useEffect(() => {
     const newAttrs = getPageAttrs(pageId);
@@ -2908,9 +2996,10 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
     if (!isGraphFilterEnabled(pageId)) setTab(prev => prev === 'graph' ? 'quick' : prev);
   }, [pageId]);
 
+  const allSavedItems  = [...customSavedItems, ...FP_SAVED_ITEMS];
   const liveAttrs      = pendingAttrs || attrs;
   const liveSaved      = pendingSaved || { order: savedOrder, count: savedShowCount };
-  const liveSavedItems = liveSaved.order.map(id => FP_SAVED_ITEMS.find(i => i.id === id)).filter(Boolean);
+  const liveSavedItems = liveSaved.order.map(id => allSavedItems.find(i => i.id === id)).filter(Boolean);
 
   const toggleExpanded  = (id) => setExpanded(prev => new Set(prev.has(id) ? [] : [id]));
   const toggleOption    = (attrId, opt) => setSelections(prev => { const c = new Set(prev[attrId] || []); c.has(opt) ? c.delete(opt) : c.add(opt); return { ...prev, [attrId]: c }; });
@@ -2954,9 +3043,9 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   const handleApply = () => {
     if (tab === 'saved') {
       setAppliedSavedId(selectedSavedId);
-      const item = FP_SAVED_ITEMS.find(i => i.id === selectedSavedId);
+      const item = allSavedItems.find(i => i.id === selectedSavedId);
       if (item) {
-        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name }]);
+        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name }], false, applyToAllPages);
       }
     } else {
       const chips = [];
@@ -2977,12 +3066,26 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
       });
       const count = Object.values(selections).filter(s => s && s.size > 0).length
         + attrs.filter(a => a.type === 'range' && rangeSelections[a.id] && (rangeSelections[a.id].from !== a.min || rangeSelections[a.id].to !== a.max)).length;
-      onApply && onApply(count, chips);
+      onApply && onApply(count, chips, false, applyToAllPages);
     }
   };
 
   const filteredAttrs = attrs.filter(a => !search || (a.label + (a.sub ? ` ${a.sub}` : '')).toLowerCase().includes(search.toLowerCase()));
-  const filteredSaved = FP_SAVED_ITEMS.filter(item => !savedSearch || item.name.toLowerCase().includes(savedSearch.toLowerCase()));
+  const filteredSaved = allSavedItems.filter(item => !savedSearch || item.name.toLowerCase().includes(savedSearch.toLowerCase()));
+  const currentFilterCount = Object.values(selections).filter(s => s && s.size > 0).length
+    + attrs.filter(a => a.type === 'range' && rangeSelections[a.id] && (rangeSelections[a.id].from !== a.min || rangeSelections[a.id].to !== a.max)).length;
+  const previewResultCount = estimateResultCount(pageId, currentFilterCount);
+
+  const saveCurrentFilter = () => {
+    const name = newFilterName.trim();
+    if (!name) return;
+    const id = `custom-${Date.now()}`;
+    setCustomSavedItems(items => [{ id, name, desc: 'Custom saved filter.', author: 'You', visibility: 'Private', count: currentFilterCount, pinned: false }, ...items]);
+    setSavedOrder(order => [id, ...order]);
+    setSavedShowCount(c => c + 1);
+    setSavingFilter(false);
+    setNewFilterName('');
+  };
 
   return (
     <div className="fp-root">
@@ -3169,6 +3272,30 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                 <img src="assets/icons/explore.svg" width={16} height={16} alt="" />
               </button>
             </div>
+            <button
+              onClick={() => { setSavingFilter(v => !v); setNewFilterName(''); }}
+              disabled={currentFilterCount === 0}
+              className="fp-save-current-btn"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Save current filter{currentFilterCount > 0 ? ` (${currentFilterCount})` : ''}
+            </button>
+            {savingFilter && (
+              <div className="fp-save-filter-form">
+                <input
+                  autoFocus
+                  value={newFilterName}
+                  onChange={e => setNewFilterName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveCurrentFilter(); }}
+                  placeholder="Filter name"
+                  className="fp-attr-edit-input"
+                />
+                <div className="fp-attr-edit-actions">
+                  <button onClick={() => setSavingFilter(false)} className="fp-attr-edit-cancel">Cancel</button>
+                  <button onClick={saveCurrentFilter} disabled={!newFilterName.trim()} className="fp-attr-edit-apply">Save</button>
+                </div>
+              </div>
+            )}
             <div className="fp-saved-section">
               <div className="fp-saved-section__header">
                 <span className="fp-saved-section__title">Recent Filters</span>
@@ -3319,16 +3446,46 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
             </button>
           </div>
         ) : (
-          <div className="fp-footer__row">
-            <button onClick={handleReset} className="fp-footer-btn fp-footer-btn--danger">
-              <span className="fp-mask-icon" />
-              Reset
-            </button>
-            <button onClick={handleApply} className="fp-footer-btn fp-footer-btn--primary">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              Apply
-            </button>
-          </div>
+          <>
+            <div className="fp-footer__panel">
+              {tab === 'quick' && (
+                <>
+                  <div className="fp-footer__panel-row">
+                    <span className="fp-footer__panel-label">
+                      <span className="fp-footer__panel-icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                      </span>
+                      Matching records
+                    </span>
+                    <span className="fp-footer__panel-value">{previewResultCount.toLocaleString()}</span>
+                  </div>
+                  <div className="fp-footer__panel-divider" />
+                </>
+              )}
+              <div className={`fp-footer__panel-row${applyToAllPages ? ' fp-footer__panel-row--active' : ''}`}>
+                <span className="fp-footer__panel-label-wrap">
+                  <span className="fp-footer__panel-label">Apply to all pages</span>
+                  <span
+                    className="fp-info-tip fp-info-tip--wrap"
+                    data-tip="After enabling, this filter is applied across every page. Pages that don't have these attributes will ignore it."
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </span>
+                </span>
+                <FPToggle checked={applyToAllPages} onChange={setApplyToAllPages} />
+              </div>
+            </div>
+            <div className="fp-footer__row">
+              <button onClick={handleReset} className="fp-footer-btn fp-footer-btn--danger">
+                <span className="fp-mask-icon" />
+                Reset
+              </button>
+              <button onClick={handleApply} className="fp-footer-btn fp-footer-btn--primary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Apply
+              </button>
+            </div>
+          </>
         )}
       </div>
 

@@ -151,7 +151,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               className="subheader__save-btn"
               onClick={() => setShowSaveModal(true)}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pai-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pai-on-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
