@@ -35,6 +35,16 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.25.0] — 2026-09-18
+### Added
+- rp-shell Filter panel: live "Matching records" count in the Quick/Saved Filters footer, updating as filter values are selected.
+- rp-shell Filter panel: "Apply to all pages" toggle (with info tooltip) that applies the current filter across every page instead of just the current one.
+- rp-shell Filter panel: "Save current filter" action in the Saved Filters tab, adding the active Quick Filter selection to Recent Filters.
+### Changed
+- Filter panel footer restyled into a single card (icon + accent-colored count, active-state toggle label) instead of separate floating elements.
+
+---
+
 ## [0.24.1] — 2026-09-17
 ### Fixed
 - Favicon icon color changed from purple (`#6360D8`) to white
