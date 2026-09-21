@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.21.2",
+    "date": "2026-09-21",
+    "changes": {
+      "Added": [
+        "New client-specific dashboard pages: MRA Security Risk (React + standalone HTML), MTTD Trends (standalone HTML), Risk Remediation Metrics (standalone HTML)"
+      ],
+      "Changed": [],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.21.1",
     "date": "2026-09-02",
     "changes": {
