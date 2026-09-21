@@ -28,13 +28,19 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
+### Changed
+### Fixed
+
+---
+
+## [0.23.2] — 2026-09-21
+### Added
 - Graph Filter tab now tracks real traversal chains (paths) alongside flat chips, so relationship-based filters can be reconstructed and reapplied across Explore/dashboard scope
 - Shared `kgRelationships.js` edge set (previously duplicated in `KGPage.jsx`/`PageKG.jsx`) also used by `DashboardCanvas.jsx` to label the real verb for a traversed hop in a Widget Filter chip's path
 - Date-range-aware comparison labels ("from last day/week/month") via `comparisonLabelForRange`, replacing hardcoded "from last week" on Discover Cloud/Device/Identity trend charts
 - LCNC duplicate/nested-widget icons
 ### Changed
 - DashboardCanvas widget filtering/rendering rework to support the new Graph Filter path-based scope
-### Fixed
 
 ---
 
