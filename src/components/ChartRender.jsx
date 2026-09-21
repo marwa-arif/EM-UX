@@ -30,6 +30,23 @@ export const DEFAULT_VERT_BAR = [
   { label: 'Virtual',        value: 1     },
 ]
 
+// ── Legend/category sort order (Workspace "Sort By" widget setting) ────
+// No sortBy prop = leave item order exactly as the data arrived (matches
+// every pre-existing report widget, which never passes sortBy at all).
+const SORT_SEVERITY_RANK = { Critical: 0, High: 1, Medium: 2, Low: 3 }
+function sortByMode(items, sortBy, getLabel = d => d.label, getValue = d => d.value) {
+  if (!sortBy) return items
+  const arr = [...items]
+  switch (sortBy) {
+    case 'value-desc': return arr.sort((a, b) => (getValue(b) ?? 0) - (getValue(a) ?? 0))
+    case 'value-asc':  return arr.sort((a, b) => (getValue(a) ?? 0) - (getValue(b) ?? 0))
+    case 'alpha-asc':  return arr.sort((a, b) => String(getLabel(a)).localeCompare(String(getLabel(b))))
+    case 'alpha-desc': return arr.sort((a, b) => String(getLabel(b)).localeCompare(String(getLabel(a))))
+    case 'severity':   return arr.sort((a, b) => (SORT_SEVERITY_RANK[getLabel(a)] ?? 99) - (SORT_SEVERITY_RANK[getLabel(b)] ?? 99))
+    default: return items
+  }
+}
+
 export const DEFAULT_RADAR = [
   { label: 'Completeness', value: 70 },
   { label: 'Accuracy',     value: 65 },
@@ -284,7 +301,7 @@ function PieTooltip({ active, payload }) {
 // ── Stacked vertical bar (extracted so it can own activeOrigin state) ──
 const COMPACT_LEGEND_PAGE_SIZE = 7
 
-function StackVertChart({ data, showLegend, chartColors, printMode = false, seriesKeys }) {
+function StackVertChart({ data, showLegend, chartColors, printMode = false, seriesKeys, sortBy }) {
   const [activeOrigin, setActiveOrigin] = useState(null)
   const [legendPage, setLegendPage] = useState(0)
   const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
@@ -300,14 +317,18 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false, seri
   }
   const rows = data || DEFAULT_STACK_VERT
   const chartData = rows.map(r => ({ ...r, name: r.type }))
+  // Stack order within each bar always follows SERIES (changing it would
+  // reshuffle every bar's segment order) — only the legend's own display
+  // order responds to Sort By.
   const originTotals = SERIES.map(o => ({
     ...o,
     total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
   }))
   const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
+  const legendItems = sortByMode(originTotals, sortBy, o => o.label || o.key, o => o.total)
 
-  const totalPages = Math.ceil(SERIES.length / COMPACT_LEGEND_PAGE_SIZE)
-  const pageItems = SERIES.slice(
+  const totalPages = Math.ceil(legendItems.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = legendItems.slice(
     legendPage * COMPACT_LEGEND_PAGE_SIZE,
     (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
   )
@@ -352,7 +373,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false, seri
       </div>
       {showLegend && (
         <div className="cr-bar-legend">
-          {originTotals.map((o, i) => (
+          {legendItems.map((o, i) => (
             <div key={i} className="cr-bar-legend-row">
               <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
               <span className="cr-bar-legend-name">{o.label || o.key}</span>
@@ -400,7 +421,7 @@ function StackVertChart({ data, showLegend, chartColors, printMode = false, seri
 }
 
 // ── Stacked horizontal bar ────────────────────────────────────────
-function StackHorChart({ data, showLegend, chartColors, printMode = false, seriesKeys, onSegmentClick }) {
+function StackHorChart({ data, showLegend, chartColors, printMode = false, seriesKeys, onSegmentClick, sortBy }) {
   const [activeOrigin, setActiveOrigin] = useState(null)
   const [legendPage, setLegendPage] = useState(0)
   const [hiddenOrigins, setHiddenOrigins] = useState(new Set())
@@ -428,14 +449,18 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false, serie
 
   const rows = data || DEFAULT_STACK_VERT
   const chartData = rows.map(r => ({ ...r, name: r.type }))
+  // Stack order within each bar always follows SERIES (changing it would
+  // reshuffle every bar's segment order) — only the legend's own display
+  // order responds to Sort By.
   const originTotals = SERIES.map(o => ({
     ...o,
     total: rows.reduce((s, r) => s + (r[o.key] || 0), 0),
   }))
   const grandTotal = originTotals.reduce((s, o) => s + o.total, 0)
+  const legendItems = sortByMode(originTotals, sortBy, o => o.label || o.key, o => o.total)
 
-  const totalPages = Math.ceil(SERIES.length / COMPACT_LEGEND_PAGE_SIZE)
-  const pageItems = SERIES.slice(
+  const totalPages = Math.ceil(legendItems.length / COMPACT_LEGEND_PAGE_SIZE)
+  const pageItems = legendItems.slice(
     legendPage * COMPACT_LEGEND_PAGE_SIZE,
     (legendPage + 1) * COMPACT_LEGEND_PAGE_SIZE,
   )
@@ -516,7 +541,7 @@ function StackHorChart({ data, showLegend, chartColors, printMode = false, serie
       </div>
       {showLegend && (
         <div className="cr-bar-legend">
-          {originTotals.map((o, i) => (
+          {legendItems.map((o, i) => (
             <div key={i} className="cr-bar-legend-row">
               <span className="cr-bar-legend-dot" style={{ '--cr-dot-bg': chartColors?.[o.key] || o.color }} />
               <span className="cr-bar-legend-name">{o.label || o.key}</span>
@@ -690,6 +715,16 @@ function kgCellValue(row, colName) {
   return row[k] ?? '—'
 }
 
+// ── Table header sort icon (matches AssessmentsPage's IcSort convention) ──
+function KgThSortIcon({ dir }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      {(!dir || dir === 'asc')  && <path d="m7 9 5-5 5 5" opacity={dir === 'asc'  ? 1 : 0.4} />}
+      {(!dir || dir === 'desc') && <path d="m7 15 5 5 5-5" opacity={dir === 'desc' ? 1 : 0.4} />}
+    </svg>
+  )
+}
+
 export function ChartRender({
   chartId,
   showPctChange = false,
@@ -718,8 +753,36 @@ export function ChartRender({
   onSegmentClick,
   enableAddColumn = false,
   enableDownload = false,
+  viewMode = false,
   title,
+  titleInfoIcon = null,
+  sortBy,
+  pctChangeColors,
 }) {
+  // Change-% badge colors — configurable per widget; the badge background is
+  // always a lighter (translucent) tint of the same color, never set separately.
+  const pctChangeUpColor   = pctChangeColors?.Increase || 'var(--pai-green)'
+  const pctChangeDownColor = pctChangeColors?.Decrease || 'var(--pai-crit-fg)'
+  const pctChangeUpBg      = `color-mix(in srgb, ${pctChangeUpColor} 10%, transparent)`
+  const pctChangeDownBg    = `color-mix(in srgb, ${pctChangeDownColor} 10%, transparent)`
+
+  // Vertical bar chart's x-axis category width — measured so long labels
+  // truncate based on the widget's actual rendered width instead of a fixed
+  // character count, and grow back out (up to their full text) when the
+  // widget is made wider.
+  const vertBarAreaRef = useRef(null)
+  const [vertBarAreaWidth, setVertBarAreaWidth] = useState(0)
+  useEffect(() => {
+    const el = vertBarAreaRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const r = entries[0]?.contentRect
+      if (r && r.width > 0) setVertBarAreaWidth(r.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const [kgDlOpen, setKgDlOpen] = useState(false)
   const kgDlRef = useRef(null)
   useEffect(() => {
@@ -739,13 +802,20 @@ export function ChartRender({
 
   // ── KPI ─────────────────────────────────────────────────────────
   if (chartId === 'kpi' && data) {
-    const accent = chartColors?.['Accent'] || 'var(--pai-indigo)'
+    const accent = chartColors?.['Primary Metric'] || 'var(--pai-indigo)'
     const VALUE_SIZE_PX = { small: 18, medium: 24, large: 32, xl: 40 }
+    // "Show Total Count" adds the denominator this value was drawn from
+    // (e.g. "6 / 54,555") — only rendered when the widget actually has one;
+    // never fabricated from the primary value itself.
+    const compValue = showTotalCount && data.totalValue != null ? data.totalValue : null
     // "Auto" scales off the widget's own box instead of a fixed size: height
     // sets the base (same curve the whole card used to scale by), width
     // (in grid columns, 3-12) nudges it up/down for very narrow/wide widgets.
+    // The split (value/total) layout packs roughly 2.5x the characters into
+    // the same width, so it gets its own, smaller cap — otherwise "auto"
+    // sizes both layouts identically and the two-value text overflows the card.
     const valSize = valueFontSize === 'auto'
-      ? Math.round(Math.max(22, Math.min(46, cardHeight * 0.2)) * Math.max(0.85, Math.min(1.3, cardCols / 6)))
+      ? Math.round(Math.max(22, Math.min(46, cardHeight * 0.2)) * (compValue != null ? 0.6 : 1) * Math.max(0.85, Math.min(1.3, cardCols / 6)))
       : (VALUE_SIZE_PX[valueFontSize] || VALUE_SIZE_PX.small)
     const gapSize  = Math.max(4, Math.min(10, cardHeight * 0.04))
 
@@ -755,8 +825,8 @@ export function ChartRender({
     const trendPill = (trendUp, trendText, prevValue) => {
       if (!trendText) return null
       const isNeutral = trendUp == null
-      const color = isNeutral ? 'var(--shell-text-muted)' : trendUp ? 'var(--pai-green)' : 'var(--pai-crit-fg)'
-      const bg    = isNeutral ? 'var(--shell-raised, rgba(120,120,120,0.12))' : trendUp ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
+      const color = isNeutral ? 'var(--shell-text-muted)' : trendUp ? pctChangeUpColor : pctChangeDownColor
+      const bg    = isNeutral ? 'var(--shell-raised, rgba(120,120,120,0.12))' : trendUp ? pctChangeUpBg : pctChangeDownBg
       return (
         <span
           className={prevValue != null ? 'cr-kpi-badge dc-tip' : 'cr-kpi-badge'}
@@ -769,10 +839,6 @@ export function ChartRender({
       )
     }
 
-    // "Show Total Count" adds the denominator this value was drawn from
-    // (e.g. "6 / 54,555") — only rendered when the widget actually has one;
-    // never fabricated from the primary value itself.
-    const compValue  = showTotalCount && data.totalValue != null ? data.totalValue : null
     const primaryPill = showPctChange ? trendPill(data.trendUp, data.trend, data.prevValue) : null
     const compPill    = showPctChange && compValue != null
       ? trendPill(data.totalTrendUp, data.totalTrend, data.totalPrevValue)
@@ -782,17 +848,23 @@ export function ChartRender({
     // "/" sits level with the values themselves, and each pill sits in row 2
     // directly under its own value, instead of a flex column whose sep ends
     // up vertically centered against the *whole* value+pill stack.
+    // Only an explicit override paints the value text — leaves every KPI
+    // that has never been through Settings > Apply (pre-authored report
+    // widgets included) on .cr-kpi-value's own neutral CSS color, exactly
+    // like before this was wired up.
+    const primaryValueColor = chartColors?.['Primary Metric']
+    const compValueColor    = chartColors?.['Comparison Metric']
     const valuesBlock = compValue != null ? (
       <div className="cr-kpi-cols cr-kpi-cols--split">
-        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent, gridColumn: 1, gridRow: 1 }}>{data.value}</span>
+        <span className="cr-kpi-value" style={{ fontSize: valSize, gridColumn: 1, gridRow: 1, color: primaryValueColor }}>{data.value}</span>
         <span className="cr-kpi-sep" style={{ fontSize: valSize, gridColumn: 2, gridRow: 1 }}>/</span>
-        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent, gridColumn: 3, gridRow: 1 }}>{compValue}</span>
+        <span className="cr-kpi-value" style={{ fontSize: valSize, gridColumn: 3, gridRow: 1, color: compValueColor }}>{compValue}</span>
         {primaryPill && <div className="cr-kpi-pill-cell" style={{ gridColumn: 1, gridRow: 2 }}>{primaryPill}</div>}
         {compPill && <div className="cr-kpi-pill-cell" style={{ gridColumn: 3, gridRow: 2 }}>{compPill}</div>}
       </div>
     ) : (
       <div className="cr-kpi-col">
-        <span className="cr-kpi-value" style={{ fontSize: valSize, color: accent }}>{data.value}</span>
+        <span className="cr-kpi-value" style={{ fontSize: valSize, color: primaryValueColor }}>{data.value}</span>
         {primaryPill}
       </div>
     )
@@ -835,7 +907,7 @@ export function ChartRender({
     }
 
     return (
-      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: gapSize, fontFamily: 'Inter,system-ui' }}>
+      <div style={{ flex: 1, width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: gapSize, fontFamily: 'Inter,system-ui' }}>
         {valuesBlock}
       </div>
     )
@@ -843,7 +915,7 @@ export function ChartRender({
 
   // ── Stacked horizontal bar ──────────────────────────────────────
   if (chartId === 'stack-hor') {
-    return <StackHorChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} onSegmentClick={onSegmentClick} />
+    return <StackHorChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} onSegmentClick={onSegmentClick} sortBy={sortBy} />
   }
 
   // ── Pie / Donut ─────────────────────────────────────────────────
@@ -856,7 +928,7 @@ export function ChartRender({
       { label: 'Virtual',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
       { label: 'Unknown',        count: '1',      pct: '<1%',    value: 1,     change: 0    },
     ]
-    const raw   = data || DEFAULT_RAW
+    const raw   = sortByMode(data || DEFAULT_RAW, sortBy)
     const sz    = 150
     const total = raw.reduce((s, d) => s + d.value, 0)
     const segs  = raw.map((d, i) => ({ ...d, color: chartColors?.[d.label] || d.color || DCOLS[i % DCOLS.length] }))
@@ -913,7 +985,6 @@ export function ChartRender({
                 {noteLabel}: <strong>{total.toLocaleString()}</strong>
               </p>
             )}
-            {description && <p className="cr-pie-legend__desc">{description}</p>}
             {note && <p className="cr-pie-legend__footer-note">{note}</p>}
             {segs.map((d, i) => (
               <div key={i} className="cr-pie-legend__row">
@@ -923,10 +994,10 @@ export function ChartRender({
                 <span className="cr-pie-legend__pct">{d.pct}</span>
                 {showPctChange && (
                   d.change > 0
-                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(22,163,74,0.10)', color: 'var(--pai-green)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}><TrendArrowIcon up={true} />{d.change}%</span>
+                    ? <span className="cr-pie-legend__change" style={{ '--cr-trend-bg': pctChangeUpBg, '--cr-trend-color': pctChangeUpColor }}><TrendArrowIcon up={true} />{d.change}%</span>
                     : d.change < 0
-                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(220,38,38,0.10)', color: 'var(--pai-crit-fg)', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 100, minWidth: 52, justifyContent: 'center', flexShrink: 0 }}><TrendArrowIcon up={false} />{Math.abs(d.change)}%</span>
-                      : <span style={{ fontSize: 10, color: PAI.fg3, fontFamily: 'Inter,system-ui', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>0%</span>
+                      ? <span className="cr-pie-legend__change" style={{ '--cr-trend-bg': pctChangeDownBg, '--cr-trend-color': pctChangeDownColor }}><TrendArrowIcon up={false} />{Math.abs(d.change)}%</span>
+                      : <span className="cr-pie-legend__change cr-pie-legend__change--neutral">0%</span>
                 )}
               </div>
             ))}
@@ -1100,7 +1171,7 @@ export function ChartRender({
     }
 
     // Default: Recharts colored horizontal bar — used by settings-panel-configured widgets
-    const horRows = data || DEFAULT_VERT_BAR
+    const horRows = sortByMode(data || DEFAULT_VERT_BAR, sortBy)
     const horChartData = horRows.map((d, i) => ({
       name: d.label,
       value: d.value,
@@ -1108,7 +1179,9 @@ export function ChartRender({
     }))
     const horTotal   = horChartData.reduce((s, d) => s + (d.value || 0), 0)
     const horRef     = reportTotal || horTotal
-    const horTopItem = horChartData[0]
+    // The narrative sentence below always calls out the actual largest bar,
+    // independent of whatever order Sort By is currently displaying them in.
+    const horTopItem = horChartData.reduce((max, d) => (d.value > max.value ? d : max), horChartData[0])
     const horTopPct  = horRef > 0 ? (horTopItem.value / horRef * 100).toFixed(2) : '0'
 
     return (
@@ -1180,22 +1253,28 @@ export function ChartRender({
 
   // ── Stacked vertical bar chart ────────────────────────────────
   if (chartId === 'stack-vert') {
-    return <StackVertChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} />
+    return <StackVertChart data={data} showLegend={showLegend} chartColors={chartColors} printMode={printMode} seriesKeys={seriesKeys} sortBy={sortBy} />
   }
 
   // ── Vertical bar chart ─────────────────────────────────────────
   if (chartId === 'vert-bar') {
-    const rows = data || DEFAULT_VERT_BAR
+    const rows = sortByMode(data || DEFAULT_VERT_BAR, sortBy)
     const chartData = rows.map((d, i) => ({
       name: d.label,
       value: d.value,
       fill: (chartColors && chartColors[d.label]) || d.color || DCOLS[i % DCOLS.length],
     }))
     const total = chartData.reduce((s, d) => s + (d.value || 0), 0)
+    // Per-category slot width, from the measured chart area — grows/shrinks
+    // the truncation point with the widget's actual rendered width instead
+    // of a fixed character count (~5.5px/char at the 10px axis font, minus
+    // a little padding so neighboring labels never touch).
+    const vertBarSlotPx = vertBarAreaWidth > 0 ? vertBarAreaWidth / Math.max(1, chartData.length) : 0
+    const vertBarMaxChars = vertBarSlotPx > 0 ? Math.max(4, Math.floor((vertBarSlotPx - 10) / 5.5)) : 10
 
     return (
       <div className="cr-vert-root">
-        <div className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
+        <div ref={vertBarAreaRef} className={showLegend ? 'cr-bar-chart-area--with-legend' : 'cr-bar-chart-area'}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -1205,7 +1284,7 @@ export function ChartRender({
               <CartesianGrid vertical={false} stroke="var(--shell-border)" strokeDasharray="0" />
               <XAxis
                 dataKey="name"
-                tick={<CategoryTick maxChars={10} />}
+                tick={<CategoryTick maxChars={vertBarMaxChars} dy={8} />}
                 axisLine={false} tickLine={false}
                 interval={0}
                 label={xLabel ? { value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: TG, fontFamily: 'Inter,system-ui' } : undefined}
@@ -1410,18 +1489,36 @@ export function ChartRender({
     const [kgRows, setKgRows] = useState(10)
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [kgSearch, setKgSearch] = useState('')
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [kgSortCol, setKgSortCol] = useState(null)
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [kgSortDir, setKgSortDir] = useState('asc')
+    const toggleKgSort = (col) => {
+      if (kgSortCol === col) setKgSortDir(d => d === 'asc' ? 'desc' : 'asc')
+      else { setKgSortCol(col); setKgSortDir('asc') }
+    }
     const query = kgSearch.trim().toLowerCase()
     const filteredRows = query
       ? allRows.filter(r => tableCols.some(col => String(kgCellValue(r, col)).toLowerCase().includes(query)))
       : allRows
+    const sortedRows = kgSortCol
+      ? [...filteredRows].sort((a, b) => {
+          const va = kgCellValue(a, kgSortCol), vb = kgCellValue(b, kgSortCol)
+          const na = parseFloat(String(va).replace(/,/g, ''))
+          const nb = parseFloat(String(vb).replace(/,/g, ''))
+          const cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb))
+          return kgSortDir === 'asc' ? cmp : -cmp
+        })
+      : filteredRows
     const kgStart   = (kgPage - 1) * kgRows
-    const pagedRows = filteredRows.slice(kgStart, kgStart + kgRows)
+    const pagedRows = sortedRows.slice(kgStart, kgStart + kgRows)
 
     return (
       <div className="cr-kg-root">
         {!printMode && (
           <div className="cr-kg-toolbar cr-kg-title-row">
             {title != null && <span className="cr-kg-title">{title}</span>}
+            {titleInfoIcon}
             <div className="cr-kg-toolbar-spacer" />
             <div
               className="cr-kg-search-wrap"
@@ -1441,8 +1538,9 @@ export function ChartRender({
             {enableDownload && (
               <div ref={kgDlRef} className="comp-sort-wrap" onMouseDown={e => e.stopPropagation()}>
                 <button
-                  className="ds-btn sz-md t-outline cr-kg-toolbar-btn"
-                  disabled
+                  className="ds-btn sz-md t-primary cr-kg-toolbar-btn"
+                  disabled={!viewMode}
+                  title={!viewMode ? 'Save the dashboard to enable download' : undefined}
                   onClick={() => setKgDlOpen(o => !o)}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1461,12 +1559,17 @@ export function ChartRender({
             )}
           </div>
         )}
+        {!printMode && description && <div className="cr-kg-desc">{description}</div>}
         <div className="cr-kg-scroll">
           <table className="ds-table cr-kg-table">
             <thead>
               <tr>
                 {!isAggTable && <th className="ds-th cr-kg-th--icon" />}
-                {tableCols.map(col => <th key={col} className="ds-th">{col}</th>)}
+                {tableCols.map(col => (
+                  <th key={col} className="ds-th ds-th--sortable" onClick={() => toggleKgSort(col)}>
+                    <span className="ds-th-inner">{col}<KgThSortIcon dir={kgSortCol === col ? kgSortDir : null} /></span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -1513,7 +1616,7 @@ export function ChartRender({
       { name: 'Jun', value: 870 },
     ]
     const hasData   = series && series.length > 0
-    const seriesDef = hasData ? series : [{ label: 'value', color: 'var(--pai-indigo)' }]
+    const seriesDef = hasData ? series : [{ label: 'value', color: chartColors?.['Accent'] || 'var(--pai-indigo)' }]
     const labels    = hasData ? (xLabels || series[0].data.map((_, i) => `P${i + 1}`)) : PLACEHOLDER.map(d => d.name)
     const chartData = hasData
       ? labels.map((name, i) => {

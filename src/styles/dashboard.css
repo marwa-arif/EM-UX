@@ -587,7 +587,7 @@
 }
 
 .dc-axis-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dc-fg3);
   margin-bottom: 6px;
   padding-bottom: 4px;
@@ -597,6 +597,9 @@
 .dc-divider {
   border-top: 1px solid var(--shell-border);
   margin: 4px 0 16px;
+}
+.dc-divider:has(+ .dc-kpi-metric-section--comparison) {
+  margin-bottom: 0;
 }
 
 /* ── KPI metric sections ──────────────────────────────────────────────── */
@@ -617,6 +620,57 @@
   font-size: 11px;
   color: var(--shell-text-muted);
   margin-bottom: 0;
+}
+
+.dc-kpi-metric-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.dc-kpi-metric-section--add {
+  margin-bottom: 16px;
+}
+.dc-kpi-metric-section--add .dc-kpi-metric-header {
+  margin-bottom: 0;
+}
+
+.dc-kpi-comp-add-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 44px;
+  color: var(--shell-accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+.dc-kpi-comp-add-btn:hover {
+  background: var(--pai-indigo-tint);
+}
+
+.dc-kpi-comp-remove-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 44px;
+  color: var(--shell-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+.dc-kpi-comp-remove-btn:hover {
+  color: var(--pai-crit-fg);
+  background: var(--pai-crit-bg);
+}
+
+.dc-kpi-metric-section--comparison {
+  padding: 16px 0;
+  margin: 0;
 }
 
 /* ── Chart type grid (for Widget Settings panel) ──────────────────────── */
@@ -736,11 +790,13 @@
 }
 
 .dc-action-btn {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: 8px;
   border: 1px solid var(--shell-border);
   background: var(--card-bg);
+  color: var(--dc-fg1);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -754,6 +810,47 @@
 .dc-action-btn--delete {
   border: 1px solid var(--pai-crit-bg-hover);
   background: var(--pai-crit-bg);
+}
+
+.dc-action-btn:hover {
+  border-color: var(--dc-indigo);
+}
+
+/* Pressed/"currently open" look — e.g. Edit while this widget's settings
+   panel is open, Add Nested Widget while it's this widget receiving one. */
+.dc-action-btn--active {
+  border-color: var(--dc-indigo);
+  background: var(--pai-indigo-tint);
+  color: var(--dc-indigo);
+}
+
+/* Instant, CSS-only tooltip (no native `title` — that carries the browser's
+   own ~1s hover delay). :hover is the only trigger, so it needs no JS
+   show/hide, and the opacity transition is short enough to read as instant
+   rather than a native delay. */
+.dc-action-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--shell-text);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 100ms;
+  z-index: 20;
+}
+
+.dc-action-btn[data-tooltip]:hover::after {
+  opacity: 1;
 }
 
 .dc-widget-card {
@@ -843,6 +940,12 @@
   justify-content: center;
 }
 
+.dc-widget-card-title-group {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .dc-widget-card-title {
   font-size: 14px;
   font-weight: 600;
@@ -853,6 +956,8 @@
   font-size: 12px;
   color: var(--dc-fg3);
   margin-top: 2px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dc-widget-card-desc--center {
@@ -870,6 +975,26 @@
 
 .dc-widget-card-body--kpi {
   overflow: visible;
+}
+
+/* Shown in place of a widget's chart once its bound attribute's entity has
+   been dropped from the dashboard's scope (see getWidgetScopeIssue /
+   WidgetScopeErrorCallout in DashboardCanvas.jsx) — fills the same body
+   area a chart would, so the explanation reads as *this widget's* problem,
+   not a page-level failure. */
+.dc-widget-scope-error {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.dc-widget-scope-error .ds-callout {
+  align-items: flex-start;
 }
 
 /* A container's grid cell (widget.gh) is kept auto-sized to fit its own
@@ -1029,6 +1154,25 @@
 .dc-float-toolbar-zoom-label:hover {
   background: var(--shell-hover);
   color: var(--shell-text);
+}
+
+/* Masked so it picks up currentColor from .ds-icon-btn like the toolbar's
+   inline-SVG undo/redo/zoom icons — the reset.svg asset's own fill/stroke
+   are hardcoded to #101010, same technique as .dqid-reset-icon. */
+.dc-float-toolbar-reset-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url(assets/icons/reset.svg);
+  mask-image: url(assets/icons/reset.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 /* ── Toolbar (identity row + actions row — single line by default, ─────
@@ -1679,7 +1823,7 @@
   width: 100%;
   height: 100%;
   background: var(--card-bg);
-  border: 1.5px dashed var(--dc-indigo);
+  border: 1.5px solid var(--dc-indigo);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -1717,7 +1861,7 @@
   height: 32px;
   background: none;
   border: none;
-  border-top: 1.5px dashed var(--dc-indigo);
+  border-top: 1.5px solid var(--dc-indigo);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1798,11 +1942,13 @@
   gap: 8px;
   padding: 8px 4px 4px;
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .cr-kpi-value {
   font-weight: 700;
-  color: var(--cr-kpi-accent, var(--pai-indigo));
+  color: var(--shell-text);
   line-height: 1;
 }
 
@@ -1811,12 +1957,15 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
+  max-width: 100%;
 }
 
 .cr-kpi-col {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Two-value layout: value/sep/value share row 1 (so "/" lines up with the
@@ -1827,6 +1976,7 @@
   align-items: center;
   justify-items: center;
   row-gap: 8px;
+  max-width: 100%;
 }
 
 .cr-kpi-pill-cell {
@@ -2251,6 +2401,15 @@
   white-space: nowrap;
 }
 
+/* Matches .dc-widget-card-desc's type scale — table/agg-table suppress the
+   shared header (see .cr-kg-title above) so their own description line
+   lives here instead, right under the toolbar row. */
+.cr-kg-desc {
+  font-size: 12px;
+  color: var(--dc-fg3);
+  margin: 4px 0 0;
+}
+
 /* Search bar, Add Column and Download all sit on one line, all 32px tall
    (.ds-pill-search's own height) — sz-md (not sz-sm) is what gives the
    buttons that same 32px so nothing looks mismatched next to the pill. */
@@ -2473,35 +2632,6 @@
   color: var(--shell-text);
 }
 
-.dc-widget-filter-chips-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.dc-widget-filter-chips-row .dc-chips {
-  margin-top: 0;
-}
-
-.dc-chip-reset-all {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Inter', system-ui;
-  color: var(--shell-accent);
-  white-space: nowrap;
-}
-
-.dc-chip-reset-all:hover {
-  text-decoration: underline;
-}
-
 /* ── Dashboard panel: Column dropdown ───────────────────────────────────── */
 .dc-col-dropdown-wrap {
   position: relative;
@@ -2575,8 +2705,40 @@
   margin-bottom: 10px;
 }
 
+/* ── Widget Heading/Description AI draft ──────────────────────────────── */
+.dc-ai-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dc-ai-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ghost variant — no border/background, just icon + text in the accent
+   color, per DS "every interactive element needs hover/active/disabled"
+   (ds-btn[disabled] already covers disabled). */
+.ds-btn.dc-ai-generate-btn { background: transparent; border: none; color: var(--shell-accent); padding: 0 4px; }
+.ds-btn.dc-ai-generate-btn:hover { background: var(--shell-hover); }
+.ds-btn.dc-ai-generate-btn:active { background: var(--shell-active); }
+/* Same gradient as the Navigator logo (assets/icons/Navigator icon.svg) */
+.dc-ai-generate-btn-label {
+  background: linear-gradient(90deg, var(--pai-gradient-from), var(--pai-gradient-to));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.dc-ai-error-callout {
+  margin-bottom: 12px;
+}
+
 .dc-size-sub-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dc-fg3);
   margin-bottom: 6px;
@@ -2584,7 +2746,7 @@
 
 /* ── Field sub-label ───────────────────────────────────────────────────── */
 .dc-field-sub-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dc-fg3);
   margin-bottom: 6px;
@@ -2595,19 +2757,41 @@
 }
 
 /* ── Configure Colors ──────────────────────────────────────────────────── */
+.dc-color-subsection {
+  margin-bottom: 16px;
+}
+.dc-color-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.dc-color-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dc-fg3);
+}
+
+.dc-color-subhead-chevron {
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.dc-color-subhead-chevron--open {
+  transform: rotate(180deg);
+}
+
 .dc-color-config {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.dc-color-config-locked {
-  font-size: 12px;
-  color: var(--shell-text-muted);
-  background: var(--shell-bg);
-  border: 1px solid var(--shell-border);
-  border-radius: 4px;
-  padding: 8px 12px;
 }
 
 .dc-color-config-row {
@@ -2938,11 +3122,14 @@
   gap: 8px;
 }
 
-/* Body — two-column layout */
+/* Body — the graph canvas fills the full area; the attributes+values panel
+   overlays on top of it (see .dc-gf-attrs-overlay) instead of replacing it. */
 .dc-gf-body {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Left panel — attribute list */
@@ -2955,13 +3142,20 @@
   overflow: hidden;
 }
 
-.dc-gf-hide-attrs {
-  height: 44px;
-  flex-shrink: 0;
-  border: none;
-  border-bottom: 1px solid var(--shell-border);
-  background: var(--shell-bg, #f5f5f5);
-  font-size: 13px;
+/* Pill button that stays attached to the attributes overlay's left edge —
+   `right` is set inline (JS) to the panel's current width so the button
+   tracks it through resize/collapse instead of sitting at a fixed spot
+   disconnected from the panel. */
+.dc-gf-toggle-attrs {
+  position: absolute;
+  top: 16px;
+  z-index: 2;
+  height: 32px;
+  border: 1px solid var(--shell-border);
+  border-radius: 44px;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(5, 32, 81, 0.14);
+  font-size: 12px;
   font-weight: 500;
   font-family: inherit;
   color: var(--dc-fg1);
@@ -2970,6 +3164,7 @@
   gap: 8px;
   padding: 0 14px;
   cursor: pointer;
+  transition: right 200ms ease;
 }
 
 .dc-gf-search-wrap {
@@ -3026,20 +3221,36 @@
   flex: 1;
 }
 
-/* Left panel expands to fill the body when the graph canvas replaces the
-   attribute list (the right "Values" panel is hidden in that state). */
-.dc-gf-left--full {
-  width: auto;
-  flex: 1;
-  border-right: none;
-}
-
 /* Entity switcher canvas — same dotted-grid background and .gf-node circles
    as the Graph Filter side panel (filter-panel.css), just laid out in a
-   simple wrapping row since this only ever holds the dashboard's scope
-   entities (a handful of nodes), not a draggable multi-hop path builder. */
+   simple wrapping row. Always fills the full body — the attributes overlay
+   floats on top of it. */
 .dc-gf-canvas-area {
   flex: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  cursor: grab;
+}
+
+.dc-gf-canvas-area:active {
+  cursor: grabbing;
+}
+
+/* Nodes lay out and center within whatever's NOT covered by the attributes
+   overlay (its `right` is set inline to the overlay's current width, or 0
+   once collapsed) so they're in view by default instead of stranded behind
+   the panel — .dc-gf-canvas-pan is also draggable (see useCanvasPan) as a
+   manual fallback once there are enough nodes that centering alone isn't
+   enough to bring a given one into view. */
+.dc-gf-canvas-pan {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  transition: right 200ms ease;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3047,6 +3258,44 @@
   justify-content: center;
   gap: 32px;
   padding: 40px;
+  box-sizing: border-box;
+}
+
+/* Relationship-traversal variant — GFRelationCanvas lays every node out as an
+   absolutely-positioned .gf-entity-slot (root row, path chains, potential-next
+   fan, connecting SVG lines), the same scheme as the page-level Exposure
+   dashboard's Graph Filter panel, so the flex row/wrap/gap/padding from the
+   plain entity-picker layout above would only fight that positioning. */
+.dc-gf-canvas-pan--graph {
+  display: block;
+  padding: 24px 0 0 0;
+  gap: 0;
+}
+
+/* Attributes + values panel — a collapsible drawer, fixed at
+   ATTRS_PANEL_WIDTH, that overlays the graph canvas on top instead of
+   pushing/replacing it, so the graph stays visible and in context while
+   picking an attribute/value to filter on. Width is set inline (JS) so the
+   toggle button (.dc-gf-toggle-attrs) can size itself off the same
+   constant — max-width here is just a clamp for narrow viewports. */
+.dc-gf-attrs-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 88%;
+  display: flex;
+  background: var(--card-bg);
+  border-left: 1px solid var(--shell-border);
+  border-radius: 12px 0 0 12px;
+  box-shadow: -8px 0 24px rgba(5, 32, 81, 0.14);
+  transform: translateX(0);
+  transition: transform 200ms ease;
+  z-index: 1;
+}
+
+.dc-gf-attrs-overlay--collapsed {
+  transform: translateX(100%);
 }
 
 /* Right panel — values */
@@ -3108,9 +3357,11 @@
 }
 
 .dc-gf-val-grid {
-  flex: 1;
+  max-height: 220px;
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-content: start;
   gap: 0;
   overflow-y: auto;
   border: 1px solid var(--shell-border);
@@ -3187,9 +3438,30 @@
   color: var(--dc-fg3);
 }
 
-/* Active Filter Preview — persistent bar below the body (both attribute-list
-   and graph views), modeled on the page-level Graph Filter's bottom preview
-   bar: a label row plus an entity-grouped tree of every filter built so far. */
+/* Filters — this attribute's own applied filters only, inline under its value
+   list (reuses the same chip classes as the Active Filter Preview tree below,
+   which shows every attribute/entity's filters together). */
+.dc-gf-attr-filters {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--shell-border);
+}
+
+.dc-gf-attr-filters-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--dc-fg3);
+}
+
+/* Active Filter Preview — persistent bar below the body (visible whether the
+   attributes overlay is open or collapsed), modeled on the page-level Graph
+   Filter's bottom preview bar: a label row plus an entity-grouped tree of
+   every filter built so far. */
 .dc-gf-preview-section {
   flex-shrink: 0;
   max-height: 160px;
@@ -3450,15 +3722,19 @@
   gap: 8px;
 }
 
-/* ScopeAttrsPanel reuses .dc-gf-left/.dc-gf-right (built for the fixed-height
-   GraphFilterModal) — flex:1 inside the fixed-height .dc-scope-modal--wide
-   modal (see below) so their own `flex: 1` + `overflow-y: auto` lists
-   actually scroll instead of growing the modal to fit all attributes/values,
-   leaving room below for the Active Filter Preview + footer. */
+/* ScopeAttrsPanel reuses .dc-gf-left/.dc-gf-right/.dc-gf-attrs-overlay (built
+   for the fixed-height GraphFilterModal) — flex:1 inside the fixed-height
+   .dc-scope-modal--wide modal (see below) so their own `flex: 1` +
+   `overflow-y: auto` lists actually scroll instead of growing the modal to
+   fit all attributes/values, leaving room below for the Active Filter
+   Preview + footer. position:relative anchors .dc-gf-attrs-overlay the same
+   way .dc-gf-body does in GraphFilterModal. */
 .dc-gf-attrs-body {
   display: flex;
   flex: 1;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 /* This view's ds-modal-body drops the usual 20px padding — .dc-gf-left/
@@ -3564,6 +3840,12 @@
   margin-left: 4px;
   vertical-align: middle;
   transition: background 120ms, color 120ms;
+  /* On a widget's edit-canvas card, a long title puts this icon under
+     .dc-widget-actions's hover-revealed button row (top:8px/right:8px,
+     z-index 10) — without its own higher z-index, that row would paint over
+     it and steal the hover the instant it appears, closing the tooltip the
+     moment it opens. */
+  z-index: 11;
 }
 
 .dc-info-tooltip:hover,
@@ -3578,8 +3860,11 @@
    Widget Settings panel's overflow (clipping any in-flow absolutely
    positioned child, regardless of which way it's anchored) can't cut it
    off. Right-anchored (grows left) and bottom-anchored (grows up) from the
-   icon's top-right corner, since every call site sits close to the panel's
-   right edge. */
+   icon's top-right corner by default, since every call site sits close to
+   the panel's right edge — InfoTooltip flips in `--below` (grows down from
+   the icon's bottom-right corner instead) once it detects that default
+   would clip the tooltip off the top of the viewport, e.g. a widget in the
+   canvas's very first row. */
 .dc-info-tooltip__portal {
   position: fixed;
   transform: translate(-100%, -100%);
@@ -3599,6 +3884,29 @@
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   pointer-events: none;
   z-index: 9999;
+}
+
+.dc-info-tooltip__portal--below {
+  transform: translate(-100%, 0);
+}
+
+/* Content passed as an InfoTooltip's `text` for a widget's "Show filter
+   details to viewers" icon — a fixed three-row list (relationship path,
+   widget filter, aggregation), not the free-form prose the plain tooltip
+   text elsewhere in this file uses. */
+.dc-filter-details-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dc-filter-details-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dc-filter-details-label {
+  font-weight: 600;
+  color: var(--shell-text-muted);
 }
 
 /* ── Generic tooltip wrapper ─────────────────────────────────────── */
@@ -3789,12 +4097,6 @@
   color: var(--shell-text);
   margin: 0;
 }
-.cr-pie-legend__desc {
-  font-size: 11px;
-  color: var(--shell-text-muted);
-  line-height: 1.55;
-  margin: 0;
-}
 .cr-pie-legend__footer-note {
   font-size: 11px;
   color: var(--shell-text-muted);
@@ -3838,6 +4140,26 @@
   text-align: right;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.cr-pie-legend__change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 44px;
+  min-width: 52px;
+  flex-shrink: 0;
+  background: var(--cr-trend-bg);
+  color: var(--cr-trend-color);
+}
+.cr-pie-legend__change--neutral {
+  background: none;
+  padding: 2px 0;
+  color: var(--shell-text-muted);
+  text-align: right;
 }
 
 /* ── Print-mode horizontal bar chart ───────────────────────────── */

@@ -573,7 +573,7 @@
 
 .dev-drawer-close-ext {
   position: fixed;
-  top: 16px;
+  top: calc(var(--topbar-height) + 16px);
   right: calc(76vw + 8px);
   width: 28px;
   height: 28px;

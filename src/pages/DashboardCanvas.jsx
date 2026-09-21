@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { flushSync, createPortal } from 'react-dom'
 import { PAI, Ic } from '../ui.jsx'
 import { ChartRender, DEFAULT_VERT_BAR, STACK_ORIGINS } from '../components/ChartRender.jsx'
 import { EXPLORE_GROUPS } from '../components/SubHeader.jsx'
 import { DSPillSearch, useWorkspace } from '../context/WorkspaceCtx.jsx'
-import { GF_ENTITIES, getEntityAttrs } from '../components/FilterPanel.jsx'
+import { GF_ENTITIES, getEntityAttrs, ENTITY_RELATIONS } from '../components/FilterPanel.jsx'
+import { relationVerb } from '../data/kgRelationships.js'
 import SegmentedTabs from '../components/SegmentedTabs.jsx'
 import { SelectDropdown } from './CompliancePage.jsx'
 import { SAVED_ROWS } from './SavedPage.jsx'
@@ -78,10 +79,27 @@ const WIDGET_HEIGHTS = [
 // Initials-only segmented pickers for the Add Widget panel's Width/Height
 // rows, mirroring the KPI value-size control (see KPI_VALUE_SIZE_OPTIONS) —
 // short label on the segment, full name via hover tooltip.
-const WIDGET_HEIGHT_TAB_LABELS = { small: 'S', medium: 'M', large: 'L', xlarge: 'XL', 'rpt-chart': 'RC', 'rpt-pie': 'RP' }
-const WIDGET_HEIGHT_TABS = WIDGET_HEIGHTS.map(h => ({ value: h.id, label: WIDGET_HEIGHT_TAB_LABELS[h.id] || h.label, tooltip: h.label }))
+const WIDGET_HEIGHT_TAB_LABELS = { small: 'S', medium: 'M', large: 'L', xlarge: 'XL' }
+// Report Chart/Report Pie are pre-authored report-widget heights (never
+// picked by a user) — omitted from every height picker (Add Widget and
+// Widget Settings alike) so they're never offered as a choice; existing
+// report widgets keep their stored px height regardless.
+const WIDGET_HEIGHT_TABS = WIDGET_HEIGHTS.filter(h => h.id !== 'rpt-chart' && h.id !== 'rpt-pie').map(h => ({ value: h.id, label: WIDGET_HEIGHT_TAB_LABELS[h.id] || h.label, tooltip: h.label }))
 const WIDGET_SIZE_TAB_LABELS = { small: 'S', medium: 'M', large: 'L', xlarge: 'XL' }
 const WIDGET_SIZE_TABS = WIDGET_SIZES.map(s => ({ value: s.id, label: WIDGET_SIZE_TAB_LABELS[s.id] || s.label, tooltip: s.label }))
+// Auto-derives a short segmented-tab label from a full size label ("Extra
+// Large" -> "XL", "2x Small" -> "2XS", "Report Chart" -> "RC") — used for the
+// KPI/Heading size scales below, which need their own tab sets (different
+// id/label pairs than WIDGET_SIZE_TAB_LABELS above) but the same short-label
+// convention.
+function sizeTabLabel(label) {
+  const m = label.match(/^(\d+x )?(Extra )?(Small|Medium|Large)$/i)
+  if (m) return `${m[1] ? m[1].trim().toUpperCase() : ''}${m[2] ? 'X' : ''}${m[3][0].toUpperCase()}`
+  return label.split(/\s+/).map(w => w[0].toUpperCase()).join('')
+}
+function sizeTabs(sizes) {
+  return sizes.map(s => ({ value: s.id, label: sizeTabLabel(s.label), tooltip: s.label }))
+}
 const KPI_WIDGET_SIZES = [
   { id: 'xsmall',  label: 'Extra Small', span: 1 },
   { id: 'small',   label: 'Small',       span: 2 },
@@ -97,6 +115,8 @@ const KPI_WIDGET_HEIGHTS = [
   { id: 'large',   label: 'Large',       px: 460 },
   { id: 'xlarge',  label: 'Extra Large', px: 560 },
 ]
+const KPI_WIDGET_SIZE_TABS = sizeTabs(KPI_WIDGET_SIZES)
+const KPI_WIDGET_HEIGHT_TABS = sizeTabs(KPI_WIDGET_HEIGHTS)
 // KPI heading auto-fills from the pre-selected Aggregate By attribute (see
 // WidgetSettingsPanel's title init / sync effect) until the user types a
 // custom title of their own.
@@ -117,7 +137,7 @@ const KPI_VALUE_SIZE_OPTIONS = [
 // generic "no data yet" chart silhouette. Never called for dataLocked
 // widgets, which already carry real authored data.
 const KPI_MOCK_BASE = { host: 54623, 'entity-id': 12894, ip: 8342 }
-function buildKpiMockData(aggregateBy, showTotalCount) {
+function buildKpiMockData(aggregateBy, showTotalCount, hasComparisonMetric) {
   const base = KPI_MOCK_BASE[aggregateBy] ?? 54623
   const prev = Math.round(base * 0.986)
   const value = base.toLocaleString()
@@ -128,7 +148,7 @@ function buildKpiMockData(aggregateBy, showTotalCount) {
     trend: '1.43%',
     trendUp: true,
     prevValue,
-    ...(showTotalCount ? { totalValue: value, totalTrend: '1.43%', totalTrendUp: true, totalPrevValue: prevValue } : {}),
+    ...(hasComparisonMetric && showTotalCount ? { totalValue: value, totalTrend: '1.43%', totalTrendUp: true, totalPrevValue: prevValue } : {}),
   }
 }
 // Same rationale as buildKpiMockData above — a freshly-added Aggregated
@@ -153,6 +173,107 @@ function buildAggTableMockData() {
     { businessunit: 'Zone C Omega Systems', totalhostid: 906  },
   ]
 }
+// ── Widget Heading/Description AI draft (mock) ───────────────────────────
+// No backend endpoint exists yet for this — the real call would POST this
+// same config shape to Claude using the system prompt below and return
+// { heading, description }. This mock stands in until that endpoint exists,
+// so swapping it for a real fetch is a one-function change (mockGenerate...
+// below is the only thing that needs to become a real network call).
+const WIDGET_AI_SYSTEM_PROMPT = `You write a short, plain-language heading and an optional one-sentence description for a dashboard widget, given its chart type, the attribute it aggregates, its actual computed value or value-count, how its legend/categories are ordered, any period-over-period comparison it shows, any widget-level filters applied on top of the dashboard's scope, and whether that attribute required traversing to an entity beyond the dashboard's own scope. Heading: a few words, title case, no trailing punctuation. Description: one sentence, under 140 characters, naming the concrete numbers/basis involved rather than speaking generically, and omit entirely when the widget already matches the dashboard's scope exactly — no extra traversal, no widget filters, no non-default aggregation — since an unfiltered widget needs no extra explanation.`
+
+function capitalizeFirst(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s
+}
+
+const AI_OPERATION_LABELS = { 'count-distinct': 'Distinct count', count: 'Count', sum: 'Sum', avg: 'Average' }
+
+// Distills whatever WidgetSettingsPanel currently has configured into the
+// flat shape the (mock) generation call reasons over — the attribute/entity
+// pair, its concrete value(s), legend ordering, period comparison, a filter
+// count, and whether that attribute's entity sits outside the dashboard's
+// own scope (i.e. required an extra hop across the graph).
+function buildWidgetAiConfig({
+  chartType, attrLabel, attrEntityId, operation, filterCount, sortBy, scopeEntities,
+  isKpi, kpiValue, showPeriodComparison, trendText, trendUp,
+  isBannerChart, shownCount, totalCount,
+}) {
+  const scopeIds = (scopeEntities || []).map(e => e.id)
+  const scopeLabel = scopeEntities?.[0]?.label || 'the dashboard'
+  const attrEntity = GF_ENTITIES.find(e => e.id === attrEntityId)
+  const hasExtraTraversal = !!attrEntityId && scopeIds.length > 0 && !scopeIds.includes(attrEntityId)
+  const hasNonDefaultAggregation = (operation && operation !== 'count-distinct') || (sortBy && sortBy !== 'value-desc')
+  return {
+    chartType,
+    attrLabel: attrLabel || 'Overview',
+    attrEntityLabel: attrEntity?.label || scopeLabel,
+    scopeLabel,
+    hasExtraTraversal,
+    hasNonDefaultAggregation,
+    filterCount: filterCount || 0,
+    operationLabel: operation ? (AI_OPERATION_LABELS[operation] || operation) : null,
+    isKpi: !!isKpi,
+    kpiValue: kpiValue ?? null,
+    showPeriodComparison: !!showPeriodComparison,
+    trendText: trendText ?? null,
+    trendUp: trendUp ?? null,
+    isBannerChart: !!isBannerChart,
+    sortLabel: sortBy ? (SORT_BY_OPTIONS.find(o => o.value === sortBy)?.label || null) : null,
+    shownCount: shownCount ?? null,
+    totalCount: totalCount ?? null,
+  }
+}
+
+function buildWidgetAiHeading(config) {
+  if (config.chartType === 'kpi') return `${config.attrLabel} Summary`
+  if (config.hasExtraTraversal) return `${config.attrLabel} by ${config.attrEntityLabel}`
+  return `${config.attrLabel} Breakdown`
+}
+
+// Assembled from independent clauses (never sliced mid-string) so the
+// 140-char cap always drops a whole clause rather than truncating one — the
+// concrete count/basis clause is kept longest, the full traversal path is
+// dropped first since it's the least essential detail.
+function buildWidgetAiDescription(config) {
+  if (!config.hasWidgetFilters && !config.hasExtraTraversal && !config.hasNonDefaultAggregation) return ''
+  const clauses = []
+
+  // What the number(s) actually represent, with a real value/count attached.
+  if (config.isKpi && config.kpiValue && config.operationLabel) {
+    clauses.push(`shows the ${config.operationLabel.toLowerCase()} of ${config.attrLabel} (${config.kpiValue})`)
+  } else if (config.isBannerChart && config.shownCount != null) {
+    clauses.push(`shows ${config.shownCount.toLocaleString()} of ${config.totalCount.toLocaleString()} ${config.attrLabel} values`)
+  } else if (config.hasNonDefaultAggregation) {
+    clauses.push(`uses a non-default aggregation`)
+  }
+  // What basis the legend/categories are ordered on.
+  if (config.isBannerChart && config.sortLabel) clauses.push(`legend ordered by ${config.sortLabel.toLowerCase()}`)
+  // The period comparison, only when the widget actually has one configured.
+  if (config.isKpi && config.showPeriodComparison && config.trendText) {
+    clauses.push(`compares against the previous period (${config.trendUp ? '+' : '-'}${config.trendText})`)
+  }
+  if (config.filterCount > 0) clauses.push(`${config.filterCount} widget filter${config.filterCount === 1 ? '' : 's'} applied`)
+
+  const base = clauses.join('; ')
+  const pathClause = config.hasExtraTraversal ? `traverses from ${config.scopeLabel} to ${config.attrEntityLabel}` : ''
+
+  const full = [base, pathClause].filter(Boolean).join('; ')
+  if (full && full.length <= 140) return capitalizeFirst(full) + '.'
+  if (base) return capitalizeFirst(base) + '.'
+  if (pathClause) return capitalizeFirst(pathClause) + '.'
+  return ''
+}
+
+function mockGenerateWidgetHeadingDescription(config) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        heading: buildWidgetAiHeading(config),
+        description: buildWidgetAiDescription({ ...config, hasWidgetFilters: config.filterCount > 0 }),
+      })
+    }, 900)
+  })
+}
+
 const HEADING_WIDGET_SIZES = [
   { id: 'xsmall', label: 'Extra Small', span: 1 },
   { id: 'small',  label: 'Small',       span: 2 },
@@ -169,6 +290,8 @@ const HEADING_WIDGET_HEIGHTS = [
   { id: 'large',   label: 'Large',       px: 460 },
   { id: 'xlarge',  label: 'Extra Large', px: 560 },
 ]
+const HEADING_WIDGET_SIZE_TABS = sizeTabs(HEADING_WIDGET_SIZES)
+const HEADING_WIDGET_HEIGHT_TABS = sizeTabs(HEADING_WIDGET_HEIGHTS)
 const ALL_WIDGET_SIZES = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
 const ALL_WIDGET_HEIGHTS = [...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS]
 function widgetHeightPx(w) {
@@ -279,10 +402,29 @@ function packWidgets(widgets) {
   })
 }
 
-// Gap (in grid row-units) reserved between a container's own content and
-// its nested widgets, and between nested rows — matches the nested grid's
-// own margin.
-const NESTED_GAP_GH = Math.ceil(GRID_GAP_PX / ROW_UNIT_PX)
+// react-grid-layout's own row-units → pixels formula (rowHeight * h +
+// marginY * (h - 1)) — used below to reason about a widget's *actual*
+// rendered pixel height from its row count, instead of the naive `gh *
+// ROW_UNIT_PX` (which undercounts by the (gh-1) margins RGL actually
+// renders and was the source of a stretch/slack bug in container sizing —
+// see requiredContainerGh and ownContentPx in WidgetCardImpl).
+function rglBoxPx(gh) { return gh > 0 ? gh * ROW_UNIT_PX + (gh - 1) * GRID_GAP_PX : 0 }
+
+// A container's own-content box (see .dc-widget-own-content) sits *inside*
+// .dc-widget-card-body, i.e. below the card's header and inside its
+// padding — both already spent once by the card chrome outside that body.
+// ownContentGh's row count, though, is the same heightId preset used to
+// size an entire *standalone* card (header + padding included) — so its
+// rglBoxPx must be knocked down by that chrome before being applied as the
+// own-content box's actual height, or the box reserves the header and
+// padding a second time on top of what the card already spent on them,
+// stretching the whole container by roughly one card-chrome's worth for no
+// visible content. 12px padding top+bottom + 8px header/body gap + a
+// single-line title's rendered height (~14px font, default line-height).
+// (This is an estimate, not a measurement — see requiredContainerGh for why
+// the container's *total* height budget doesn't depend on getting it
+// exactly right.)
+const CARD_CHROME_PX = 32 + 20
 
 // A widget's own genuine content height, in grid row-units: the full
 // heightId-derived preset for a type with real visual body content, but
@@ -303,11 +445,36 @@ function ownContentGh(widget) {
 // so it self-corrects — including shrinking back down when nested widgets
 // are rearranged more compactly, resized smaller, or removed.
 function requiredContainerGh(widget) {
-  if (!widget.children?.length) return widget.gh ?? legacyGh(widget)
+  // Only ever reached here with empty children right after a widget's last
+  // nested child was just removed/promoted out (every path that creates or
+  // grows a container guards this call on children.length first) — so
+  // `widget.gh` at this point is still the old, container-inflated total,
+  // not a legitimate standalone height to fall back to. Recompute the
+  // widget's own content height fresh instead, so it actually shrinks back
+  // down once it stops being a container, matching the comment above.
+  if (!widget.children?.length) return ownContentGh(widget)
   const packedChildren = packWidgets(widget.children)
   const nestedGh = Math.max(...packedChildren.map(c => c.gy + c.gh))
   const { minGh } = minSizeFor(widget.chartId)
-  return clamp(ownContentGh(widget) + NESTED_GAP_GH + nestedGh, minGh, MAX_GH)
+  // Just a sum of the two row counts, no extra gap row added — surprising,
+  // but it's what makes the *pixel* totals actually line up. The container
+  // total gets fed through react-grid-layout's own row→px formula
+  // (rglBoxPx: rowHeight*h + margin*(h-1)) same as everything else on the
+  // grid, and that formula already folds in one `margin` (== GRID_GAP_PX)
+  // for every row boundary it spans — including the one straddling the
+  // own-content/nested-grid seam. Add an explicit gap row on top of that
+  // and the seam gets double-counted: one extra full row-height *and*
+  // margin the actual layout (own-content box + its fixed 12px CSS
+  // margin-top + the nested grid, see ownContentPx/.dc-nested-grid-wrap)
+  // never asked for, padding the container with dead space below the
+  // nested grid. Drop it and the two totals match exactly:
+  // rglBoxPx(ownContentGh + nestedGh) === rglBoxPx(ownContentGh) + 12 +
+  // rglBoxPx(nestedGh) (12 == GRID_GAP_PX). Any header/padding chrome the
+  // own-content box's *pixel* height (ownContentPx) separately subtracts
+  // cancels out of this sum too — it comes off the container's total the
+  // same way it comes off any standalone card's, via the header actually
+  // rendered above this body, not via anything counted here.
+  return clamp(ownContentGh(widget) + nestedGh, minGh, MAX_GH)
 }
 function withRequiredGh(widget) {
   return { ...widget, gh: requiredContainerGh(widget) }
@@ -362,6 +529,12 @@ function buildChartColors(widget) {
   const saved   = widget.chartColors || {}
   const chartId = widget.chartId
   if (chartId === 'kpi') {
+    return {
+      'Primary Metric': saved['Primary Metric'] || saved['Accent'] || '#5C6FC4',
+      ...(widget.hasComparisonMetric ? { 'Comparison Metric': saved['Comparison Metric'] || '#8B88E2' } : {}),
+    }
+  }
+  if (chartId === 'line') {
     return { 'Accent': saved['Accent'] || '#5C6FC4' }
   }
   if (chartId === 'stack-vert' || chartId === 'stack-hor') {
@@ -372,11 +545,11 @@ function buildChartColors(widget) {
     rows.map((row, i) => [row.label, saved[row.label] || row.color || VERT_BAR_PALETTE[i % VERT_BAR_PALETTE.length]])
   )
 }
-const GRAPH_FILTER_ATTRS = [
-  'Entity ID', 'Display Label', 'Type', 'Origin', 'Origin (Count)',
-  'Data Feed', 'First Found', 'First Seen', 'Last Found', 'Last Active',
-  'Activity Status', 'Lifetime', 'Recent Activity', 'Completeness Quality Score',
-]
+// Curated sample values for the common attribute labels shared across most
+// entities' real GF_ENTITY_ATTRS registries (see FilterPanel.jsx) — used as
+// a fallback wherever a picked attribute's own definition has no curated
+// `options` yet, rather than leaving the Values grid empty for every one of
+// them.
 const GRAPH_FILTER_VALUES = {
   'Entity ID':      ['ENT-10293', 'ENT-24871', 'ENT-38650', 'ENT-47215', 'ENT-58210', 'ENT-69940'],
   'Display Label':  ['Prod-Web-01', 'DB-Cluster-East', 'App-Gateway-02', 'Staging-API', 'Backup-Node-04', 'Analytics-Worker'],
@@ -398,12 +571,11 @@ const GRAPH_FILTER_VALUES = {
 // produce — feeds the "Limit To Top Values" count banner below, and the
 // Graph Filter picker's own "Values (N)" heading (GraphFilterModal). Covers
 // both the plain Aggregate By dropdown's own options (host/entity-id/ip) and
-// every attribute selectable via its Graph Filter picker (GRAPH_FILTER_ATTRS),
-// deliberately spread across a wide range (as low as 4, up to 50,000) so
-// different attributes read as genuinely different in scale — the modal
-// still only *renders* GRAPH_FILTER_VALUES' small representative sample of
-// actual value rows, same as a real attribute with tens of thousands of
-// distinct values would in a picker UI.
+// the common attribute labels shared across most entities, deliberately
+// spread across a wide range (as low as 4, up to 50,000) so different
+// attributes read as genuinely different in scale — falls back to an
+// attribute's own `valueCount` (see GF_ENTITY_ATTRS) or the rendered
+// Values list's own length when neither has a curated number.
 const AGGREGATE_VALUE_COUNTS = {
   host: 12382, 'entity-id': 54618, ip: 8214,
   'Type': 6, 'Activity Status': 4,
@@ -651,12 +823,47 @@ function Toggle({ value, onChange }) {
 // right edge, which every call site sits close to.
 function InfoTooltip({ text }) {
   const [pos, setPos] = useState(null)
+  // Hover/focus alone leaves the tooltip unreachable on touch devices (no
+  // hover state) — `pinned` keeps it open once tapped until the next tap on
+  // the icon itself or anywhere else, instead of relying on a leave event
+  // that touch never fires.
+  const [pinned, setPinned] = useState(false)
   const ref = useRef(null)
+  const tipRef = useRef(null)
   const show = () => {
     const r = ref.current?.getBoundingClientRect()
-    if (r) setPos({ top: r.top - 6, left: r.right })
+    if (r) setPos({ top: r.top - 6, left: r.right, placement: 'above' })
   }
-  const hide = () => setPos(null)
+  const hide = () => { if (!pinned) setPos(null) }
+  const toggleTap = e => {
+    e.stopPropagation()
+    if (pinned) { setPinned(false); setPos(null) }
+    else { setPinned(true); show() }
+  }
+  useEffect(() => {
+    if (!pinned) return
+    const closeOnOutside = e => {
+      if (ref.current && !ref.current.contains(e.target)) { setPinned(false); setPos(null) }
+    }
+    document.addEventListener('mousedown', closeOnOutside)
+    document.addEventListener('touchstart', closeOnOutside)
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside)
+      document.removeEventListener('touchstart', closeOnOutside)
+    }
+  }, [pinned])
+  // The icon can sit anywhere from a widget's very first row down, and the
+  // tooltip's own height isn't known until it's actually painted — so it
+  // always renders "above" first, then flips to grow downward instead if
+  // that would have clipped it off the top of the viewport.
+  useLayoutEffect(() => {
+    if (!pos || pos.placement !== 'above' || !tipRef.current) return
+    const tipRect = tipRef.current.getBoundingClientRect()
+    if (tipRect.top < 8) {
+      const r = ref.current?.getBoundingClientRect()
+      if (r) setPos({ top: r.bottom + 6, left: r.right, placement: 'below' })
+    }
+  }, [pos])
   return (
     <>
       <span
@@ -666,6 +873,8 @@ function InfoTooltip({ text }) {
         onMouseLeave={hide}
         onFocus={show}
         onBlur={hide}
+        onClick={toggleTap}
+        onMouseDown={e => e.stopPropagation()}
         tabIndex={0}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -673,7 +882,11 @@ function InfoTooltip({ text }) {
         </svg>
       </span>
       {pos && createPortal(
-        <div className="dc-info-tooltip__portal" style={{ top: pos.top, left: pos.left }}>
+        <div
+          ref={tipRef}
+          className={`dc-info-tooltip__portal${pos.placement === 'below' ? ' dc-info-tooltip__portal--below' : ''}`}
+          style={{ top: pos.top, left: pos.left }}
+        >
           {text}
         </div>,
         document.body
@@ -764,35 +977,125 @@ function FieldRow({ label, hint, tooltip, children }) {
   )
 }
 
+// Phrases the full traversal chain a widget filter's `filters` array was
+// built with — every `isRelation` chip in the array, in the order they were
+// added, joined as "<From> <verb> <To>" hops ("Host Has Vulnerability,
+// Vulnerability On Application") using the Knowledge Graph's own per-pair
+// verb (see kgRelationships.js) rather than a single generic word. Returns
+// null when the widget has no traversal at all (nothing to fold in).
+// Deliberately not scoped to just the hops leading to `f`'s own entity: once
+// *any* attribute in the widget traveled further down the chain, every other
+// attribute chip (even one still anchored at the untouched root) shows that
+// same full chain too, just ending in its own entity name — this is what
+// tells a viewer where in the whole traversal each attribute sits.
+function widgetFilterTraversalChain(filters) {
+  const edges = (filters || []).filter(f => f.isRelation && f.relFrom && f.relTo)
+  if (!edges.length) return null
+  return edges.map(e => {
+    const fromLabel = GF_ENTITIES.find(g => g.id === e.relFrom)?.label || e.relFrom
+    const toLabel   = GF_ENTITIES.find(g => g.id === e.relTo)?.label   || e.relTo
+    return `${fromLabel} ${relationVerb(e.relFrom, e.relTo)} ${toLabel}`
+  }).join(', ')
+}
+
 // A GraphFilterModal result carries `exclude` once a filter was built via
 // "Exclude Selected" rather than "Include Selection" — prefixed here so an
 // excluded filter reads distinctly from an included one wherever chips
 // summarize it outside the modal (e.g. "Not Type: Server"). It also carries
-// entityLabel (which scope entity the filter was built against) — shown only
-// when withEntity is true, since a single-entity scope makes it redundant.
-function filterChipLabel(f, withEntity) {
-  const attrPart = (withEntity && f.entityLabel) ? `${f.attr} (${f.entityLabel})` : f.attr
+// entityLabel (which scope entity the filter was built against): shown alone
+// when withEntity is true (a multi-entity scope, no traversal — "Type
+// (Vulnerability)"), or combined with the widget's full traversal chain when
+// one exists ("Type (Host Has Vulnerability - Vulnerability)"), regardless of
+// withEntity — a single-entity-scope widget can still traverse off its root.
+function filterChipLabel(f, withEntity, filters) {
+  const chain = widgetFilterTraversalChain(filters)
+  const attrPart = chain ? `${f.attr} (${chain} - ${f.entityLabel})`
+    : (withEntity && f.entityLabel) ? `${f.attr} (${f.entityLabel})`
+    : f.attr
   const base = attrPart + (f.values?.length ? `: ${f.values.join(', ')}` : '')
   return f.exclude ? `Not ${base}` : base
 }
 
-function WidgetFilterChips({ filters, onRemove, onClear, showEntity }) {
-  if (!filters.length) return null
+// Reads a saved widget's own attribute-entity binding against the
+// dashboard's root scope entity to phrase whether rendering it required a
+// relationship hop off the dashboard's base entity — same "in scope or not"
+// check as getWidgetScopeIssue, but worded for a viewer rather than treated
+// as an error state.
+function describeRelationshipPath(entityId, scopeEntities) {
+  const rootId = scopeEntities?.[0]?.id
+  const rootLabel = scopeEntities?.[0]?.label || (rootId && GF_ENTITIES.find(e => e.id === rootId)?.label) || 'the dashboard scope'
+  if (!entityId || !rootId || entityId === rootId) return `No traversal — uses ${rootLabel}`
+  const targetLabel = GF_ENTITIES.find(e => e.id === entityId)?.label || entityId
+  // "Has" rather than an arrow — matches the relationship wording
+  // PathChainNode/connectionFilters use everywhere else this app names a
+  // traversed entity relationship (e.g. the Graph Filter modal's own
+  // relation chip).
+  return `${rootLabel} Has ${targetLabel}`
+}
+
+function describeWidgetFilter(filters) {
+  const attrFilters = (filters || []).filter(f => !f.isRelation)
+  if (!attrFilters.length) return 'No filters applied'
+  return attrFilters.map(f => filterChipLabel(f, true, filters)).join('; ')
+}
+
+// Builds the three-line summary shown by a widget's "Show filter details to
+// viewers" info icon (see showFilterDetailsToViewers on WidgetSettingsPanel)
+// — reads straight off the persisted widget fields rather than the settings
+// panel's own live state, since it renders on the canvas long after that
+// panel closed. Deliberately always returns all three lines, even at a
+// widget's default config (no traversal/filter/non-default aggregation) —
+// the toggle controls whether the icon shows at all, not what it says once
+// shown.
+function buildWidgetFilterDetails(widget, scopeEntities) {
+  const isKpi         = widget.chartId === 'kpi'
+  const isTable       = widget.chartId === 'table'
+  const isAggTable    = widget.chartId === 'agg-table'
+  const isStackOrLine = widget.chartId === 'stack-vert' || widget.chartId === 'stack-hor' || widget.chartId === 'line'
+
+  const entityId = isKpi ? widget.aggregateByEntityId
+    : isStackOrLine ? widget.magnitudeEntityId
+    : widget.classificationEntityId
+
+  const relationship = (isTable || isAggTable)
+    ? 'No traversal — shows scope-level records'
+    : describeRelationshipPath(entityId, scopeEntities)
+
+  const filter = describeWidgetFilter(isKpi ? widget.kpiFilters : widget.widgetFilters)
+
+  let aggregation
+  if (isKpi) {
+    aggregation = `${AI_OPERATION_LABELS[widget.operation] || 'Distinct count'} of ${widget.aggregateBy || 'Host'}`
+  } else if (isTable) {
+    aggregation = 'None — shows individual records'
+  } else if (isAggTable) {
+    aggregation = widget.aggregateByCols?.length
+      ? widget.aggregateByCols.map(a => `${AI_OPERATION_LABELS[a.operation] || a.operation} of ${a.attribute}`).join('; ')
+      : 'Default aggregation'
+  } else if (isStackOrLine) {
+    aggregation = `Grouped by ${widget.classification || 'Type'}`
+  } else {
+    const sortLabel = SORT_BY_OPTIONS.find(o => o.value === widget.sortBy)?.label || SORT_BY_OPTIONS[0].label
+    aggregation = `Count of ${widget.classification || 'Type'}, sorted by ${sortLabel}`
+  }
+
   return (
-    <div className="dc-widget-filter-chips-row">
-      <div className="dc-chips">
-        {filters.map((f, i) => (
-          <span key={i} className="dc-chip">
-            {filterChipLabel(f, showEntity)}
-            <button className="dc-chip-x" onClick={() => onRemove(i)}>×</button>
-          </span>
-        ))}
-      </div>
-      {filters.length > 1 && (
-        <button type="button" className="dc-chip-reset-all" onClick={onClear}>Reset all</button>
-      )}
+    <div className="dc-filter-details-tooltip">
+      <div className="dc-filter-details-row"><span className="dc-filter-details-label">Relationship path</span>{relationship}</div>
+      <div className="dc-filter-details-row"><span className="dc-filter-details-label">Widget filter</span>{filter}</div>
+      <div className="dc-filter-details-row"><span className="dc-filter-details-label">Aggregation</span>{aggregation}</div>
     </div>
   )
+}
+
+// Shown inside the (readOnly) Select Widget Filter field itself once at
+// least one attribute filter is applied — a traversed relationship
+// (`isRelation`) never counts on its own, since it only ever exists to reach
+// an attribute filter (see filterChipLabel/widgetFilterTraversalChain), so
+// the count reflects what a viewer would actually recognize as "a filter".
+function widgetFilterCountLabel(filters) {
+  const count = (filters || []).filter(f => !f.isRelation).length
+  return count ? `${count} Filter${count > 1 ? 's' : ''} Applied` : ''
 }
 
 function TextInput({ placeholder, value, onChange, withKG, readOnly = false }) {
@@ -872,6 +1175,30 @@ function SizeSelectDropdown({ value, onChange, options, emptyLabel = 'Select...'
   )
 }
 
+// ── Sort By field (pie/bar/stacked-chart legends) ────────────────────
+// Chart legends default to count-desc, but a category attribute named like
+// "Severity" reads better ranked Critical > High > Medium > Low — offered
+// as an extra option only when the chosen classification/magnitude
+// attribute looks severity-shaped, since the attribute is free text (no
+// fixed schema to check against instead).
+const SORT_BY_OPTIONS = [
+  { value: 'value-desc', label: 'Count (High to Low)' },
+  { value: 'value-asc',  label: 'Count (Low to High)' },
+  { value: 'alpha-asc',  label: 'Alphabetical (A-Z)' },
+  { value: 'alpha-desc', label: 'Alphabetical (Z-A)' },
+]
+const SEVERITY_SORT_OPTION = { value: 'severity', label: 'Severity (Critical to Low)' }
+function sortByOptionsFor(attr) {
+  return /severity/i.test(attr || '') ? [...SORT_BY_OPTIONS, SEVERITY_SORT_OPTION] : SORT_BY_OPTIONS
+}
+function SortByFieldRow({ attr, value, onChange }) {
+  return (
+    <FieldRow label="Sort By" hint="Define how the legend/categories are ordered">
+      <SizeSelectDropdown value={value} onChange={onChange} options={sortByOptionsFor(attr)} />
+    </FieldRow>
+  )
+}
+
 // ── Column picker dropdown ───────────────────────────────────────────
 function ColumnDropdown({ selected, onAdd }) {
   const [open, setOpen]     = useState(false)
@@ -925,45 +1252,432 @@ function ColumnDropdown({ selected, onAdd }) {
 
 // ── Active Filter Preview tree ───────────────────────────────────────
 // Shared by every Graph Filter surface (widget settings' GraphFilterModal,
-// the dashboard scope's ScopeAttrsPanel/DashboardScopeModal) — the same
-// entity-grouped "Include/Exclude attr: values" tree, wherever a picker
-// needs to show everything selected so far.
-function buildPreviewGroups(filtersByEntity, entityList) {
-  return Object.entries(filtersByEntity || {})
-    .filter(([, attrFilters]) => attrFilters && Object.keys(attrFilters).length)
-    .map(([entityId, attrFilters]) => ({
-      entityId,
-      entityLabel: entityList.find(e => e.id === entityId)?.label || entityId,
-      filters: Object.entries(attrFilters).map(([attr, f]) => ({
-        id: `${entityId}-${attr}`, attr, values: f.values, exclude: f.mode === 'Exclude' || f.exclude === true,
-      })),
-    }))
+// the dashboard scope's ScopeAttrsPanel/DashboardScopeModal) — renders the
+// same nested entity → relation → entity tree as the topbar's
+// ActiveFilterPanel (afp-entity-chip / afp-entity-content / afp-relation-chip
+// / afp-filter-chip, straight out of shell.css), generalized to an arbitrary
+// N-hop traversal path instead of ActiveFilterPanel's fixed Host→Finding
+// shape — so a Host→Identity→Person chain reads as one continuous indented
+// tree instead of a flat per-entity list with the relationship dropped.
+//
+// `getEntries(entityId)` returns this entity's own applied attribute filters
+// as [{ key, label, mode, values, onRemove }] — kept caller-supplied because
+// GraphFilterModal/ScopeAttrsPanel/DashboardScopeModal each hold filters in a
+// slightly different shape (a flat pendingFilters array vs. a per-entity
+// attr map).
+function PathChainNode({ path, idx, getEntries, onRemoveConnection }) {
+  const entityId = path[idx]
+  const entity   = GF_ENTITIES.find(e => e.id === entityId)
+  const entries  = getEntries(entityId)
+  const hasNext  = idx < path.length - 1
+
+  return (
+    <>
+      <span className="afp-entity-chip">{entity?.label || entityId}</span>
+      {(entries.length > 0 || hasNext) && (
+        <div className="afp-entity-content">
+          {entries.length > 0 ? (
+            <>
+              <span className="afp-where">where</span>
+              <div className="afp-filter-chips">
+                {entries.map(e => (
+                  <span key={e.key} className="afp-filter-chip">
+                    <span className="afp-fc-label">{e.label}</span>
+                    <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                    <span className="afp-fc-badge">[{(e.mode || 'Include').toUpperCase()}]</span>
+                    <span className="afp-fc-values">&nbsp;{e.values.join(', ')}</span>
+                    <button className="afp-fc-remove" title="Remove filter" onClick={e.onRemove}>×</button>
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : !hasNext && (
+            <p className="afp-no-filters">No filters applied</p>
+          )}
+          {hasNext && (
+            <>
+              <span className="afp-entity-chip afp-relation-chip">
+                {entity?.label} Has {GF_ENTITIES.find(e => e.id === path[idx + 1])?.label}
+                <button
+                  className="afp-relation-remove"
+                  title="Remove relationship"
+                  onClick={() => onRemoveConnection(entityId, path[idx + 1])}
+                >×</button>
+              </span>
+              <div className="afp-entity-content">
+                <PathChainNode path={path} idx={idx + 1} getEntries={getEntries} onRemoveConnection={onRemoveConnection} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  )
 }
-function FilterPreviewTree({ groups, onRemove }) {
-  if (!groups.length) {
-    return <div className="dc-gf-preview-empty">No filters applied yet — select values, then Include or Exclude.</div>
+function PathFilterTree({ paths, getEntries, onRemoveConnection }) {
+  // Only chains with an actual relationship render as a tree branch — a
+  // freshly-clicked root with nothing extended from it yet isn't a filter.
+  const chains    = paths.filter(p => p.length >= 2)
+  const inTreeIds = new Set(chains.flat())
+  // Attribute filters applied directly to an entity that was never traversed
+  // into a relationship (e.g. filtering the dashboard's own root entity)
+  // still need to show up — as their own single-node branch.
+  const orphanIds = GF_ENTITIES.map(e => e.id).filter(id => !inTreeIds.has(id) && getEntries(id).length > 0)
+
+  if (chains.length === 0 && orphanIds.length === 0) {
+    return <div className="dc-gf-preview-empty">No filters applied yet — select values, then Include or Exclude, or click a connected node to build a relationship.</div>
   }
   return (
-    <div className="dc-gf-preview-tree">
-      {groups.map(g => (
-        <div key={g.entityId} className="dc-gf-preview-group">
-          <span className="dc-gf-preview-entity-pill">{g.entityLabel}</span>
-          <div className="dc-gf-preview-branches">
-            {g.filters.map(f => (
-              <div key={f.id} className="dc-gf-preview-branch">
-                <span className={`dc-gf-filter-chip-badge${f.exclude ? ' dc-gf-filter-chip-badge--exclude' : ''}`}>
-                  {f.exclude ? 'Exclude' : 'Include'}
-                </span>
-                <span className="dc-gf-preview-branch-text">{f.attr}: {f.values.join(', ')}</span>
-                {onRemove && (
-                  <button className="dc-gf-filter-chip-x" onClick={() => onRemove(g.entityId, f)}>×</button>
-                )}
-              </div>
-            ))}
-          </div>
+    <div className="dc-gf-preview-tree dc-gf-preview-tree--nested">
+      {chains.map((path, i) => (
+        <div key={`chain-${i}`} className="afp-entity-block">
+          <PathChainNode path={path} idx={0} getEntries={getEntries} onRemoveConnection={onRemoveConnection} />
+        </div>
+      ))}
+      {orphanIds.map(id => (
+        <div key={`orphan-${id}`} className="afp-entity-block">
+          <PathChainNode path={[id]} idx={0} getEntries={getEntries} onRemoveConnection={onRemoveConnection} />
         </div>
       ))}
     </div>
+  )
+}
+
+// Fixed width for the attributes-overlay drawer shared by GraphFilterModal
+// and ScopeAttrsPanel — wide enough that the values grid never wraps.
+const ATTRS_PANEL_WIDTH = 635
+
+// Lets the entity canvas be dragged around — since the attributes overlay
+// covers a fixed slice of the canvas on the right, any node laid out under
+// it would otherwise be permanently hidden with no way to reach it.
+function useCanvasPan() {
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const startPan = (e) => {
+    if (e.target.closest('.gf-node, .dc-gf-toggle-attrs')) return
+    e.preventDefault()
+    const startX = e.clientX, startY = e.clientY
+    const dragOrigin = pan
+    const onMove = (moveEvent) => {
+      setPan({ x: dragOrigin.x + (moveEvent.clientX - startX), y: dragOrigin.y + (moveEvent.clientY - startY) })
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+  return [pan, startPan]
+}
+
+// ── Graph Filter relationship traversal ─────────────────────────────
+// Gives the Studio Graph Filter canvas (GraphFilterModal / ScopeAttrsPanel)
+// the same relationship-traversal behavior as the page-level Exposure
+// dashboard's Graph Filter panel (GFSidePanel in FilterPanel.jsx): click an
+// entity node, its allowed relations (ENTITY_RELATIONS) fan out below it,
+// click one to extend the chain — building one or more independent
+// traversal paths that can each keep growing. Layout constants below match
+// .gf-node's real geometry (38px circle + 8px gap + label) so lines land
+// exactly on the node centers.
+// Widest any single entity's relation fan-out can get — the canvas has to
+// stay this wide even when the scope only has one or two root entities
+// (e.g. just Host, 8 relations), otherwise the fan-out clamp below inverts
+// and shoves nodes to a negative, off-canvas, unclickable position.
+const GF_MAX_FANOUT = Math.max(1, ...Object.values(ENTITY_RELATIONS).map(arr => arr.length))
+
+// Rebuilds traversal.paths (chains of entity ids) from a flat list of
+// isRelation filter rows ({relFrom, relTo}) — the shape GraphFilterModal's
+// Apply hands back to the caller and gets seeded again as `existingFilters`
+// on reopen. Without this, a relationship built in a previous session (e.g.
+// Host → Vulnerability) would only survive as an inert filter chip: the
+// graph canvas would show no connecting line, and the Active Filter Preview
+// tree would render Vulnerability as a flat, unrelated branch instead of
+// nested under Host.
+function reconstructPathsFromRelationFilters(filters) {
+  const edges = filters.filter(f => f.isRelation && f.relFrom && f.relTo).map(f => [f.relFrom, f.relTo])
+  if (!edges.length) return []
+  const targets = new Set(edges.map(([, to]) => to))
+  const roots   = [...new Set(edges.filter(([from]) => !targets.has(from)).map(([from]) => from))]
+  const nextMap = {}
+  edges.forEach(([from, to]) => { (nextMap[from] ||= []).push(to) })
+  const paths = []
+  const visit = (path) => {
+    const nexts = nextMap[path[path.length - 1]]
+    if (!nexts || !nexts.length) { paths.push(path); return }
+    nexts.forEach(n => visit([...path, n]))
+  }
+  roots.forEach(r => visit([r]))
+  return paths
+}
+
+// `controlledPaths` = { paths, setPaths } lets a caller that needs the
+// traversal to survive this hook's own remount (e.g. ScopeAttrsPanel closing
+// and reopening inside DashboardScopeModal) own the paths state itself;
+// omitted, the hook keeps it local as before.
+function useGraphTraversal(entities, onSelectEntity, controlledPaths) {
+  const [localPaths,    setLocalPaths]    = useState([])
+  const paths    = controlledPaths ? controlledPaths.paths    : localPaths
+  const setPaths = controlledPaths ? controlledPaths.setPaths : setLocalPaths
+  const [activePathIdx, setActivePathIdx] = useState(null)
+  const [hoveredId,     setHoveredId]     = useState(null)
+
+  const NODE_SLOT = 96, X0 = 24, ENTITY_ROW_Y = 24, PATH_Y0 = 180, LEVEL_H = 140, CIRCLE_TOP = 0, CIRCLE_BOT = 38
+  const SIZER_W = X0 + Math.max(entities.length, GF_MAX_FANOUT) * NODE_SLOT + NODE_SLOT
+
+  const slotCenterX = (entityId) => {
+    const idx = entities.findIndex(e => e.id === entityId)
+    return X0 + (idx >= 0 ? idx : 0) * NODE_SLOT + NODE_SLOT / 2
+  }
+
+  const activePath = (activePathIdx !== null && paths[activePathIdx]) ? paths[activePathIdx] : []
+  const activeId   = activePath.length > 0 ? activePath[activePath.length - 1] : null
+
+  // Which entity's relations are currently fanning out: the hovered top-row
+  // entity, the tail of a hovered existing path, or (with no hover) the tail
+  // of the active path.
+  const hoveredPathIdx = hoveredId !== null ? paths.findIndex(p => p[0] === hoveredId) : -1
+  const hoveredIsRoot  = hoveredPathIdx >= 0
+  const previewId = hoveredId === null
+    ? activeId
+    : (hoveredIsRoot ? paths[hoveredPathIdx][paths[hoveredPathIdx].length - 1] : hoveredId)
+  const previewPath = hoveredIsRoot
+    ? paths[hoveredPathIdx]
+    : (hoveredId === null && activePathIdx !== null && paths[activePathIdx]) ? paths[activePathIdx] : []
+  const potentialNextIds = previewId
+    ? (ENTITY_RELATIONS[previewId] || []).filter(id => !previewPath.includes(id))
+    : []
+
+  const fanSrcX = hoveredId !== null && !hoveredIsRoot ? slotCenterX(hoveredId)
+    : hoveredIsRoot ? slotCenterX(paths[hoveredPathIdx][0])
+    : activePath.length > 0 ? slotCenterX(activePath[0]) : 0
+  const fanSrcY = (() => {
+    if (hoveredId !== null) {
+      if (hoveredIsRoot) {
+        const p = paths[hoveredPathIdx]
+        return p.length <= 1 ? ENTITY_ROW_Y + CIRCLE_BOT : PATH_Y0 + (p.length - 2) * LEVEL_H + CIRCLE_BOT
+      }
+      return ENTITY_ROW_Y + CIRCLE_BOT
+    }
+    if (!activeId) return 0
+    return activePath.length <= 1 ? ENTITY_ROW_Y + CIRCLE_BOT : PATH_Y0 + (activePath.length - 2) * LEVEL_H + CIRCLE_BOT
+  })()
+  const potentialY = hoveredId !== null
+    ? (hoveredIsRoot ? PATH_Y0 + Math.max(0, paths[hoveredPathIdx].length - 1) * LEVEL_H : PATH_Y0)
+    : PATH_Y0 + Math.max(0, activePath.length - 1) * LEVEL_H
+
+  const allConnections = paths.flatMap(p =>
+    p.length < 2 ? [] : p.slice(0, -1).map((from, i) => ({ from, to: p[i + 1] }))
+  )
+  const maxPathLength = paths.length > 0 ? Math.max(...paths.map(p => p.length)) : 1
+
+  const clusterHalfSpread = potentialNextIds.length > 0 ? (potentialNextIds.length - 1) / 2 * NODE_SLOT : 0
+  const naiveFanCenterX = potentialNextIds.length > 0
+    ? Math.min(Math.max(fanSrcX, X0 + NODE_SLOT / 2 + clusterHalfSpread), SIZER_W - NODE_SLOT / 2 - clusterHalfSpread)
+    : fanSrcX
+
+  // A fan is laid out symmetrically around its own root's column, so with an
+  // odd item count (one item lands dead-center, the rest at whole-column
+  // offsets) it can center-align exactly on a *different* root's column —
+  // rendering a potential node directly on top of that other chain's
+  // already-placed node at the same row. Nudge the whole cluster sideways by
+  // whole columns, in the smallest step that clears it, so it never lands on
+  // a column another active path already occupies (even-count fans always
+  // fall on half-columns, so they can't collide and pass through untouched).
+  const fanRootId = hoveredId !== null
+    ? (hoveredIsRoot ? paths[hoveredPathIdx][0] : hoveredId)
+    : (activePath.length > 0 ? activePath[0] : null)
+  const fanRootCol = fanRootId !== null ? entities.findIndex(e => e.id === fanRootId) : -1
+  const blockedCols = new Set(
+    paths.map(p => entities.findIndex(e => e.id === p[0])).filter(col => col >= 0 && col !== fanRootCol)
+  )
+  const clampedFanCenterX = (() => {
+    if (potentialNextIds.length === 0 || blockedCols.size === 0) return naiveFanCenterX
+    const spanHalf = (potentialNextIds.length - 1) / 2
+    const colOf = (px) => (px - X0 - NODE_SLOT / 2) / NODE_SLOT
+    const colToPx = (col) => X0 + col * NODE_SLOT + NODE_SLOT / 2
+    const minCenterCol = spanHalf
+    const maxCenterCol = (SIZER_W - X0 - NODE_SLOT / 2) / NODE_SLOT - spanHalf
+    const fits = (centerCol) => {
+      if (centerCol < minCenterCol - 1e-6 || centerCol > maxCenterCol + 1e-6) return false
+      for (let ci = 0; ci < potentialNextIds.length; ci++) {
+        const col = centerCol + (ci - spanHalf)
+        if (Number.isInteger(col) && blockedCols.has(col)) return false
+      }
+      return true
+    }
+    const idealCol = colOf(naiveFanCenterX)
+    if (fits(idealCol)) return naiveFanCenterX
+    const maxStep = Math.ceil(maxCenterCol - minCenterCol) + 1
+    for (let d = 1; d <= maxStep; d++) {
+      if (fits(idealCol + d)) return colToPx(idealCol + d)
+      if (fits(idealCol - d)) return colToPx(idealCol - d)
+    }
+    return naiveFanCenterX
+  })()
+
+  const handleTopRowClick = (id) => {
+    const existingIdx = paths.findIndex(p => p[0] === id)
+    if (existingIdx >= 0) {
+      setActivePathIdx(prev => prev === existingIdx ? null : existingIdx)
+    } else {
+      const next = [...paths, [id]]
+      setPaths(next)
+      setActivePathIdx(next.length - 1)
+    }
+    onSelectEntity && onSelectEntity(id)
+  }
+  const handlePotentialClick = (connId) => {
+    if (!previewId) return
+    if (hoveredIsRoot) {
+      setPaths(prev => prev.map((p, i) => i === hoveredPathIdx ? [...p, connId] : p))
+      setActivePathIdx(hoveredPathIdx)
+    } else if (hoveredId !== null) {
+      const next = [...paths, [hoveredId, connId]]
+      setPaths(next)
+      setActivePathIdx(next.length - 1)
+    } else {
+      if (activePathIdx === null) return
+      setPaths(prev => prev.map((p, i) => i === activePathIdx ? [...p, connId] : p))
+    }
+    onSelectEntity && onSelectEntity(connId)
+  }
+  const handleStepBack = (pathIdx = activePathIdx) => {
+    if (pathIdx === null) return
+    const p = paths[pathIdx]
+    if (!p) return
+    if (p.length <= 1) {
+      setPaths(prev => prev.filter((_, i) => i !== pathIdx))
+      setActivePathIdx(null)
+    } else {
+      setPaths(prev => prev.map((pp, i) => i === pathIdx ? pp.slice(0, -1) : pp))
+    }
+  }
+  const removeConnection = (from, to) => {
+    const pathIdx = paths.findIndex(p => { const i = p.indexOf(to); return i > 0 && p[i - 1] === from })
+    if (pathIdx < 0) return
+    const cutAt = paths[pathIdx].indexOf(to)
+    setPaths(prev => prev.map((p, i) => i === pathIdx ? p.slice(0, cutAt) : p).filter(p => p.length > 0))
+    if (pathIdx === activePathIdx) setActivePathIdx(null)
+  }
+  const selectPathNode = (pathIdx, entityId) => {
+    setActivePathIdx(pathIdx)
+    onSelectEntity && onSelectEntity(entityId)
+  }
+  const reset = () => { setPaths([]); setActivePathIdx(null) }
+
+  return {
+    paths, setHoveredId,
+    NODE_SLOT, X0, ENTITY_ROW_Y, PATH_Y0, LEVEL_H, CIRCLE_TOP, CIRCLE_BOT, SIZER_W,
+    previewId, potentialNextIds, fanSrcX, fanSrcY, potentialY, allConnections, maxPathLength, clampedFanCenterX,
+    handleTopRowClick, handlePotentialClick, handleStepBack, removeConnection, selectPathNode, reset,
+  }
+}
+
+function GFRelationNode({ entity, selected, dimmed }) {
+  return (
+    <div className={`gf-node${dimmed ? ' gf-node--dimmed' : ''}`}>
+      <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
+        <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
+        <span className="gf-node__count">{entity.count.toLocaleString()}</span>
+      </div>
+      <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>{entity.label}</span>
+    </div>
+  )
+}
+
+// Renders the traversal graph inside the .dc-gf-canvas-pan (position:relative,
+// pan-transform) wrapper: root entities on top, path chains growing downward
+// in each root's own column, SVG lines connecting them, and a fan of
+// clickable "potential next" nodes below whichever node is active/hovered.
+function GFRelationCanvas({ entities, activeEntityId, traversal }) {
+  const {
+    paths, NODE_SLOT, X0, ENTITY_ROW_Y, PATH_Y0, LEVEL_H, CIRCLE_TOP, CIRCLE_BOT, SIZER_W,
+    previewId, potentialNextIds, fanSrcX, fanSrcY, potentialY, maxPathLength, clampedFanCenterX,
+    handleTopRowClick, handlePotentialClick, handleStepBack, setHoveredId, selectPathNode,
+  } = traversal
+
+  return (
+    <>
+      <div className="gf-canvas-sizer" style={{ width: SIZER_W, minHeight: PATH_Y0 + (maxPathLength + 2) * LEVEL_H + 80 }} />
+
+      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+        {paths.map((p, pathIdx) => {
+          const ri = entities.findIndex(e => e.id === p[0])
+          const cx = ri >= 0 ? X0 + ri * NODE_SLOT + NODE_SLOT / 2 : 0
+          return (
+            <React.Fragment key={`plines-${pathIdx}`}>
+              {p.length >= 2 && (() => {
+                const y1 = ENTITY_ROW_Y + CIRCLE_BOT, y2 = PATH_Y0 + CIRCLE_TOP, my = (y1 + y2) / 2
+                return (
+                  <g style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); handleStepBack(pathIdx) }}>
+                    <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="transparent" strokeWidth={14} />
+                    <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="var(--pai-border-strong)" strokeWidth={1.5} strokeLinecap="round" />
+                    <circle cx={cx} cy={my} r={4.5} fill="var(--ctrl-bg)" stroke="var(--pai-border-strong)" strokeWidth={1.5} />
+                  </g>
+                )
+              })()}
+              {p.length > 2 && p.slice(1, -1).map((_, i) => {
+                const y1 = PATH_Y0 + i * LEVEL_H + CIRCLE_BOT, y2 = PATH_Y0 + (i + 1) * LEVEL_H + CIRCLE_TOP, midY = (y1 + y2) / 2
+                return (
+                  <g key={`seg-${pathIdx}-${i}`} style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); handleStepBack(pathIdx) }}>
+                    <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="transparent" strokeWidth={14} />
+                    <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="var(--pai-border-strong)" strokeWidth={1.5} strokeLinecap="round" />
+                    <circle cx={cx} cy={midY} r={4.5} fill="var(--ctrl-bg)" stroke="var(--pai-border-strong)" strokeWidth={1.5} />
+                  </g>
+                )
+              })}
+            </React.Fragment>
+          )
+        })}
+        {previewId && potentialNextIds.map((connId, ci) => {
+          const tx = clampedFanCenterX + (ci - (potentialNextIds.length - 1) / 2) * NODE_SLOT
+          const y2 = potentialY + CIRCLE_TOP
+          const my = (fanSrcY + y2) / 2
+          const d  = `M${fanSrcX},${fanSrcY} C${fanSrcX},${my} ${tx},${my} ${tx},${y2}`
+          return <path key={`fan-${connId}`} d={d} stroke="var(--pai-border-strong)" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+        })}
+      </svg>
+
+      {entities.map((entity, i) => (
+        <div key={entity.id} className="gf-entity-slot" style={{ left: X0 + i * NODE_SLOT, top: ENTITY_ROW_Y }}
+          onClick={(e) => { e.stopPropagation(); handleTopRowClick(entity.id) }}
+          onMouseEnter={() => setHoveredId(entity.id)}
+          onMouseLeave={() => setHoveredId(null)}>
+          <GFRelationNode entity={entity} selected={activeEntityId === entity.id} />
+        </div>
+      ))}
+
+      {paths.flatMap((p, pathIdx) => {
+        const ri = entities.findIndex(e => e.id === p[0])
+        const slotLeft = ri >= 0 ? X0 + ri * NODE_SLOT : 0
+        return p.slice(1).map((entityId, i) => {
+          const entity = GF_ENTITIES.find(e => e.id === entityId)
+          if (!entity) return null
+          return (
+            <div key={`path-${pathIdx}-${i + 1}`} className="gf-entity-slot"
+              style={{ left: slotLeft, top: PATH_Y0 + i * LEVEL_H, cursor: 'pointer' }}
+              onClick={(e) => { e.stopPropagation(); selectPathNode(pathIdx, entityId) }}>
+              <GFRelationNode entity={entity} selected={activeEntityId === entityId} />
+            </div>
+          )
+        })
+      })}
+
+      {previewId && potentialNextIds.map((connId, ci) => {
+        const entity = GF_ENTITIES.find(e => e.id === connId)
+        if (!entity) return null
+        const nodeLeft = clampedFanCenterX + (ci - (potentialNextIds.length - 1) / 2) * NODE_SLOT - NODE_SLOT / 2
+        return (
+          <div key={`pot-${connId}`} className="gf-entity-slot gf-entity-slot--potential"
+            style={{ left: nodeLeft, top: potentialY }}
+            onClick={(e) => { e.stopPropagation(); handlePotentialClick(connId) }}>
+            <GFRelationNode entity={entity} dimmed />
+          </div>
+        )
+      })}
+    </>
   )
 }
 
@@ -971,8 +1685,9 @@ function FilterPreviewTree({ groups, onRemove }) {
 function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingFilters = [], onClose, onApply }) {
   const entities = (scopeEntities && scopeEntities.length) ? scopeEntities : GF_ENTITIES.filter(e => e.id === 'host')
   const [activeEntityId, setActiveEntityId] = useState(entities[0]?.id)
-  const [showGraph,     setShowGraph]     = useState(false)
-  const [selectedAttr, setSelectedAttr] = useState(currentAttr || 'Type')
+  const [attrsOpen,     setAttrsOpen]     = useState(true)
+  const [canvasPan, startCanvasPan] = useCanvasPan()
+  const [selectedAttr, setSelectedAttr] = useState(currentAttr || getEntityAttrs(entities[0]?.id)[0]?.label || 'Type')
   const [attrSearch,   setAttrSearch]   = useState('')
   const [valSearch,    setValSearch]    = useState('')
   const [selectedVals, setSelectedVals] = useState([])
@@ -984,21 +1699,47 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
   // reopening the popup shows prior filters instead of starting blank —
   // Apply below replaces the field's filter list wholesale with whatever's
   // here, rather than appending, so removing/editing a seeded row works.
+  // isRelation rows are excluded here — they're seeded into gfPaths below
+  // instead and re-derived as connectionFilters each render, so they don't
+  // also linger as inert, duplicate entries in pendingFilters.
   const [pendingFilters, setPendingFilters] = useState(() =>
-    existingFilters.map((f, i) => ({
+    existingFilters.filter(f => !f.isRelation).map((f, i) => ({
       entityId: entities[0]?.id, entityLabel: entities[0]?.label, ...f,
       id: `existing-${i}-${Date.now()}`,
     }))
   )
 
-  const activeEntity = entities.find(e => e.id === activeEntityId) || entities[0]
+  // Relationship traversal — lets a node reach related entity types (e.g.
+  // Host → Finding) the same way the page-level Exposure Graph Filter does.
+  // Selecting any node (root, traversed, or newly added) also switches the
+  // active attribute-panel entity via selectEntity below. paths is seeded
+  // from any isRelation rows this field already had applied (see
+  // reconstructPathsFromRelationFilters) and owned here (controlled, not
+  // left to the hook's own local state) so a relationship built in a prior
+  // session actually shows up as a connecting line on reopen, instead of
+  // only its attribute filter surviving.
+  const [gfPaths, setGfPaths] = useState(() => reconstructPathsFromRelationFilters(existingFilters))
+  const traversal = useGraphTraversal(entities, (id) => selectEntity(id), { paths: gfPaths, setPaths: setGfPaths })
 
-  const filteredAttrs = GRAPH_FILTER_ATTRS.filter(a =>
-    !attrSearch || a.toLowerCase().includes(attrSearch.toLowerCase())
-  )
-  const values = (GRAPH_FILTER_VALUES[selectedAttr] || []).filter(v =>
-    !valSearch || v.toLowerCase().includes(valSearch.toLowerCase())
-  )
+  // Traversal can reach entity types outside the widget's own scope list, so
+  // the active entity may not be in `entities` — fall back to the full
+  // registry instead of silently pinning back to entities[0].
+  const activeEntity = entities.find(e => e.id === activeEntityId) || GF_ENTITIES.find(e => e.id === activeEntityId) || entities[0]
+
+  // Each entity has its own real attribute set (Host attrs are never the
+  // same as Storage attrs) — pulled from the same GF_ENTITY_ATTRS registry
+  // the page-level Graph Filter drawer uses, instead of one flat generic
+  // list shared by every entity regardless of which node is active.
+  const entityAttrDefs = getEntityAttrs(activeEntity?.id)
+  const filteredAttrs = entityAttrDefs
+    .map(a => a.label)
+    .filter(a => !attrSearch || a.toLowerCase().includes(attrSearch.toLowerCase()))
+  const selectedAttrDef = entityAttrDefs.find(a => a.label === selectedAttr)
+  // Not every real attribute has curated sample values yet — fall back to
+  // the shared mock set for the common fields that do (Type, Origin, etc.)
+  // before leaving the Values grid empty.
+  const values = (selectedAttrDef?.options?.length ? selectedAttrDef.options : (GRAPH_FILTER_VALUES[selectedAttr] || []))
+    .filter(v => !valSearch || v.toLowerCase().includes(valSearch.toLowerCase()))
   const attrHasFilter = (attr) => pendingFilters.some(f => f.attr === attr && f.entityId === activeEntity?.id)
 
   const toggleVal = v => setSelectedVals(prev =>
@@ -1010,8 +1751,8 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
   }
   const selectEntity = (id) => {
     setActiveEntityId(id)
-    setShowGraph(false)
-    setSelectedAttr('Type')
+    setAttrsOpen(true)
+    setSelectedAttr(getEntityAttrs(id)[0]?.label || 'Type')
     setSelectedVals([])
     setSelectAll(false)
   }
@@ -1029,26 +1770,38 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
     setSelectedVals([])
     setSelectAll(false)
   }
-  const removePendingFilter = (id) => setPendingFilters(prev => prev.filter(f => f.id !== id))
+  // Each traversed relationship becomes its own filter chip — "Graph Filter:
+  // Host Has Finding" (matching PathChainNode's own relation-chip wording,
+  // not an arrow) — using the same sentinel pattern the page-level Graph
+  // Filter uses, so it slots into the existing preview tree / Apply payload
+  // without any special-casing there.
+  const connectionFilters = traversal.allConnections.map((c, i) => {
+    const fromE = GF_ENTITIES.find(e => e.id === c.from)
+    const toE   = GF_ENTITIES.find(e => e.id === c.to)
+    return {
+      id: `rel-${c.from}-${c.to}-${i}`, attr: 'Graph Filter', values: [`${fromE?.label} Has ${toE?.label}`], exclude: false,
+      entityId: c.from, entityLabel: fromE?.label, isRelation: true, relFrom: c.from, relTo: c.to,
+    }
+  })
+  const removePendingFilter = (id) => {
+    const rel = connectionFilters.find(f => f.id === id)
+    if (rel) { traversal.removeConnection(rel.relFrom, rel.relTo); return }
+    setPendingFilters(prev => prev.filter(f => f.id !== id))
+  }
   const resetFilters = () => {
     setPendingFilters([])
     setSelectedVals([])
     setSelectAll(false)
+    traversal.reset()
   }
 
-  // Group the Active Filter Preview by entity, in the order entities were
-  // first touched, so filters from several graph nodes read as separate
-  // branches instead of one flat list.
-  const previewGroups = useMemo(() => {
-    const order = []
-    const byEntity = {}
-    pendingFilters.forEach(f => {
-      const key = f.entityId || 'unknown'
-      if (!byEntity[key]) { byEntity[key] = { entityId: key, entityLabel: f.entityLabel || 'Entity', filters: [] }; order.push(key) }
-      byEntity[key].filters.push(f)
-    })
-    return order.map(k => byEntity[k])
-  }, [pendingFilters])
+  // Active Filter Preview entries per entity — relationships themselves are
+  // no longer synthesized into this list (traversal.paths renders them
+  // structurally via PathFilterTree); this only supplies each entity's own
+  // attribute filters.
+  const getPreviewEntries = (entityId) => pendingFilters
+    .filter(f => f.entityId === entityId && !f.isRelation && f.values?.length)
+    .map(f => ({ key: f.id, label: f.attr, mode: f.exclude ? 'Exclude' : 'Include', values: f.values, onRemove: () => removePendingFilter(f.id) }))
 
   return (
     <div className="dc-gf-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -1065,109 +1818,130 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
 
         {/* Body */}
         <div className="dc-gf-body">
-          {/* Left panel — attributes, or the entity graph canvas */}
-          <div className={`dc-gf-left${showGraph ? ' dc-gf-left--full' : ''}`}>
-            <button className="dc-gf-hide-attrs" onClick={() => setShowGraph(v => !v)}>
+          {/* Graph canvas — always visible; the attributes panel below overlays
+              on top of it instead of replacing it, so switching entities never
+              loses the graph context. */}
+          <div className="gf-canvas-area dc-gf-canvas-area" onMouseDown={startCanvasPan}>
+            {/* Sits right at the overlay panel's left edge (or the canvas's
+                own right edge once collapsed) so the toggle always reads as
+                attached to the panel, not stranded at a fixed spot. */}
+            <button
+              className="dc-gf-toggle-attrs"
+              style={{ right: attrsOpen ? ATTRS_PANEL_WIDTH + 16 : 16 }}
+              onClick={() => setAttrsOpen(v => !v)}
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d={showGraph ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'}/>
+                <path d={attrsOpen ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'}/>
               </svg>
-              {showGraph ? 'Back to Attributes' : 'Go to Graph'}
+              {attrsOpen ? 'Hide Attributes' : 'Show Attributes'}
             </button>
-            {showGraph ? (
-              <div className="gf-canvas-area dc-gf-canvas-area">
-                {entities.map(entity => {
-                  const selected = activeEntityId === entity.id
-                  return (
-                    <div
-                      key={entity.id}
-                      className="gf-node"
-                      onClick={() => selectEntity(entity.id)}
-                    >
-                      <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
-                        <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
-                        <span className="gf-node__count">{entity.count.toLocaleString()}</span>
-                      </div>
-                      <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>
-                        {entity.label}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <>
-                <div className="dc-gf-search-wrap">
-                  <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
-                </div>
-                <div className="dc-gf-entity-label">{activeEntity?.label}</div>
-                <div className="dc-gf-attr-list">
-                  {filteredAttrs.map(attr => (
-                    <div
-                      key={attr}
-                      className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
-                      onClick={() => { setSelectedAttr(attr); setSelectedVals([]); setSelectAll(false) }}
-                    >
-                      <span className="dc-gf-attr-name">{attr}</span>
-                      {attrHasFilter(attr) && <span className="dc-gf-attr-dot" />}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            {/* Draggable — the attributes panel covers a fixed slice of the
+                canvas on the right, so any node laid out under it needs a way
+                to be panned into view. */}
+            <div
+              className="dc-gf-canvas-pan dc-gf-canvas-pan--graph"
+              style={{
+                right: attrsOpen ? ATTRS_PANEL_WIDTH : 0,
+                transform: `translate(${canvasPan.x}px, ${canvasPan.y}px)`,
+              }}
+            >
+              <GFRelationCanvas entities={entities} activeEntityId={activeEntityId} traversal={traversal} />
+            </div>
           </div>
 
-          {/* Right panel — values (hidden while the graph canvas is active).
-              Attribute-only pickers (mode="attr", e.g. Classification/Aggregate
-              By) filter on the whole attribute, so the value list is shown for
-              context but disabled — only mode="filter" (the widget-filter
-              flow) lets specific values be picked. */}
-          {!showGraph && (
-          <div className={`dc-gf-right${mode !== 'filter' ? ' dc-gf-right--disabled' : ''}`}>
-            <div className="dc-gf-val-heading">Values ({(AGGREGATE_VALUE_COUNTS[selectedAttr] ?? values.length).toLocaleString()})</div>
-            <div className="dc-gf-search-wrap">
-              <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
+          {/* Attributes + values — a collapsible panel that overlays the graph
+              canvas rather than replacing it. Attribute-only pickers
+              (mode="attr", e.g. Classification/Aggregate By) filter on the
+              whole attribute, so the value list is shown for context but
+              disabled — only mode="filter" (the widget-filter flow) lets
+              specific values be picked. */}
+          <div
+            className={`dc-gf-attrs-overlay${attrsOpen ? '' : ' dc-gf-attrs-overlay--collapsed'}`}
+            style={{ width: ATTRS_PANEL_WIDTH }}
+          >
+            <div className="dc-gf-left">
+              <div className="dc-gf-search-wrap">
+                <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
+              </div>
+              <div className="dc-gf-entity-label">{activeEntity?.label}</div>
+              <div className="dc-gf-attr-list">
+                {filteredAttrs.map(attr => (
+                  <div
+                    key={attr}
+                    className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
+                    onClick={() => { setSelectedAttr(attr); setSelectedVals([]); setSelectAll(false) }}
+                  >
+                    <span className="dc-gf-attr-name">{attr}</span>
+                    {attrHasFilter(attr) && <span className="dc-gf-attr-dot" />}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="dc-gf-val-controls">
-              <label className="dc-gf-select-all-label">
-                <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="dc-gf-checkbox" />
-                Select All as Pattern
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-              </label>
-              <span className="dc-gf-sort-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-                Sort by : A-Z
-              </span>
-            </div>
-            <div className="dc-gf-val-grid">
-              {values.map(v => (
-                <div key={v} className="dc-gf-val-item" onClick={() => toggleVal(v)}>
-                  <span className="dc-gf-val-name">{v}</span>
-                  <span className={`dc-gf-val-radio${selectedVals.includes(v) ? ' dc-gf-val-radio--on' : ''}`} />
+
+            <div className={`dc-gf-right${mode !== 'filter' ? ' dc-gf-right--disabled' : ''}`}>
+              <div className="dc-gf-val-heading">Values ({(AGGREGATE_VALUE_COUNTS[selectedAttr] ?? selectedAttrDef?.valueCount ?? values.length).toLocaleString()})</div>
+              <div className="dc-gf-search-wrap">
+                <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
+              </div>
+              <div className="dc-gf-val-controls">
+                <label className="dc-gf-select-all-label">
+                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="dc-gf-checkbox" />
+                  Select All as Pattern
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </label>
+                <span className="dc-gf-sort-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+                  Sort by : A-Z
+                </span>
+              </div>
+              <div className="dc-gf-val-grid">
+                {values.map(v => (
+                  <div key={v} className="dc-gf-val-item" onClick={() => toggleVal(v)}>
+                    <span className="dc-gf-val-name">{v}</span>
+                    <span className={`dc-gf-val-radio${selectedVals.includes(v) ? ' dc-gf-val-radio--on' : ''}`} />
+                  </div>
+                ))}
+              </div>
+              <div className="dc-gf-val-actions">
+                <button className="dc-gf-action-btn" disabled={!selectedVals.length} onClick={() => addPendingFilter(true)}>Exclude Selected</button>
+                <button className="dc-gf-action-btn" disabled={!selectedVals.length} onClick={() => addPendingFilter(false)}>Include Selection</button>
+              </div>
+              {/* Filters — this attribute's own applied filters only (every
+                  attribute/entity's filters together are in the Active Filter
+                  Preview bar below). */}
+              {mode === 'filter' && pendingFilters.some(f => f.attr === selectedAttr && f.entityId === activeEntity?.id) && (
+                <div className="dc-gf-attr-filters">
+                  <div className="dc-gf-attr-filters-label">Filters</div>
+                  <div className="dc-gf-preview-branches">
+                    {pendingFilters.filter(f => f.attr === selectedAttr && f.entityId === activeEntity?.id).map(f => (
+                      <div key={f.id} className="dc-gf-preview-branch">
+                        <span className={`dc-gf-filter-chip-badge${f.exclude ? ' dc-gf-filter-chip-badge--exclude' : ''}`}>
+                          {f.exclude ? 'Exclude' : 'Include'}
+                        </span>
+                        <span className="dc-gf-preview-branch-text">{f.values.join(', ')}</span>
+                        <button className="dc-gf-filter-chip-x" onClick={() => removePendingFilter(f.id)}>×</button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="dc-gf-val-actions">
-              <button className="dc-gf-action-btn" disabled={!selectedVals.length} onClick={() => addPendingFilter(true)}>Exclude Selected</button>
-              <button className="dc-gf-action-btn" disabled={!selectedVals.length} onClick={() => addPendingFilter(false)}>Include Selection</button>
+              )}
             </div>
           </div>
-          )}
         </div>
 
         {/* Active Filter Preview — modeled on the page-level Graph Filter's
             bottom preview bar: a persistent, entity-grouped tree of every
-            filter built so far, visible in both the attribute-list and graph
-            views so switching entities via "Go to Graph" never hides it. Only
-            meaningful for the widget-filter flow (mode="filter") — the plain
-            attribute pickers (classification/aggregate-by) don't build a
-            filter list at all. */}
+            filter built so far, visible regardless of whether the attributes
+            overlay is open or collapsed. Only meaningful for the widget-filter
+            flow (mode="filter") — the plain attribute pickers
+            (classification/aggregate-by) don't build a filter list at all. */}
         {mode === 'filter' && (
           <div className="dc-gf-preview-section">
             <div className="dc-gf-preview-label">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               Active Filter Preview
             </div>
-            <FilterPreviewTree groups={previewGroups} onRemove={(entityId, f) => removePendingFilter(f.id)} />
+            <PathFilterTree paths={traversal.paths} getEntries={getPreviewEntries} onRemoveConnection={traversal.removeConnection} />
           </div>
         )}
 
@@ -1175,7 +1949,7 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
         <div className="dc-gf-footer">
           <button
             className="dc-gf-reset-btn"
-            disabled={!pendingFilters.length && !selectedVals.length}
+            disabled={!pendingFilters.length && !selectedVals.length && !traversal.paths.length}
             onClick={resetFilters}
           >
             Reset all filters
@@ -1185,8 +1959,8 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
           <button
             className="ds-btn sz-md t-primary"
             onClick={() => {
-              if (mode !== 'filter') { onApply(selectedAttr); return }
-              const toApply = [...pendingFilters]
+              if (mode !== 'filter') { onApply(selectedAttr, activeEntity?.id); return }
+              const toApply = [...connectionFilters, ...pendingFilters]
               if (selectedVals.length) toApply.push({
                 attr: selectedAttr, values: [...selectedVals], exclude: false,
                 entityId: activeEntity?.id, entityLabel: activeEntity?.label,
@@ -1195,8 +1969,13 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
               // whatever changed this session) — the caller replaces its
               // filter state wholesale, it doesn't append. entityId/entityLabel
               // travel with it so chips outside the modal can disambiguate
-              // which scope entity a filter belongs to.
-              onApply(toApply.map(f => ({ attr: f.attr, values: f.values, exclude: f.exclude, entityId: f.entityId, entityLabel: f.entityLabel })))
+              // which scope entity a filter belongs to. Relationship chips
+              // (isRelation) carry relFrom/relTo too, not just the flag — that's
+              // what lets reconstructPathsFromRelationFilters rebuild the
+              // traversal (and so the canvas connecting line + nested preview
+              // tree) the next time this field's Graph Filter is reopened;
+              // without them the relation would survive only as an inert chip.
+              onApply(toApply.map(f => ({ attr: f.attr, values: f.values, exclude: f.exclude, entityId: f.entityId, entityLabel: f.entityLabel, ...(f.isRelation ? { isRelation: true, relFrom: f.relFrom, relTo: f.relTo } : {}) })))
             }}
           >Apply</button>
         </div>
@@ -1208,35 +1987,59 @@ function GraphFilterModal({ currentAttr, mode = 'attr', scopeEntities, existingF
 // ── ScopeAttrsPanel ──────────────────────────────────────────────────
 // Attribute + value picker used by DashboardScopeModal's "Add Attributes"
 // step. Structured exactly like the widget settings' Graph Filter modal —
-// same attribute-list / values-grid / Exclude-Include layout, the same mock
-// GRAPH_FILTER_ATTRS/GRAPH_FILTER_VALUES dummy data, the same "Go to Graph"
-// canvas toggle for switching which scope entity is active, and the same
-// Active Filter Preview tree — but grouped across every entity in the
-// dashboard's scope at once (a single attribute set applies to all of them),
-// not just the one currently active.
-function ScopeAttrsPanel({ entities, filters, onFiltersChange }) {
+// same per-entity attribute list (GF_ENTITY_ATTRS) / values-grid /
+// Exclude-Include layout, the same collapsible attributes-overlay-on-canvas
+// for switching which scope entity is active, and the same Active Filter
+// Preview tree — but grouped across every entity
+// in the dashboard's scope at once (a single attribute set applies to all of
+// them), not just the one currently active.
+function ScopeAttrsPanel({ entities, filters, onFiltersChange, paths, onPathsChange }) {
   const [activeEntityId, setActiveEntityId] = useState(entities[0]?.id)
-  const [showGraph,      setShowGraph]      = useState(false)
+  const [attrsOpen,      setAttrsOpen]      = useState(true)
+  const [canvasPan, startCanvasPan] = useCanvasPan()
 
-  const activeEntity   = entities.find(e => e.id === activeEntityId) || entities[0]
+  // Traversal can reach entity types beyond the dashboard's chosen base
+  // entities (e.g. Host → Vulnerability) so you can filter/add attributes on
+  // them in context — but a traversed entity stays scoped to that filter,
+  // it never gets promoted into the dashboard's own base-entity list, so
+  // `entities` (the root row / base scope) stays exactly what was picked on
+  // the "Set Dashboard Scope" grid.
+  // paths/onPathsChange are owned by DashboardScopeModal so the traversal
+  // survives this panel closing (the "Add Attributes" step can be reopened
+  // any number of times without losing the relationship chain already built).
+  const traversal = useGraphTraversal(entities, (id) => selectEntity(id), { paths, setPaths: onPathsChange })
+
+  // Traversal can reach entity types outside the scope list — fall back to
+  // the full registry instead of silently pinning back to entities[0].
+  const activeEntity   = entities.find(e => e.id === activeEntityId) || GF_ENTITIES.find(e => e.id === activeEntityId) || entities[0]
   const activeFilters  = filters[activeEntityId] || {}
+  // Each entity's own real attribute set — same GF_ENTITY_ATTRS registry the
+  // widget builder's Graph Filter picker uses, so a Storage scope entity
+  // only ever offers Storage attributes here, never Host's.
+  const entityAttrDefs = getEntityAttrs(activeEntityId)
 
-  const [selectedAttr, setSelectedAttr] = useState(GRAPH_FILTER_ATTRS[0])
+  const [selectedAttr, setSelectedAttr] = useState(entityAttrDefs[0]?.label)
   const [attrSearch, setAttrSearch] = useState('')
   const [valSearch,  setValSearch]  = useState('')
-  const [draftVals,  setDraftVals]  = useState(() => new Set(activeFilters[GRAPH_FILTER_ATTRS[0]]?.values))
+  const [draftVals,  setDraftVals]  = useState(() => new Set(activeFilters[entityAttrDefs[0]?.label]?.values))
   const [selectAll,  setSelectAll]  = useState(false)
 
-  const filteredAttrs = GRAPH_FILTER_ATTRS.filter(a => !attrSearch || a.toLowerCase().includes(attrSearch.toLowerCase()))
-  const values = (GRAPH_FILTER_VALUES[selectedAttr] || []).filter(v => !valSearch || v.toLowerCase().includes(valSearch.toLowerCase()))
+  const filteredAttrs = entityAttrDefs.map(a => a.label).filter(a => !attrSearch || a.toLowerCase().includes(attrSearch.toLowerCase()))
+  const selectedAttrDef = entityAttrDefs.find(a => a.label === selectedAttr)
+  const values = (selectedAttrDef?.options?.length ? selectedAttrDef.options : (GRAPH_FILTER_VALUES[selectedAttr] || [])).filter(v => !valSearch || v.toLowerCase().includes(valSearch.toLowerCase()))
 
-  const previewGroups = useMemo(() => buildPreviewGroups(filters, entities), [filters, entities])
+  // GF_ENTITIES (not `entities`) for label lookup — a traversed entity can
+  // have filters here without ever joining the dashboard's base scope list.
+  const getPreviewEntries = (entityId) => Object.entries(filters[entityId] || {})
+    .filter(([, f]) => f?.values?.length)
+    .map(([attr, f]) => ({ key: attr, label: attr, mode: f.mode, values: f.values, onRemove: () => removeFilterFor(entityId, attr) }))
 
   const selectEntity = (id) => {
     setActiveEntityId(id)
-    setShowGraph(false)
-    setSelectedAttr(GRAPH_FILTER_ATTRS[0])
-    setDraftVals(new Set(filters[id]?.[GRAPH_FILTER_ATTRS[0]]?.values))
+    setAttrsOpen(true)
+    const firstLabel = getEntityAttrs(id)[0]?.label
+    setSelectedAttr(firstLabel)
+    setDraftVals(new Set(filters[id]?.[firstLabel]?.values))
     setAttrSearch(''); setValSearch(''); setSelectAll(false)
   }
   const selectAttr = (attr) => {
@@ -1270,88 +2073,102 @@ function ScopeAttrsPanel({ entities, filters, onFiltersChange }) {
   return (
     <>
     <div className="dc-gf-attrs-body" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3, '--dc-indigo': PAI.indigo }}>
-      <div className={`dc-gf-left${showGraph ? ' dc-gf-left--full' : ''}`}>
-        <button className="dc-gf-hide-attrs" onClick={() => setShowGraph(v => !v)}>
+      <div className="gf-canvas-area dc-gf-canvas-area" onMouseDown={startCanvasPan}>
+        <button
+          className="dc-gf-toggle-attrs"
+          style={{ right: attrsOpen ? ATTRS_PANEL_WIDTH + 16 : 16 }}
+          onClick={() => setAttrsOpen(v => !v)}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d={showGraph ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'}/>
+            <path d={attrsOpen ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'}/>
           </svg>
-          {showGraph ? 'Back to Attributes' : 'Go to Graph'}
+          {attrsOpen ? 'Hide Attributes' : 'Show Attributes'}
         </button>
-        {showGraph ? (
-          <div className="gf-canvas-area dc-gf-canvas-area">
-            {entities.map(entity => {
-              const selected = activeEntityId === entity.id
-              return (
-                <div key={entity.id} className="gf-node" onClick={() => selectEntity(entity.id)}>
-                  <div className={`gf-node__circle${selected ? ' gf-node__circle--selected' : ''}`}>
-                    <img src={`assets/icons/${entity.file}`} width={18} height={18} alt="" className="gf-node__img" />
-                    <span className="gf-node__count">{entity.count.toLocaleString()}</span>
-                  </div>
-                  <span className={`gf-node__label${selected ? ' gf-node__label--selected' : ''}`}>{entity.label}</span>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <>
-            <div className="dc-gf-search-wrap">
-              <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
-            </div>
-            <div className="dc-gf-entity-label">{activeEntity?.label}</div>
-            <div className="dc-gf-attr-list">
-              {filteredAttrs.map(attr => (
-                <div
-                  key={attr}
-                  className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
-                  onClick={() => selectAttr(attr)}
-                >
-                  <span className="dc-gf-attr-name">{attr}</span>
-                  {activeFilters[attr] && <span className="dc-gf-attr-dot" />}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        <div
+          className="dc-gf-canvas-pan dc-gf-canvas-pan--graph"
+          style={{
+            right: attrsOpen ? ATTRS_PANEL_WIDTH : 0,
+            transform: `translate(${canvasPan.x}px, ${canvasPan.y}px)`,
+          }}
+        >
+          <GFRelationCanvas entities={entities} activeEntityId={activeEntityId} traversal={traversal} />
+        </div>
       </div>
 
-      {!showGraph && (
-      <div className="dc-gf-right">
-        <div className="dc-gf-val-heading">Values ({(AGGREGATE_VALUE_COUNTS[selectedAttr] ?? values.length).toLocaleString()})</div>
-        <div className="dc-gf-search-wrap">
-          <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
+      <div
+        className={`dc-gf-attrs-overlay${attrsOpen ? '' : ' dc-gf-attrs-overlay--collapsed'}`}
+        style={{ width: ATTRS_PANEL_WIDTH }}
+      >
+        <div className="dc-gf-left">
+          <div className="dc-gf-search-wrap">
+            <DSPillSearch value={attrSearch} onChange={setAttrSearch} placeholder="Search attribute" width="100%" />
+          </div>
+          <div className="dc-gf-entity-label">{activeEntity?.label}</div>
+          <div className="dc-gf-attr-list">
+            {filteredAttrs.map(attr => (
+              <div
+                key={attr}
+                className={`dc-gf-attr-item${selectedAttr === attr ? ' dc-gf-attr-item--active' : ''}`}
+                onClick={() => selectAttr(attr)}
+              >
+                <span className="dc-gf-attr-name">{attr}</span>
+                {activeFilters[attr] && <span className="dc-gf-attr-dot" />}
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="dc-gf-val-controls">
-          <label className="dc-gf-select-all-label">
-            <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="dc-gf-checkbox" />
-            Select All as Pattern
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-          </label>
-          <span className="dc-gf-sort-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-            Sort by : A-Z
-          </span>
-        </div>
-        <div className="dc-gf-val-grid">
-          {values.map(v => (
-            <div key={v} className="dc-gf-val-item" onClick={() => toggleVal(v)}>
-              <span className="dc-gf-val-name">{v}</span>
-              <span className={`dc-gf-val-radio${draftVals.has(v) ? ' dc-gf-val-radio--on' : ''}`} />
+
+        <div className="dc-gf-right">
+          <div className="dc-gf-val-heading">Values ({(AGGREGATE_VALUE_COUNTS[selectedAttr] ?? values.length).toLocaleString()})</div>
+          <div className="dc-gf-search-wrap">
+            <DSPillSearch value={valSearch} onChange={setValSearch} placeholder="Search value" width="100%" />
+          </div>
+          <div className="dc-gf-val-controls">
+            <label className="dc-gf-select-all-label">
+              <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="dc-gf-checkbox" />
+              Select All as Pattern
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dc-icon-muted"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </label>
+            <span className="dc-gf-sort-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+              Sort by : A-Z
+            </span>
+          </div>
+          <div className="dc-gf-val-grid">
+            {values.map(v => (
+              <div key={v} className="dc-gf-val-item" onClick={() => toggleVal(v)}>
+                <span className="dc-gf-val-name">{v}</span>
+                <span className={`dc-gf-val-radio${draftVals.has(v) ? ' dc-gf-val-radio--on' : ''}`} />
+              </div>
+            ))}
+          </div>
+          <div className="dc-gf-val-actions">
+            <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Exclude')}>Exclude Selected</button>
+            <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Include')}>Include Selection</button>
+          </div>
+          {activeFilters[selectedAttr] && (
+            <div className="dc-gf-attr-filters">
+              <div className="dc-gf-attr-filters-label">Filters</div>
+              <div className="dc-gf-preview-branches">
+                <div className="dc-gf-preview-branch">
+                  <span className={`dc-gf-filter-chip-badge${activeFilters[selectedAttr].mode === 'Exclude' ? ' dc-gf-filter-chip-badge--exclude' : ''}`}>
+                    {activeFilters[selectedAttr].mode}
+                  </span>
+                  <span className="dc-gf-preview-branch-text">{activeFilters[selectedAttr].values.join(', ')}</span>
+                  <button className="dc-gf-filter-chip-x" onClick={() => removeFilterFor(activeEntityId, selectedAttr)}>×</button>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="dc-gf-val-actions">
-          <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Exclude')}>Exclude Selected</button>
-          <button className="dc-gf-action-btn" disabled={!draftVals.size} onClick={() => applyMode('Include')}>Include Selection</button>
+          )}
         </div>
       </div>
-      )}
     </div>
     <div className="dc-gf-preview-section">
       <div className="dc-gf-preview-label">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Active Filter Preview
       </div>
-      <FilterPreviewTree groups={previewGroups} onRemove={(entityId, f) => removeFilterFor(entityId, f.attr)} />
+      <PathFilterTree paths={traversal.paths} getEntries={getPreviewEntries} onRemoveConnection={traversal.removeConnection} />
     </div>
     </>
   )
@@ -1362,12 +2179,16 @@ function ScopeAttrsPanel({ entities, filters, onFiltersChange }) {
 // (non-dismissable) the first time a brand-new dashboard is opened; when
 // reopened later via the Dashboard Scope badge it's a normal dismissable
 // modal so the user can change the scope.
-function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters, onClose, onBack, onSelect }) {
+function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters, initialPaths, onClose, onBack, onSelect }) {
   const [search, setSearch]           = useState('')
   const [selectedIds, setSelectedIds] = useState(() =>
     initialSelectedIds?.length ? initialSelectedIds : ['host']
   )
   const [attrFilters, setAttrFilters] = useState(() => initialAttrFilters ?? {})
+  // Traversal paths built via "Add Attributes" — owned here (not inside
+  // ScopeAttrsPanel) so re-opening that step doesn't lose the relationship
+  // chain (e.g. Host → Identity → Person) already built.
+  const [scopePaths, setScopePaths]   = useState(() => initialPaths ?? [])
   const [attrsViewOpen, setAttrsViewOpen] = useState(false)
 
   const filtered = GF_ENTITIES.filter(e =>
@@ -1376,11 +2197,38 @@ function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters
   const selected = GF_ENTITIES.filter(e => selectedIds.includes(e.id))
   const dismiss = mandatory ? onBack : onClose
   const toggleEntity = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setSelectedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      // Deselecting a scope entity drops any relationship chain rooted at
+      // it too — otherwise its attribute counts would keep rolling up onto
+      // a root tile that's no longer in the grid.
+      if (prev.includes(id)) setScopePaths(paths => paths.filter(p => p[0] !== id))
+      return next
+    })
   }
-  const attrCount = (id) => Object.keys(attrFilters[id] || {}).length
+  // An entity reached only as a non-root step of some relationship chain
+  // (e.g. Person in Host → Identity → Person) isn't its own scope root, so
+  // its attribute count rolls up onto that chain's root (Host) instead of
+  // showing separately on its own grid tile.
+  const isChainDescendant = (id) => scopePaths.some(p => p.length > 1 && p.slice(1).includes(id))
+  const attrCount = (id) => {
+    if (isChainDescendant(id)) return 0
+    let total = Object.keys(attrFilters[id] || {}).length
+    scopePaths.filter(p => p[0] === id).forEach(p => {
+      p.slice(1).forEach(stepId => { total += Object.keys(attrFilters[stepId] || {}).length })
+    })
+    return total
+  }
   const totalAttrCount = selected.reduce((n, e) => n + attrCount(e.id), 0)
-  const scopePreviewGroups = useMemo(() => buildPreviewGroups(attrFilters, GF_ENTITIES), [attrFilters])
+  const getScopePreviewEntries = (entityId) => Object.entries(attrFilters[entityId] || {})
+    .filter(([, f]) => f?.values?.length)
+    .map(([attr, f]) => ({ key: attr, label: attr, mode: f.mode, values: f.values, onRemove: () => removeAttrFilter(entityId, attr) }))
+  const removeScopeConnection = (from, to) => {
+    const pathIdx = scopePaths.findIndex(p => { const i = p.indexOf(to); return i > 0 && p[i - 1] === from })
+    if (pathIdx < 0) return
+    const cutAt = scopePaths[pathIdx].indexOf(to)
+    setScopePaths(prev => prev.map((p, i) => i === pathIdx ? p.slice(0, cutAt) : p).filter(p => p.length > 0))
+  }
   const openAttrs = () => { if (selected.length) setAttrsViewOpen(true) }
   const removeAttrFilter = (entityId, attr) => {
     setAttrFilters(prev => {
@@ -1403,13 +2251,15 @@ function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters
               entities={selected}
               filters={attrFilters}
               onFiltersChange={setAttrFilters}
+              paths={scopePaths}
+              onPathsChange={setScopePaths}
             />
           </div>
           <div className="ds-modal-footer">
             <button
               className="dc-gf-reset-btn"
               disabled={totalAttrCount === 0}
-              onClick={() => setAttrFilters({})}
+              onClick={() => { setAttrFilters({}); setScopePaths([]) }}
             >
               Reset all filters
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
@@ -1462,7 +2312,7 @@ function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 Active Filters
               </div>
-              <FilterPreviewTree groups={scopePreviewGroups} onRemove={(entityId, f) => removeAttrFilter(entityId, f.attr)} />
+              <PathFilterTree paths={scopePaths} getEntries={getScopePreviewEntries} onRemoveConnection={removeScopeConnection} />
             </div>
           )}
         </div>
@@ -1486,7 +2336,7 @@ function DashboardScopeModal({ mandatory, initialSelectedIds, initialAttrFilters
             <button
               className="ds-btn sz-md t-primary"
               disabled={!selected.length}
-              onClick={() => selected.length && onSelect(selected, attrFilters)}
+              onClick={() => selected.length && onSelect(selected, attrFilters, scopePaths)}
             >Confirm Scope</button>
           </div>
         </div>
@@ -1841,15 +2691,17 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
   }, [widget.gw, widget.gh, widget.chartId])
   const [chartType, setChartType] = useState(widget.chartId)
   const [classification, setClassification] = useState('Type')
-  const [operation, setOperation]           = useState('count-distinct')
+  // Which scope entity each attribute picker's current value was chosen
+  // from — travels with the widget so a later scope change (e.g. Host
+  // dropped from scope) can tell whether this widget's attribute still
+  // belongs to an entity that's actually still in scope.
+  const [classificationEntityId, setClassificationEntityId] = useState(widget.classificationEntityId || scopeEntities?.[0]?.id)
+  const [operation, setOperation]           = useState(widget.operation || 'count-distinct')
   const [aggregateBy, setAggregateBy]       = useState('host')
+  const [aggregateByEntityId, setAggregateByEntityId] = useState(widget.aggregateByEntityId || scopeEntities?.[0]?.id)
 
-  const [widgetFilters, setWidgetFilters]   = useState([])
-  // A dashboard scoped to just one entity makes "Host · Type: Server" chip
-  // labels redundant noise — only worth showing once there's more than one
-  // entity to disambiguate between.
-  const showFilterEntity = (scopeEntities?.length || 0) > 1
-  const [sortBy, setSortBy]                 = useState('')
+  const [widgetFilters, setWidgetFilters]   = useState(widget.widgetFilters || [])
+  const [sortBy, setSortBy]                 = useState(widget.sortBy || 'value-desc')
   const [showTotalCount, setShowTotalCount] = useState(widget.showTotalCount ?? true)
   const [showPctChange, setShowPctChange]   = useState(widget.showPctChange ?? true)
   const [showLegend, setShowLegend]         = useState(widget.showLegend ?? true)
@@ -1864,30 +2716,48 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
   const [groupModalOpen, setGroupModalOpen] = useState(null) // null closed, else { editIndex, initial }
   const [aggColModalOpen, setAggColModalOpen] = useState(null)
   const [magnitude, setMagnitude]           = useState('Origin')
+  const [magnitudeEntityId, setMagnitudeEntityId] = useState(widget.magnitudeEntityId || scopeEntities?.[0]?.id)
   const [magnitudeModalOpen, setMagnitudeModalOpen] = useState(false)
   const [stackClassModalOpen, setStackClassModalOpen] = useState(false)
   const [explodeArrayFields, setExplodeArrayFields] = useState(true)
   const [chartColors, setChartColors]       = useState(() => buildChartColors(widget))
   const [colorPickerOpen, setColorPickerOpen] = useState(null)
+  const [pctChangeColors, setPctChangeColors] = useState(() => ({
+    Increase: widget.pctChangeColors?.Increase || '#31A56D',
+    Decrease: widget.pctChangeColors?.Decrease || '#D12329',
+  }))
+  const [pctColorPickerOpen, setPctColorPickerOpen] = useState(null)
+  const [chartColorsOpen, setChartColorsOpen] = useState(true)
+  const [pctChangeColorsOpen, setPctChangeColorsOpen] = useState(true)
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [widgetFilterModalOpen, setWidgetFilterModalOpen] = useState(false)
   const [exploreIn, setExploreIn] = useState(widget.exploreIn ?? false)
+  const [hasComparisonMetric, setHasComparisonMetric] = useState(widget.hasComparisonMetric ?? false)
+  // Seeds the KPI's "Comparison Metric" swatch the first time the toggle
+  // above is turned on mid-session (a fresh chartColors is only built at
+  // mount) — the row itself stays hidden while the toggle is off (see the
+  // Chart Elements list below), and re-enabling keeps whatever was picked
+  // rather than resetting to default.
+  useEffect(() => {
+    if (chartType !== 'kpi' || !hasComparisonMetric) return
+    setChartColors(prev => 'Comparison Metric' in prev ? prev : { ...prev, 'Comparison Metric': '#8B88E2' })
+  }, [hasComparisonMetric, chartType])
   const [kpiCompOperation, setKpiCompOperation]   = useState('count-distinct')
   const [kpiCompAggregateBy, setKpiCompAggregateBy] = useState('host')
   const [valueFontSize, setValueFontSize] = useState(widget.valueFontSize || 'auto')
   const [aggregateByModalOpen, setAggregateByModalOpen] = useState(false)
   const [kpiCompAggregateByModalOpen, setKpiCompAggregateByModalOpen] = useState(false)
   const [kpiFilterModalOpen, setKpiFilterModalOpen] = useState(false)
-  const [kpiFilters, setKpiFilters]         = useState([])
+  const [kpiFilters, setKpiFilters]         = useState(widget.kpiFilters || [])
   const [kpiCompFilterModalOpen, setKpiCompFilterModalOpen] = useState(false)
   const [kpiCompFilters, setKpiCompFilters] = useState([])
   const [limitTopValues, setLimitTopValues] = useState(widget.limitTopValues ?? false)
   const [topValuesCount, setTopValuesCount] = useState(widget.topValuesCount ?? 5)
-  // A brand-new widget has no persisted classification yet — Configure Colors
-  // stays locked until the user actually engages with the Data tab's
-  // attribute control at least once (typing it for pie, or applying the
-  // attribute picker for bar/stacked charts).
-  const [attributeTouched, setAttributeTouched] = useState(widget.classification != null)
+  // Per-widget, independent of every other Data-tab field — reopening the
+  // panel and changing the filter/relationship/aggregation afterward must
+  // not flip this back off (see buildWidgetFilterDetails, which reads this
+  // widget's saved config fresh each render rather than snapshotting it).
+  const [showFilterDetailsToViewers, setShowFilterDetailsToViewers] = useState(widget.showFilterDetailsToViewers ?? false)
 
   const isPie       = chartType === 'pie'
   const isKpi       = chartType === 'kpi'
@@ -1946,6 +2816,64 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
     kpiAutoTitleRef.current = nextLabel
   }, [aggregateBy, isKpi])
 
+  // ── Heading/Description "Generate with Copilot" (mock) ─────────────────
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
+  // Signature of the config the Heading/Description fields were last
+  // generated from — null until the first successful generation. Compared
+  // against the current config to decide whether to show the "Config
+  // changed" staleness indicator (never used to auto-regenerate).
+  const [aiLastSignature, setAiLastSignature] = useState(null)
+
+  const aiAttr = isKpi ? (KPI_AGG_LABELS[aggregateBy] || aggregateBy)
+    : (isPie || isVertBar || isHorBar) ? classification
+    : (isStackVert || isStackHor || isLine) ? magnitude
+    : isAggTable ? (groupByCols[0]?.attribute || 'Table')
+    : isTable ? (columns[0] || 'Table')
+    : isHeading ? 'Section'
+    : 'Overview'
+  const aiAttrEntityId = isKpi ? aggregateByEntityId
+    : (isPie || isVertBar || isHorBar) ? classificationEntityId
+    : (isStackVert || isStackHor || isLine) ? magnitudeEntityId
+    : null
+  const aiOperation = (isTable || isHeading) ? null : operation
+  const aiSortBy = isBannerChart ? sortBy : null
+  const aiFilterCount = isKpi ? kpiFilters.length : widgetFilters.length
+  // The concrete number(s) the description can point to — a real KPI value
+  // for KPI cards, the shown/total value-count banner for banner charts —
+  // so "what's the count" and "what's the legend based on" have an actual
+  // answer instead of a generic aggregation clause.
+  const aiKpiValue = isKpi ? buildKpiMockData(aggregateBy, showTotalCount, hasComparisonMetric).value : null
+  const aiShowPeriodComparison = isKpi && showPctChange
+  const aiTrendText = isKpi ? '1.43%' : null
+  const aiTrendUp = isKpi ? true : null
+
+  const aiConfig = useMemo(() => buildWidgetAiConfig({
+    chartType, attrLabel: aiAttr, attrEntityId: aiAttrEntityId,
+    operation: aiOperation, filterCount: aiFilterCount, sortBy: aiSortBy, scopeEntities,
+    isKpi, kpiValue: aiKpiValue, showPeriodComparison: aiShowPeriodComparison, trendText: aiTrendText, trendUp: aiTrendUp,
+    isBannerChart, shownCount: isBannerChart ? shownAggregateValues : null, totalCount: isBannerChart ? totalAggregateValues : null,
+  }), [chartType, aiAttr, aiAttrEntityId, aiOperation, aiFilterCount, aiSortBy, scopeEntities,
+      isKpi, aiKpiValue, aiShowPeriodComparison, aiTrendText, aiTrendUp, isBannerChart, shownAggregateValues, totalAggregateValues])
+  const aiSignature = useMemo(() => JSON.stringify(aiConfig), [aiConfig])
+  const aiStale = aiLastSignature != null && aiLastSignature !== aiSignature
+  const aiHasDraft = aiLastSignature != null
+
+  const handleAiGenerateClick = () => {
+    if (aiLoading) return
+    setAiLoading(true)
+    setAiError(null)
+    mockGenerateWidgetHeadingDescription(aiConfig).then(result => {
+      setTitle(result.heading)
+      setDescription(result.description)
+      setAiLastSignature(aiSignature)
+      setAiLoading(false)
+    }).catch(() => {
+      setAiError('Could not generate a draft. Please try again.')
+      setAiLoading(false)
+    })
+  }
+
   return (
     <div
       className="dc-panel"
@@ -1955,7 +2883,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
       <div className="dc-panel-header">
         <div className="dc-panel-title-row">
           <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="" />
-          <span className="dc-panel-title">Widget Settings</span>
+          <span className="dc-panel-title">Edit Widget</span>
           <button onClick={onClose} className="dc-panel-close-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1996,12 +2924,47 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                 options={CHART_TYPES.map(c => ({ value: c.id, label: c.label }))}
               />
             </FieldRow>
-            <FieldRow label="Widget Title">
-              <TextInput placeholder="Enter widget title..." value={title} onChange={e => setTitle(e.target.value)} />
-            </FieldRow>
-            <FieldRow label="Description">
-              <TextArea placeholder="Describe what this widget shows..." value={description} onChange={e => setDescription(e.target.value)} />
-            </FieldRow>
+            <div className="dc-divider" />
+            <div className="dc-size-section" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
+              <div className="dc-size-section-heading dc-ai-heading-row">
+                <span>Content</span>
+                <div className="dc-ai-heading-actions">
+                  {aiStale && <span className="ds-badge info">Config changed</span>}
+                  <button
+                    type="button"
+                    className="ds-btn sz-sm dc-ai-generate-btn"
+                    disabled={aiLoading}
+                    onClick={handleAiGenerateClick}
+                  >
+                    {aiLoading
+                      ? <span className="ds-spinner" />
+                      : <img src="assets/icons/Navigator icon.svg" width={14} height={14} alt="" />}
+                    <span className="dc-ai-generate-btn-label">
+                      {aiLoading ? 'Generating…' : (aiHasDraft ? 'Regenerate' : 'Generate with Copilot')}
+                    </span>
+                  </button>
+                </div>
+              </div>
+              {aiError && (
+                <div className="ds-callout ds-callout-error dc-ai-error-callout">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <span>{aiError}</span>
+                </div>
+              )}
+              <div className="dc-size-sub-row">
+                <div className="dc-size-sub-label">Title</div>
+                <TextInput placeholder="Enter widget title..." value={title} onChange={e => setTitle(e.target.value)} />
+              </div>
+              <div className="dc-size-sub-row">
+                <div className="dc-size-sub-label">Description</div>
+                <TextArea placeholder="Describe what this widget shows..." value={description} onChange={e => setDescription(e.target.value)} />
+              </div>
+            </div>
+            <div className="dc-divider" />
             {isKPI && (
               <div className="dc-size-section" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
                 <div className="dc-size-section-heading">Text Size</div>
@@ -2015,43 +2978,93 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
               <div className="dc-size-section-heading">Widget Size</div>
               <div className="dc-size-sub-row">
                 <div className="dc-size-sub-label">Width</div>
-                <SizeSelectDropdown
+                <SegmentedTabs
                   value={sizeId}
-                  onChange={v => setSizeId(v)}
-                  options={(isHeading ? HEADING_WIDGET_SIZES : isKPI ? KPI_WIDGET_SIZES : WIDGET_SIZES).map(s => ({ value: s.id, label: s.label }))}
-                  emptyLabel="Custom"
+                  onChange={setSizeId}
+                  options={isHeading ? HEADING_WIDGET_SIZE_TABS : isKPI ? KPI_WIDGET_SIZE_TABS : WIDGET_SIZE_TABS}
+                  fullWidth
+                  height={32}
                 />
               </div>
               <div className="dc-size-sub-row">
                 <div className="dc-size-sub-label">Height</div>
-                <SizeSelectDropdown
+                <SegmentedTabs
                   value={heightId}
-                  onChange={v => setHeightId(v)}
-                  options={(isHeading ? HEADING_WIDGET_HEIGHTS : isKPI ? KPI_WIDGET_HEIGHTS : WIDGET_HEIGHTS).map(h => ({ value: h.id, label: h.label }))}
-                  emptyLabel="Custom"
+                  onChange={setHeightId}
+                  options={isHeading ? HEADING_WIDGET_HEIGHT_TABS : isKPI ? KPI_WIDGET_HEIGHT_TABS : WIDGET_HEIGHT_TABS}
+                  fullWidth
+                  height={32}
                 />
               </div>
             </div>
-            <FieldRow label="Configure Colors">
-              {!isKpi && !isTable && !isAggTable && !attributeTouched ? (
-                <div className="dc-color-config-locked">Select an attribute in the Data tab first.</div>
-              ) : (
-              <div className="dc-color-config">
-                {Object.entries(chartColors).map(([key, color]) => (
-                  <div key={key} className="dc-color-config-row">
-                    <span className="dc-color-config-label">{key}</span>
-                    <button
-                      className="dc-color-config-input"
-                      onClick={() => setColorPickerOpen(key)}
-                    >
-                      <span className="dc-color-config-dot" style={{ '--dc-dot-color': color }} />
-                      <span className="dc-color-config-hex">{color.toUpperCase()}</span>
-                    </button>
+            <div className="dc-divider" />
+            <div className="dc-size-section" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
+              <div className="dc-size-section-heading">Configure Colors</div>
+
+              <div className="dc-color-subsection">
+                <button
+                  type="button"
+                  className="dc-color-subhead"
+                  onClick={() => setChartColorsOpen(o => !o)}
+                  aria-expanded={chartColorsOpen}
+                >
+                  <span>Chart Elements</span>
+                  <svg className={`dc-color-subhead-chevron${chartColorsOpen ? ' dc-color-subhead-chevron--open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+                {chartColorsOpen && (
+                  <div className="dc-color-config">
+                    {Object.entries(chartColors)
+                      .filter(([key]) => key !== 'Comparison Metric' || hasComparisonMetric)
+                      .map(([key, color]) => (
+                      <div key={key} className="dc-color-config-row">
+                        <span className="dc-color-config-label">{key}</span>
+                        <button
+                          className="dc-color-config-input"
+                          onClick={() => setColorPickerOpen(key)}
+                        >
+                          <span className="dc-color-config-dot" style={{ '--dc-dot-color': color }} />
+                          <span className="dc-color-config-hex">{color.toUpperCase()}</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
+
+              {showPctChange && (
+                <div className="dc-color-subsection">
+                  <button
+                    type="button"
+                    className="dc-color-subhead"
+                    onClick={() => setPctChangeColorsOpen(o => !o)}
+                    aria-expanded={pctChangeColorsOpen}
+                  >
+                    <span>Change %</span>
+                    <svg className={`dc-color-subhead-chevron${pctChangeColorsOpen ? ' dc-color-subhead-chevron--open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </button>
+                  {pctChangeColorsOpen && (
+                    <div className="dc-color-config">
+                      {Object.entries(pctChangeColors).map(([key, color]) => (
+                        <div key={key} className="dc-color-config-row">
+                          <span className="dc-color-config-label">{key}</span>
+                          <button
+                            className="dc-color-config-input"
+                            onClick={() => setPctColorPickerOpen(key)}
+                          >
+                            <span className="dc-color-config-dot" style={{ '--dc-dot-color': color }} />
+                            <span className="dc-color-config-hex">{color.toUpperCase()}</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </FieldRow>
+            </div>
             {colorPickerOpen && (
               <ColorPickerModal
                 color={chartColors[colorPickerOpen]}
@@ -2060,6 +3073,17 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                 onApply={c => {
                   setChartColors(prev => ({ ...prev, [colorPickerOpen]: c }))
                   setColorPickerOpen(null)
+                }}
+              />
+            )}
+            {pctColorPickerOpen && (
+              <ColorPickerModal
+                color={pctChangeColors[pctColorPickerOpen]}
+                label={pctColorPickerOpen}
+                onClose={() => setPctColorPickerOpen(null)}
+                onApply={c => {
+                  setPctChangeColors(prev => ({ ...prev, [pctColorPickerOpen]: c }))
+                  setPctColorPickerOpen(null)
                 }}
               />
             )}
@@ -2088,9 +3112,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <div className="dc-text-input-wrap">
                         <input
                           readOnly
+                          value={widgetFilterCountLabel(widgetFilters)}
                           placeholder="Select Widget Filter"
                           className="dc-text-input"
-                          style={{ '--dc-input-color': PAI.fg3 }}
+                          style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                         />
                         <button
                           className="dc-kg-btn"
@@ -2100,12 +3125,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                           <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                         </button>
                       </div>
-                      <WidgetFilterChips
-                        filters={widgetFilters}
-                        onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                        onClear={() => setWidgetFilters([])}
-                        showEntity={showFilterEntity}
-                      />
                     </FieldRow>
                     {widgetFilterModalOpen && (
                       <GraphFilterModal
@@ -2141,9 +3160,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2153,12 +3173,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2189,9 +3203,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2201,12 +3216,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2360,10 +3369,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setFilterModalOpen(false) }}
                   />
                 )}
-                <FieldRow label="Size" hint="Display total/distinct count in the center of pie chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each slice's value">
                   <div className="dc-axis-row dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -2387,7 +3396,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
               </>
@@ -2416,11 +3425,11 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setFilterModalOpen(false) }}
                   />
                 )}
 
-                <FieldRow label="Size" hint="Display total/distinct count in the vertical bar chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each bar's value">
                   <div className="dc-axis-row--no-mb dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -2460,16 +3469,17 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
                 <FieldRow label="Widget Filter">
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2479,12 +3489,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2502,6 +3506,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   value={showLegend}
                   onChange={setShowLegend}
                 />
+                {showLegend && <SortByFieldRow attr={classification} value={sortBy} onChange={setSortBy} />}
                 <ToggleRow
                   label="Limit To Top Values"
                   description="Only show the top values by size; the rest are grouped out of the chart"
@@ -2549,11 +3554,11 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setFilterModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setFilterModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setFilterModalOpen(false) }}
                   />
                 )}
 
-                <FieldRow label="Size" hint="Display total/distinct count in the horizontal bar chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each bar's value">
                   <div className="dc-axis-row--no-mb dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -2593,16 +3598,17 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
                 <FieldRow label="Widget Filter">
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2612,12 +3618,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2635,6 +3635,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   value={showLegend}
                   onChange={setShowLegend}
                 />
+                {showLegend && <SortByFieldRow attr={classification} value={sortBy} onChange={setSortBy} />}
                 <ToggleRow
                   label="Limit To Top Values"
                   description="Only show the top values by size; the rest are grouped out of the chart"
@@ -2698,7 +3699,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={magnitude}
                     onClose={() => setMagnitudeModalOpen(false)}
-                    onApply={attr => { setMagnitude(attr); setMagnitudeModalOpen(false) }}
+                    onApply={(attr, entityId) => { setMagnitude(attr); setMagnitudeEntityId(entityId); setMagnitudeModalOpen(false) }}
                   />
                 )}
                 {stackClassModalOpen && (
@@ -2706,11 +3707,11 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setStackClassModalOpen(false) }}
                   />
                 )}
 
-                <FieldRow label="Size" hint="Display total/distinct count in the horizontal stacked chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each segment's value">
                   <div className="dc-axis-row--no-mb dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -2750,7 +3751,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
 
@@ -2758,9 +3759,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2770,12 +3772,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2793,6 +3789,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   value={showLegend}
                   onChange={setShowLegend}
                 />
+                {showLegend && <SortByFieldRow attr={magnitude} value={sortBy} onChange={setSortBy} />}
                 <ToggleRow
                   label="Explode Array Field Values"
                   description="Show distinct rows for fields with multiple values."
@@ -2842,7 +3839,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={magnitude}
                     onClose={() => setMagnitudeModalOpen(false)}
-                    onApply={attr => { setMagnitude(attr); setMagnitudeModalOpen(false) }}
+                    onApply={(attr, entityId) => { setMagnitude(attr); setMagnitudeEntityId(entityId); setMagnitudeModalOpen(false) }}
                   />
                 )}
                 {stackClassModalOpen && (
@@ -2850,11 +3847,11 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setStackClassModalOpen(false) }}
                   />
                 )}
 
-                <FieldRow label="Size" hint="Display total/distinct count in the vertical stacked chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each segment's value">
                   <div className="dc-axis-row--no-mb dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -2894,7 +3891,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
 
@@ -2905,9 +3902,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -2917,12 +3915,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -2940,6 +3932,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   value={showLegend}
                   onChange={setShowLegend}
                 />
+                {showLegend && <SortByFieldRow attr={magnitude} value={sortBy} onChange={setSortBy} />}
                 <ToggleRow
                   label="Explode Array Field Values"
                   description="Show distinct rows for fields with multiple values."
@@ -2993,7 +3986,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={magnitude}
                     onClose={() => setMagnitudeModalOpen(false)}
-                    onApply={attr => { setMagnitude(attr); setTitle(t => (t === magnitude ? attr : t)); setMagnitudeModalOpen(false) }}
+                    onApply={(attr, entityId) => { setMagnitude(attr); setMagnitudeEntityId(entityId); setTitle(t => (t === magnitude ? attr : t)); setMagnitudeModalOpen(false) }}
                   />
                 )}
                 {stackClassModalOpen && (
@@ -3001,11 +3994,11 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={classification}
                     onClose={() => setStackClassModalOpen(false)}
-                    onApply={attr => { setClassification(attr); setAttributeTouched(true); setStackClassModalOpen(false) }}
+                    onApply={(attr, entityId) => { setClassification(attr); setClassificationEntityId(entityId); setStackClassModalOpen(false) }}
                   />
                 )}
 
-                <FieldRow label="Size" hint="Display total/distinct count in the line chart">
+                <FieldRow label="Size" hint="Define the operation and attribute used to calculate each point's value">
                   <div className="dc-axis-row--no-mb dc-axis-row--with-action">
                     <div className="dc-axis-col">
                       <div className="dc-axis-label">Operation</div>
@@ -3045,7 +4038,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
 
@@ -3053,9 +4046,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -3065,12 +4059,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -3126,7 +4114,13 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <InfoTooltip text="Apply widget-specific filters to refine the displayed data. These filters only affect this widget and do not impact the entire dashboard." />
                     </div>
                     <div className="dc-text-input-wrap">
-                      <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
+                      <input
+                        readOnly
+                        value={widgetFilterCountLabel(kpiFilters)}
+                        placeholder="Select Widget Filter"
+                        className="dc-text-input"
+                        style={{ '--dc-input-color': kpiFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
+                      />
                       <button
                         className="dc-kg-btn"
                         onClick={() => setKpiFilterModalOpen(true)}
@@ -3135,19 +4129,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                         <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
-                    {kpiFilters.length > 0 && (
-                      <div className="dc-chips">
-                        {kpiFilters.map((f, i) => (
-                          <span key={i} className="dc-chip">
-                            {filterChipLabel(f, showFilterEntity)}
-                            <button
-                              className="dc-chip-x"
-                              onClick={() => setKpiFilters(prev => prev.filter((_, j) => j !== i))}
-                            >×</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
                 {aggregateByModalOpen && (
@@ -3155,7 +4136,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                     scopeEntities={scopeEntities}
                     currentAttr={aggregateBy}
                     onClose={() => setAggregateByModalOpen(false)}
-                    onApply={attr => { setAggregateBy(attr); setAggregateByModalOpen(false) }}
+                    onApply={(attr, entityId) => { setAggregateBy(attr); setAggregateByEntityId(entityId); setAggregateByModalOpen(false) }}
                   />
                 )}
                 {kpiFilterModalOpen && (
@@ -3168,56 +4149,83 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   />
                 )}
                 <div className="dc-divider" />
-                <div className="dc-kpi-metric-section">
-                  <div className="dc-kpi-metric-title">Comparison Metric (Optional)</div>
-                  <div className="dc-kpi-metric-desc">Compare with any other KPI value</div>
-                  <div className="dc-axis-row--no-mb dc-axis-row--with-action dc-axis-row--mt8">
-                    <div className="dc-axis-col">
-                      <div className="dc-axis-label">Operation</div>
-                      <SizeSelectDropdown value={kpiCompOperation} onChange={v => setKpiCompOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
-                    </div>
-                    <div className="dc-axis-col">
-                      <div className="dc-axis-label">Aggregate By</div>
-                      <SizeSelectDropdown value={kpiCompAggregateBy} onChange={v => setKpiCompAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
-                    </div>
-                    <button
-                      className="dc-kg-btn dc-kg-btn--bottom"
-                      onClick={() => setKpiCompAggregateByModalOpen(true)}
-                      style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
-                    >
-                      <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
-                    </button>
-                  </div>
-                  <div className="dc-mt12">
-                    <div className="dc-field-label dc-field-label--icon-row">
-                      Comparison Metric Filter
-                      <InfoTooltip text="Apply a filter that affects only the Comparison Metric value. It does not change the Primary Metric or the rest of the dashboard." />
-                    </div>
-                    <div className="dc-text-input-wrap">
-                      <input readOnly placeholder="Select Widget Filter" className="dc-text-input" style={{ '--dc-input-color': PAI.fg3 }} />
+                {!hasComparisonMetric ? (
+                  <div className="dc-kpi-metric-section dc-kpi-metric-section--add">
+                    <div className="dc-kpi-metric-header">
+                      <div>
+                        <div className="dc-kpi-metric-title">Comparison Metric</div>
+                        <div className="dc-kpi-metric-desc">Compare with any other KPI value</div>
+                      </div>
                       <button
-                        className="dc-kg-btn"
-                        onClick={() => setKpiCompFilterModalOpen(true)}
+                        type="button"
+                        className="dc-kpi-comp-add-btn"
+                        onClick={() => setHasComparisonMetric(true)}
+                      >
+                        + Add
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="dc-kpi-metric-section dc-kpi-metric-section--comparison">
+                    <div className="dc-kpi-metric-header">
+                      <div>
+                        <div className="dc-kpi-metric-title">Comparison Metric</div>
+                        <div className="dc-kpi-metric-desc">Compare with any other KPI value</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="dc-kpi-comp-remove-btn"
+                        onClick={() => {
+                          setHasComparisonMetric(false)
+                          setKpiCompOperation('count-distinct')
+                          setKpiCompAggregateBy('host')
+                          setKpiCompFilters([])
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="dc-axis-row--no-mb dc-axis-row--with-action dc-axis-row--mt8">
+                      <div className="dc-axis-col">
+                        <div className="dc-axis-label">Operation</div>
+                        <SizeSelectDropdown value={kpiCompOperation} onChange={v => setKpiCompOperation(v)} options={[{ value:'count-distinct',label:'Count Distinct'},{ value:'count',label:'Count'},{ value:'sum',label:'Sum'}]} />
+                      </div>
+                      <div className="dc-axis-col">
+                        <div className="dc-axis-label">Aggregate By</div>
+                        <SizeSelectDropdown value={kpiCompAggregateBy} onChange={v => setKpiCompAggregateBy(v)} options={[{ value:'host',label:'host'},{ value:'entity-id',label:'Entity ID'},{ value:'ip',label:'IP Address'}]} />
+                      </div>
+                      <button
+                        className="dc-kg-btn dc-kg-btn--bottom"
+                        onClick={() => setKpiCompAggregateByModalOpen(true)}
                         style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
                       >
                         <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                       </button>
                     </div>
-                    {kpiCompFilters.length > 0 && (
-                      <div className="dc-chips">
-                        {kpiCompFilters.map((f, i) => (
-                          <span key={i} className="dc-chip">
-                            {filterChipLabel(f, showFilterEntity)}
-                            <button
-                              className="dc-chip-x"
-                              onClick={() => setKpiCompFilters(prev => prev.filter((_, j) => j !== i))}
-                            >×</button>
-                          </span>
-                        ))}
+                    <div className="dc-mt12">
+                      <div className="dc-field-label dc-field-label--icon-row">
+                        Comparison Metric Filter
+                        <InfoTooltip text="Apply a filter that affects only the Comparison Metric value. It does not change the Primary Metric or the rest of the dashboard." />
                       </div>
-                    )}
+                      <div className="dc-text-input-wrap">
+                        <input
+                          readOnly
+                          value={widgetFilterCountLabel(kpiCompFilters)}
+                          placeholder="Select Widget Filter"
+                          className="dc-text-input"
+                          style={{ '--dc-input-color': kpiCompFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
+                        />
+                        <button
+                          className="dc-kg-btn"
+                          onClick={() => setKpiCompFilterModalOpen(true)}
+                          style={{ '--dc-indigo': PAI.indigo, '--dc-indigo-tint': PAI.indigoTint }}
+                        >
+                          <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
                 {kpiCompAggregateByModalOpen && (
                   <GraphFilterModal
                     scopeEntities={scopeEntities}
@@ -3236,12 +4244,14 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   />
                 )}
                 <div className="dc-divider" />
-                <ToggleRow
-                  label="Show Total Count"
-                  description='Display the denominator (e.g., "6 / 54,555")'
-                  value={showTotalCount}
-                  onChange={setShowTotalCount}
-                />
+                {hasComparisonMetric && (
+                  <ToggleRow
+                    label="Show Total Count"
+                    description='Display the denominator (e.g., "6 / 54,555")'
+                    value={showTotalCount}
+                    onChange={setShowTotalCount}
+                  />
+                )}
                 <ToggleRow
                   label="Show Percentage Change"
                   description='Display the change over time (e.g., "+12%" or "-5%")'
@@ -3257,9 +4267,10 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -3269,12 +4280,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -3288,21 +4293,16 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
               </>
             )}
 
-            {!isPie && !isTable && !isAggTable && !isVertBar && !isHorBar && !isHeading && !isStackVert && !isStackHor && !isLine && !isKpi && (
-              <FieldRow label="Sort By" hint="Define how data is ordered in chart">
-                <TextInput placeholder="Select field" />
-              </FieldRow>
-            )}
-
             {isPie && (
               <>
                 <FieldRow label="Widget Filter">
                   <div className="dc-text-input-wrap">
                     <input
                       readOnly
+                      value={widgetFilterCountLabel(widgetFilters)}
                       placeholder="Select Widget Filter"
                       className="dc-text-input"
-                      style={{ '--dc-input-color': PAI.fg3 }}
+                      style={{ '--dc-input-color': widgetFilters.filter(f => !f.isRelation).length ? PAI.fg1 : PAI.fg3 }}
                     />
                     <button
                       className="dc-kg-btn"
@@ -3312,12 +4312,6 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                       <img src="assets/icons/graph-filter.svg" width={18} height={18} alt="" />
                     </button>
                   </div>
-                  <WidgetFilterChips
-                    filters={widgetFilters}
-                    onRemove={i => setWidgetFilters(prev => prev.filter((_, j) => j !== i))}
-                    onClear={() => setWidgetFilters([])}
-                    showEntity={showFilterEntity}
-                  />
                 </FieldRow>
                 {widgetFilterModalOpen && (
                   <GraphFilterModal
@@ -3335,6 +4329,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                   value={showLegend}
                   onChange={setShowLegend}
                 />
+                {showLegend && <SortByFieldRow attr={classification} value={sortBy} onChange={setSortBy} />}
                 <ToggleRow
                   label="Show Total Count"
                   description="Display total/distinct count in the center of pie chart"
@@ -3372,6 +4367,13 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
                 )}
               </>
             )}
+            <div className="dc-divider" />
+            <ToggleRow
+              label="Show filter details to viewers"
+              description="Shows this widget's data config to viewers via an info icon."
+              value={showFilterDetailsToViewers}
+              onChange={setShowFilterDetailsToViewers}
+            />
           </>
         )}
       </div>
@@ -3388,16 +4390,19 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
               const changes = {
                 label: title, description, sizeId, heightId, chartId: chartType,
                 showTotalCount, showPctChange, showLegend,
+                showFilterDetailsToViewers,
+                widgetFilters,
                 chartColors,
+                pctChangeColors,
                 ...(isTable                                    && { columns, enableDownload, enableAddColumn }),
                 ...(isAggTable                                 && { groupByCols, aggregateByCols, enableDownload, enableAddColumn, explodeArrayFields }),
-                ...((isVertBar || isHorBar || isPie)          && { classification, limitTopValues, topValuesCount }),
-                ...(isStackVert                               && { magnitude, classification, explodeArrayFields }),
-                ...(isStackHor                                && { magnitude, classification, explodeArrayFields }),
-                ...(isLine                                    && { magnitude, classification, explodeArrayFields }),
+                ...((isVertBar || isHorBar || isPie)          && { classification, classificationEntityId, limitTopValues, topValuesCount, sortBy }),
+                ...(isStackVert                               && { magnitude, magnitudeEntityId, classification, classificationEntityId, explodeArrayFields, sortBy }),
+                ...(isStackHor                                && { magnitude, magnitudeEntityId, classification, classificationEntityId, explodeArrayFields, sortBy }),
+                ...(isLine                                    && { magnitude, magnitudeEntityId, classification, classificationEntityId, explodeArrayFields }),
                 ...(isHeading                                 && { exploreIn }),
-                ...(isKpi                                     && { valueFontSize }),
-                ...(isKpi && !widget.dataLocked                && { data: buildKpiMockData(aggregateBy, showTotalCount) }),
+                ...(isKpi                                     && { valueFontSize, aggregateBy, aggregateByEntityId, hasComparisonMetric, operation, kpiFilters }),
+                ...(isKpi && !widget.dataLocked                && { data: buildKpiMockData(aggregateBy, showTotalCount, hasComparisonMetric) }),
               }
               const highCardinality = isBannerChart && shownAggregateValues >= 501
               if (highCardinality && !suppressPerfWarning) {
@@ -3452,7 +4457,7 @@ function WidgetSettingsPanel({ widget, scopeEntities, onSaveChanges, onClose, on
 }
 
 // ── Add Widget Panel ─────────────────────────────────────────────────
-function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, widgetDescription, setWidgetDescription, widgetSize, setWidgetSize, widgetHeight, setWidgetHeight, onSave, onCancel }) {
+function AddWidgetPanel({ selected, setSelected, widgetSize, setWidgetSize, widgetHeight, setWidgetHeight, onSave, onCancel }) {
   const rows = []
   for (let i = 0; i < CHART_TYPES.length; i += 2) rows.push(CHART_TYPES.slice(i, i + 2))
 
@@ -3474,23 +4479,6 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 
       {/* body */}
       <div className="dc-aw-panel__body">
-        <FieldRow label="Widget Title">
-          <TextInput placeholder="Enter widget title..." value={widgetTitle} onChange={e => setWidgetTitle(e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Description">
-          <TextArea placeholder="Describe what this widget shows..." value={widgetDescription} onChange={e => setWidgetDescription(e.target.value)} />
-        </FieldRow>
-        <div className="dc-size-section" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
-          <div className="dc-size-section-heading">Widget Size</div>
-          <div className="dc-size-sub-row">
-            <div className="dc-size-sub-label">Width</div>
-            <SegmentedTabs value={widgetSize} options={WIDGET_SIZE_TABS} onChange={setWidgetSize} fullWidth height={32} />
-          </div>
-          <div className="dc-size-sub-row">
-            <div className="dc-size-sub-label">Height</div>
-            <SegmentedTabs value={widgetHeight} options={WIDGET_HEIGHT_TABS} onChange={setWidgetHeight} fullWidth height={32} />
-          </div>
-        </div>
         <div className="dc-field-label dc-field-label--mb8">Widget Type</div>
         <div className="dc-chart-type-grid">
           {rows.map((row, ri) => (
@@ -3513,6 +4501,17 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
             </div>
           ))}
         </div>
+        <div className="dc-size-section" style={{ '--dc-fg1': PAI.fg1, '--dc-fg3': PAI.fg3 }}>
+          <div className="dc-size-section-heading">Widget Size</div>
+          <div className="dc-size-sub-row">
+            <div className="dc-size-sub-label">Width</div>
+            <SegmentedTabs value={widgetSize} options={WIDGET_SIZE_TABS} onChange={setWidgetSize} fullWidth height={32} />
+          </div>
+          <div className="dc-size-sub-row">
+            <div className="dc-size-sub-label">Height</div>
+            <SegmentedTabs value={widgetHeight} options={WIDGET_HEIGHT_TABS} onChange={setWidgetHeight} fullWidth height={32} />
+          </div>
+        </div>
       </div>
 
       {/* footer */}
@@ -3524,6 +4523,98 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
   )
 }
 
+// A widget's classification/magnitude/aggregateBy attribute is picked from
+// one specific scope entity's own attribute set (see GraphFilterModal) and
+// travels with a `*EntityId` field recording which one. If the dashboard's
+// scope is later edited to drop that entity, the attribute the widget was
+// built on no longer belongs to anything in scope — this widget can no
+// longer render correctly until the user either edits it or restores the
+// entity to scope. Checked in binding-priority order (classification is the
+// primary axis for bar/pie charts, magnitude for stacked/line, aggregateBy
+// for KPI) and stops at the first mismatch found.
+function getWidgetScopeIssue(widget, scopeEntities) {
+  const scopeIds = new Set((scopeEntities || []).map(e => e.id))
+  const check = (attr, entityId) => {
+    if (!attr || !entityId || scopeIds.has(entityId)) return null
+    const entityLabel = GF_ENTITIES.find(e => e.id === entityId)?.label || entityId
+    return { attr, entityId, entityLabel }
+  }
+  return check(widget.classification, widget.classificationEntityId)
+    || check(widget.magnitude, widget.magnitudeEntityId)
+    || check(widget.aggregateBy, widget.aggregateByEntityId)
+    || null
+}
+
+// Re-runs getWidgetScopeIssue for every widget (nested children included —
+// they bind their own attributes independently of their parent container)
+// against a newly-applied dashboard scope. Called right after a scope
+// change is committed, so a widget that becomes mismatched shows its error
+// immediately instead of only failing silently the next time it happens to
+// re-render.
+function applyScopeToWidgets(ws, scopeEntities) {
+  return ws.map(w => ({
+    ...w,
+    scopeError: getWidgetScopeIssue(w, scopeEntities),
+    ...(w.children?.length && {
+      children: w.children.map(c => ({ ...c, scopeError: getWidgetScopeIssue(c, scopeEntities) })),
+    }),
+  }))
+}
+
+// True if any widget (or nested child) is currently showing a scope-error
+// callout instead of its chart — used to warn before saving, since the
+// saved dashboard would otherwise silently persist in that broken state.
+function widgetsHaveScopeError(ws) {
+  return ws.some(w => w.scopeError || w.children?.some(c => c.scopeError))
+}
+
+// Shown in place of a widget's chart once getWidgetScopeIssue flags it —
+// explains in plain language *why* the widget stopped rendering instead of
+// leaving it blank or throwing, and gives the one actionable fix (edit the
+// widget) rather than a "Retry" that could never resolve a scope mismatch.
+function WidgetScopeErrorCallout() {
+  return (
+    <div className="dc-widget-scope-error">
+      <div className="ds-callout ds-callout-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>
+          This widget's configuration doesn't support the dashboard's current scope.
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Inlined (rather than the shared `assets/icons/lcnc/*.svg` via <img>, as
+// every other use of these two icons elsewhere still is) only for the Edit
+// and Add Nested Widget action buttons, which need to recolor to the active
+// indigo — an <img> can't inherit currentColor from its button, and the
+// source SVGs are reused as-is (fixed #101010) by other, non-active-aware
+// call sites (the panel header icon, the report-mode preview row, and
+// DiscoverDevicePage), so the shared files themselves stay untouched.
+function EditWidgetIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.1007 13.2324V16.9283C17.1005 17.4512 16.8927 17.9526 16.5229 18.3224C16.1531 18.6922 15.6517 18.9 15.1287 18.9002H5.472C5.21209 18.9001 4.95476 18.8487 4.71479 18.7488C4.47483 18.6489 4.25697 18.5026 4.07372 18.3183C3.89048 18.134 3.74546 17.9152 3.64701 17.6747C3.54856 17.4342 3.49861 17.1765 3.50003 16.9166V7.27069C3.49849 7.01118 3.54846 6.75395 3.64706 6.5139C3.74565 6.27385 3.89091 6.05576 4.07441 5.87226C4.25791 5.68876 4.476 5.5435 4.71605 5.44491C4.9561 5.34631 5.21333 5.29634 5.47284 5.29789H9.16789" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.0996 8.69896L13.6992 5.29775M6.89844 14.366V12.5638C6.9001 12.2666 7.01831 11.9811 7.22724 11.7705L15.1617 3.83604C15.267 3.72958 15.3924 3.64506 15.5305 3.58738C15.6687 3.5297 15.8169 3.5 15.9667 3.5C16.1164 3.5 16.2646 3.5297 16.4028 3.58738C16.541 3.64506 16.6663 3.72958 16.7716 3.83604L18.5621 5.62655C18.6686 5.73183 18.7531 5.85718 18.8108 5.99535C18.8685 6.13352 18.8982 6.28176 18.8982 6.43148C18.8982 6.58121 18.8685 6.72945 18.8108 6.86762C18.7531 7.00579 18.6686 7.13114 18.5621 7.23642L10.6276 15.1709C10.4166 15.3804 10.1317 15.4986 9.83434 15.4997H8.03218C7.88323 15.4999 7.7357 15.4708 7.59805 15.4139C7.4604 15.357 7.33533 15.2735 7.23001 15.1681C7.12469 15.0628 7.04119 14.9377 6.98429 14.8001C6.9274 14.6624 6.89822 14.5149 6.89844 14.366Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AddNestedWidgetIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.8974 11.5847V12.388C10.8974 12.4803 10.9322 12.5611 11.0017 12.6304C11.0711 12.6997 11.1521 12.7343 11.2448 12.7343C11.3375 12.7343 11.4186 12.6997 11.488 12.6304C11.5575 12.5611 11.5923 12.4803 11.5923 12.388V11.5847H12.3981C12.4908 11.5847 12.5719 11.55 12.6413 11.4807C12.7108 11.4114 12.7456 11.3306 12.7456 11.2383C12.7456 11.1459 12.7108 11.0651 12.6413 10.9958C12.5719 10.9266 12.4908 10.892 12.3981 10.892H11.5923V10.0887C11.5923 9.99628 11.5575 9.91543 11.488 9.84613C11.4186 9.77694 11.3375 9.74234 11.2448 9.74234C11.1521 9.74234 11.0711 9.77694 11.0017 9.84613C10.9322 9.91543 10.8974 9.99628 10.8974 10.0887V10.892H10.0915C9.99885 10.892 9.9178 10.9266 9.84839 10.9958C9.77887 11.0651 9.74411 11.1459 9.74411 11.2383C9.74411 11.3306 9.77887 11.4114 9.84839 11.4807C9.9178 11.55 9.99885 11.5847 10.0915 11.5847H10.8974ZM11.2412 13.9847C10.4756 13.9847 9.82565 13.7171 9.29129 13.182C8.75693 12.647 8.48975 11.9979 8.48975 11.2346C8.48975 10.4715 8.75815 9.82362 9.29497 9.29095C9.83168 8.75828 10.4829 8.49194 11.2485 8.49194C12.0141 8.49194 12.664 8.75945 13.1984 9.29446C13.7328 9.82958 13.9999 10.4787 13.9999 11.2418C13.9999 12.0051 13.7315 12.653 13.1947 13.1857C12.658 13.7184 12.0068 13.9847 11.2412 13.9847Z" fill="currentColor" />
+      <path d="M7.28095 13.185H3.50537C2.95309 13.185 2.50537 12.7373 2.50537 12.185V3.53949C2.50537 2.98721 2.95309 2.53949 3.50537 2.53949H12.1843C12.7366 2.53949 13.1843 2.9872 13.1843 3.53949V7.86224" stroke="currentColor" strokeLinecap="round" />
+      <path d="M8.43117 11.2383H4.89551C4.61937 11.2383 4.39551 11.0144 4.39551 10.7383V4.96649C4.39551 4.69035 4.61937 4.46649 4.89551 4.46649H10.7448C11.0209 4.46649 11.2448 4.69035 11.2448 4.96649V8.50236" stroke="currentColor" strokeLinecap="round" strokeDasharray="3 3" />
+    </svg>
+  )
+}
+
 // ── Widget Card ──────────────────────────────────────────────────────
 // Positioning for the live (non-report) grid is owned entirely by
 // react-grid-layout: it wraps this component's root element in its own
@@ -3532,12 +4623,17 @@ function AddWidgetPanel({ selected, setSelected, widgetTitle, setWidgetTitle, wi
 // its own position — it just fills whatever box that wrapper gives it (see
 // `.dc-widget-col` in dashboard.css).
 function WidgetCardImpl({
-  widget, isEditing, onEdit, onRequestDelete, onEditWithCopilot, onNav, reportMode, viewMode = false, printMode = false,
+  widget, isEditing, onEdit, onRequestDelete, onDuplicate, onEditWithCopilot, onNav, reportMode, viewMode = false, printMode = false,
+  // Dashboard's root scope entities — only needed to phrase the "Show filter
+  // details to viewers" info icon's relationship-path line (has this widget
+  // traversed off the dashboard's base entity, and to what); every other
+  // prop this component uses comes straight off `widget` itself.
+  scopeEntities = [],
   // Nested-widget support: `nested` is true for a widget rendered inside
   // another widget's container (no grid position of its own, no further
   // nesting). The generic (id-based, rather than pre-bound) callbacks below
   // let this component recurse into `widget.children` using itself.
-  nested = false, editingWidgetId = null, onEditWidget, onDeleteWidget, onAddNested, addingNestedParentId = null, addingNestedDraft = null,
+  nested = false, editingWidgetId = null, onEditWidget, onDeleteWidget, onDuplicateWidget, onAddNested, addingNestedParentId = null, addingNestedDraft = null,
   onNestedLayoutChange,
   // Cross-grid nesting: `isNestTarget` is true while another top-level
   // widget is being dragged over this one (a valid drop-to-nest target —
@@ -3558,10 +4654,25 @@ function WidgetCardImpl({
   // is suppressed here for table widgets for the same reason.
   const showDownload = isTableWidget && widget.enableDownload !== false && !reportMode
   const showExploreIn = widget.chartId === 'heading' && widget.exploreIn && !reportMode && !printMode
+  // Shows on the interactive canvas either way (editing or viewing) — only
+  // report/print output skips it, since that's static, printed content with
+  // no hover/tap surface for a tooltip to answer to.
+  const showFilterDetails = !reportMode && !printMode && widget.showFilterDetailsToViewers === true
+  const filterDetailsSummary = showFilterDetails ? buildWidgetFilterDetails(widget, scopeEntities) : null
   // True once this widget is actively hosting nested widgets (or is about
   // to, mid-add) — caps its own content to its base height instead of
   // letting it stretch to fill the extra room reserved for them.
   const isContainer = !nested && (widget.children?.length > 0 || addingNestedParentId === widget.id)
+  const isAddingNested = addingNestedParentId === widget.id
+  // The own-content box's actual rendered height — ownContentGh's preset,
+  // run through react-grid-layout's own row→px formula (rglBoxPx; a plain
+  // `gh * ROW_UNIT_PX` undercounts by the (gh-1) margins RGL actually
+  // renders for a widget that size, which was the bulk of this container-
+  // stretch bug), minus the header/padding chrome it already excludes (see
+  // CARD_CHROME_PX) so it doesn't re-reserve that chrome a second time
+  // inside the body. ownContentGh of 0 (heading/none once hosting children)
+  // means no reserved own body at all, not "the chrome floor" — left at 0.
+  const ownContentPx = ownContentGh(widget) > 0 ? Math.max(0, rglBoxPx(ownContentGh(widget)) - CARD_CHROME_PX) : 0
 
   useEffect(() => {
     if (!exploreOpen) return
@@ -3586,26 +4697,32 @@ function WidgetCardImpl({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Hover actions */}
-      {hovered && !reportMode && !viewMode && (
+      {/* Hover actions — also kept visible (not just on hover) while this
+          widget is the one being edited or receiving a nested widget, so its
+          Edit/Add-nested button's active state stays visible after the mouse
+          moves off the card onto the settings panel. */}
+      {(hovered || isEditing || isAddingNested) && !reportMode && !viewMode && (
         <div className="dc-widget-actions">
-          <button title="Move" className="dc-action-btn dc-action-btn--grab">
+          <button data-tooltip="Move" aria-label="Move" className="dc-action-btn dc-action-btn--grab">
             <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
           </button>
           {!nested && (
-            <button title="Add nested widget" onClick={() => onAddNested?.(widget.id)} className="dc-action-btn">
-              <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+            <button data-tooltip="Add nested widget" aria-label="Add nested widget" onClick={() => onAddNested?.(widget.id)} className={`dc-action-btn${isAddingNested ? ' dc-action-btn--active' : ''}`}>
+              <AddNestedWidgetIcon />
             </button>
           )}
-          <button title="Edit" onClick={onEdit} className="dc-action-btn">
-            <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
+          <button data-tooltip="Edit" aria-label="Edit" onClick={onEdit} className={`dc-action-btn${isEditing ? ' dc-action-btn--active' : ''}`}>
+            <EditWidgetIcon />
           </button>
           {onEditWithCopilot && (
-            <button title="Edit with Copilot" onClick={() => onEditWithCopilot(widget)} className="dc-action-btn">
+            <button data-tooltip="Edit with Copilot" aria-label="Edit with Copilot" onClick={() => onEditWithCopilot(widget)} className="dc-action-btn">
               <img src="assets/icons/Navigator icon.svg" width={16} height={16} alt="edit with copilot" />
             </button>
           )}
-          <button title="Delete" onClick={() => onRequestDelete(widget)} className="dc-action-btn dc-action-btn--delete">
+          <button data-tooltip="Duplicate" aria-label="Duplicate" onClick={() => onDuplicate(widget)} className="dc-action-btn">
+            <img src="assets/icons/lcnc/duplicate.svg" width={16} height={16} alt="duplicate" />
+          </button>
+          <button data-tooltip="Delete" aria-label="Delete" onClick={() => onRequestDelete(widget)} className="dc-action-btn dc-action-btn--delete">
             <img src="assets/icons/lcnc/delete.svg" width={16} height={16} alt="delete" />
           </button>
         </div>
@@ -3630,7 +4747,10 @@ function WidgetCardImpl({
         <div className="dc-widget-card-header">
           <div className={`dc-widget-card-title-row${widget.chartId === 'kpi' ? ' dc-widget-card-title-row--center' : ''}`}>
             {!isTableWidget && (
-              <span className="dc-widget-card-title">{widget.label}</span>
+              <div className="dc-widget-card-title-group">
+                <span className="dc-widget-card-title">{widget.label}</span>
+                {showFilterDetails && <InfoTooltip text={filterDetailsSummary} />}
+              </div>
             )}
             {showExploreIn && (
               <div ref={exploreRef} className="subheader__explore-wrap" onMouseDown={e => e.stopPropagation()}>
@@ -3669,8 +4789,8 @@ function WidgetCardImpl({
               </div>
             )}
           </div>
-          {widget.chartId === 'kpi' && widget.description && (
-            <div className="dc-widget-card-desc dc-widget-card-desc--center">{widget.description}</div>
+          {!isTableWidget && widget.description && (
+            <div className={`dc-widget-card-desc${widget.chartId === 'kpi' ? ' dc-widget-card-desc--center' : ''}`}>{widget.description}</div>
           )}
         </div>
         <div className={`dc-widget-card-body${isContainer ? ' dc-widget-card-body--has-nested' : ''}${widget.chartId === 'kpi' ? ' dc-widget-card-body--kpi' : ''}`}>
@@ -3682,11 +4802,34 @@ function WidgetCardImpl({
             // ChartRender's internal flex:1 — to fill the full inflated
             // card height. The nested area below gets whatever's left,
             // instead of a large empty gap above it.
-            <div className="dc-widget-own-content" style={{ '--dc-own-content-h': `${ownContentGh(widget) * ROW_UNIT_PX}px` }}>
-              <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange ?? true} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} valueFontSize={widget.valueFontSize} cardCols={gw} cardHeight={ownContentGh(widget) * ROW_UNIT_PX} printMode={printMode} enableAddColumn={widget.enableAddColumn === true && !reportMode} enableDownload={showDownload} title={widget.label} />
+            // --dc-card-height is set on the outer .dc-widget-card too, to
+            // the *container's* total height (see `h` above) — several
+            // ChartRender layouts (e.g. .cr-bar-chart-area--with-legend)
+            // size themselves off that CSS var directly rather than the
+            // cardHeight prop, so without re-pinning it here they inherit
+            // the inflated container total instead of this box's own
+            // height, sizing a chart area far taller than the own-content
+            // box actually has room for and squeezing its legend into
+            // whatever sliver (or nothing) is left over. Re-pinned to
+            // ownContentGh's *naive* row*ROW_UNIT_PX value (not the
+            // rglBoxPx-corrected ownContentPx used for the box's actual
+            // pixel height/flex sizing just below) — every other widget's
+            // --dc-card-height, standalone included, is this same naive
+            // value (see `h`), and .cr-bar-chart-area--with-legend's
+            // chart-area/legend split was tuned against that number. Using
+            // the bigger, correct-er ownContentPx here would just recreate
+            // the clipped-legend bug the naive value happens to avoid.
+            <div className="dc-widget-own-content" style={{ '--dc-own-content-h': `${ownContentPx}px`, '--dc-card-height': `${ownContentGh(widget) * ROW_UNIT_PX}px` }}>
+              {widget.scopeError ? (
+                <WidgetScopeErrorCallout scopeError={widget.scopeError} />
+              ) : (
+                <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange ?? true} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} pctChangeColors={widget.pctChangeColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} valueFontSize={widget.valueFontSize} sortBy={widget.sortBy} cardCols={gw} cardHeight={ownContentPx} printMode={printMode} enableAddColumn={widget.enableAddColumn === true && !reportMode} enableDownload={showDownload} viewMode={viewMode} title={widget.label} titleInfoIcon={showFilterDetails ? <InfoTooltip text={filterDetailsSummary} /> : null} />
+              )}
             </div>
+          ) : widget.scopeError ? (
+            <WidgetScopeErrorCallout scopeError={widget.scopeError} />
           ) : (
-            <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange ?? true} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} valueFontSize={widget.valueFontSize} cardCols={gw} cardHeight={h} printMode={printMode} enableAddColumn={widget.enableAddColumn === true && !reportMode} enableDownload={showDownload} title={widget.label} />
+            <ChartRender chartId={widget.chartId} showPctChange={widget.showPctChange ?? true} showLegend={widget.showLegend ?? true} showTotalCount={widget.showTotalCount ?? true} data={widget.data} totalLabel={widget.totalLabel} noteLabel={widget.noteLabel} note={widget.note} legendDesc={widget.legendDesc} columns={widget.columns} chartColors={widget.chartColors} pctChangeColors={widget.pctChangeColors} description={widget.description} xLabel={widget.xLabel} yLabel={widget.yLabel} reportTotal={widget.reportTotal} valueFontSize={widget.valueFontSize} sortBy={widget.sortBy} cardCols={gw} cardHeight={h} printMode={printMode} enableAddColumn={widget.enableAddColumn === true && !reportMode} enableDownload={showDownload} viewMode={viewMode} title={widget.label} titleInfoIcon={showFilterDetails ? <InfoTooltip text={filterDetailsSummary} /> : null} />
           )}
           {/* Nested widgets — one level deep only (a nested card never gets
               its own "Add nested widget" action, so `children` never gets
@@ -3703,6 +4846,7 @@ function WidgetCardImpl({
                   isEditing={false}
                   onEdit={() => {}}
                   onRequestDelete={() => {}}
+                  onDuplicate={() => {}}
                   onEditWithCopilot={onEditWithCopilot}
                   onNav={onNav}
                   reportMode
@@ -3717,10 +4861,12 @@ function WidgetCardImpl({
               editingWidgetId={editingWidgetId}
               onEditWidget={onEditWidget}
               onDeleteWidget={onDeleteWidget}
+              onDuplicateWidget={onDuplicateWidget}
               onEditWithCopilot={onEditWithCopilot}
               onNav={onNav}
               onLayoutChange={layout => onNestedLayoutChange?.(widget.id, layout)}
               onPromoteToTop={childId => onPromoteNested?.(widget.id, childId)}
+              scopeEntities={scopeEntities}
               viewMode={viewMode}
               printMode={printMode}
             />
@@ -3730,9 +4876,8 @@ function WidgetCardImpl({
               <div className="dc-preview-card">
                 <div className="dc-preview-header">
                   <span className="dc-preview-title">
-                    {addingNestedDraft.title || (addingNestedDraft.chartId ? (CHART_DEFAULT_NAMES[addingNestedDraft.chartId] || CHART_TYPES.find(c => c.id === addingNestedDraft.chartId)?.label) : '')}
+                    {addingNestedDraft.chartId ? (CHART_DEFAULT_NAMES[addingNestedDraft.chartId] || CHART_TYPES.find(c => c.id === addingNestedDraft.chartId)?.label) : ''}
                   </span>
-                  {addingNestedDraft.description && <div className="dc-preview-desc">{addingNestedDraft.description}</div>}
                 </div>
                 <div className="dc-preview-body">
                   {addingNestedDraft.chartId && <ChartSilhouette chartId={addingNestedDraft.chartId} />}
@@ -3753,7 +4898,7 @@ function WidgetCardImpl({
 // just confined to the parent's bounds instead of the whole dashboard.
 // Reuses the same grid-unit system (GRID_COLS/ROW_UNIT_PX/packWidgets) as
 // the top-level grid — only the pixel width fed to it differs.
-function NestedWidgetGrid({ parent, editingWidgetId, onEditWidget, onDeleteWidget, onEditWithCopilot, onNav, onLayoutChange, onPromoteToTop, viewMode, printMode }) {
+function NestedWidgetGrid({ parent, editingWidgetId, onEditWidget, onDeleteWidget, onDuplicateWidget, onEditWithCopilot, onNav, onLayoutChange, onPromoteToTop, scopeEntities, viewMode, printMode }) {
   const [gridEl, setGridEl] = useState(null)
   const gridWrapRef = useCallback(node => setGridEl(node), [])
   const [gridWidth, setGridWidth] = useState(0)
@@ -3785,7 +4930,11 @@ function NestedWidgetGrid({ parent, editingWidgetId, onEditWidget, onDeleteWidge
   // warning about negative computed dimensions and the layout destabilizes
   // around it). Raise the floor, in columns, to whatever this specific
   // nested grid's current column width requires for a ~150px minimum.
-  const minNestedGw = gridWidth > 0 ? Math.ceil(150 / (gridWidth / GRID_COLS)) : MIN_GW
+  // Clamped to GRID_COLS: below a certain container width, 150px needs more
+  // columns than the grid has — without the clamp, minW would exceed maxW
+  // in the RGL config below, and two nested widgets side by side would be
+  // forced narrower than their own stated minimum, overlapping each other.
+  const minNestedGw = gridWidth > 0 ? Math.min(GRID_COLS, Math.ceil(150 / (gridWidth / GRID_COLS))) : MIN_GW
   const layout = useMemo(() => packed.map(c => {
     const { minGw, minGh } = minSizeFor(c.chartId)
     return { i: String(c.id), x: c.gx, y: c.gy, w: c.gw, h: c.gh, minW: Math.max(minGw, minNestedGw), minH: minGh, maxW: MAX_GW, maxH: MAX_GH }
@@ -3850,10 +4999,12 @@ function NestedWidgetGrid({ parent, editingWidgetId, onEditWidget, onDeleteWidge
                 isEditing={editingWidgetId === c.id}
                 onEdit={() => onEditWidget?.(c.id)}
                 onRequestDelete={() => onDeleteWidget?.(c)}
+                onDuplicate={() => onDuplicateWidget?.(c)}
                 onEditWithCopilot={onEditWithCopilot}
                 onNav={onNav}
                 editingWidgetId={editingWidgetId}
                 reportMode={false}
+                scopeEntities={scopeEntities}
                 viewMode={viewMode}
                 printMode={printMode}
               />
@@ -3879,6 +5030,10 @@ export const WidgetCard = React.memo(WidgetCardImpl, (prev, next) =>
   prev.viewMode === next.viewMode &&
   prev.printMode === next.printMode &&
   prev.nested === next.nested &&
+  // A dashboard scope edit only feeds the "Show filter details to viewers"
+  // tooltip's relationship-path line — needs its own check since it can
+  // change independently of every widget's own `widget` reference.
+  prev.scopeEntities === next.scopeEntities &&
   // Opening/closing the settings panel or a nested add for some OTHER
   // widget doesn't change this widget's own `widget` object reference, but
   // it can change how this card should render its children (a nested
@@ -3924,7 +5079,10 @@ function DashboardFloatingToolbar({ canUndo, canRedo, onUndo, onRedo, zoom, onZo
           <div className="dc-float-toolbar-divider" />
           <span className="dc-tip" data-tip="Reset the whole dashboard">
             <button className="ds-icon-btn" onClick={onReset}>
-              <img src="assets/icons/reset.svg" width={16} height={16} alt="Reset" />
+              {/* Masked (not <img>) so it picks up currentColor like every
+                  other toolbar icon here — the raw SVG's own fill/stroke are
+                  hardcoded to #101010, always dark regardless of button state. */}
+              <span className="dc-float-toolbar-reset-icon" />
             </button>
           </span>
         </>
@@ -4813,6 +5971,13 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const [dashboardScopeAttrs, setDashboardScopeAttrs] = useState(() =>
     hasSavedContent ? (editSeed.dashboardScopeAttrs ?? {}) : {}
   )
+  // Relationship chains (e.g. Host → Identity → Person) built via the Set
+  // Dashboard Scope modal's "Add Attributes" step — persisted the same way
+  // as dashboardScopeAttrs so reopening the scope modal or reloading a saved
+  // dashboard doesn't flatten the tree back into ungrouped per-entity filters.
+  const [dashboardScopePaths, setDashboardScopePaths] = useState(() =>
+    hasSavedContent ? (editSeed.dashboardScopePaths ?? []) : []
+  )
   const [scopeModalOpen, setScopeModalOpen] = useState(false)
   const [scopeMandatory, setScopeMandatory] = useState(false)
   // Set instead of committing directly whenever a scope edit (on a dashboard
@@ -4834,6 +5999,14 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const [liveHeightId, setLiveHeightId]   = useState(null)
   const [deletePending, setDeletePending] = useState(null)
   const [deleteDashboardConfirm, setDeleteDashboardConfirm] = useState(false)
+  // Set instead of proceeding whenever Save/Save As is clicked while a widget
+  // is showing a scope-error callout — shown before the Save Dashboard name
+  // modal (or before the direct re-save, for an already-saved dashboard) so
+  // the user is warned first. { mode } resumes into openSaveModal(mode) on
+  // confirm; { direct: true, savedName, mode } resumes straight into
+  // handleDashboardSaved (the already-saved quick re-save path, which never
+  // shows the name modal at all).
+  const [saveErrorConfirm, setSaveErrorConfirm] = useState(null)
 
   // Dashboard-level actions: share + schedule + stop schedule + download (UI only — this app has no backend)
   const [shareOpen, setShareOpen]           = useState(false)
@@ -4874,7 +6047,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   // An existing dashboard opened for editing starts out already "saved" — its
   // snapshot must reflect that so the leave-confirmation doesn't fire until
   // something actually changes.
-  const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) : null)
+  const lastSavedSnapshotRef = useRef(editSeed ? JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs, dashboardScopePaths }) : null)
 
   const openSaveModal = (mode) => {
     setSaveModalMode(mode)
@@ -4973,14 +6146,14 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       id, name: savedName, isNew: true, type: 'DASHBOARD',
       template: template?.name ?? editSeed?.template ?? 'Custom', visibility: saveAvailabilityDraft, status: 'Saved',
       lastUpdated: today,
-      widgets, dashboardScopes, dashboardScopeAttrs,
+      widgets, dashboardScopes, dashboardScopeAttrs, dashboardScopePaths,
       navSection: saveNavSectionDraft === 'workspace' ? null : saveNavSectionDraft,
     }
     flushSync(() => {
       addSavedDashboard(savedEntry)
       setDashboardId(id)
       setName(savedName)
-      lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScopes, dashboardScopeAttrs })
+      lastSavedSnapshotRef.current = JSON.stringify({ name: savedName, widgets, dashboardScopes, dashboardScopeAttrs, dashboardScopePaths })
     })
     showToast({ type: 'success', msg: `"${savedName}" has been saved.` })
     // Land on the dashboard itself rather than the list — seed
@@ -4992,7 +6165,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     onNav(`workspace/dashboard/view-${id}`)
   }
   const isDirty = !reportMode && !viewMode && !(widgets.length === 0 && !name.trim())
-    && JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs }) !== lastSavedSnapshotRef.current
+    && JSON.stringify({ name, widgets, dashboardScopes, dashboardScopeAttrs, dashboardScopePaths }) !== lastSavedSnapshotRef.current
   // No local isDirty check here — WorkspacePage's handleNav guards every nav
   // it receives (back button included) through guardNav below, which is what
   // actually opens the discard-confirm modal. Keeps this the single place
@@ -5092,8 +6265,6 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
 
   // Add widget form
   const [selectedChart, setSelectedChart]       = useState(null)
-  const [widgetTitle, setWidgetTitle]           = useState('')
-  const [widgetDescription, setWidgetDescription] = useState('')
   const [widgetSize, setWidgetSize]             = useState('small')
   const [widgetHeight, setWidgetHeight]         = useState('small')
   // Set while the Add Widget panel is targeting a nested widget (opened via
@@ -5202,17 +6373,41 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       const real = layoutWidgets.map(w => {
         let gw = w.gw, gh = w.gh
         const { minGw, minGh } = minSizeFor(w.chartId)
-        if (panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)) {
+        const isLivePreview = panelMode === 'settings' && w.id === settingsWidgetId && (liveSizeId || liveHeightId)
+        if (isLivePreview) {
           if (liveSizeId) {
             const span = ALL_WIDGET_SIZES.find(s => s.id === liveSizeId)?.span || w.span
             gw = clamp((span || 1) * 3, minGw, MAX_GW)
           }
-          if (liveHeightId) {
+          // A container's previewed height must still fit its nested
+          // children on top of the previewed own-content height — otherwise
+          // the live preview (and the dashed isEditing border it drives)
+          // shrinks below what the already-rendered nested grid actually
+          // needs, and the nested card spills out past it.
+          if (w.children?.length) {
+            const ownGh = (w.chartId === 'heading' || w.chartId === 'none')
+              ? 0
+              : liveHeightId
+                ? (ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px ? Math.ceil(ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId).px / ROW_UNIT_PX) : legacyGh(w))
+                : legacyGh(w)
+            const packedChildren = packWidgets(w.children)
+            const nestedGh = Math.max(...packedChildren.map(c => c.gy + c.gh))
+            // See requiredContainerGh: no extra gap row — rglBoxPx's own
+            // per-row margin already accounts for the seam between the
+            // own-content box and the nested grid.
+            gh = clamp(ownGh + nestedGh, minGh, MAX_GH)
+          } else if (liveHeightId) {
             const px = ALL_WIDGET_HEIGHTS.find(s => s.id === liveHeightId)?.px
             if (px) gh = clamp(Math.ceil(px / ROW_UNIT_PX), minGh, MAX_GH)
           }
         }
-        return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: minGw, minH: minGh, maxW: MAX_GW, maxH: MAX_GH }
+        // A container can never legitimately sit below what its nested
+        // children require — floor its RGL minH there (not just minGh) so
+        // dragging its own resize handle can't commit an undersized card in
+        // the first place (commitRglLayout still re-derives gh as a
+        // safety net for any layout that reaches it some other way).
+        const containerMinGh = w.children?.length ? (isLivePreview ? gh : requiredContainerGh(w)) : minGh
+        return { i: String(w.id), x: w.gx, y: w.gy, w: gw, h: gh, minW: minGw, minH: containerMinGh, maxW: MAX_GW, maxH: MAX_GH }
       })
       return viewMode ? real : [...real, { i: '__add__', x: addSlot.gx, y: addSlot.gy, w: addSlot.gw, h: addSlot.gh, isDraggable: false, isResizable: false }]
     },
@@ -5225,7 +6420,15 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   const commitRglLayout = (layout) => {
     commitWidgets(ws => ws.map(w => {
       const l = layout.find(item => item.i === String(w.id))
-      return l ? { ...w, gx: l.x, gy: l.y, gw: l.w, gh: l.h } : w
+      if (!l) return w
+      const next = { ...w, gx: l.x, gy: l.y, gw: l.w, gh: l.h }
+      // A container's own resize handle drags its whole card (own content +
+      // nested children combined) — without re-deriving gh from
+      // requiredContainerGh here, dragging it shorter than its nested
+      // children need commits a card too small for what's already rendered
+      // inside it, the same clipping/overlap the live-preview fix above
+      // guards against, but on the real committed-resize path.
+      return w.children?.length ? withRequiredGh(next) : next
     }))
   }
 
@@ -5263,7 +6466,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
       // panel's Apply would generate, so a freshly-added KPI renders the
       // real card design right away instead of the generic chart-type
       // silhouette until the user opens Settings and clicks Apply once.
-      ...(chartId === 'kpi' ? { showTotalCount: true, showPctChange: true, valueFontSize: 'auto', data: buildKpiMockData('host', true) } : {}),
+      ...(chartId === 'kpi' ? { showTotalCount: true, showPctChange: true, valueFontSize: 'auto', hasComparisonMetric: false, data: buildKpiMockData('host', true, false) } : {}),
       // A freshly-added Aggregated Table defaults to grouping by Business
       // Unit with a Host ID count, same rationale as the KPI defaults above
       // — real-looking grouped rows right away instead of the generic
@@ -5299,6 +6502,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     const allSizes = [...WIDGET_SIZES, ...KPI_WIDGET_SIZES, ...HEADING_WIDGET_SIZES]
     const allHeights = [...WIDGET_HEIGHTS, ...KPI_WIDGET_HEIGHTS, ...HEADING_WIDGET_HEIGHTS]
     const next = { ...w, ...changes, phase: 'active' }
+    // Re-checked on every save (not just on a scope change) so picking a
+    // valid attribute clears a previously-flagged scope error right away,
+    // instead of it lingering until the scope itself is touched again.
+    next.scopeError = getWidgetScopeIssue(next, dashboardScopes)
     // changes.sizeId/heightId is null when the width/height was left on
     // "Custom" — in that case leave the widget's real gw/gh (and span)
     // untouched instead of collapsing it back to a default preset.
@@ -5393,6 +6600,35 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
     })
   }
 
+  // Copies a widget in place — top-level or nested, same flat id space
+  // removeWidget uses. The clone drops gx/gy so packWidgets auto-places it
+  // into the first free gap (top-level grid or the parent's own nested
+  // grid) rather than overlapping the original. A container's nested
+  // children are cloned too, with their own fresh ids off the same counter,
+  // so duplicating a container never leaves two widgets sharing one id.
+  const duplicateWidget = (id) => {
+    commitWidgets(ws => {
+      const top = ws.find(w => w.id === id)
+      const original = top || ws.flatMap(w => w.children || []).find(c => c.id === id)
+      if (!original) return ws
+      let nextId = nextWidgetId(ws)
+      const cloneChildren = children => children.map(c => ({ ...c, id: nextId++, gx: undefined, gy: undefined }))
+      const clone = {
+        ...original,
+        id: nextId++,
+        label: `${original.label} (Copy)`,
+        gx: undefined,
+        gy: undefined,
+        ...(original.children?.length ? { children: cloneChildren(original.children) } : {}),
+      }
+      return top
+        ? [...ws, clone]
+        : ws.map(w => w.children?.some(c => c.id === id)
+            ? withRequiredGh({ ...w, children: [...w.children, clone] })
+            : w)
+    })
+  }
+
   const getSnapshot = () => ({
     widgetCount: widgets.length,
     widgets: widgets.map(w => ({ id: w.id, label: w.label, chartId: w.chartId, phase: w.phase, sizeId: w.sizeId, heightId: w.heightId })),
@@ -5430,20 +6666,20 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
   }
 
   const openAdd = () => {
-    setSelectedChart(null); setWidgetTitle(''); setWidgetDescription(''); setWidgetSize('small'); setWidgetHeight('small')
+    setSelectedChart(null); setWidgetSize('small'); setWidgetHeight('small')
     setAddParentId(null)
     setPanelMode('add')
   }
 
   const openAddNested = (parentId) => {
-    setSelectedChart(null); setWidgetTitle(''); setWidgetDescription(''); setWidgetSize('small'); setWidgetHeight('small')
+    setSelectedChart(null); setWidgetSize('small'); setWidgetHeight('small')
     setAddParentId(parentId)
     setPanelMode('add')
   }
 
   const handleAddSave = () => {
     if (!selectedChart) return
-    const newId = addWidget({ chartId: selectedChart, label: widgetTitle, description: widgetDescription, sizeId: widgetSize, heightId: widgetHeight, parentId: addParentId })
+    const newId = addWidget({ chartId: selectedChart, sizeId: widgetSize, heightId: widgetHeight, parentId: addParentId })
     setAddParentId(null)
     setSettingsWidgetId(newId)
     setPanelMode('settings')
@@ -5639,7 +6875,13 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
               <div className="dc-toolbar-spacer" />
 
               {!reportMode && !viewMode && (
-                <button className="ds-btn sz-md t-outline" onClick={() => openSaveModal('save-as')}>Save As</button>
+                <button
+                  className="ds-btn sz-md t-outline"
+                  onClick={() => {
+                    if (widgetsHaveScopeError(widgets)) { setSaveErrorConfirm({ mode: 'save-as' }); return }
+                    openSaveModal('save-as')
+                  }}
+                >Save As</button>
               )}
 
               <button
@@ -5654,7 +6896,12 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                     // updated widgets/scope and toast, skipping the modal that
                     // asks for those again. A never-saved dashboard still needs
                     // the full modal (openSaveModal('save')) to get a name.
-                    if (dashboardId) { handleDashboardSaved(name, 'save'); return }
+                    if (dashboardId) {
+                      if (widgetsHaveScopeError(widgets)) { setSaveErrorConfirm({ direct: true, savedName: name, mode: 'save' }); return }
+                      handleDashboardSaved(name, 'save')
+                      return
+                    }
+                    if (widgetsHaveScopeError(widgets)) { setSaveErrorConfirm({ mode: 'save' }); return }
                     openSaveModal('save')
                     return
                   }
@@ -5794,21 +7041,24 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                             isEditing={isBeingEdited}
                             onEdit={() => openSettings(w.id)}
                             onRequestDelete={w => setDeletePending(w)}
+                            onDuplicate={w => duplicateWidget(w.id)}
                             onEditWithCopilot={w => onOpenCopilotBuilder?.({ widgetId: w.id, widgetLabel: w.label })}
                             onNav={onNav}
                             editingWidgetId={panelMode === 'settings' ? settingsWidgetId : null}
                             onEditWidget={openSettings}
                             onDeleteWidget={setDeletePending}
+                            onDuplicateWidget={c => duplicateWidget(c.id)}
                             onAddNested={openAddNested}
                             addingNestedParentId={panelMode === 'add' ? addParentId : null}
                             addingNestedDraft={panelMode === 'add' && addParentId ? {
-                              title: widgetTitle, description: widgetDescription, chartId: selectedChart,
+                              chartId: selectedChart,
                               heightPx: WIDGET_HEIGHTS.find(s => s.id === widgetHeight)?.px || 180,
                             } : null}
                             onNestedLayoutChange={commitNestedLayout}
                             onPromoteNested={promoteNestedToTop}
                             isNestTarget={nestTargetId === w.id}
                             reportMode={false}
+                            scopeEntities={dashboardScopes}
                             viewMode={viewMode}
                           />
                         </div>
@@ -5832,7 +7082,7 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                               <img src="assets/icons/lcnc/drag-widget.svg" width={16} height={16} alt="drag" />
                             </button>
                             <button title="Add nested widget" className="dc-action-btn">
-                              <img src="assets/icons/lcnc/add-widget.svg" width={16} height={16} alt="add widget" />
+                              <img src="assets/icons/lcnc/nested-widget.svg" width={16} height={16} alt="add nested widget" />
                             </button>
                             <button title="Edit" className="dc-action-btn">
                               <img src="assets/icons/lcnc/dasboard-edit.svg" width={16} height={16} alt="edit" />
@@ -5844,11 +7094,8 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                           <div className="dc-preview-card">
                             <div className="dc-preview-header">
                               <span className="dc-preview-title">
-                                {widgetTitle || (selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : '')}
+                                {selectedChart ? (CHART_DEFAULT_NAMES[selectedChart] || CHART_TYPES.find(c => c.id === selectedChart)?.label) : ''}
                               </span>
-                              {widgetDescription && (
-                                <div className="dc-preview-desc">{widgetDescription}</div>
-                              )}
                             </div>
                             <div className="dc-preview-body">
                               {selectedChart && <ChartSilhouette chartId={selectedChart} />}
@@ -5903,8 +7150,6 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
         {panelMode === 'add' && !reportMode && !viewMode && (
           <AddWidgetPanel
             selected={selectedChart} setSelected={setSelectedChart}
-            widgetTitle={widgetTitle} setWidgetTitle={setWidgetTitle}
-            widgetDescription={widgetDescription} setWidgetDescription={setWidgetDescription}
             widgetSize={widgetSize}   setWidgetSize={setWidgetSize}
             widgetHeight={widgetHeight} setWidgetHeight={setWidgetHeight}
             onSave={handleAddSave}
@@ -5931,9 +7176,10 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
         mandatory={scopeMandatory}
         initialSelectedIds={dashboardScopes.map(e => e.id)}
         initialAttrFilters={dashboardScopeAttrs}
+        initialPaths={dashboardScopePaths}
         onClose={() => setScopeModalOpen(false)}
         onBack={() => onNav(backTarget)}
-        onSelect={(entities, attrFilters) => {
+        onSelect={(entities, attrFilters, paths) => {
           setScopeModalOpen(false)
           setScopeMandatory(false)
           const oldIds = new Set(dashboardScopes.map(e => e.id))
@@ -5956,10 +7202,11 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
           if (widgets.length === 0 || (!added.length && !removed.length && !attrsChanged.length)) {
             setDashboardScopes(entities)
             setDashboardScopeAttrs(attrFilters)
+            setDashboardScopePaths(paths)
             return
           }
           setScopeChangeConfirm({
-            entities, attrFilters,
+            entities, attrFilters, paths,
             kind: added.length && removed.length ? 'replace' : added.length ? 'add' : removed.length ? 'remove' : 'attrs',
             added, removed, attrsChanged,
           })
@@ -6011,6 +7258,8 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
                 onClick={() => {
                   setDashboardScopes(scopeChangeConfirm.entities)
                   setDashboardScopeAttrs(scopeChangeConfirm.attrFilters)
+                  setDashboardScopePaths(scopeChangeConfirm.paths)
+                  commitWidgets(ws => applyScopeToWidgets(ws, scopeChangeConfirm.entities))
                   setScopeChangeConfirm(null)
                 }}
               >{applyLabel} & Apply</button>
@@ -6179,6 +7428,39 @@ const DashboardCanvas = forwardRef(function DashboardCanvas({ onNav, templateId 
           </div>
         </div>
       </>
+    )}
+
+    {saveErrorConfirm && (
+      <div className="ds-modal-overlay">
+        <div className="ds-modal">
+          <div className="ds-modal-header">
+            <span className="ds-modal-title warning dc-scope-confirm-modal-title">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                <path d="M8.762 3.569L13.388 11.6C13.712 12.167 13.293 12.866 12.626 12.866H3.374C2.706 12.866 2.287 12.167 2.612 11.6L7.238 3.569C7.571 2.989 8.429 2.989 8.762 3.569Z" stroke="var(--pai-med-fg)" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 9.058V6.942" stroke="var(--pai-med-fg)" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="8" cy="10.962" r="0.635" fill="var(--pai-med-fg)"/>
+              </svg>
+              Save dashboard with error?
+            </span>
+            <button className="ds-modal-close" onClick={() => setSaveErrorConfirm(null)} aria-label="Close">✕</button>
+          </div>
+          <div className="ds-modal-body">
+            <span>One or more widgets on this dashboard currently have an error and aren't rendering correctly. The saved dashboard will keep the same error until it's fixed.</span>
+          </div>
+          <div className="ds-modal-footer">
+            <button className="ds-btn sz-md t-outline" onClick={() => setSaveErrorConfirm(null)}>Cancel</button>
+            <button
+              className="ds-btn sz-md t-primary"
+              onClick={() => {
+                const { direct, savedName, mode } = saveErrorConfirm
+                setSaveErrorConfirm(null)
+                if (direct) { handleDashboardSaved(savedName, mode); return }
+                openSaveModal(mode)
+              }}
+            >Save Anyway</button>
+          </div>
+        </div>
+      </div>
     )}
 
     {leaveConfirmOpen && (
