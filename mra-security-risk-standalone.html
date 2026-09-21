@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en" class="theme-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MRA Security Risk — Prevalent AI</title>
+<style>
+  /* ══════════════════════════════════════════════════════════════
+     Reset + base
+     ══════════════════════════════════════════════════════════════ */
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button { font-family: inherit; }
+  svg { display: block; }
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+
+  /* ══════════════════════════════════════════════════════════════
+     Design tokens (design-system-2.0 — colors_and_type.css / global.css)
+     ══════════════════════════════════════════════════════════════ */
+  :root {
+    --topbar-height:            48px;
+    --shell-topbar-bg:          #131313;
+    --shell-topbar-text:        #D1D1D1;
+    --shell-topbar-text-muted:  #9A9A9A;
+    --shell-bg:           #F7F9FC;
+    --shell-border:       #E6E6E6;
+    --shell-border-2:     #D6D6D6;
+    --shell-text:         #101010;
+    --shell-text-2:       #282828;
+    --shell-text-muted:   #6E6E6E;
+    --shell-text-faint:   #ADADAD;
+    --shell-accent:       #6360D8;
+    --shell-hover:        rgba(0,0,0,0.04);
+    --shell-active:       rgba(99,96,216,0.08);
+    --shell-raised:       #F5F5F5;
+
+    --card-bg:            #FFFFFF;
+    --card-border:        #E6E6E6;
+
+    --table-th-bg:        #F5F5F5;
+    --table-border:       #E6E6E6;
+    --table-th-padding:   8px 16px;
+    --table-td-padding:   8px 16px;
+
+    --pai-indigo:        #6360D8;
+    --pai-indigo-tint:   #F0F0FC;
+    --pai-indigo-secondary:    #E0DFF7;
+    --pai-indigo-secondary-fg: #504BB8;
+    --pai-border:        #E6E6E6;
+    --pai-border-strong: #CFCFCF;
+
+    --pai-crit-fg:       #D12329;
+    --pai-med-fg:        #D98B1D;
+    --pai-green:         #31A56D;
+
+    --ctrl-selected-bg:  #F0F0FC;
+  }
+
+  html.theme-dark {
+    color-scheme: dark;
+    --shell-bg:           #0E0E0E;
+    --shell-raised:       #1C1C1C;
+    --shell-border:       #272727;
+    --shell-border-2:     #3B3A3A;
+    --shell-text:         #F9F9F9;
+    --shell-text-2:       #D1D1D1;
+    --shell-text-muted:   #8A8A8A;
+    --shell-text-faint:   #696969;
+    --shell-hover:        rgba(255,255,255,0.05);
+    --shell-active:       rgba(99,96,216,0.15);
+
+    --card-bg:            #1C1C1C;
+    --card-border:        #272727;
+    --table-th-bg:        #131313;
+    --table-border:       #272727;
+
+    --pai-border:               #272727;
+    --pai-border-strong:        #3B3A3A;
+    --pai-indigo-tint:          rgba(99,96,216,0.15);
+    --pai-indigo-secondary:     rgba(99,96,216,0.22);
+    --pai-indigo-secondary-fg:  #A09EEB;
+    --ctrl-selected-bg:  rgba(99,96,216,0.15);
+
+    --pai-crit-fg:        #E84349;
+    --pai-med-fg:         #CDB900;
+    --pai-green:          #31A56D;
+  }
+  html.theme-dark body { background: #0E0E0E; color: #F9F9F9; }
+  body { background: var(--shell-bg); color: var(--shell-text); }
+
+  /* ══════════════════════════════════════════════════════════════
+     App shell / layout
+     ══════════════════════════════════════════════════════════════ */
+  .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; color: var(--shell-text); background: var(--shell-bg); }
+  .app-body { display: flex; flex: 1; min-height: 0; }
+  .exp-main { flex: 1; min-width: 0; display: flex; overflow: hidden; background: var(--shell-bg); }
+  .exp-main--col { flex-direction: column; }
+  .exp-content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .page-scroll { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; background: var(--shell-bg); }
+
+  /* ══════════════════════════════════════════════════════════════
+     Topbar
+     ══════════════════════════════════════════════════════════════ */
+  .topbar {
+    height: var(--topbar-height);
+    background: var(--shell-topbar-bg);
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    flex-shrink: 0; position: relative; z-index: 50;
+  }
+  .topbar__logo-btn { display: flex; align-items: center; padding: 0; border: none; background: transparent; cursor: pointer; }
+  .topbar__spacer { flex: 1; }
+  .topbar__btn {
+    width: 32px; height: 32px; border: none; background: transparent; color: var(--shell-topbar-text);
+    border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative;
+  }
+  .topbar__btn:hover { background: rgba(255,255,255,0.10); }
+  .topbar__navigator {
+    width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+    border: none; border-radius: 44px;
+    background: linear-gradient(90deg, #467FCD, #47ADCB);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar__navigator-icon { width: 16px; height: 16px; }
+  .vb-badge {
+    font-size: 10px; font-weight: 600; font-family: inherit;
+    color: var(--shell-topbar-text-muted);
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 44px; padding: 2px 8px; cursor: pointer; letter-spacing: 0.04em; flex-shrink: 0;
+  }
+  .vb-badge:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .topbar__notif-dot {
+    position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pai-crit-fg); border: 1px solid var(--shell-topbar-bg);
+  }
+  .topbar__avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); color: var(--shell-topbar-text);
+    border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar__avatar:hover { background: rgba(255,255,255,0.18); }
+
+  /* ══════════════════════════════════════════════════════════════
+     LeftNav
+     ══════════════════════════════════════════════════════════════ */
+  .leftnav {
+    position: relative; flex-shrink: 0; width: 220px;
+    background: var(--card-bg); border-right: 1px solid var(--shell-border);
+    display: flex; flex-direction: column; overflow-y: hidden;
+  }
+  .leftnav__body { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .leftnav__divider { margin: 8px 12px; border-top: 1px solid var(--shell-border); }
+  .leftnav__footer { flex-shrink: 0; padding: 8px 0; border-top: 1px solid var(--shell-border); }
+  .leftnav__section-label {
+    display: flex; align-items: center; justify-content: flex-start; gap: 4px;
+    width: 100%; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--shell-text-faint); padding: 8px 8px 4px 16px;
+    background: none; border: none; font-family: inherit; cursor: pointer; text-align: left;
+  }
+  .leftnav__section-label:hover { color: var(--shell-text-muted); }
+
+  .nav-item { padding: 0 8px; margin-bottom: 4px; }
+  .nav-item__btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px; background: transparent; color: var(--shell-text-2);
+    border: none; border-radius: 6px; cursor: pointer; text-align: left;
+    font-size: 12px; font-weight: 400; font-family: inherit; justify-content: flex-start;
+  }
+  .nav-item__btn--active { background: var(--shell-raised); color: var(--shell-text); font-weight: 500; }
+  .nav-item__btn--selected { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
+  .nav-item__btn:hover:not(.nav-item__btn--active):not(.nav-item__btn--selected) { background: var(--shell-hover); }
+  .nav-item__icon { flex-shrink: 0; width: 16px; height: 16px; opacity: 0.72; }
+  .nav-item__icon--active { opacity: 0.9; }
+  .nav-item__icon--selected { color: var(--shell-accent); opacity: 1; }
+  .nav-item__label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-item__chevron { display: inline-flex; color: var(--shell-text-muted); transform: rotate(180deg); }
+  .nav-item__children { overflow: hidden; }
+  .nav-item__child {
+    display: flex; align-items: center; gap: 8px; width: 100%; height: 28px;
+    padding-left: 28px; padding-right: 8px;
+    background: transparent; color: var(--shell-text-muted);
+    border: none; border-radius: 6px; cursor: pointer; text-align: left;
+    font-size: 12px; font-weight: 400; font-family: inherit; margin-top: 4px;
+  }
+  .nav-item__child-icon { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; background-color: var(--shell-text); opacity: 0.55; border-radius: 3px; }
+  .nav-item__child--active { background: var(--shell-active); color: var(--shell-accent); font-weight: 500; }
+  .nav-item__child--active .nav-item__child-icon { background-color: var(--shell-accent); opacity: 1; }
+  .nav-item__child:hover:not(.nav-item__child--active) { background: var(--shell-hover); }
+
+  /* ══════════════════════════════════════════════════════════════
+     SubHeader
+     ══════════════════════════════════════════════════════════════ */
+  .subheader {
+    height: 48px; box-sizing: border-box; flex-shrink: 0;
+    background: var(--card-bg); border-bottom: 1px solid var(--shell-border);
+    display: flex; align-items: center; padding: 0 24px; gap: 12px;
+  }
+  .subheader__title-block { display: flex; flex-direction: column; min-width: 0; }
+  .subheader__title { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.2; white-space: nowrap; }
+  .subheader__breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); margin-top: 2px; }
+  .subheader__breadcrumb-sep { color: var(--shell-text-muted); }
+  .subheader__breadcrumb-current { color: var(--shell-accent); font-weight: 500; }
+  .subheader__more-btn {
+    width: 24px; height: 24px; padding: 0; background: var(--shell-raised); border: none;
+    border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--shell-text-muted); flex-shrink: 0;
+  }
+  .subheader__explore-btn {
+    height: 28px; padding: 0 12px; border-radius: 44px; font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--pai-border-strong); color: var(--shell-text-2);
+  }
+  .subheader__spacer { flex: 1; }
+  .subheader__filter-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .subheader__save-btn {
+    width: 28px; height: 28px; padding: 0; background: var(--pai-indigo); border: none;
+    border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .subheader__filter-pill {
+    display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; box-sizing: border-box;
+    background: var(--card-bg); color: var(--pai-indigo-secondary-fg);
+    border: 1px solid var(--pai-border-strong); border-radius: 44px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .subheader__vdivider { width: 1px; height: 20px; background: var(--pai-border-strong); flex-shrink: 0; }
+  .subheader__filter-btn {
+    height: 28px; padding: 0 12px; border-radius: 44px; font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--pai-border-strong); color: var(--shell-text-2);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     DS table + delta primitives (navigator.css / workspace.css subset)
+     ══════════════════════════════════════════════════════════════ */
+  .ds-table-wrap { width: 100%; overflow-x: auto; }
+  .ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ds-th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--shell-text-muted); background: var(--table-th-bg); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+  .ds-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); color: var(--shell-text-2); vertical-align: middle; font-size: 12px; }
+  .ds-table tbody tr:last-child td { border-bottom: none; }
+  .ds-table tbody tr:hover td { background: var(--shell-hover); }
+  .ds-kpi-delta { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 400; }
+  .ds-kpi-delta.up-bad { color: var(--pai-crit-fg); }
+  .ds-kpi-delta.down-good { color: var(--pai-green); }
+  .ds-kpi-delta.neutral { color: var(--shell-text-muted); }
+
+  /* ══════════════════════════════════════════════════════════════
+     Segmented tabs (Supported / EOL toggle)
+     ══════════════════════════════════════════════════════════════ */
+  .kg-seg-tabs {
+    position: relative; display: inline-flex; align-items: center;
+    box-sizing: border-box; padding: 0; background: var(--shell-raised);
+    border-radius: 44px; height: 32px;
+  }
+  .kg-seg-thumb {
+    position: absolute; top: 0; bottom: 0; background: var(--card-bg);
+    border: 1px solid var(--shell-border); border-radius: 44px;
+    transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 1px 2px rgba(16,16,16,0.04); box-sizing: border-box;
+  }
+  .kg-seg-btn {
+    position: relative; z-index: 1; padding: 0 16px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; color: var(--shell-text-muted);
+    white-space: nowrap; line-height: 1;
+  }
+  .kg-seg-btn--active { color: var(--shell-text); font-weight: 500; }
+
+  /* ══════════════════════════════════════════════════════════════
+     MRA Security Risk page (styles/mra-security-risk.css)
+     ══════════════════════════════════════════════════════════════ */
+  .mra-page { display: flex; flex-direction: column; gap: 16px; padding: 12px; height: 100%; box-sizing: border-box; overflow: auto; }
+  .mra-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+  .mra-widget-header { display: flex; flex-direction: column; gap: 4px; }
+  .mra-widget-header--split { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .mra-widget-title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+  .mra-widget-title-block { display: flex; flex-direction: column; gap: 2px; }
+  .mra-widget-owner { font-size: 12px; color: var(--shell-text-muted); }
+
+  .mra-rag-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .mra-rag-legend-label { font-size: 12px; color: var(--shell-text-muted); }
+  .mra-rag-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+  .mra-rag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .mra-rag-chip--red   { color: var(--pai-crit-fg); }
+  .mra-rag-chip--amber { color: var(--pai-med-fg); }
+  .mra-rag-chip--green { color: var(--pai-green); }
+  .mra-rag-dot--red    { background: var(--pai-crit-fg); }
+  .mra-rag-dot--amber  { background: var(--pai-med-fg); }
+  .mra-rag-dot--green  { background: var(--pai-green); }
+
+  .ds-td.mra-rag--red   { color: var(--pai-crit-fg); font-weight: 600; }
+  .ds-td.mra-rag--amber { color: var(--pai-med-fg);  font-weight: 600; }
+  .ds-td.mra-rag--green { color: var(--pai-green);   font-weight: 600; }
+  .ds-td.mra-rag--red, .ds-td.mra-rag--amber, .ds-td.mra-rag--green { white-space: nowrap; }
+
+  .mra-summary-section { display: flex; flex-direction: column; gap: 12px; }
+  .mra-stat-row { display: flex; align-items: stretch; gap: 16px; }
+  .mra-kpi-card { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 12px 16px; }
+  .mra-stat-mini-title { font-size: 14px; font-weight: 600; color: var(--shell-text); padding-bottom: 12px; }
+
+  .mra-kpi-card-value { font-size: 20px; font-weight: 600; line-height: 1.2; color: var(--shell-text); }
+  .mra-kpi-card-value.mra-rag--red   { color: var(--pai-crit-fg); }
+  .mra-kpi-card-value.mra-rag--amber { color: var(--pai-med-fg); }
+  .mra-kpi-card-value.mra-rag--green { color: var(--pai-green); }
+  .mra-kpi-card-label { font-size: 14px; font-weight: 600; line-height: 1.17; color: var(--shell-text); margin-top: 8px; }
+
+  .mra-kpi-card-trend { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 12px; }
+  /* Supported/EOL cards only — trend row follows immediately, divider flush
+     against the breakdown body above it (Figma KPI Card spec 56031-154040). */
+  .mra-breakdown-body + .mra-kpi-card-trend { margin-top: 0; border-top: 1px solid var(--card-border); }
+  .mra-kpi-card-trend .ds-kpi-delta { font-size: 12px; font-weight: 600; gap: 2px; }
+  .mra-kpi-card-trend-suffix { font-size: 12px; color: var(--shell-text-muted); }
+  .mra-prev-score-line { font-size: 12px; color: var(--shell-text-muted); margin-top: 4px; padding-bottom: 8px; }
+
+  .mra-td-muted { color: var(--shell-text-muted); }
+  .mra-total-row > .ds-td { border-top: 1px solid black; font-weight: 700; }
+  .mra-td-total { color: var(--shell-text); }
+
+  /* Supported/EOL card body — Risk Score (with its own prev-score caption)
+     on the left, a divider, then Total KEVs/Total Assets as label/value
+     rows stacked on the right instead of a third side-by-side column. */
+  .mra-breakdown-body { display: flex; align-items: stretch; }
+  .mra-breakdown-primary { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--card-border); }
+  .mra-breakdown-list { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .mra-breakdown-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 4px; }
+  .mra-breakdown-row:not(:last-child) { border-bottom: 1px solid var(--card-border); }
+  .mra-breakdown-row:first-child { padding-top: 0; }
+  .mra-breakdown-row:last-child { padding-bottom: 0; }
+  .mra-breakdown-row-label { font-size: 12px; color: var(--shell-text-muted); }
+  .mra-breakdown-row-value { font-size: 14px; font-weight: 700; color: var(--shell-text); }
+
+  .mra-widget-stat-value { font-size: 20px; font-weight: 600; line-height: 1.2; color: var(--shell-text); }
+  .mra-widget-stat-value.mra-rag--red   { color: var(--pai-crit-fg); }
+  .mra-widget-stat-value.mra-rag--amber { color: var(--pai-med-fg); }
+  .mra-widget-stat-value.mra-rag--green { color: var(--pai-green); }
+  .mra-widget-stat-label { font-size: 12px; color: var(--shell-text-muted); margin-top: 4px; }
+
+  .mra-change-cell { white-space: nowrap; }
+  .mra-change-cell .ds-kpi-delta { font-size: 12px; font-weight: 600; gap: 4px; }
+
+  .mra-breakdown-table { display: none; }
+  .mra-breakdown-table.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ══════════════════════════ Topbar ══════════════════════════ -->
+  <header class="topbar">
+    <button class="topbar__logo-btn" title="Navigator" aria-label="Go to Navigator home">
+      <svg width="150" height="24" viewBox="0 0 172 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.0003 23.2593C8.8871 23.2593 4.74205 19.1144 4.74183 14.0014C4.74183 8.88784 8.88678 4.74284 13.9999 4.74257C19.1134 4.74257 23.2585 8.88752 23.2587 14.0006C23.2587 19.1132 19.1139 23.2581 14.0007 23.2584M14.0003 4.00021C8.47705 4.00021 3.99989 8.47742 4 14.0002C4 19.523 8.47726 24.0001 14.0002 24C19.5228 24 24.0001 19.5228 24 13.9999C24 8.47699 19.5232 4.00011 14.0003 4.00021Z" fill="#FFFFFF"/>
+        <path d="M16.6438 9.29042H16.0563C15.9766 9.27002 15.8918 9.28401 15.8238 9.32891C15.7557 9.37376 15.7112 9.44482 15.7018 9.52384L12.6616 18.4047C12.6457 18.4442 12.636 18.486 12.6328 18.5284C12.6329 18.6118 12.6747 18.7103 12.8743 18.7103H13.4678C13.5482 18.7305 13.6337 18.7162 13.7023 18.671C13.7708 18.6258 13.8158 18.5542 13.8257 18.4746L16.8545 9.59213C16.8702 9.553 16.88 9.51167 16.8832 9.46976C16.8832 9.38647 16.8418 9.28935 16.6441 9.28935" fill="#FFFFFF"/>
+        <path d="M18.6919 13.0692C18.6203 13.0219 18.5339 13.0008 18.4478 13.0092H17.9305C17.8444 13.0007 17.758 13.0219 17.6867 13.0692C17.6307 13.1333 17.6049 13.217 17.6157 13.3003V18.4204C17.6049 18.5037 17.6307 18.5876 17.687 18.6517C17.7582 18.699 17.8446 18.7203 17.9304 18.7116H18.4478C18.5339 18.7201 18.6204 18.6989 18.6918 18.6516C18.7478 18.5875 18.7735 18.5037 18.7628 18.4204V13.3003C18.7735 13.217 18.7479 13.1333 18.6919 13.0692Z" fill="#FFFFFF"/>
+        <path d="M12.4864 10.2031C12.4166 10.1109 12.3378 10.0254 12.2512 9.94772C11.787 9.54071 11.3078 9.30301 10.2319 9.29308L9.53316 9.29089H9.52885C9.49214 9.28929 9.45533 9.29297 9.41962 9.30162C9.34742 9.32448 9.27313 9.38502 9.32708 9.546L9.39662 9.75198L9.48518 10.0149C9.50043 10.0839 9.53636 10.147 9.58833 10.1965C9.64847 10.2268 9.71613 10.241 9.78379 10.2376H9.97406C10.6481 10.2376 11.098 10.3706 11.3894 10.6565C11.6769 10.9372 11.8148 11.4228 11.8148 12.141C11.8148 12.8592 11.6758 13.3448 11.3894 13.6257C11.098 13.9115 10.6485 14.0447 9.97439 14.0447H9.78501C9.7169 14.0411 9.64913 14.0552 9.58866 14.0855C9.53659 14.135 9.50054 14.1981 9.48518 14.267L9.39662 14.5299L9.32708 14.736C9.27313 14.8967 9.34742 14.9581 9.41973 14.9803C9.45499 14.989 9.49148 14.9926 9.52796 14.9911L10.2319 14.9889C11.3078 14.9789 11.787 14.7412 12.2512 14.3343C12.3378 14.2565 12.4165 14.1709 12.4864 14.0788C12.8313 13.6347 12.9997 13.0013 12.9997 12.1396C12.9997 11.2779 12.8319 10.6435 12.4864 10.2004" fill="#FFFFFF"/>
+        <path d="M37.4031 13.9979H39.9355C40.8574 13.9979 41.513 13.8214 41.9021 13.4684C42.2913 13.1154 42.4858 12.5112 42.4858 11.6558V11.3787C42.4858 10.4642 42.2941 9.81946 41.9106 9.44452C41.5272 9.06956 40.8686 8.88162 39.9351 8.88071H37.4027L37.4031 13.9979ZM37.4031 15.1772V19.7041C37.4165 19.8033 37.3874 19.9035 37.3228 19.9817C37.2352 20.0373 37.1305 20.0618 37.0264 20.0512H36.3796C36.2757 20.0617 36.1711 20.0372 36.0837 19.9817C36.019 19.9035 35.99 19.8033 36.0032 19.7041V8.04757C35.9897 7.94849 36.0188 7.84835 36.0837 7.77051C36.1711 7.7149 36.2756 7.69021 36.3796 7.70054H39.8829C41.3074 7.70054 42.346 7.98661 42.999 8.5588C43.6521 9.13102 43.9782 10.0475 43.9776 11.3083V11.6554C43.9776 14.0026 42.6127 15.1763 39.8829 15.1763L37.4031 15.1772Z" fill="#FFFFFF"/>
+        <path d="M62.3473 11.7952C60.7789 11.7952 59.9888 12.7955 59.9768 14.7962H64.6102C64.6721 14.0024 64.481 13.2094 64.0624 12.5236C63.6537 12.0179 63.0094 11.7445 62.3473 11.7952ZM59.9768 15.9234V16.2531C59.9768 18.161 60.7787 19.1149 62.3827 19.1145C63.4005 19.1145 64.0771 18.7388 64.4123 17.9869C64.443 17.8932 64.4952 17.8074 64.5652 17.7359C64.646 17.6986 64.7358 17.6828 64.8252 17.6902H65.4717C65.5818 17.6817 65.6923 17.6973 65.7951 17.736C65.8431 17.7664 65.867 17.8445 65.8666 17.9701C65.8496 18.1898 65.7822 18.4032 65.6692 18.5947C65.549 18.832 65.398 19.0535 65.2199 19.254C64.886 19.5999 64.47 19.8618 64.0075 20.0172C63.4697 20.2071 62.9007 20.3011 62.3283 20.2948C61.2879 20.3591 60.2696 19.986 59.5351 19.2714C58.8345 18.4567 58.4842 17.4136 58.5561 16.3568V15.0559C58.5561 13.657 58.8792 12.5844 59.5256 11.8382C60.2365 11.0651 61.2771 10.6522 62.3454 10.7192C64.8116 10.7192 66.0448 12.0433 66.0451 14.6915V15.5763C66.058 15.6756 66.0288 15.7757 65.9642 15.8538C65.8766 15.9093 65.7719 15.9339 65.6678 15.9233L59.9768 15.9234Z" fill="#FFFFFF"/>
+        <path d="M71.7392 10.9643C71.8331 10.9561 71.9265 10.984 71.9992 11.042C72.0706 11.1259 72.1227 11.2234 72.1521 11.3283L74.6484 18.6834L77.0733 11.3283C77.0981 11.2195 77.1505 11.1183 77.2257 11.0338C77.3009 10.9813 77.3931 10.9566 77.4856 10.9643H78.2403C78.4315 10.9643 78.5271 11.0338 78.5271 11.1728C78.5158 11.2437 78.4978 11.3135 78.4736 11.3813L75.5815 19.6724C75.5452 19.7849 75.4841 19.8885 75.4025 19.976C75.3196 20.0346 75.2176 20.0622 75.1153 20.0538H74.0737C73.9713 20.0625 73.8691 20.0349 73.7864 19.976C73.7043 19.8886 73.643 19.785 73.6064 19.6724L70.7332 11.3813C70.7091 11.3134 70.6912 11.2437 70.6797 11.1728C70.6797 11.0356 70.7744 10.9643 70.967 10.9643L71.7392 10.9643Z" fill="#FFFFFF"/>
+        <path d="M87.0055 15.6442C86.0837 15.6442 85.446 15.7829 85.0929 16.0604C84.7051 16.4199 84.5096 16.9315 84.5628 17.4481C84.5189 17.9107 84.7018 18.3665 85.0571 18.6796C85.5778 18.9824 86.1853 19.1161 86.7901 19.0614H86.9522C87.5077 19.1138 88.0602 18.9339 88.4695 18.5671C88.8159 18.1088 88.9788 17.5448 88.9277 16.9795V15.7997C88.5683 15.7537 88.2119 15.7162 87.8588 15.6872C87.5056 15.6583 87.2215 15.643 87.0066 15.6415M86.8987 14.4983C87.1382 14.4983 87.4438 14.5098 87.8152 14.5326C88.1867 14.5555 88.5579 14.5902 88.9287 14.6369V13.6131C88.9765 13.1124 88.811 12.6146 88.4703 12.2345C88.0449 11.9132 87.5083 11.7611 86.9705 11.8092C86.5294 11.7852 86.089 11.8654 85.687 12.0429C85.3683 12.2278 85.1241 12.5124 84.9954 12.8495C84.9607 12.9367 84.9129 13.0185 84.8534 13.0923C84.7722 13.1381 84.6774 13.1566 84.5841 13.1449L83.9374 13.1449C83.8276 13.1567 83.717 13.1322 83.6235 13.0754C83.56 13.0034 83.5305 12.9091 83.542 12.8152C83.5471 12.6305 83.5958 12.4495 83.6841 12.2857C83.7795 12.0953 83.9001 11.9175 84.043 11.7571C84.3589 11.4072 84.7601 11.1388 85.2104 10.9761C85.776 10.7873 86.3724 10.6991 86.9705 10.7159C88.1679 10.7159 89.0299 10.9386 89.5569 11.384C90.0839 11.8293 90.3474 12.5609 90.3471 13.5788V17.1349C90.3471 18.1869 90.0779 18.9643 89.5394 19.4669C89.001 19.9696 88.1389 20.221 86.953 20.221H86.6836C85.4623 20.221 84.5611 20.0043 83.9804 19.5708C83.3997 19.1373 83.1094 18.4346 83.1094 17.4628C83.1094 16.434 83.4147 15.6822 84.0253 15.2076C84.6361 14.7329 85.5938 14.4961 86.8987 14.497" fill="#FFFFFF"/>
+        <path d="M107.155 11.7952C105.587 11.7952 104.797 12.7955 104.785 14.7962H109.418C109.48 14.0024 109.289 13.2094 108.871 12.5236C108.462 12.0179 107.818 11.7446 107.155 11.7952ZM104.785 15.9233V16.253C104.785 18.161 105.587 19.1149 107.191 19.1146C108.209 19.1146 108.886 18.7387 109.221 17.987C109.252 17.8932 109.304 17.8074 109.374 17.7359C109.455 17.6986 109.544 17.6828 109.634 17.6902H110.281C110.39 17.6817 110.501 17.6974 110.604 17.7359C110.652 17.7664 110.676 17.8445 110.675 17.97C110.658 18.1898 110.591 18.4032 110.478 18.5947C110.358 18.832 110.207 19.0536 110.029 19.2541C109.695 19.6 109.279 19.862 108.816 20.0172C108.278 20.207 107.71 20.3011 107.137 20.2948C106.097 20.3591 105.078 19.986 104.344 19.2714C103.643 18.4567 103.293 17.4136 103.365 16.3568V15.0559C103.365 13.657 103.688 12.5844 104.334 11.8382C105.045 11.065 106.086 10.6521 107.154 10.7192C109.62 10.7192 110.853 12.0433 110.854 14.6915V15.5763C110.867 15.6755 110.837 15.7756 110.773 15.8538C110.685 15.9093 110.581 15.9339 110.476 15.9233L104.785 15.9233Z" fill="#FFFFFF"/>
+        <path d="M132.693 20.0521C132.047 20.1084 131.405 19.9081 130.915 19.4974C130.501 19.0052 130.301 18.377 130.358 17.7452V12.1076H129.19C129.059 12.1076 128.975 12.0843 128.939 12.0386C128.894 11.9529 128.875 11.8566 128.885 11.761V11.3097C128.876 11.2143 128.894 11.1182 128.939 11.0326C128.975 10.9869 129.059 10.9631 129.19 10.9631H130.358V8.75956C130.345 8.66018 130.374 8.56002 130.438 8.48151C130.526 8.42646 130.631 8.40214 130.735 8.41249H131.398C131.502 8.40214 131.607 8.42649 131.694 8.48151C131.759 8.55987 131.788 8.66015 131.775 8.75956V10.9626H133.627C133.758 10.9626 133.842 10.9858 133.879 11.0322C133.923 11.1177 133.942 11.2139 133.932 11.3092V11.7605C133.942 11.8561 133.923 11.9524 133.879 12.0381C133.842 12.0838 133.758 12.1072 133.627 12.1072H131.777V17.5193C131.745 17.8737 131.83 18.2286 132.02 18.5335C132.221 18.7521 132.518 18.865 132.819 18.8372H133.663C133.795 18.8372 133.879 18.8609 133.915 18.9067C133.959 18.9922 133.978 19.0883 133.968 19.1837V19.7064C133.978 19.802 133.959 19.8982 133.915 19.9839C133.879 20.0297 133.795 20.0535 133.663 20.0535L132.693 20.0521Z" fill="#FFFFFF"/>
+        <path d="M152.329 15.4546H156.675L154.52 9.07124L152.329 15.4546ZM159.656 19.687C159.676 19.737 159.688 19.7896 159.693 19.8429C159.693 19.9816 159.597 20.0512 159.405 20.0515H158.597C158.496 20.0797 158.387 20.0631 158.301 20.0061C158.214 19.9492 158.158 19.8578 158.148 19.757L157.088 16.6691H151.915L150.873 19.757C150.863 19.8579 150.807 19.9492 150.72 20.0061C150.634 20.0631 150.525 20.0797 150.424 20.0515H149.67C149.479 20.0515 149.383 19.982 149.383 19.8429C149.387 19.7896 149.399 19.7371 149.418 19.687L153.532 8.08264C153.562 7.9741 153.617 7.87351 153.693 7.78812C153.779 7.72178 153.889 7.69064 153.999 7.70126L155.148 7.7013C155.259 7.69046 155.37 7.72495 155.453 7.79639C155.525 7.88112 155.58 7.97826 155.614 8.08264L159.656 19.687Z" fill="#FFFFFF"/>
+        <path d="M167.298 8.84316C167.401 8.85587 167.504 8.82783 167.585 8.76543C167.643 8.68106 167.668 8.58007 167.657 8.47964V8.06812C167.668 7.96751 167.643 7.86641 167.585 7.78186C167.504 7.71958 167.401 7.69156 167.298 7.7041H163.928C163.825 7.69156 163.722 7.71958 163.641 7.78186C163.584 7.86652 163.558 7.96751 163.569 8.06812V8.47964C163.558 8.58004 163.584 8.68094 163.641 8.76543C163.722 8.82783 163.825 8.85587 163.928 8.84316H164.894V18.9098H163.928C163.825 18.8972 163.722 18.9252 163.641 18.9875C163.584 19.0722 163.558 19.1732 163.569 19.2738V19.688C163.558 19.7884 163.583 19.8893 163.641 19.9738C163.721 20.0365 163.825 20.0646 163.928 20.0516H167.298C167.401 20.0645 167.505 20.0364 167.585 19.9738C167.643 19.8895 167.668 19.7885 167.657 19.688V19.2738C167.668 19.1732 167.643 19.0721 167.585 18.9875C167.504 18.9252 167.401 18.8972 167.298 18.9098H166.333V8.84316H167.298Z" fill="#FFFFFF"/>
+        <path d="M122.981 11.4995C122.359 10.9446 121.527 10.6624 120.682 10.7194C120.128 10.7099 119.579 10.8165 119.072 11.0317C118.615 11.2276 118.216 11.532 117.913 11.9165V11.3093C117.927 11.21 117.898 11.1097 117.833 11.0317C117.82 11.0211 117.806 11.0122 117.79 11.0052C117.714 10.9677 117.628 10.9508 117.542 10.9563H115.361C115.259 10.9436 115.155 10.9717 115.074 11.034C115.017 11.1187 114.992 11.2198 115.002 11.3202V11.7318C114.992 11.8322 115.017 11.9331 115.074 12.0176C115.155 12.0805 115.258 12.1088 115.361 12.0958H116.535V19.7046C116.522 19.8038 116.551 19.9042 116.616 19.9822C116.703 20.0377 116.808 20.0622 116.912 20.0517H117.575C117.679 20.0623 117.784 20.0378 117.871 19.9822C117.936 19.9043 117.966 19.804 117.952 19.7046V14.3798C117.919 13.7298 118.147 13.0926 118.59 12.6015C119.033 12.1485 119.66 11.9046 120.305 11.9334C120.877 11.8825 121.445 12.0686 121.867 12.4456C122.231 12.9094 122.404 13.4871 122.352 14.067V19.7046C122.339 19.8038 122.368 19.904 122.433 19.9822C122.52 20.0378 122.625 20.0623 122.73 20.0517H123.392C123.496 20.0622 123.601 20.0377 123.688 19.9822C123.753 19.9042 123.783 19.804 123.77 19.7046V13.7725C123.83 12.9436 123.545 12.1257 122.979 11.4999" fill="#FFFFFF"/>
+        <path d="M97.6315 19.7042C97.6449 19.8036 97.6155 19.9039 97.5502 19.9817C97.4628 20.0373 97.3583 20.0618 97.2541 20.0512H96.5914C96.4872 20.0619 96.3826 20.0374 96.2951 19.9817C96.2302 19.9037 96.2009 19.8035 96.2141 19.7042V8.04766C96.2008 7.94849 96.2301 7.84838 96.2951 7.77054C96.3826 7.71483 96.4872 7.69013 96.5914 7.70059H97.2542C97.3583 7.69022 97.4628 7.71498 97.5502 7.77054C97.6154 7.84827 97.6449 7.9484 97.6315 8.04766V19.7042Z" fill="#FFFFFF"/>
+        <path d="M53.8555 11.0317C53.8195 10.986 53.7357 10.9622 53.6041 10.9622H53.3703C52.8159 10.9557 52.2733 11.1155 51.817 11.4195C51.3617 11.7193 51.0037 12.1373 50.784 12.6253V11.8205C50.784 11.7949 50.7877 11.7679 50.7877 11.7377V11.3262C50.7986 11.2256 50.7732 11.1245 50.7157 11.0399C50.6347 10.9776 50.5311 10.9496 50.4284 10.9622H48.2446C48.1419 10.9496 48.0384 10.9776 47.9577 11.0399C47.9002 11.1245 47.8746 11.2256 47.8852 11.3262V11.7377C47.8745 11.8382 47.9001 11.9391 47.9577 12.0235C48.0384 12.0859 48.1419 12.1139 48.2446 12.1012H49.402V19.7018C49.3884 19.8011 49.4175 19.9014 49.4826 19.9794C49.57 20.035 49.6747 20.0596 49.7789 20.0489H50.4417C50.5457 20.0595 50.6503 20.035 50.7376 19.9794C50.8029 19.9016 50.8324 19.8012 50.819 19.7018V15.2787C50.8153 14.8771 50.8696 14.477 50.9804 14.0898C51.0773 13.7479 51.2353 13.425 51.4472 13.1356C51.638 12.8749 51.8866 12.6587 52.1749 12.5027C52.4695 12.3491 52.8002 12.2712 53.135 12.2768H53.6022C53.7339 12.2768 53.8181 12.2539 53.8536 12.2073C53.8985 12.1218 53.917 12.0256 53.9072 11.9302V11.3056C53.917 11.21 53.8985 11.1137 53.8537 11.028" fill="#FFFFFF"/>
+      </svg>
+    </button>
+
+    <div class="topbar__spacer"></div>
+
+    <button class="topbar__navigator" title="Navigator" aria-label="Navigator">
+      <svg class="topbar__navigator-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>
+      </svg>
+    </button>
+
+    <span class="vb-badge">v0.19.0</span>
+
+    <button class="topbar__btn" id="themeToggle" title="Switch to dark theme">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+
+    <button class="topbar__btn" title="Notifications">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="topbar__notif-dot"></span>
+    </button>
+
+    <button class="topbar__avatar" title="Account menu">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- ══════════════════════════ Body ══════════════════════════ -->
+  <div class="app-body">
+
+    <!-- LeftNav -->
+    <aside class="leftnav">
+      <div class="leftnav__body">
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="-0.78 1.34 16 16" fill="none">
+              <path d="M12.29 4.41897C12.8876 4.29122 13.3732 4.90261 13.1143 5.45608L8.93848 14.3809C9.22506 13.2409 9.6112 12.5785 9.74414 11.9141C9.79121 11.6787 9.76662 11.4353 9.67871 11.2119C9.10743 9.76096 6.88488 6.99516 4.94434 6.81936C4.20476 6.75234 3.01379 6.54441 1.06152 6.81936L12.29 4.41897ZM7.34863 6.62893C8.03894 7.13819 9.53743 8.4164 10.0107 9.4551L11.7861 5.71291L7.34863 6.62893Z" fill="url(#navGradA)"/>
+              <defs><linearGradient id="navGradA" x1="1.06" y1="9.39" x2="13.19" y2="9.39" gradientUnits="userSpaceOnUse"><stop stop-color="#467FCD"/><stop offset="1" stop-color="#47ADCB"/></linearGradient></defs>
+            </svg>
+            <span class="nav-item__label">Navigator</span>
+          </button>
+        </div>
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M2.49854 5.79059V3.48059C2.49854 3.20445 2.72239 2.98059 2.99854 2.98059H5.30615C5.58229 2.98059 5.80615 3.20445 5.80615 3.48059V5.79059C5.80615 6.06673 5.58229 6.29059 5.30615 6.29059H2.99854C2.72239 6.29059 2.49854 6.06673 2.49854 5.79059Z"/>
+              <path d="M10.1938 11.0584V8.74841C10.1938 8.47227 10.4177 8.24841 10.6938 8.24841H13.0015C13.2776 8.24841 13.5015 8.47227 13.5015 8.74841V11.0584C13.5015 11.3346 13.2776 11.5584 13.0015 11.5584H10.6938C10.4177 11.5584 10.1938 11.3346 10.1938 11.0584Z"/>
+              <path d="M7.78076 5.79059V3.48059C7.78076 3.20445 8.00462 2.98059 8.28076 2.98059H13.0015C13.2776 2.98059 13.5015 3.20445 13.5015 3.48059V5.79059C13.5015 6.06673 13.2776 6.29059 13.0015 6.29059H8.28076C8.00462 6.29059 7.78076 6.06673 7.78076 5.79059Z"/>
+              <path d="M2.49854 12.5194V8.74841C2.49854 8.47227 2.72239 8.24841 2.99854 8.24841H7.71924C7.99538 8.24841 8.21924 8.47227 8.21924 8.74841V12.5194C8.21924 12.7956 7.99538 13.0194 7.71924 13.0194H2.99854C2.72239 13.0194 2.49854 12.7956 2.49854 12.5194Z"/>
+            </svg>
+            <span class="nav-item__label">Workspace</span>
+          </button>
+        </div>
+        <div class="leftnav__divider"></div>
+
+        <button class="leftnav__section-label"><span>Insights</span></button>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M7.40519 9.69937C7.57355 9.86809 7.7897 9.94484 8.05364 9.92964C8.31759 9.91479 8.51021 9.81993 8.6315 9.64506L10.6148 6.88022C10.7792 6.65098 10.4973 6.36741 10.2671 6.53052L7.48665 8.50075C7.3049 8.62168 7.2037 8.80959 7.18306 9.06449C7.16242 9.31938 7.23647 9.53064 7.40519 9.69937Z" fill="currentColor" stroke="none"/>
+              <path d="M3.28962 12.1326C2.77996 11.3087 2.48633 10.3406 2.48633 9.30481C2.48633 6.30169 4.95488 3.86719 8 3.86719C11.0451 3.86719 13.5137 6.30169 13.5137 9.30481C13.5137 10.3406 13.22 11.3087 12.7104 12.1326" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-item__label">Exposure</span>
+            <span class="nav-item__chevron" style="transform:rotate(0deg)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M5.87904 10.4486L8.84637 9.5983C9.03393 9.54219 9.19204 9.4498 9.32071 9.32113C9.44937 9.19247 9.54176 9.03435 9.59787 8.8468L10.4495 5.87813C10.482 5.78002 10.4595 5.69269 10.3822 5.61613C10.3049 5.53958 10.2175 5.51797 10.12 5.5513L7.15271 6.40163C6.96515 6.45774 6.80704 6.55013 6.67837 6.6788C6.54971 6.80747 6.45732 6.96558 6.40121 7.15313L5.54954 10.1218C5.51709 10.2199 5.53954 10.3072 5.61687 10.3838C5.69421 10.4604 5.78159 10.482 5.87904 10.4486ZM7.99804 8.6718C7.81104 8.68291 7.6526 8.62136 7.52271 8.48713C7.39271 8.35302 7.32771 8.19013 7.32771 7.99847C7.32771 7.81147 7.39321 7.65302 7.52421 7.52313C7.6551 7.39313 7.81404 7.32813 8.00104 7.32813C8.18804 7.32813 8.34648 7.39363 8.47637 7.52463C8.60637 7.65552 8.67137 7.81447 8.67137 8.00147C8.67137 8.18847 8.60587 8.34691 8.47487 8.4768C8.34398 8.6068 8.18504 8.6718 7.99804 8.6718Z" fill="currentColor" stroke="none"/>
+              <circle cx="8" cy="8" r="5.5"/>
+            </svg>
+            <span class="nav-item__label">Discover</span>
+            <span class="nav-item__chevron" style="transform:rotate(0deg)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn nav-item__btn--active">
+            <svg class="nav-item__icon nav-item__icon--active" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.2001 3.59988H11.3001C11.5918 3.59988 11.8716 3.71577 12.0779 3.92206C12.2842 4.12835 12.4001 4.40814 12.4001 4.69988V12.3999C12.4001 12.6916 12.2842 12.9714 12.0779 13.1777C11.8716 13.384 11.5918 13.4999 11.3001 13.4999H4.7001C4.40836 13.4999 4.12857 13.384 3.92228 13.1777C3.71599 12.9714 3.6001 12.6916 3.6001 12.3999V4.69988C3.6001 4.40814 3.71599 4.12835 3.92228 3.92206C4.12857 3.71577 4.40836 3.59988 4.7001 3.59988H5.8001M5.92267 9.32774H8.39587M5.92267 7.1529H10.2001M5.92267 11.5026H7.10175M6.3501 2.49988H9.6501C9.95385 2.49988 10.2001 2.74612 10.2001 3.04988V4.14988C10.2001 4.45363 9.95385 4.69988 9.6501 4.69988H6.3501C6.04634 4.69988 5.8001 4.45363 5.8001 4.14988V3.04988C5.8001 2.74612 6.04634 2.49988 6.3501 2.49988Z"/>
+            </svg>
+            <span class="nav-item__label">Report</span>
+            <span class="nav-item__chevron nav-item__chevron--open" style="transform:rotate(180deg)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+          <div class="nav-item__children">
+            <button class="nav-item__child">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12.7839 5.66846C12.5808 5.20716 12.3113 4.77347 11.9807 4.3821C11.1224 3.36626 9.91413 2.70955 8.59486 2.54189C7.27559 2.37422 5.94145 2.70782 4.85635 3.47667C3.77126 4.24553 3.01426 5.39365 2.73512 6.69389C2.45597 7.99413 2.67501 9.35179 3.34891 10.4983C4.0228 11.6448 5.10246 12.4966 6.3743 12.8852C6.60871 12.9568 6.84649 13.0117 7.08597 13.0501"/><path d="M10.467 5.66229C9.92953 5.0261 9.17282 4.61482 8.34661 4.50981C7.52039 4.40481 6.68486 4.61373 6.0053 5.09524C5.32574 5.57676 4.85166 6.29579 4.67684 7.11009C4.50202 7.92439 4.6392 8.77465 5.06124 9.49266C5.48328 10.2107 6.15943 10.7441 6.95594 10.9875"/><path d="M8.09302 6.51444C7.76891 6.47325 7.44114 6.5552 7.17456 6.74409C6.90799 6.93298 6.72201 7.21504 6.65343 7.53447C6.58485 7.8539 6.63867 8.18744 6.80422 8.4691"/><path d="M13.5197 10.4163C13.5197 11.916 12.4698 12.6659 11.222 13.1008C11.1567 13.123 11.0857 13.1219 11.0211 13.0978C9.77028 12.6659 8.72046 11.916 8.72046 10.4163V8.31663C8.72046 8.23708 8.75206 8.16079 8.80831 8.10454C8.86456 8.04829 8.94086 8.01668 9.02041 8.01668C9.62031 8.01668 10.3702 7.65674 10.8921 7.20082C10.9556 7.14653 11.0365 7.09546 11.1201 7.09546C11.2036 7.09546 11.2845 7.12529 11.348 7.17958C11.8729 7.6385 12.6198 7.99544 13.2197 7.99544C13.2993 7.99544 13.3756 8.02704 13.4318 8.0833C13.4881 8.13955 13.5197 8.21584 13.5197 8.29539V10.4163Z"/></svg>
+              Compliance
+            </button>
+            <button class="nav-item__child">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+                <path d="M5.42864 11.1692C5.42864 11.3072 5.31671 11.4192 5.17864 11.4192H3.96436C3.82628 11.4192 3.71436 11.3072 3.71436 11.1692V9.95963C3.71436 9.82156 3.82628 9.70963 3.96436 9.70963H5.17864C5.31671 9.70963 5.42864 9.82156 5.42864 9.95963V11.1692ZM8.85721 11.1692C8.85721 11.3072 8.74528 11.4192 8.60721 11.4192H7.39293C7.25486 11.4192 7.14293 11.3072 7.14293 11.1692V9.95963C7.14293 9.82156 7.25486 9.70963 7.39293 9.70963H8.60721C8.74528 9.70963 8.85721 9.82156 8.85721 9.95963V11.1692ZM12.2858 4.331C12.2858 4.46907 12.1739 4.581 12.0358 4.581H10.8215C10.6834 4.581 10.5715 4.46907 10.5715 4.331V3.12146C10.5715 2.98339 10.6834 2.87146 10.8215 2.87146H12.0358C12.1739 2.87146 12.2858 2.98339 12.2858 3.12146V4.331ZM12.2858 11.1692C12.2858 11.3072 12.1739 11.4192 12.0358 11.4192H10.8215C10.6834 11.4192 10.5715 11.3072 10.5715 11.1692V9.95963C10.5715 9.82156 10.6834 9.70963 10.8215 9.70963H12.0358C12.1739 9.70963 12.2858 9.82156 12.2858 9.95963V11.1692ZM8.85721 7.75009C8.85721 7.88816 8.74528 8.00009 8.60721 8.00009H7.39293C7.25486 8.00009 7.14293 7.88816 7.14293 7.75009V6.54054C7.14293 6.40247 7.25486 6.29054 7.39293 6.29054H8.60721C8.74528 6.29054 8.85721 6.40247 8.85721 6.54054V7.75009ZM12.2858 7.75009C12.2858 7.88816 12.1739 8.00009 12.0358 8.00009H10.8215C10.6834 8.00009 10.5715 7.88816 10.5715 7.75009V6.54054C10.5715 6.40247 10.6834 6.29054 10.8215 6.29054H12.0358C12.1739 6.29054 12.2858 6.40247 12.2858 6.54054V7.75009Z" fill="currentColor" stroke="none"/>
+                <path d="M13.4902 3.17676V12.3635C13.4902 12.5016 13.3783 12.6135 13.2402 12.6135H2.74219C2.60412 12.6135 2.49219 12.5016 2.49219 12.3635V3.19305"/>
+              </svg>
+              Assessments
+            </button>
+            <button class="nav-item__child">
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><path d="M2.25 2.8125C2.25 2.50184 2.50184 2.25 2.8125 2.25H3.9375C4.24816 2.25 4.5 2.50184 4.5 2.8125V3.9375C4.5 4.24816 4.24816 4.5 3.9375 4.5H2.8125C2.50184 4.5 2.25 4.24816 2.25 3.9375V2.8125ZM7.875 2.8125C7.875 2.50184 8.12684 2.25 8.4375 2.25H9.5625C9.87316 2.25 10.125 2.50184 10.125 2.8125V3.9375C10.125 4.24816 9.87316 4.5 9.5625 4.5H8.4375C8.12684 4.5 7.875 4.24816 7.875 3.9375V2.8125ZM13.5 2.8125C13.5 2.50184 13.7518 2.25 14.0625 2.25H15.1875C15.4982 2.25 15.75 2.50184 15.75 2.8125V3.9375C15.75 4.24816 15.4982 4.5 15.1875 4.5H14.0625C13.7518 4.5 13.5 4.24816 13.5 3.9375V2.8125ZM2.25 8.4375C2.25 8.12684 2.50184 7.875 2.8125 7.875H3.9375C4.24816 7.875 4.5 8.12684 4.5 8.4375V9.5625C4.5 9.87316 4.24816 10.125 3.9375 10.125H2.8125C2.50184 10.125 2.25 9.87316 2.25 9.5625V8.4375ZM7.875 8.4375C7.875 8.12684 8.12684 7.875 8.4375 7.875H9.5625C9.87316 7.875 10.125 8.12684 10.125 8.4375V9.5625C10.125 9.87316 9.87316 10.125 9.5625 10.125H8.4375C8.12684 10.125 7.875 9.87316 7.875 9.5625V8.4375ZM13.5 8.4375C13.5 8.12684 13.7518 7.875 14.0625 7.875H15.1875C15.4982 7.875 15.75 8.12684 15.75 8.4375V9.5625C15.75 9.87316 15.4982 10.125 15.1875 10.125H14.0625C13.7518 10.125 13.5 9.87316 13.5 9.5625V8.4375ZM2.25 14.0625C2.25 13.7518 2.50184 13.5 2.8125 13.5H3.9375C4.24816 13.5 4.5 13.7518 4.5 14.0625V15.1875C4.5 15.4982 4.24816 15.75 3.9375 15.75H2.8125C2.50184 15.75 2.25 15.4982 2.25 15.1875V14.0625ZM7.875 14.0625C7.875 13.7518 8.12684 13.5 8.4375 13.5H9.5625C9.87316 13.5 10.125 13.7518 10.125 14.0625V15.1875C10.125 15.4982 9.87316 15.75 9.5625 15.75H8.4375C8.12684 15.75 7.875 15.4982 7.875 15.1875V14.0625ZM13.5 14.0625C13.5 13.7518 13.7518 13.5 14.0625 13.5H15.1875C15.4982 13.5 15.75 13.7518 15.75 14.0625V15.1875C15.75 15.4982 15.4982 15.75 15.1875 15.75H14.0625C13.7518 15.75 13.5 15.4982 13.5 15.1875V14.0625Z"/></svg>
+              Compliance Matrix
+            </button>
+            <button class="nav-item__child">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M4.59062 8H2.51562M11.5156 3.5H2.51562M6.06476 12.5H2.51562" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.15663" cy="9.15419" r="2.65663"/><path d="M11.0378 11.0356L13.5 13.4977" stroke-linecap="round"/></svg>
+              Compliance Findings
+            </button>
+            <button class="nav-item__child nav-item__child--active">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.00049 5.75013V8.00013M8.00049 10.2501H8.00611M12.5005 8.56263C12.5005 11.3751 10.5317 12.7814 8.19174 13.597C8.06921 13.6385 7.9361 13.6365 7.81486 13.5914C5.46924 12.7814 3.50049 11.3751 3.50049 8.56263V4.62513C3.50049 4.47595 3.55975 4.33287 3.66524 4.22738C3.77073 4.12189 3.9138 4.06263 4.06299 4.06263C5.18799 4.06263 6.59424 3.38763 7.57299 2.53263C7.69216 2.43082 7.84375 2.37488 8.00049 2.37488C8.15723 2.37488 8.30882 2.43082 8.42799 2.53263C9.41236 3.39326 10.813 4.06263 11.938 4.06263C12.0872 4.06263 12.2302 4.12189 12.3357 4.22738C12.4412 4.33287 12.5005 4.47595 12.5005 4.62513V8.56263Z"/></svg>
+              MRA Security Risk
+            </button>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M5.56898 12.1508H3.5C2.94772 12.1508 2.5 11.7031 2.5 11.1508V5.06128C2.5 4.50899 2.94772 4.06128 3.5 4.06128H12.0127C12.316 4.06128 12.5619 4.30718 12.5619 4.61051"/>
+              <circle cx="8.6532" cy="12.4161" r="1.08386"/>
+              <circle cx="12.4159" cy="7.21619" r="1.08386"/>
+              <path d="M8.67776 11.0276L8.67771 10.7709C8.67759 10.2185 9.12534 9.77065 9.67771 9.77065H11.4096C11.9618 9.77065 12.4095 9.32306 12.4096 8.77085L12.4097 8.44458"/>
+              <path d="M4.43555 6.62769H7.34277M4.43555 9.41937H7.34277"/>
+            </svg>
+            <span class="nav-item__label">Knowledge Graph</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.51172 4.3493C2.51172 5.14709 4.61366 5.79382 7.20654 5.79382C9.79942 5.79382 11.9014 5.14709 11.9014 4.3493C11.9014 3.55152 9.79942 2.90479 7.20654 2.90479C4.61366 2.90479 2.51172 3.55152 2.51172 4.3493ZM2.51172 4.3493V11.0904C2.51172 11.4735 3.00635 11.8409 3.8868 12.1118C4.76725 12.3827 5.9614 12.5349 7.20654 12.5349M2.51172 7.71985C2.51172 8.10296 3.00635 8.47038 3.8868 8.74128C4.76725 9.01218 5.9614 9.16437 7.20654 9.16437"/>
+              <path d="M13.641 10.395C13.641 11.8948 12.5912 12.6447 11.3434 13.0796C11.278 13.1017 11.2071 13.1007 11.1424 13.0766C9.89162 12.6447 8.8418 11.8948 8.8418 10.395V8.29539C8.8418 8.21584 8.8734 8.13955 8.92965 8.0833C8.9859 8.02704 9.06219 7.99544 9.14175 7.99544C9.74165 7.99544 10.4915 7.6355 11.0134 7.17958C11.077 7.12529 11.1578 7.09546 11.2414 7.09546C11.325 7.09546 11.4058 7.12529 11.4694 7.17958C11.9943 7.6385 12.7411 7.99544 13.341 7.99544C13.4206 7.99544 13.4969 8.02704 13.5531 8.0833C13.6094 8.13955 13.641 8.21584 13.641 8.29539V10.395Z"/>
+              <path d="M10.2061 10.455L10.8271 11.0761L12.2764 9.62689" stroke-width="0.6"/>
+            </svg>
+            <span class="nav-item__label">Data Quality</span>
+            <span class="nav-item__chevron" style="transform:rotate(0deg)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="exp-main exp-main--col">
+      <div class="exp-content-col">
+
+        <div class="subheader">
+          <div class="subheader__title-block">
+            <div class="subheader__title">MRA Security Risk</div>
+            <div class="subheader__breadcrumb">
+              <span>Home</span><span class="subheader__breadcrumb-sep">›</span>
+              <span>Report</span><span class="subheader__breadcrumb-sep">›</span>
+              <span class="subheader__breadcrumb-current">MRA Security Risk</span>
+            </div>
+          </div>
+
+          <div class="subheader__spacer"></div>
+        </div>
+
+        <div class="page-scroll">
+          <div class="mra-page">
+
+            <!-- Headline summary -->
+            <div class="mra-summary-section">
+              <div class="mra-widget-header mra-widget-header--split">
+                <div class="mra-widget-title-block">
+                  <span class="mra-widget-title">Number of CISA KEVs per 1,000 Qualys Assets</span>
+                  <span class="mra-widget-owner">Owner: Technology Team</span>
+                </div>
+                <div class="mra-rag-legend">
+                  <span class="mra-rag-legend-label">Risk Threshold:</span>
+                  <span class="mra-rag-chip mra-rag-chip--red"><span class="mra-rag-dot mra-rag-dot--red"></span>High ≥ 35</span>
+                  <span class="mra-rag-chip mra-rag-chip--amber"><span class="mra-rag-dot mra-rag-dot--amber"></span>Medium ≥ 34</span>
+                  <span class="mra-rag-chip mra-rag-chip--green"><span class="mra-rag-dot mra-rag-dot--green"></span>Low &lt; 34</span>
+                </div>
+              </div>
+
+              <div class="mra-stat-row">
+                <div class="mra-kpi-card">
+                  <div class="mra-kpi-card-value mra-rag--green">31</div>
+                  <div class="mra-kpi-card-label">Risk Score</div>
+                  <div class="mra-prev-score-line">Previous Risk Score: 26</div>
+                  <div class="mra-kpi-card-trend">
+                    <span class="ds-kpi-delta up-bad">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      19.2%
+                    </span>
+                    <span class="mra-kpi-card-trend-suffix">from last month</span>
+                  </div>
+                </div>
+                <div class="mra-kpi-card">
+                  <div class="mra-kpi-card-value">1,515</div>
+                  <div class="mra-kpi-card-label">Total Assets</div>
+                </div>
+                <div class="mra-kpi-card">
+                  <div class="mra-kpi-card-value">47</div>
+                  <div class="mra-kpi-card-label">Total KEVs</div>
+                  <div class="mra-kpi-card-trend">
+                    <span class="ds-kpi-delta up-bad">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      17.5%
+                    </span>
+                    <span class="mra-kpi-card-trend-suffix">from last month</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mra-stat-row">
+                <div class="mra-kpi-card">
+                  <div class="mra-stat-mini-title">Supported Assets with KEVs</div>
+                  <div class="mra-breakdown-body">
+                    <div class="mra-breakdown-primary">
+                      <span class="mra-widget-stat-value mra-rag--green">22</span>
+                      <span class="mra-widget-stat-label">Risk Score</span>
+                      <div class="mra-prev-score-line">Previous Risk Score: 19</div>
+                    </div>
+                    <div class="mra-breakdown-list">
+                      <div class="mra-breakdown-row">
+                        <span class="mra-breakdown-row-label">Total KEVs</span>
+                        <span class="mra-breakdown-row-value">30</span>
+                      </div>
+                      <div class="mra-breakdown-row">
+                        <span class="mra-breakdown-row-label">Total Assets</span>
+                        <span class="mra-breakdown-row-value">1,374</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mra-kpi-card-trend">
+                    <span class="ds-kpi-delta up-bad">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      15.8%
+                    </span>
+                    <span class="mra-kpi-card-trend-suffix">from last month</span>
+                  </div>
+                </div>
+
+                <div class="mra-kpi-card">
+                  <div class="mra-stat-mini-title">EOL Assets with KEVs</div>
+                  <div class="mra-breakdown-body">
+                    <div class="mra-breakdown-primary">
+                      <span class="mra-widget-stat-value mra-rag--red">121</span>
+                      <span class="mra-widget-stat-label">Risk Score</span>
+                      <div class="mra-prev-score-line">Previous Risk Score: 99</div>
+                    </div>
+                    <div class="mra-breakdown-list">
+                      <div class="mra-breakdown-row">
+                        <span class="mra-breakdown-row-label">Total KEVs</span>
+                        <span class="mra-breakdown-row-value">17</span>
+                      </div>
+                      <div class="mra-breakdown-row">
+                        <span class="mra-breakdown-row-label">Total Assets</span>
+                        <span class="mra-breakdown-row-value">141</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mra-kpi-card-trend">
+                    <span class="ds-kpi-delta up-bad">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      22.2%
+                    </span>
+                    <span class="mra-kpi-card-trend-suffix">from last month</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="mra-widget">
+              <div class="mra-widget-header mra-widget-header--split">
+                <span class="mra-widget-title">Detailed Breakdown</span>
+                <div class="kg-seg-tabs" id="segTabs">
+                  <div class="kg-seg-thumb" id="segThumb"></div>
+                  <button class="kg-seg-btn kg-seg-btn--active" data-tab="supported" onclick="switchTab('supported', this)">Supported Assets with KEVs</button>
+                  <button class="kg-seg-btn" data-tab="eol" onclick="switchTab('eol', this)">EOL Assets with KEVs</button>
+                </div>
+              </div>
+
+              <!-- Supported Assets table -->
+              <div class="ds-table-wrap mra-breakdown-table active" id="table-supported">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="ds-th">Type</th>
+                      <th class="ds-th">Total KEVs</th>
+                      <th class="ds-th">Total Assets</th>
+                      <th class="ds-th">Current Risk Score</th>
+                      <th class="ds-th">Previous Month Risk Score</th>
+                      <th class="ds-th">Change %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="ds-td">Windows Endpoints</td><td class="ds-td">14</td><td class="ds-td">850</td><td class="ds-td mra-rag--green">16</td><td class="ds-td mra-rag--green">14</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>14.3%</span></td></tr>
+                    <tr><td class="ds-td">Mac OS Endpoints</td><td class="ds-td">1</td><td class="ds-td">120</td><td class="ds-td mra-rag--green">8</td><td class="ds-td mra-rag--green">8</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Zone 1 Windows Server</td><td class="ds-td">4</td><td class="ds-td">95</td><td class="ds-td mra-rag--red">42</td><td class="ds-td mra-rag--green">32</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>31.3%</span></td></tr>
+                    <tr><td class="ds-td">Zone 2 Windows Server</td><td class="ds-td">3</td><td class="ds-td">80</td><td class="ds-td mra-rag--red">38</td><td class="ds-td mra-rag--red">38</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Zone 1 Linux Server</td><td class="ds-td">2</td><td class="ds-td">60</td><td class="ds-td mra-rag--green">33</td><td class="ds-td mra-rag--green">33</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Zone 2 Linux Server</td><td class="ds-td">2</td><td class="ds-td">45</td><td class="ds-td mra-rag--red">44</td><td class="ds-td mra-rag--green">22</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>100.0%</span></td></tr>
+                    <tr><td class="ds-td">AWS Linux Server</td><td class="ds-td">1</td><td class="ds-td">30</td><td class="ds-td mra-rag--green">33</td><td class="ds-td mra-rag--green">33</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Virtualisation Platforms</td><td class="ds-td">1</td><td class="ds-td">25</td><td class="ds-td mra-rag--red">40</td><td class="ds-td mra-rag--red">40</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Network Devices</td><td class="ds-td">1</td><td class="ds-td">29</td><td class="ds-td mra-rag--amber">34</td><td class="ds-td mra-rag--amber">34</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Appliances, Firmware and All Other</td><td class="ds-td">1</td><td class="ds-td">40</td><td class="ds-td mra-rag--green">25</td><td class="ds-td mra-rag--green">25</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr class="mra-total-row"><td class="ds-td mra-td-total">Total</td><td class="ds-td mra-td-total">30</td><td class="ds-td mra-td-total">1374</td><td class="ds-td mra-rag--green">22</td><td class="ds-td mra-rag--green">19</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>15.8%</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- EOL Assets table -->
+              <div class="ds-table-wrap mra-breakdown-table" id="table-eol">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="ds-th">Type</th>
+                      <th class="ds-th">Total KEVs</th>
+                      <th class="ds-th">Total Assets</th>
+                      <th class="ds-th">Current Risk Score</th>
+                      <th class="ds-th">Previous Month Risk Score</th>
+                      <th class="ds-th">Change %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="ds-td">Windows Endpoints</td><td class="ds-td">3</td><td class="ds-td">45</td><td class="ds-td mra-rag--red">67</td><td class="ds-td mra-rag--red">44</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>52.3%</span></td></tr>
+                    <tr><td class="ds-td">Zone 1 Windows Server</td><td class="ds-td">4</td><td class="ds-td">28</td><td class="ds-td mra-rag--red">143</td><td class="ds-td mra-rag--red">107</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>33.6%</span></td></tr>
+                    <tr><td class="ds-td">Zone 2 Windows Server</td><td class="ds-td">3</td><td class="ds-td">22</td><td class="ds-td mra-rag--red">136</td><td class="ds-td mra-rag--red">136</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Zone 1 Linux Server</td><td class="ds-td">3</td><td class="ds-td">18</td><td class="ds-td mra-rag--red">167</td><td class="ds-td mra-rag--red">111</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>50.5%</span></td></tr>
+                    <tr><td class="ds-td">Zone 2 Linux Server</td><td class="ds-td">2</td><td class="ds-td">14</td><td class="ds-td mra-rag--red">143</td><td class="ds-td mra-rag--red">143</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Network Devices</td><td class="ds-td">1</td><td class="ds-td">6</td><td class="ds-td mra-rag--red">167</td><td class="ds-td mra-rag--red">167</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr><td class="ds-td">Solaris</td><td class="ds-td">1</td><td class="ds-td">8</td><td class="ds-td mra-rag--red">125</td><td class="ds-td mra-rag--red">125</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta neutral">-</span></td></tr>
+                    <tr class="mra-total-row"><td class="ds-td mra-td-total">Total</td><td class="ds-td mra-td-total">17</td><td class="ds-td mra-td-total">141</td><td class="ds-td mra-rag--red">121</td><td class="ds-td mra-rag--red">99</td><td class="ds-td mra-change-cell"><span class="ds-kpi-delta up-bad"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>22.2%</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Theme toggle — mirrors the real Topbar's light/dark switch
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    document.documentElement.classList.toggle('theme-dark');
+  });
+
+  // Segmented tab switch — Supported / EOL breakdown table
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.kg-seg-btn').forEach(b => b.classList.remove('kg-seg-btn--active'));
+    btn.classList.add('kg-seg-btn--active');
+    document.querySelectorAll('.mra-breakdown-table').forEach(t => t.classList.remove('active'));
+    document.getElementById('table-' + tab).classList.add('active');
+
+    var thumb = document.getElementById('segThumb');
+    thumb.style.left = btn.offsetLeft + 'px';
+    thumb.style.width = btn.offsetWidth + 'px';
+  }
+
+  // Position the thumb under the initially-active tab on load
+  window.addEventListener('load', function () {
+    var active = document.querySelector('.kg-seg-btn--active');
+    var thumb = document.getElementById('segThumb');
+    thumb.style.left = active.offsetLeft + 'px';
+    thumb.style.width = active.offsetWidth + 'px';
+  });
+</script>
+
+</body>
+</html>

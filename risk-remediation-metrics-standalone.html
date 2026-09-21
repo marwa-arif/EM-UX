@@ -1,0 +1,1692 @@
+<!doctype html>
+<html lang="en" class="theme-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk &amp; Remediation Metrics — Prevalent AI</title>
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     Reset + base
+     ───────────────────────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button { font-family: inherit; }
+  svg { display: block; }
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+
+  /* ─────────────────────────────────────────────────────────────
+     Design tokens (design-system-2.0 — tokens/colors.json, global.css)
+     ───────────────────────────────────────────────────────────── */
+  :root {
+    --topbar-height:            48px;
+    --shell-topbar-bg:          #131313;
+    --shell-topbar-text:        #D1D1D1;
+    --shell-topbar-text-muted:  #9A9A9A;
+    --shell-bg:           #F7F9FC;
+    --shell-border:       #E6E6E6;
+    --shell-border-2:     #D6D6D6;
+    --shell-text:         #101010;
+    --shell-text-2:       #282828;
+    --shell-text-muted:   #6E6E6E;
+    --shell-text-faint:   #ADADAD;
+    --shell-accent:       #6360D8;
+    --shell-hover:        rgba(0,0,0,0.04);
+    --shell-active:       rgba(99,96,216,0.08);
+    --shell-raised:       #F5F5F5;
+
+    --card-bg:            #FFFFFF;
+    --card-border:        #E6E6E6;
+
+    --table-th-bg:        #F5F5F5;
+    --table-border:       #E6E6E6;
+
+    --pai-indigo:        #6360D8;
+    --pai-indigo-hover:  #504DC4;
+    --pai-border:        #E6E6E6;
+    --pai-border-strong: #CFCFCF;
+
+    --pai-crit-fg:       #D12329;
+    --pai-crit-bg:       #F9EEEE;
+    --pai-high-fg:       #E15252;
+    --pai-high-bg:       #FEE2E2;
+    --pai-med-fg:        #D98B1D;
+    --pai-med-bg:        #FEF3E2;
+    --pai-low-fg:        #31A56D;
+    --pai-low-bg:        #EFF7ED;
+    --pai-green:         #31A56D;
+  }
+
+  html.theme-dark {
+    color-scheme: dark;
+    --shell-bg:           #0E0E0E;
+    --shell-raised:       #1C1C1C;
+    --shell-border:       #272727;
+    --shell-border-2:     #3B3A3A;
+    --shell-text:         #F9F9F9;
+    --shell-text-2:       #D1D1D1;
+    --shell-text-muted:   #8A8A8A;
+    --shell-text-faint:   #696969;
+    --shell-hover:        rgba(255,255,255,0.05);
+    --shell-active:       rgba(99,96,216,0.15);
+
+    --card-bg:            #1C1C1C;
+    --card-border:        #272727;
+    --table-th-bg:        #131313;
+    --table-border:       #272727;
+
+    --pai-border:               #272727;
+    --pai-border-strong:        #3B3A3A;
+
+    --pai-crit-fg:        #E84349;
+    --pai-crit-bg:        rgba(209,35,41,0.15);
+    --pai-high-fg:        #E09830;
+    --pai-high-bg:        rgba(225,82,82,0.15);
+    --pai-med-fg:         #CDB900;
+    --pai-med-bg:         rgba(217,139,29,0.15);
+    --pai-low-fg:         #31A56D;
+    --pai-low-bg:         rgba(49,165,109,0.15);
+    --pai-green:          #31A56D;
+  }
+  html.theme-dark body { background: #0E0E0E; color: #F9F9F9; }
+  body { background: var(--shell-bg); color: var(--shell-text); }
+
+  /* ─────────────────────────────────────────────────────────────
+     App shell / layout
+     ───────────────────────────────────────────────────────────── */
+  .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; color: var(--shell-text); background: var(--shell-bg); }
+  .app-body { display: flex; flex: 1; min-height: 0; }
+  .exp-main { flex: 1; min-width: 0; display: flex; overflow: hidden; background: var(--shell-bg); }
+  .exp-main--col { flex-direction: column; }
+  .exp-content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .page-scroll { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; background: var(--shell-bg); }
+
+  /* ─────────────────────────────────────────────────────────────
+     Topbar
+     ───────────────────────────────────────────────────────────── */
+  .topbar {
+    height: var(--topbar-height);
+    background: var(--shell-topbar-bg);
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    flex-shrink: 0; position: relative; z-index: 50;
+  }
+  .topbar__logo-btn { display: flex; align-items: center; padding: 0; border: none; background: transparent; cursor: pointer; }
+  .topbar__spacer { flex: 1; }
+  .topbar__btn {
+    width: 32px; height: 32px; border: none; background: transparent; color: var(--shell-topbar-text);
+    border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative;
+  }
+  .topbar__btn:hover { background: rgba(255,255,255,0.10); }
+  .topbar__notif-dot {
+    position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pai-crit-fg); border: 1px solid var(--shell-topbar-bg);
+  }
+  .topbar__avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); color: var(--shell-topbar-text);
+    border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar__avatar:hover { background: rgba(255,255,255,0.18); }
+
+  /* ─────────────────────────────────────────────────────────────
+     LeftNav
+     ───────────────────────────────────────────────────────────── */
+  .leftnav {
+    position: relative; flex-shrink: 0; width: 220px;
+    background: var(--card-bg); border-right: 1px solid var(--shell-border);
+    display: flex; flex-direction: column; overflow-y: hidden;
+  }
+  .leftnav__body { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .leftnav__divider { margin: 8px 12px; border-top: 1px solid var(--shell-border); }
+  .leftnav__section-label {
+    display: flex; align-items: center; justify-content: flex-start; gap: 4px;
+    width: 100%; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--shell-text-faint); padding: 8px 8px 4px 16px;
+    background: none; border: none; font-family: inherit; cursor: pointer; text-align: left;
+  }
+  .nav-item { padding: 0 8px; margin-bottom: 4px; }
+  .nav-item__btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px; background: transparent; color: var(--shell-text-2);
+    border: none; border-radius: 6px; cursor: pointer; text-align: left;
+    font-size: 12px; font-weight: 400; font-family: inherit; justify-content: flex-start;
+  }
+  .nav-item__btn--active { background: var(--shell-raised); color: var(--shell-text); font-weight: 500; }
+  .nav-item__btn:hover:not(.nav-item__btn--active) { background: var(--shell-hover); }
+  .nav-item__icon { flex-shrink: 0; width: 16px; height: 16px; opacity: 0.72; }
+  .nav-item__icon--active { opacity: 0.9; }
+  .nav-item__label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-item__chevron { display: inline-flex; color: var(--shell-text-muted); }
+
+  /* ─────────────────────────────────────────────────────────────
+     SubHeader
+     ───────────────────────────────────────────────────────────── */
+  .subheader {
+    height: 48px; box-sizing: border-box; flex-shrink: 0;
+    background: var(--card-bg); border-bottom: 1px solid var(--shell-border);
+    display: flex; align-items: center; padding: 0 24px; gap: 12px;
+  }
+  .subheader__title-block { display: flex; flex-direction: column; min-width: 0; }
+  .subheader__title { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.2; white-space: nowrap; }
+  .subheader__breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); margin-top: 2px; }
+  .subheader__breadcrumb-sep { color: var(--shell-text-muted); }
+  .subheader__breadcrumb-current { color: var(--shell-accent); font-weight: 500; }
+  .subheader__spacer { flex: 1; }
+
+  /* ─────────────────────────────────────────────────────────────
+     DS table + delta primitives
+     ───────────────────────────────────────────────────────────── */
+  .ds-table-wrap { width: 100%; overflow-x: auto; }
+  .ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ds-th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--shell-text-muted); background: var(--table-th-bg); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+  .ds-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); color: var(--shell-text-2); vertical-align: middle; font-size: 12px; }
+  .ds-table tbody tr:last-child td { border-bottom: none; }
+  .ds-table tbody tr:hover td { background: var(--shell-hover); }
+
+  /* ── Table pagination footer (src/components/TablePagination.jsx, reused verbatim) ── */
+  .tpg { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--shell-border); flex-shrink: 0; }
+  .tpg__left { display: flex; align-items: center; gap: 16px; }
+  .tpg__right { display: flex; align-items: center; gap: 16px; }
+  .tpg__counts { display: flex; align-items: center; gap: 12px; }
+  .tpg__count { font-size: 14px; font-family: inherit; font-weight: 400; background: none; border: none; padding: 0; cursor: pointer; color: var(--shell-text-muted); line-height: 1; transition: color 0.1s; }
+  .tpg__count:hover { color: var(--shell-text); }
+  .tpg__count--active { color: var(--shell-text); }
+  .tpg__info { font-size: 14px; color: var(--shell-text-muted); white-space: nowrap; }
+  .tpg__pg { font-size: 14px; font-family: inherit; font-weight: 400; background: none; border: none; padding: 0; cursor: pointer; color: var(--shell-text-muted); line-height: 1; transition: color 0.1s; }
+  .tpg__pg:hover { color: var(--shell-text); }
+  .tpg__pg--active { color: var(--shell-text); font-weight: 600; }
+  .tpg__ellipsis { font-size: 14px; color: var(--shell-text-muted); }
+  .tpg__nav { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 3px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--shell-text-2); transition: background 0.1s; }
+  .tpg__nav:hover:not(:disabled) { background: var(--shell-hover); }
+  .tpg__nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── Chart primitives (design-system-2.0/ds/charts — base + bar + hbar) ── */
+  .chart-axis-label { font-size: 10px; fill: var(--shell-text-muted); font-family: inherit; }
+  .chart-bar-svg { overflow: visible; display: block; }
+  .chart-bar-svg rect.chart-bar { transition: opacity 150ms; cursor: pointer; }
+  .chart-bar-svg rect.chart-bar:hover { opacity: 0.7; }
+  .chart-bar-svg text { font-family: inherit; }
+
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+  .chart-legend--center { justify-content: center; margin-top: 12px; }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--shell-text-2); }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .css-hbar-chart { display: flex; flex-direction: column; gap: 16px; }
+  .css-hbar-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .css-hbar-label { width: 108px; font-size: 11px; color: var(--shell-text-muted); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .css-hbar { height: 16px; border-radius: 0 3px 3px 0; transition: opacity 150ms; }
+  .css-hbar:hover { opacity: 0.78; }
+  .css-hbar-val { font-size: 11px; color: var(--shell-text-muted); margin-left: 4px; flex-shrink: 0; }
+  .css-hbar-axis { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .css-hbar-axis-ticks { flex: 1; display: flex; justify-content: space-between; font-size: 10px; color: var(--shell-text-muted); border-top: 1px solid var(--shell-border); padding-top: 4px; }
+  .css-hbar-axis-title { text-align: center; font-size: 11px; color: var(--shell-text-muted); margin-top: 4px; }
+
+  /* ─────────────────────────────────────────────────────────────
+     Page widget shells (page-specific widget layout)
+     ───────────────────────────────────────────────────────────── */
+  .rrm-page { display: flex; flex-direction: column; gap: 16px; padding: 12px; height: 100%; box-sizing: border-box; overflow: auto; }
+
+  /* ── Floating canvas toolbar (Undo / Redo / Zoom — src/pages/DashboardCanvas.jsx's
+     DashboardFloatingToolbar, reused verbatim: same icons, same .dc-float-toolbar*
+     styling under an rrm- prefix). Sits as the first child of the scrollable
+     .rrm-page, pinned top-center via position:sticky so it stays visible while
+     the page scrolls underneath it. The wrapper is zero-height (overflow: visible)
+     so it never pushes the widgets below it or reserves layout space. ────────── */
+  .rrm-float-toolbar-sticky { position: sticky; top: 12px; z-index: 20; height: 0; overflow: visible; display: flex; justify-content: center; pointer-events: none; }
+  .rrm-float-toolbar { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--shell-border); border-radius: 44px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
+  .rrm-float-toolbar-divider { width: 1px; height: 20px; background: var(--shell-border); }
+  .rrm-float-toolbar-zoom-label { min-width: 44px; padding: 4px 8px; border: none; background: transparent; color: var(--shell-text-muted); font-size: 12px; font-weight: 500; font-family: inherit; text-align: center; cursor: pointer; border-radius: 44px; transition: background 120ms, color 120ms; }
+  .rrm-float-toolbar-zoom-label:hover { background: var(--shell-hover); color: var(--shell-text); }
+  .ds-icon-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; transition: background 120ms, color 120ms; flex-shrink: 0; padding: 0; }
+  .ds-icon-btn:hover { background: var(--shell-hover); color: var(--shell-text); }
+  .ds-icon-btn:disabled { opacity: .3; cursor: not-allowed; pointer-events: none; }
+  /* display:flex + explicit per-child margin-bottom (not a uniform `gap`)
+     since the kpi-row → tabbed-container gap (12px) now needs to differ
+     from the range-row → kpi-row gap (16px) above it. */
+  .rrm-zoom-content { display: flex; flex-direction: column; transform-origin: top center; transition: transform 150ms ease; }
+  .rrm-zoom-content > .rrm-range-row { margin-bottom: 16px; }
+  .rrm-zoom-content > .rrm-kpi-row { margin-bottom: 12px; }
+
+  .rrm-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .rrm-chart-row { display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; }
+  .rrm-chart-row .rrm-widget { flex: 1 1 0; min-width: 320px; }
+  .rrm-section { display: flex; flex-direction: column; gap: 12px; }
+  .rrm-tabbed-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── Segmented tabs (src/components/SegmentedTabs.jsx — kg-seg-tabs,
+     reused verbatim from the KG page / other dashboards) ── */
+  .kg-seg-tabs { position: relative; display: inline-flex; align-items: center; box-sizing: border-box; padding: 0; background: var(--shell-raised); border-radius: 44px; gap: 0; height: 32px; align-self: flex-start; }
+  .kg-seg-thumb { position: absolute; top: 0; bottom: 0; background: var(--card-bg); border: 1px solid var(--shell-border); border-radius: 44px; transition: left 200ms cubic-bezier(.2,.8,.2,1), width 200ms cubic-bezier(.2,.8,.2,1); box-shadow: 0 1px 2px rgba(16,16,16,0.04); box-sizing: border-box; }
+  .kg-seg-btn { position: relative; z-index: 1; padding: 0 16px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; color: var(--shell-text-muted); transition: color 150ms; white-space: nowrap; line-height: 1; }
+  .kg-seg-btn--active { color: var(--shell-text); font-weight: 500; }
+  .rrm-widget-title { font-size: 13px; font-weight: 600; color: var(--shell-text); display: flex; align-items: center; gap: 6px; }
+
+  /* KPI tiles (design-system-2.0/ds/core.txt ds-kpi-card, extended with the
+     two-stat layout the requested KPI set needs — value+label+delta alone
+     can't express "value + 2 labeled counts". Plain card bg only, per
+     "KPI cards... NEVER custom bg" — no tinting. */
+  .rrm-range-row { display: flex; justify-content: flex-end; }
+  .rrm-kpi-row { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; }
+  .rrm-kpi { flex: 1 1 0; min-width: 168px; height: 125px; background: var(--card-bg); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; border: 1px solid var(--card-border); }
+  .rrm-kpi__value { font-size: 20px; font-weight: 600; line-height: 1.2; color: var(--shell-text); }
+  .rrm-kpi__title { font-size: 14px; font-weight: 600; line-height: 1.17; color: var(--shell-text); margin-top: 6px; }
+  .rrm-kpi__footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 16px; }
+  .rrm-kpi__stat { font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
+  .rrm-kpi__stat-num { font-weight: 700; color: var(--shell-text); margin-right: 4px; }
+  .rrm-kpi__stat-num--red { color: var(--pai-crit-fg); }
+  .rrm-kpi__stat-num--green { color: var(--pai-green); }
+
+  /* Badges (design-system-2.0/ds/components/badges.json) */
+  .rrm-trurisk-score { color: var(--pai-med-fg); font-weight: 700; }
+
+  /* ── Delta indicator (src/styles — ds-kpi-delta, reused verbatim from
+     mttd-trends-standalone.html / mra-security-risk-standalone.html) ── */
+  .ds-kpi-delta { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; }
+  .ds-kpi-delta.up-bad, .ds-kpi-delta.down-bad { color: var(--pai-crit-fg); }
+  .ds-kpi-delta.down-good, .ds-kpi-delta.up-good { color: var(--pai-green); }
+  .ds-kpi-delta.down-bad svg, .ds-kpi-delta.down-good svg { transform: scaleY(-1); }
+
+  /* ── Trend widgets (stat + chart split card) ── */
+  .rrm-trend-hdr { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .rrm-trend-value { font-size: 28px; font-weight: 700; color: var(--shell-text); line-height: 1.1; }
+  .rrm-trend-sublabel { font-size: 12px; color: var(--shell-text-muted); margin-top: -8px; }
+  .rrm-trend-diff { font-size: 11px; color: var(--shell-text-muted); margin-top: -8px; }
+  .rrm-trend-delta-row { display: flex; align-items: center; gap: 6px; margin-top: -8px; }
+  .rrm-trend-delta-suffix { font-size: 12px; color: var(--shell-text-muted); }
+  .rrm-trend-period-wrap { position: relative; flex-shrink: 0; }
+  .rrm-trend-period { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; padding: 0; font-size: 11px; color: var(--shell-accent); font-family: inherit; cursor: pointer; white-space: nowrap; }
+  .rrm-trend-period:hover { text-decoration: underline; }
+  .rrm-trend-period-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 100; background: var(--card-bg); border: 1px solid var(--shell-border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); padding: 4px; min-width: 120px; display: none; flex-direction: column; gap: 1px; }
+  .rrm-trend-period-menu--open { display: flex; }
+  .rrm-trend-period-option { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 8px; border-radius: 5px; font-size: 12px; font-family: inherit; color: var(--shell-text); cursor: pointer; }
+  .rrm-trend-period-option:hover { background: var(--shell-hover); }
+  .rrm-trend-period-option.selected { background: var(--pai-indigo); color: #fff; }
+  .rrm-trend-value-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .rrm-trend-substats { display: flex; flex-direction: column; gap: 2px; }
+  .rrm-trend-substat { font-size: 12px; color: var(--shell-accent); }
+  .rrm-trend-substat-num { font-weight: 700; margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ────────────────────────── Topbar ────────────────────────── -->
+  <header class="topbar">
+    <button class="topbar__btn topbar__nav-toggle" title="Collapse sidebar" aria-label="Collapse sidebar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 3v18"/>
+        <path d="M16 9l-2.5 3 2.5 3"/>
+      </svg>
+    </button>
+
+    <button class="topbar__logo-btn" title="Navigator" aria-label="Go to Navigator home">
+      <svg width="130" height="21" viewBox="0 0 172 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.0003 23.2593C8.8871 23.2593 4.74205 19.1144 4.74183 14.0014C4.74183 8.88784 8.88678 4.74284 13.9999 4.74257C19.1134 4.74257 23.2585 8.88752 23.2587 14.0006C23.2587 19.1132 19.1139 23.2581 14.0007 23.2584M14.0003 4.00021C8.47705 4.00021 3.99989 8.47742 4 14.0002C4 19.523 8.47726 24.0001 14.0002 24C19.5228 24 24.0001 19.5228 24 13.9999C24 8.47699 19.5232 4.00011 14.0003 4.00021Z" fill="#FFFFFF"/>
+        <path d="M16.6438 9.29042H16.0563C15.9766 9.27002 15.8918 9.28401 15.8238 9.32891C15.7557 9.37376 15.7112 9.44482 15.7018 9.52384L12.6616 18.4047C12.6457 18.4442 12.636 18.486 12.6328 18.5284C12.6329 18.6118 12.6747 18.7103 12.8743 18.7103H13.4678C13.5482 18.7305 13.6337 18.7162 13.7023 18.671C13.7708 18.6258 13.8158 18.5542 13.8257 18.4746L16.8545 9.59213C16.8702 9.553 16.88 9.51167 16.8832 9.46976C16.8832 9.38647 16.8418 9.28935 16.6441 9.28935" fill="#FFFFFF"/>
+        <path d="M18.6919 13.0692C18.6203 13.0219 18.5339 13.0008 18.4478 13.0092H17.9305C17.8444 13.0007 17.758 13.0219 17.6867 13.0692C17.6307 13.1333 17.6049 13.217 17.6157 13.3003V18.4204C17.6049 18.5037 17.6307 18.5876 17.687 18.6517C17.7582 18.699 17.8446 18.7203 17.9304 18.7116H18.4478C18.5339 18.7201 18.6204 18.6989 18.6918 18.6516C18.7478 18.5875 18.7735 18.5037 18.7628 18.4204V13.3003C18.7735 13.217 18.7479 13.1333 18.6919 13.0692Z" fill="#FFFFFF"/>
+        <path d="M12.4864 10.2031C12.4166 10.1109 12.3378 10.0254 12.2512 9.94772C11.787 9.54071 11.3078 9.30301 10.2319 9.29308L9.53316 9.29089H9.52885C9.49214 9.28929 9.45533 9.29297 9.41962 9.30162C9.34742 9.32448 9.27313 9.38502 9.32708 9.546L9.39662 9.75198L9.48518 10.0149C9.50043 10.0839 9.53636 10.147 9.58833 10.1965C9.64847 10.2268 9.71613 10.241 9.78379 10.2376H9.97406C10.6481 10.2376 11.098 10.3706 11.3894 10.6565C11.6769 10.9372 11.8148 11.4228 11.8148 12.141C11.8148 12.8592 11.6758 13.3448 11.3894 13.6257C11.098 13.9115 10.6485 14.0447 9.97439 14.0447H9.78501C9.7169 14.0411 9.64913 14.0552 9.58866 14.0855C9.53659 14.135 9.50054 14.1981 9.48518 14.267L9.39662 14.5299L9.32708 14.736C9.27313 14.8967 9.34742 14.9581 9.41973 14.9803C9.45499 14.989 9.49148 14.9926 9.52796 14.9911L10.2319 14.9889C11.3078 14.9789 11.787 14.7412 12.2512 14.3343C12.3378 14.2565 12.4165 14.1709 12.4864 14.0788C12.8313 13.6347 12.9997 13.0013 12.9997 12.1396C12.9997 11.2779 12.8319 10.6435 12.4864 10.2004" fill="#FFFFFF"/>
+        <path d="M37.4031 13.9979H39.9355C40.8574 13.9979 41.513 13.8214 41.9021 13.4684C42.2913 13.1154 42.4858 12.5112 42.4858 11.6558V11.3787C42.4858 10.4642 42.2941 9.81946 41.9106 9.44452C41.5272 9.06956 40.8686 8.88162 39.9351 8.88071H37.4027L37.4031 13.9979ZM37.4031 15.1772V19.7041C37.4165 19.8033 37.3874 19.9035 37.3228 19.9817C37.2352 20.0373 37.1305 20.0618 37.0264 20.0512H36.3796C36.2757 20.0617 36.1711 20.0372 36.0837 19.9817C36.019 19.9035 35.99 19.8033 36.0032 19.7041V8.04757C35.9897 7.94849 36.0188 7.84835 36.0837 7.77051C36.1711 7.7149 36.2756 7.69021 36.3796 7.70054H39.8829C41.3074 7.70054 42.346 7.98661 42.999 8.5588C43.6521 9.13102 43.9782 10.0475 43.9776 11.3083V11.6554C43.9776 14.0026 42.6127 15.1763 39.8829 15.1763L37.4031 15.1772Z" fill="#FFFFFF"/>
+        <path d="M62.3473 11.7952C60.7789 11.7952 59.9888 12.7955 59.9768 14.7962H64.6102C64.6721 14.0024 64.481 13.2094 64.0624 12.5236C63.6537 12.0179 63.0094 11.7445 62.3473 11.7952ZM59.9768 15.9234V16.2531C59.9768 18.161 60.7787 19.1149 62.3827 19.1145C63.4005 19.1145 64.0771 18.7388 64.4123 17.9869C64.443 17.8932 64.4952 17.8074 64.5652 17.7359C64.646 17.6986 64.7358 17.6828 64.8252 17.6902H65.4717C65.5818 17.6817 65.6923 17.6973 65.7951 17.736C65.8431 17.7664 65.867 17.8445 65.8666 17.9701C65.8496 18.1898 65.7822 18.4032 65.6692 18.5947C65.549 18.832 65.398 19.0535 65.2199 19.254C64.886 19.5999 64.47 19.8618 64.0075 20.0172C63.4697 20.2071 62.9007 20.3011 62.3283 20.2948C61.2879 20.3591 60.2696 19.986 59.5351 19.2714C58.8345 18.4567 58.4842 17.4136 58.5561 16.3568V15.0559C58.5561 13.657 58.8792 12.5844 59.5256 11.8382C60.2365 11.0651 61.2771 10.6522 62.3454 10.7192C64.8116 10.7192 66.0448 12.0433 66.0451 14.6915V15.5763C66.058 15.6756 66.0288 15.7757 65.9642 15.8538C65.8766 15.9093 65.7719 15.9339 65.6678 15.9233L59.9768 15.9234Z" fill="#FFFFFF"/>
+        <path d="M71.7392 10.9643C71.8331 10.9561 71.9265 10.984 71.9992 11.042C72.0706 11.1259 72.1227 11.2234 72.1521 11.3283L74.6484 18.6834L77.0733 11.3283C77.0981 11.2195 77.1505 11.1183 77.2257 11.0338C77.3009 10.9813 77.3931 10.9566 77.4856 10.9643H78.2403C78.4315 10.9643 78.5271 11.0338 78.5271 11.1728C78.5158 11.2437 78.4978 11.3135 78.4736 11.3813L75.5815 19.6724C75.5452 19.7849 75.4841 19.8885 75.4025 19.976C75.3196 20.0346 75.2176 20.0622 75.1153 20.0538H74.0737C73.9713 20.0625 73.8691 20.0349 73.7864 19.976C73.7043 19.8886 73.643 19.785 73.6064 19.6724L70.7332 11.3813C70.7091 11.3134 70.6912 11.2437 70.6797 11.1728C70.6797 11.0356 70.7744 10.9643 70.967 10.9643L71.7392 10.9643Z" fill="#FFFFFF"/>
+        <path d="M87.0055 15.6442C86.0837 15.6442 85.446 15.7829 85.0929 16.0604C84.7051 16.4199 84.5096 16.9315 84.5628 17.4481C84.5189 17.9107 84.7018 18.3665 85.0571 18.6796C85.5778 18.9824 86.1853 19.1161 86.7901 19.0614H86.9522C87.5077 19.1138 88.0602 18.9339 88.4695 18.5671C88.8159 18.1088 88.9788 17.5448 88.9277 16.9795V15.7997C88.5683 15.7537 88.2119 15.7162 87.8588 15.6872C87.5056 15.6583 87.2215 15.643 87.0066 15.6415M86.8987 14.4983C87.1382 14.4983 87.4438 14.5098 87.8152 14.5326C88.1867 14.5555 88.5579 14.5902 88.9287 14.6369V13.6131C88.9765 13.1124 88.811 12.6146 88.4703 12.2345C88.0449 11.9132 87.5083 11.7611 86.9705 11.8092C86.5294 11.7852 86.089 11.8654 85.687 12.0429C85.3683 12.2278 85.1241 12.5124 84.9954 12.8495C84.9607 12.9367 84.9129 13.0185 84.8534 13.0923C84.7722 13.1381 84.6774 13.1566 84.5841 13.1449L83.9374 13.1449C83.8276 13.1567 83.717 13.1322 83.6235 13.0754C83.56 13.0034 83.5305 12.9091 83.542 12.8152C83.5471 12.6305 83.5958 12.4495 83.6841 12.2857C83.7795 12.0953 83.9001 11.9175 84.043 11.7571C84.3589 11.4072 84.7601 11.1388 85.2104 10.9761C85.776 10.7873 86.3724 10.6991 86.9705 10.7159C88.1679 10.7159 89.0299 10.9386 89.5569 11.384C90.0839 11.8293 90.3474 12.5609 90.3471 13.5788V17.1349C90.3471 18.1869 90.0779 18.9643 89.5394 19.4669C89.001 19.9696 88.1389 20.221 86.953 20.221H86.6836C85.4623 20.221 84.5611 20.0043 83.9804 19.5708C83.3997 19.1373 83.1094 18.4346 83.1094 17.4628C83.1094 16.434 83.4147 15.6822 84.0253 15.2076C84.6361 14.7329 85.5938 14.4961 86.8987 14.497" fill="#FFFFFF"/>
+        <path d="M107.155 11.7952C105.587 11.7952 104.797 12.7955 104.785 14.7962H109.418C109.48 14.0024 109.289 13.2094 108.871 12.5236C108.462 12.0179 107.818 11.7446 107.155 11.7952ZM104.785 15.9233V16.253C104.785 18.161 105.587 19.1149 107.191 19.1146C108.209 19.1146 108.886 18.7387 109.221 17.987C109.252 17.8932 109.304 17.8074 109.374 17.7359C109.455 17.6986 109.544 17.6828 109.634 17.6902H110.281C110.39 17.6817 110.501 17.6974 110.604 17.7359C110.652 17.7664 110.676 17.8445 110.675 17.97C110.658 18.1898 110.591 18.4032 110.478 18.5947C110.358 18.832 110.207 19.0536 110.029 19.2541C109.695 19.6 109.279 19.862 108.816 20.0172C108.278 20.207 107.71 20.3011 107.137 20.2948C106.097 20.3591 105.078 19.986 104.344 19.2714C103.643 18.4567 103.293 17.4136 103.365 16.3568V15.0559C103.365 13.657 103.688 12.5844 104.334 11.8382C105.045 11.065 106.086 10.6521 107.154 10.7192C109.62 10.7192 110.853 12.0433 110.854 14.6915V15.5763C110.867 15.6755 110.837 15.7756 110.773 15.8538C110.685 15.9093 110.581 15.9339 110.476 15.9233L104.785 15.9233Z" fill="#FFFFFF"/>
+        <path d="M132.693 20.0521C132.047 20.1084 131.405 19.9081 130.915 19.4974C130.501 19.0052 130.301 18.377 130.358 17.7452V12.1076H129.19C129.059 12.1076 128.975 12.0843 128.939 12.0386C128.894 11.9529 128.875 11.8566 128.885 11.761V11.3097C128.876 11.2143 128.894 11.1182 128.939 11.0326C128.975 10.9869 129.059 10.9631 129.19 10.9631H130.358V8.75956C130.345 8.66018 130.374 8.56002 130.438 8.48151C130.526 8.42646 130.631 8.40214 130.735 8.41249H131.398C131.502 8.40214 131.607 8.42649 131.694 8.48151C131.759 8.55987 131.788 8.66015 131.775 8.75956V10.9626H133.627C133.758 10.9626 133.842 10.9858 133.879 11.0322C133.923 11.1177 133.942 11.2139 133.932 11.3092V11.7605C133.942 11.8561 133.923 11.9524 133.879 12.0381C133.842 12.0838 133.758 12.1072 133.627 12.1072H131.777V17.5193C131.745 17.8737 131.83 18.2286 132.02 18.5335C132.221 18.7521 132.518 18.865 132.819 18.8372H133.663C133.795 18.8372 133.879 18.8609 133.915 18.9067C133.959 18.9922 133.978 19.0883 133.968 19.1837V19.7064C133.978 19.802 133.959 19.8982 133.915 19.9839C133.879 20.0297 133.795 20.0535 133.663 20.0535L132.693 20.0521Z" fill="#FFFFFF"/>
+        <path d="M152.329 15.4546H156.675L154.52 9.07124L152.329 15.4546ZM159.656 19.687C159.676 19.737 159.688 19.7896 159.693 19.8429C159.693 19.9816 159.597 20.0512 159.405 20.0515H158.597C158.496 20.0797 158.387 20.0631 158.301 20.0061C158.214 19.9492 158.158 19.8578 158.148 19.757L157.088 16.6691H151.915L150.873 19.757C150.863 19.8579 150.807 19.9492 150.72 20.0061C150.634 20.0631 150.525 20.0797 150.424 20.0515H149.67C149.479 20.0515 149.383 19.982 149.383 19.8429C149.387 19.7896 149.399 19.7371 149.418 19.687L153.532 8.08264C153.562 7.9741 153.617 7.87351 153.693 7.78812C153.779 7.72178 153.889 7.69064 153.999 7.70126L155.148 7.7013C155.259 7.69046 155.37 7.72495 155.453 7.79639C155.525 7.88112 155.58 7.97826 155.614 8.08264L159.656 19.687Z" fill="#FFFFFF"/>
+        <path d="M167.298 8.84316C167.401 8.85587 167.504 8.82783 167.585 8.76543C167.643 8.68106 167.668 8.58007 167.657 8.47964V8.06812C167.668 7.96751 167.643 7.86641 167.585 7.78186C167.504 7.71958 167.401 7.69156 167.298 7.7041H163.928C163.825 7.69156 163.722 7.71958 163.641 7.78186C163.584 7.86652 163.558 7.96751 163.569 8.06812V8.47964C163.558 8.58004 163.584 8.68094 163.641 8.76543C163.722 8.82783 163.825 8.85587 163.928 8.84316H164.894V18.9098H163.928C163.825 18.8972 163.722 18.9252 163.641 18.9875C163.584 19.0722 163.558 19.1732 163.569 19.2738V19.688C163.558 19.7884 163.583 19.8893 163.641 19.9738C163.721 20.0365 163.825 20.0646 163.928 20.0516H167.298C167.401 20.0645 167.505 20.0364 167.585 19.9738C167.643 19.8895 167.668 19.7885 167.657 19.688V19.2738C167.668 19.1732 167.643 19.0721 167.585 18.9875C167.504 18.9252 167.401 18.8972 167.298 18.9098H166.333V8.84316H167.298Z" fill="#FFFFFF"/>
+        <path d="M122.981 11.4995C122.359 10.9446 121.527 10.6624 120.682 10.7194C120.128 10.7099 119.579 10.8165 119.072 11.0317C118.615 11.2276 118.216 11.532 117.913 11.9165V11.3093C117.927 11.21 117.898 11.1097 117.833 11.0317C117.82 11.0211 117.806 11.0122 117.79 11.0052C117.714 10.9677 117.628 10.9508 117.542 10.9563H115.361C115.259 10.9436 115.155 10.9717 115.074 11.034C115.017 11.1187 114.992 11.2198 115.002 11.3202V11.7318C114.992 11.8322 115.017 11.9331 115.074 12.0176C115.155 12.0805 115.258 12.1088 115.361 12.0958H116.535V19.7046C116.522 19.8038 116.551 19.9042 116.616 19.9822C116.703 20.0377 116.808 20.0622 116.912 20.0517H117.575C117.679 20.0623 117.784 20.0378 117.871 19.9822C117.936 19.9043 117.966 19.804 117.952 19.7046V14.3798C117.919 13.7298 118.147 13.0926 118.59 12.6015C119.033 12.1485 119.66 11.9046 120.305 11.9334C120.877 11.8825 121.445 12.0686 121.867 12.4456C122.231 12.9094 122.404 13.4871 122.352 14.067V19.7046C122.339 19.8038 122.368 19.904 122.433 19.9822C122.52 20.0378 122.625 20.0623 122.73 20.0517H123.392C123.496 20.0622 123.601 20.0377 123.688 19.9822C123.753 19.9042 123.783 19.804 123.77 19.7046V13.7725C123.83 12.9436 123.545 12.1257 122.979 11.4999" fill="#FFFFFF"/>
+        <path d="M97.6315 19.7042C97.6449 19.8036 97.6155 19.9039 97.5502 19.9817C97.4628 20.0373 97.3583 20.0618 97.2541 20.0512H96.5914C96.4872 20.0619 96.3826 20.0374 96.2951 19.9817C96.2302 19.9037 96.2009 19.8035 96.2141 19.7042V8.04766C96.2008 7.94849 96.2301 7.84838 96.2951 7.77054C96.3826 7.71483 96.4872 7.69013 96.5914 7.70059H97.2542C97.3583 7.69022 97.4628 7.71498 97.5502 7.77054C97.6154 7.84827 97.6449 7.9484 97.6315 8.04766V19.7042Z" fill="#FFFFFF"/>
+        <path d="M53.8555 11.0317C53.8195 10.986 53.7357 10.9622 53.6041 10.9622H53.3703C52.8159 10.9557 52.2733 11.1155 51.817 11.4195C51.3617 11.7193 51.0037 12.1373 50.784 12.6253V11.8205C50.784 11.7949 50.7877 11.7679 50.7877 11.7377V11.3262C50.7986 11.2256 50.7732 11.1245 50.7157 11.0399C50.6347 10.9776 50.5311 10.9496 50.4284 10.9622H48.2446C48.1419 10.9496 48.0384 10.9776 47.9577 11.0399C47.9002 11.1245 47.8746 11.2256 47.8852 11.3262V11.7377C47.8745 11.8382 47.9001 11.9391 47.9577 12.0235C48.0384 12.0859 48.1419 12.1139 48.2446 12.1012H49.402V19.7018C49.3884 19.8011 49.4175 19.9014 49.4826 19.9794C49.57 20.035 49.6747 20.0596 49.7789 20.0489H50.4417C50.5457 20.0595 50.6503 20.035 50.7376 19.9794C50.8029 19.9016 50.8324 19.8012 50.819 19.7018V15.2787C50.8153 14.8771 50.8696 14.477 50.9804 14.0898C51.0773 13.7479 51.2353 13.425 51.4472 13.1356C51.638 12.8749 51.8866 12.6587 52.1749 12.5027C52.4695 12.3491 52.8002 12.2712 53.135 12.2768H53.6022C53.7339 12.2768 53.8181 12.2539 53.8536 12.2073C53.8985 12.1218 53.917 12.0256 53.9072 11.9302V11.3056C53.917 11.21 53.8985 11.1137 53.8537 11.028" fill="#FFFFFF"/>
+      </svg>
+    </button>
+
+    <div class="topbar__spacer"></div>
+
+    <button class="topbar__btn" id="themeToggle" title="Switch to dark theme">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+
+    <button class="topbar__btn" title="Notifications">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="topbar__notif-dot"></span>
+    </button>
+
+    <button class="topbar__avatar" title="Account menu">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- ────────────────────────── Body ────────────────────────── -->
+  <div class="app-body">
+
+    <!-- LeftNav -->
+    <aside class="leftnav">
+      <div class="leftnav__body">
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="-0.78 1.34 16 16" fill="none">
+              <path d="M12.29 4.41897C12.8876 4.29122 13.3732 4.90261 13.1143 5.45608L8.93848 14.3809C9.22506 13.2409 9.6112 12.5785 9.74414 11.9141C9.79121 11.6787 9.76662 11.4353 9.67871 11.2119C9.10743 9.76096 6.88488 6.99516 4.94434 6.81936C4.20476 6.75234 3.01379 6.54441 1.06152 6.81936L12.29 4.41897ZM7.34863 6.62893C8.03894 7.13819 9.53743 8.4164 10.0107 9.4551L11.7861 5.71291L7.34863 6.62893Z" fill="url(#navGradA)"/>
+              <defs><linearGradient id="navGradA" x1="1.06" y1="9.39" x2="13.19" y2="9.39" gradientUnits="userSpaceOnUse"><stop stop-color="#467FCD"/><stop offset="1" stop-color="#47ADCB"/></linearGradient></defs>
+            </svg>
+            <span class="nav-item__label">Navigator</span>
+          </button>
+        </div>
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M2.49854 5.79059V3.48059C2.49854 3.20445 2.72239 2.98059 2.99854 2.98059H5.30615C5.58229 2.98059 5.80615 3.20445 5.80615 3.48059V5.79059C5.80615 6.06673 5.58229 6.29059 5.30615 6.29059H2.99854C2.72239 6.29059 2.49854 6.06673 2.49854 5.79059Z"/>
+              <path d="M10.1938 11.0584V8.74841C10.1938 8.47227 10.4177 8.24841 10.6938 8.24841H13.0015C13.2776 8.24841 13.5015 8.47227 13.5015 8.74841V11.0584C13.5015 11.3346 13.2776 11.5584 13.0015 11.5584H10.6938C10.4177 11.5584 10.1938 11.3346 10.1938 11.0584Z"/>
+              <path d="M7.78076 5.79059V3.48059C7.78076 3.20445 8.00462 2.98059 8.28076 2.98059H13.0015C13.2776 2.98059 13.5015 3.20445 13.5015 3.48059V5.79059C13.5015 6.06673 13.2776 6.29059 13.0015 6.29059H8.28076C8.00462 6.29059 7.78076 6.06673 7.78076 5.79059Z"/>
+              <path d="M2.49854 12.5194V8.74841C2.49854 8.47227 2.72239 8.24841 2.99854 8.24841H7.71924C7.99538 8.24841 8.21924 8.47227 8.21924 8.74841V12.5194C8.21924 12.7956 7.99538 13.0194 7.71924 13.0194H2.99854C2.72239 13.0194 2.49854 12.7956 2.49854 12.5194Z"/>
+            </svg>
+            <span class="nav-item__label">Workspace</span>
+          </button>
+        </div>
+        <div class="leftnav__divider"></div>
+
+        <button class="leftnav__section-label"><span>Insights</span></button>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M7.40519 9.69937C7.57355 9.86809 7.7897 9.94484 8.05364 9.92964C8.31759 9.91479 8.51021 9.81993 8.6315 9.64506L10.6148 6.88022C10.7792 6.65098 10.4973 6.36741 10.2671 6.53052L7.48665 8.50075C7.3049 8.62168 7.2037 8.80959 7.18306 9.06449C7.16242 9.31938 7.23647 9.53064 7.40519 9.69937Z" fill="currentColor" stroke="none"/>
+              <path d="M3.28962 12.1326C2.77996 11.3087 2.48633 10.3406 2.48633 9.30481C2.48633 6.30169 4.95488 3.86719 8 3.86719C11.0451 3.86719 13.5137 6.30169 13.5137 9.30481C13.5137 10.3406 13.22 11.3087 12.7104 12.1326" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-item__label">Exposure</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.5 11.0764L6.1 7.4733L8.5 9.8754L13.3 5.0713"/>
+              <path d="M11.1 4.8467H13.5V7.2487"/>
+            </svg>
+            <span class="nav-item__label">MTTD Trends</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn nav-item__btn--active">
+            <svg class="nav-item__icon nav-item__icon--active" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.5 11.0764L6.1 7.4733L8.5 9.8754L13.3 5.0713"/>
+              <path d="M11.1 4.8467H13.5V7.2487"/>
+            </svg>
+            <span class="nav-item__label">Risk &amp; Remediation Metrics</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M5.87904 10.4486L8.84637 9.5983C9.03393 9.54219 9.19204 9.4498 9.32071 9.32113C9.44937 9.19247 9.54176 9.03435 9.59787 8.8468L10.4495 5.87813C10.482 5.78002 10.4595 5.69269 10.3822 5.61613C10.3049 5.53958 10.2175 5.51797 10.12 5.5513L7.15271 6.40163C6.96515 6.45774 6.80704 6.55013 6.67837 6.6788C6.54971 6.80747 6.45732 6.96558 6.40121 7.15313L5.54954 10.1218C5.51709 10.2199 5.53954 10.3072 5.61687 10.3838C5.69421 10.4604 5.78159 10.482 5.87904 10.4486ZM7.99804 8.6718C7.81104 8.68291 7.6526 8.62136 7.52271 8.48713C7.39271 8.35302 7.32771 8.19013 7.32771 7.99847C7.32771 7.81147 7.39321 7.65302 7.52421 7.52313C7.6551 7.39313 7.81404 7.32813 8.00104 7.32813C8.18804 7.32813 8.34648 7.39363 8.47637 7.52463C8.60637 7.65552 8.67137 7.81447 8.67137 8.00147C8.67137 8.18847 8.60587 8.34691 8.47487 8.4768C8.34398 8.6068 8.18504 8.6718 7.99804 8.6718Z" fill="currentColor" stroke="none"/>
+              <circle cx="8" cy="8" r="5.5"/>
+            </svg>
+            <span class="nav-item__label">Discover</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.2001 3.59988H11.3001C11.5918 3.59988 11.8716 3.71577 12.0779 3.92206C12.2842 4.12835 12.4001 4.40814 12.4001 4.69988V12.3999C12.4001 12.6916 12.2842 12.9714 12.0779 13.1777C11.8716 13.384 11.5918 13.4999 11.3001 13.4999H4.7001C4.40836 13.4999 4.12857 13.384 3.92228 13.1777C3.71599 12.9714 3.6001 12.6916 3.6001 12.3999V4.69988C3.6001 4.40814 3.71599 4.12835 3.92228 3.92206C4.12857 3.71577 4.40836 3.59988 4.7001 3.59988H5.8001M5.92267 9.32774H8.39587M5.92267 7.1529H10.2001M5.92267 11.5026H7.10175M6.3501 2.49988H9.6501C9.95385 2.49988 10.2001 2.74612 10.2001 3.04988V4.14988C10.2001 4.45363 9.95385 4.69988 9.6501 4.69988H6.3501C6.04634 4.69988 5.8001 4.45363 5.8001 4.14988V3.04988C5.8001 2.74612 6.04634 2.49988 6.3501 2.49988Z"/>
+            </svg>
+            <span class="nav-item__label">Report</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M5.56898 12.1508H3.5C2.94772 12.1508 2.5 11.7031 2.5 11.1508V5.06128C2.5 4.50899 2.94772 4.06128 3.5 4.06128H12.0127C12.316 4.06128 12.5619 4.30718 12.5619 4.61051"/>
+              <circle cx="8.6532" cy="12.4161" r="1.08386"/>
+              <circle cx="12.4159" cy="7.21619" r="1.08386"/>
+              <path d="M8.67776 11.0276L8.67771 10.7709C8.67759 10.2185 9.12534 9.77065 9.67771 9.77065H11.4096C11.9618 9.77065 12.4095 9.32306 12.4096 8.77085L12.4097 8.44458"/>
+              <path d="M4.43555 6.62769H7.34277M4.43555 9.41937H7.34277"/>
+            </svg>
+            <span class="nav-item__label">Knowledge Graph</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.51172 4.3493C2.51172 5.14709 4.61366 5.79382 7.20654 5.79382C9.79942 5.79382 11.9014 5.14709 11.9014 4.3493C11.9014 3.55152 9.79942 2.90479 7.20654 2.90479C4.61366 2.90479 2.51172 3.55152 2.51172 4.3493ZM2.51172 4.3493V11.0904C2.51172 11.4735 3.00635 11.8409 3.8868 12.1118C4.76725 12.3827 5.9614 12.5349 7.20654 12.5349M2.51172 7.71985C2.51172 8.10296 3.00635 8.47038 3.8868 8.74128C4.76725 9.01218 5.9614 9.16437 7.20654 9.16437"/>
+              <path d="M13.641 10.395C13.641 11.8948 12.5912 12.6447 11.3434 13.0796C11.278 13.1017 11.2071 13.1007 11.1424 13.0766C9.89162 12.6447 8.8418 11.8948 8.8418 10.395V8.29539C8.8418 8.21584 8.8734 8.13955 8.92965 8.0833C8.9859 8.02704 9.06219 7.99544 9.14175 7.99544C9.74165 7.99544 10.4915 7.6355 11.0134 7.17958C11.077 7.12529 11.1578 7.09546 11.2414 7.09546C11.325 7.09546 11.4058 7.12529 11.4694 7.17958C11.9943 7.6385 12.7411 7.99544 13.341 7.99544C13.4206 7.99544 13.4969 8.02704 13.5531 8.0833C13.6094 8.13955 13.641 8.21584 13.641 8.29539V10.395Z"/>
+              <path d="M10.2061 10.455L10.8271 11.0761L12.2764 9.62689" stroke-width="0.6"/>
+            </svg>
+            <span class="nav-item__label">Data Quality</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="exp-main exp-main--col">
+      <div class="exp-content-col">
+
+        <div class="subheader">
+          <div class="subheader__title-block">
+            <div class="subheader__title">Risk &amp; Remediation Metrics</div>
+            <div class="subheader__breadcrumb">
+              <span>Home</span><span class="subheader__breadcrumb-sep">›</span>
+              <span class="subheader__breadcrumb-current">Risk &amp; Remediation Metrics</span>
+            </div>
+          </div>
+          <div class="subheader__spacer"></div>
+        </div>
+
+        <div class="page-scroll">
+          <div class="rrm-page">
+
+            <!-- Floating canvas toolbar (Undo / Redo / Zoom — src/pages/DashboardCanvas.jsx's
+                 DashboardFloatingToolbar, reused verbatim). Sticky top-center; stays visible
+                 while the page scrolls beneath it. -->
+            <div class="rrm-float-toolbar-sticky">
+              <div class="rrm-float-toolbar">
+                <button class="ds-icon-btn" id="rrmUndoBtn" title="Undo" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                  </svg>
+                </button>
+                <button class="ds-icon-btn" id="rrmRedoBtn" title="Redo" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
+                  </svg>
+                </button>
+                <div class="rrm-float-toolbar-divider"></div>
+                <button class="ds-icon-btn" id="rrmZoomOutBtn" title="Zoom out">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+                  </svg>
+                </button>
+                <button class="rrm-float-toolbar-zoom-label" id="rrmZoomLabel" title="Reset zoom">100%</button>
+                <button class="ds-icon-btn" id="rrmZoomInBtn" title="Zoom in">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                  </svg>
+                </button>
+                <div class="rrm-float-toolbar-divider"></div>
+                <span class="dc-tip" title="Reset the whole dashboard">
+                  <button class="ds-icon-btn" id="rrmResetBtn">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+                      <path d="M8 7.2561C8.84388 7.2562 9.5127 7.92682 9.5127 8.76978C9.5126 9.61265 8.84382 10.2824 8 10.2825C7.15609 10.2825 6.48642 9.61271 6.48633 8.76978C6.48633 7.92676 7.15603 7.2561 8 7.2561Z" fill="currentColor" stroke="currentColor" stroke-width="0.555556"/>
+                      <path d="M3.26953 8.76914C3.26953 9.70481 3.54697 10.6195 4.06676 11.3974C4.58655 12.1754 5.32534 12.7818 6.18972 13.1399C7.05409 13.4979 8.00523 13.5916 8.92285 13.4091C9.84047 13.2265 10.6834 12.776 11.3449 12.1143C12.0065 11.4527 12.457 10.6098 12.6395 9.69208C12.8221 8.77439 12.7284 7.82317 12.3704 6.95873C12.0123 6.09428 11.406 5.35543 10.6281 4.8356C9.87356 4.3314 8.99047 4.05522 8.08433 4.03906" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M7.80005 5.6189L5.68774 4.02417L7.80005 2.42944V5.6189Z" fill="currentColor" stroke="currentColor" stroke-width="0.555556"/>
+                    </svg>
+                  </button>
+                </span>
+              </div>
+            </div>
+
+            <div class="rrm-zoom-content" id="rrmZoomContent">
+
+            <div class="rrm-range-row">
+              <div class="kg-seg-tabs" id="rangePills">
+                <div class="kg-seg-thumb" id="rangePillsThumb"></div>
+                <button class="kg-seg-btn" data-range="1W"><span>1W</span></button>
+                <button class="kg-seg-btn" data-range="1M"><span>1M</span></button>
+                <button class="kg-seg-btn" data-range="3M"><span>3M</span></button>
+                <button class="kg-seg-btn" data-range="6M"><span>6M</span></button>
+                <button class="kg-seg-btn kg-seg-btn--active" data-range="1Y"><span>1Y</span></button>
+              </div>
+            </div>
+
+            <!-- KPI row -->
+            <div class="rrm-kpi-row">
+              <div class="rrm-kpi">
+                <span class="rrm-kpi__value" id="kpi-mttd-value">3 Days</span>
+                <span class="rrm-kpi__title">MTTD</span>
+                <div class="rrm-kpi__footer">
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-vulns">11.3M</span>Vulnerabilities</span>
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-assets">9.54K</span>Assets</span>
+                </div>
+              </div>
+              <div class="rrm-kpi">
+                <span class="rrm-kpi__value" id="kpi-mttr-value">13 Days</span>
+                <span class="rrm-kpi__title">MTTR</span>
+                <div class="rrm-kpi__footer">
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-findings">8.46M</span>Findings</span>
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-assets">9.27K</span>Assets</span>
+                </div>
+              </div>
+              <div class="rrm-kpi">
+                <span class="rrm-kpi__value" id="kpi-kev-value">13 Days</span>
+                <span class="rrm-kpi__title">CISA KEV - MTTR</span>
+                <div class="rrm-kpi__footer">
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-vulns">18.5K</span>Vulnerabilities</span>
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-assets">8.63K</span>Assets</span>
+                </div>
+              </div>
+              <div class="rrm-kpi">
+                <span class="rrm-kpi__value"><span id="kpi-reocc-value">0.00</span>%</span>
+                <span class="rrm-kpi__title">Reoccurrence Rate</span>
+                <div class="rrm-kpi__footer">
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--red" id="kpi-reocc-reopened">247</span>Reopened</span>
+                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--green" id="kpi-reocc-closed">8.58M</span>Closed</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rrm-tabbed-container">
+            <!-- Section tabs (src/components/SegmentedTabs.jsx — kg-seg-tabs, reused verbatim from KG/other dashboards) -->
+            <div class="kg-seg-tabs" id="sectionTabs">
+              <div class="kg-seg-thumb" id="sectionTabsThumb"></div>
+              <button class="kg-seg-btn kg-seg-btn--active" data-section="overview"><span>Overview</span></button>
+              <button class="kg-seg-btn" data-section="detection"><span>Detection</span></button>
+              <button class="kg-seg-btn" data-section="remediation"><span>Remediation</span></button>
+            </div>
+
+            <div class="rrm-section" id="section-overview">
+            <div class="rrm-chart-row">
+              <!-- Asset Distribution by Country -->
+              <div class="rrm-widget">
+                <span class="rrm-widget-title">Asset Distribution by Country</span>
+                <div class="rrm-trend-value" id="country-total">11.3K</div>
+                <div class="css-hbar-chart" id="country-hbar"></div>
+                <div class="css-hbar-axis-title">Assets</div>
+              </div>
+
+              <!-- Risk Arrival vs Remediation Burndown -->
+              <div class="rrm-widget">
+                <span class="rrm-widget-title">Risk Arrival vs Remediation Burndown</span>
+                <div id="burndown-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#D12329;"></span>Arrived Findings</span>
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#31A56D;"></span>Fixed Findings</span>
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>Cumulative Open Findings</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Device's TruRisk Score Groups -->
+            <div class="rrm-widget">
+              <span class="rrm-widget-title">Device's TruRisk Score Groups</span>
+              <div class="ds-table-wrap">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="ds-th">Group Name</th>
+                      <th class="ds-th">Asset Count</th>
+                      <th class="ds-th">Vulnerability Count</th>
+                      <th class="ds-th">TruRisk™ Score</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trurisk-tbody"></tbody>
+                </table>
+              </div>
+              <div class="tpg">
+                <div class="tpg__left">
+                  <div class="tpg__counts">
+                    <button class="tpg__count tpg__count--active">10</button>
+                    <button class="tpg__count">25</button>
+                    <button class="tpg__count">50</button>
+                    <button class="tpg__count">100</button>
+                  </div>
+                  <span class="tpg__info">Showing rows 1 to 5 of 5</span>
+                </div>
+                <div class="tpg__right">
+                  <button class="tpg__nav" disabled title="Previous page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <button class="tpg__pg tpg__pg--active">1</button>
+                  <button class="tpg__nav" disabled title="Next page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="tpg__nav" disabled title="Last page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+              <!-- CISA Known Exploitable Vulnerabilities -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">CISA Known Exploitable Vulnerabilities</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="kev"><span id="tw-kev-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-kev-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value" id="tw-kev-value">3.83K</div>
+                <div class="rrm-trend-delta-row">
+                  <div class="ds-kpi-delta down-good" id="tw-kev-delta" data-good="down">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="tw-kev-pct">-0.13%</span>
+                  </div>
+                  <span class="rrm-trend-delta-suffix" id="tw-kev-suffix">from last month</span>
+                </div>
+                <div id="tw-kev-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>CISA KEV Findings</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rrm-section" id="section-detection" style="display:none;">
+            <div class="rrm-chart-row">
+              <!-- Active Vulnerabilities -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">Active Vulnerabilities — Detected in Last 30 Days</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="active"><span id="tw-active-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-active-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value" id="tw-active-value">9.45M</div>
+                <div class="rrm-trend-delta-row">
+                  <div class="ds-kpi-delta up-bad" id="tw-active-delta" data-good="down">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="tw-active-pct">26.87%</span>
+                  </div>
+                  <span class="rrm-trend-delta-suffix" id="tw-active-suffix">from last month</span>
+                </div>
+                <div id="tw-active-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>Active Vulnerabilities</span>
+                </div>
+              </div>
+
+              <!-- New Vulnerabilities - Detected in Last 30 Days and Active -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">New Vulnerabilities - Detected in Last 30 Days and Active</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="new30"><span id="tw-new30-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-new30-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value" id="tw-new30-value">8.86M</div>
+                <div class="rrm-trend-delta-row">
+                  <div class="ds-kpi-delta up-bad" id="tw-new30-delta" data-good="down">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="tw-new30-pct">29.57%</span>
+                  </div>
+                  <span class="rrm-trend-delta-suffix" id="tw-new30-suffix">from last month</span>
+                </div>
+                <div id="tw-new30-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>New Vulnerabilities</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rrm-chart-row">
+              <!-- New Vulnerabilities Discovered: Current vs. Previous 30-Day Period -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">New Vulnerabilities Discovered: Current vs. Previous 30-Day Period</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="discovered"><span id="tw-discovered-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-discovered-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value" id="tw-discovered-value">12.6M</div>
+                <div class="rrm-trend-sublabel">New 31-60</div>
+                <div class="rrm-trend-diff" id="tw-discovered-diff">Difference +8.39M (66.66%)</div>
+                <div class="rrm-trend-delta-row">
+                  <div class="ds-kpi-delta up-bad" id="tw-discovered-delta" data-good="down">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="tw-discovered-pct">19.42%</span>
+                  </div>
+                  <span class="rrm-trend-delta-suffix" id="tw-discovered-suffix">from last month</span>
+                </div>
+                <div id="tw-discovered-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>New 0-30</span>
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#3a7fcb;"></span>New 31-60</span>
+                </div>
+              </div>
+
+              <!-- New Vulnerabilities Found by Asset -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">New Vulnerabilities Found by Asset: Current vs. Previous 30-Days</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="foundasset"><span id="tw-foundasset-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-foundasset-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value" id="tw-foundasset-value">9.48K</div>
+                <div class="rrm-trend-sublabel">New 31-60</div>
+                <div class="rrm-trend-diff" id="tw-foundasset-diff">Difference +3.90K (41.14%)</div>
+                <div class="rrm-trend-delta-row">
+                  <div class="ds-kpi-delta down-good" id="tw-foundasset-delta" data-good="down">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="tw-foundasset-pct">-99.86%</span>
+                  </div>
+                  <span class="rrm-trend-delta-suffix" id="tw-foundasset-suffix">from last month</span>
+                </div>
+                <div id="tw-foundasset-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>New 0-30</span>
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#3a7fcb;"></span>New 31-60</span>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <div class="rrm-section" id="section-remediation" style="display:none;">
+            <!-- Fixed Vulnerabilities by Asset -->
+            <div class="rrm-widget">
+              <div class="rrm-trend-hdr">
+                <span class="rrm-widget-title">Fixed Vulnerabilities by Asset: Current vs. Previous 30-Days</span>
+                <div class="rrm-trend-period-wrap">
+                  <button class="rrm-trend-period" data-widget="fixedasset"><span id="tw-fixedasset-period-text">Showing last 12 months</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  </button>
+                  <div class="rrm-trend-period-menu" id="tw-fixedasset-menu"></div>
+                </div>
+              </div>
+              <div class="rrm-trend-value" id="tw-fixedasset-value">9.13K</div>
+              <div class="rrm-trend-sublabel">31-60 Days</div>
+              <div class="rrm-trend-diff" id="tw-fixedasset-diff">Difference +2.61K (28.57%)</div>
+              <div class="rrm-trend-delta-row">
+                <div class="ds-kpi-delta down-bad" id="tw-fixedasset-delta" data-good="up">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span id="tw-fixedasset-pct">-99.85%</span>
+                </div>
+                <span class="rrm-trend-delta-suffix" id="tw-fixedasset-suffix">from last month</span>
+              </div>
+              <div id="tw-fixedasset-chart" style="width:100%;"></div>
+              <div class="chart-legend chart-legend--center">
+                <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>0-30 Days</span>
+                <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#3a7fcb;"></span>31-60 Days</span>
+              </div>
+            </div>
+
+            <div class="rrm-chart-row">
+              <!-- % Recently Disclosed Vulnerabilities Remediated -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">% Recently Disclosed Vulns Remediated (Last 30 Days)</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="pctrecent"><span id="tw-pctrecent-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-pctrecent-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value-row">
+                  <div class="rrm-trend-value" id="tw-pctrecent-value">35.36%</div>
+                  <div class="rrm-trend-substats">
+                    <span class="rrm-trend-substat"><span class="rrm-trend-substat-num" id="tw-pctrecent-fixed">1.11M</span>Fixed</span>
+                    <span class="rrm-trend-substat"><span class="rrm-trend-substat-num" id="tw-pctrecent-published">3.14M</span>Published</span>
+                  </div>
+                </div>
+                <div id="tw-pctrecent-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>% Recently Disclosed Vulns Remediated</span>
+                </div>
+              </div>
+
+              <!-- Overall Remediation Rate -->
+              <div class="rrm-widget">
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">Overall Remediation Rate — % of Vulnerabilities Fixed</span>
+                  <div class="rrm-trend-period-wrap">
+                    <button class="rrm-trend-period" data-widget="pctoverall"><span id="tw-pctoverall-period-text">Showing last 12 months</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <div class="rrm-trend-period-menu" id="tw-pctoverall-menu"></div>
+                  </div>
+                </div>
+                <div class="rrm-trend-value-row">
+                  <div class="rrm-trend-value" id="tw-pctoverall-value">47.49%</div>
+                  <div class="rrm-trend-substats">
+                    <span class="rrm-trend-substat"><span class="rrm-trend-substat-num" id="tw-pctoverall-fixed">8.58M</span>Fixed</span>
+                    <span class="rrm-trend-substat"><span class="rrm-trend-substat-num" id="tw-pctoverall-total">18.1M</span>Total</span>
+                  </div>
+                </div>
+                <div id="tw-pctoverall-chart" style="width:100%;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>Overall Remediation Rate</span>
+                </div>
+              </div>
+            </div>
+            </div>
+            </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart tooltip -->
+<div id="chart-tooltip" style="position:fixed;z-index:1000;pointer-events:none;display:none;
+     background:var(--card-bg);border-radius:8px;padding:12px 13px;min-width:180px;
+     box-shadow:0 4px 16px rgba(0,0,0,0.14);font-family:inherit;"></div>
+
+
+<script>
+  // Theme toggle — mirrors the real Topbar's light/dark switch
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    document.documentElement.classList.toggle('theme-dark');
+  });
+
+  // ── Chart tooltip (design-system-2.0/ds/charts/base.txt) ──────────
+  var _ctEl = null;
+  function _ct() { if (!_ctEl) _ctEl = document.getElementById('chart-tooltip'); return _ctEl; }
+
+  function showChartTooltip(e, title, rows, borderColor) {
+    var el = _ct(); if (!el) return;
+    var rowsHtml = rows.map(function(r) {
+      var dot = r.color ? '<span style="width:8px;height:8px;border-radius:50%;background:' + r.color + ';flex-shrink:0;display:inline-block;"></span>' : '';
+      var fw = r.active ? '700' : '500', vc = r.active ? r.color : 'inherit';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;font-weight:' + fw + ';color:var(--shell-text);white-space:nowrap;">' +
+        '<span style="display:flex;align-items:center;gap:6px;">' + dot + r.label + '</span>' +
+        '<span style="color:' + vc + ';">' + r.value + '</span></div>';
+    }).join('');
+    el.innerHTML =
+      '<div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:7px solid ' + borderColor + ';"></div>' +
+      '<div style="position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid var(--card-bg);"></div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--shell-text);margin-bottom:8px;">' + title + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:11px;">' + rowsHtml + '</div>';
+    el.style.border = '1px solid ' + borderColor;
+    el.style.display = 'block';
+    positionChartTooltip(e);
+  }
+  function positionChartTooltip(e) {
+    var el = _ct(); if (!el || el.style.display === 'none') return;
+    var x = e.clientX - el.offsetWidth / 2, y = e.clientY + 18;
+    if (x + el.offsetWidth > window.innerWidth - 8) x = window.innerWidth - el.offsetWidth - 8;
+    if (x < 8) x = 8;
+    if (y + el.offsetHeight > window.innerHeight - 8) y = e.clientY - el.offsetHeight - 18;
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+  }
+  function hideChartTooltip() { var el = _ct(); if (el) el.style.display = 'none'; }
+
+  // ── Horizontal bar tooltip wiring (design-system-2.0/ds/charts/hbar.txt) ──
+  function wireHbarTooltips() {
+    document.querySelectorAll('.css-hbar-row').forEach(function(row) {
+      var bar = row.querySelector('.css-hbar');
+      var labelEl = row.querySelector('.css-hbar-label');
+      var valEl = row.querySelector('.css-hbar-val');
+      if (!bar || !labelEl || !valEl) return;
+      var color = getComputedStyle(bar).backgroundColor;
+      var label = labelEl.textContent.trim();
+      var value = valEl.textContent.trim();
+      row.addEventListener('mouseover', function(e) {
+        showChartTooltip(e, label, [
+          { label: 'Assets', value: value, color: color, active: true }
+        ], color);
+      });
+      row.addEventListener('mousemove', positionChartTooltip);
+      row.addEventListener('mouseleave', hideChartTooltip);
+    });
+  }
+
+  // ── Monotone cubic spline through points (Fritsch–Carlson method) — the
+  //    same smoothing Recharts applies for type="monotone" lines, e.g. the
+  //    "Open Vulnerabilities Trend" chart in src/pages/ux3/ClientServersV3.jsx.
+  //    Produces a smooth curve that never overshoots the data (unlike a
+  //    naive Catmull-Rom spline), reused here in place of a straight/step line. ──
+  function monotoneCubicPath(points) {
+    var n = points.length;
+    if (n < 2) return '';
+    if (n === 2) return 'M' + points[0].x + ',' + points[0].y + ' L' + points[1].x + ',' + points[1].y;
+    var dxs = [], ms = [];
+    for (var i = 0; i < n - 1; i++) {
+      var dx = points[i + 1].x - points[i].x;
+      var dy = points[i + 1].y - points[i].y;
+      dxs.push(dx);
+      ms.push(dy / dx);
+    }
+    var tangents = [ms[0]];
+    for (var i = 1; i < n - 1; i++) {
+      if (ms[i - 1] * ms[i] <= 0) tangents.push(0);
+      else {
+        var dx0 = dxs[i - 1], dx1 = dxs[i], common = dx0 + dx1;
+        tangents.push(3 * common / ((common + dx1) / ms[i - 1] + (common + dx0) / ms[i]));
+      }
+    }
+    tangents.push(ms[n - 2]);
+    var d = 'M' + points[0].x + ',' + points[0].y;
+    for (var i = 0; i < n - 1; i++) {
+      var dx = dxs[i], p0 = points[i], p1 = points[i + 1];
+      var cp1x = p0.x + dx / 3, cp1y = p0.y + tangents[i] * dx / 3;
+      var cp2x = p1.x - dx / 3, cp2y = p1.y - tangents[i + 1] * dx / 3;
+      d += ' C' + cp1x.toFixed(1) + ',' + cp1y.toFixed(1) + ' ' + cp2x.toFixed(1) + ',' + cp2y.toFixed(1) + ' ' + p1.x.toFixed(1) + ',' + p1.y.toFixed(1);
+    }
+    return d;
+  }
+
+  // ── Risk Arrival vs Remediation Burndown — stacked-axis combo chart, same
+  //    pattern as "Open Vulnerabilities Trend" (src/pages/ux3/ClientServersV3.jsx
+  //    TrendChart): grouped bars on the left axis, a smooth monotone curve
+  //    on an independent right axis for Cumulative Open Findings. ──────────
+  function buildBurndownChart(containerId, weeks, axisUnitLabel) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var W = el.offsetWidth || 900;
+    var H = 260;
+    var pad = { top: 16, right: 20, bottom: 48, left: 52 };
+    var innerW = W - pad.left - pad.right;
+    var innerH = H - pad.top - pad.bottom;
+
+    var allVals = [];
+    weeks.forEach(function(w) { allVals.push(w.arrived, w.fixed, w.cumOpen); });
+    var maxVal = Math.max.apply(null, allVals);
+    var yMax = Math.ceil(maxVal / 1000000) * 1000000 || 1000000;
+
+    var numTicks = 5;
+    var gridLines = '', yLabels = '';
+    for (var t = 0; t <= numTicks; t++) {
+      var val = (t / numTicks) * yMax;
+      var gy = pad.top + innerH - (val / yMax) * innerH;
+      gridLines += '<line x1="' + pad.left + '" y1="' + gy + '" x2="' + (pad.left + innerW) + '" y2="' + gy + '" stroke="var(--shell-border)" stroke-width="1"/>';
+      yLabels += '<text x="' + (pad.left - 8) + '" y="' + (gy + 4) + '" text-anchor="end" class="chart-axis-label">' + (val >= 1000000 ? (val / 1000000) + 'M' : val) + '</text>';
+    }
+
+    var groupW = innerW / weeks.length;
+    var barW = Math.max(6, Math.min(18, groupW * 0.28));
+    var barGap = 3;
+    var bars = '', xLabels = '', todayLabel = '';
+    var curvePts = [];
+
+    // Skip x-axis labels adaptively so real dates never crowd, same approach
+    // as buildTrendChart — always keep first/last, step through the rest.
+    var maxLabels = Math.max(2, Math.floor(innerW / 48));
+    var labelStep = Math.ceil(weeks.length / maxLabels);
+    var lastGi = weeks.length - 1;
+    var showLabelIdx = {};
+    for (var gli = 0; gli <= lastGi; gli += labelStep) showLabelIdx[gli] = true;
+    var regularGis = Object.keys(showLabelIdx).map(Number);
+    var nearLastGi = Math.max.apply(null, regularGis);
+    if (nearLastGi !== lastGi && (lastGi - nearLastGi) < labelStep) delete showLabelIdx[nearLastGi];
+    showLabelIdx[lastGi] = true;
+
+    weeks.forEach(function(w, gi) {
+      var groupCX = pad.left + gi * groupW + groupW / 2;
+      var totalBarsW = barW * 2 + barGap;
+      var startX = groupCX - totalBarsW / 2;
+
+      var ah = Math.max(2, (w.arrived / yMax) * innerH);
+      var ay = pad.top + innerH - ah;
+      bars += '<rect x="' + startX + '" y="' + ay + '" width="' + barW + '" height="' + ah +
+        '" fill="#D12329" rx="2" class="chart-bar" data-gi="' + gi + '" data-series="arrived"></rect>';
+
+      var fx = startX + barW + barGap;
+      var fh = Math.max(2, (w.fixed / yMax) * innerH);
+      var fy = pad.top + innerH - fh;
+      bars += '<rect x="' + fx + '" y="' + fy + '" width="' + barW + '" height="' + fh +
+        '" fill="#31A56D" rx="2" class="chart-bar" data-gi="' + gi + '" data-series="fixed"></rect>';
+
+      var cy = pad.top + innerH - (w.cumOpen / yMax) * innerH;
+      curvePts.push({ x: groupCX, y: cy });
+
+      if (showLabelIdx[gi]) {
+        xLabels += '<text x="' + groupCX + '" y="' + (H - 30) + '" text-anchor="middle" class="chart-axis-label">' + w.label + '</text>';
+      }
+      if (w.today) {
+        todayLabel += '<text x="' + groupCX + '" y="' + (H - 18) + '" text-anchor="middle" class="chart-axis-label" style="font-weight:600;">Today</text>';
+      }
+    });
+
+    var curvePath = '<path d="' + monotoneCubicPath(curvePts) + '" fill="none" stroke="var(--shell-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    var curveDots = weeks.map(function(w, gi) {
+      var p = curvePts[gi];
+      return '<circle class="tw-dot" cx="' + p.x + '" cy="' + p.y + '" r="3.5" fill="var(--shell-accent)" stroke="none" opacity="0.6" pointer-events="none" data-gi="' + gi + '"></circle>' +
+        '<circle cx="' + p.x + '" cy="' + p.y + '" r="14" fill="transparent" style="cursor:pointer;" data-gi="' + gi + '" data-series="cumOpen"></circle>';
+    }).join('');
+
+    var axes =
+      '<line x1="' + pad.left + '" y1="' + pad.top + '" x2="' + pad.left + '" y2="' + (pad.top + innerH) + '" stroke="var(--shell-border)" stroke-width="1"/>' +
+      '<line x1="' + pad.left + '" y1="' + (pad.top + innerH) + '" x2="' + (pad.left + innerW) + '" y2="' + (pad.top + innerH) + '" stroke="var(--shell-border)" stroke-width="1"/>';
+
+    var xAxisTitle = '<text x="' + (pad.left + innerW / 2) + '" y="' + (H - 4) + '" text-anchor="middle" class="chart-axis-label">' + (axisUnitLabel || 'Weeks') + '</text>';
+    var yAxisTitle = '<text x="14" y="' + (pad.top + innerH / 2) + '" text-anchor="middle" class="chart-axis-label" transform="rotate(-90 14 ' + (pad.top + innerH / 2) + ')">No. of Findings</text>';
+
+    el.innerHTML = '<svg width="100%" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" style="overflow:visible;">' +
+      gridLines + axes + bars + curvePath + curveDots + yLabels + xLabels + todayLabel + xAxisTitle + yAxisTitle + '</svg>';
+
+    el.querySelectorAll('.chart-bar').forEach(function(bar) {
+      bar.addEventListener('mouseover', function(e) {
+        var gi = parseInt(this.dataset.gi), series = this.dataset.series;
+        var w = weeks[gi];
+        var color = series === 'arrived' ? '#D12329' : '#31A56D';
+        var label = series === 'arrived' ? 'Arrived Findings' : 'Fixed Findings';
+        var value = series === 'arrived' ? w.arrived : w.fixed;
+        showChartTooltip(e, w.tooltipLabel || ('Week ' + w.label), [
+          { label: label, value: value.toLocaleString(), color: color, active: true }
+        ], color);
+      });
+      bar.addEventListener('mousemove', positionChartTooltip);
+      bar.addEventListener('mouseleave', hideChartTooltip);
+    });
+    el.querySelectorAll('circle[data-series="cumOpen"]').forEach(function(hit) {
+      var gi = hit.dataset.gi;
+      var vdot = el.querySelector('.tw-dot[data-gi="' + gi + '"]');
+      hit.addEventListener('mouseover', function(e) {
+        if (vdot) vdot.setAttribute('opacity', '1');
+        var w = weeks[parseInt(gi)];
+        showChartTooltip(e, w.tooltipLabel || ('Week ' + w.label), [
+          { label: 'Cumulative Open Findings', value: w.cumOpen.toLocaleString(), color: '#6360D8', active: true }
+        ], '#6360D8');
+      });
+      hit.addEventListener('mousemove', positionChartTooltip);
+      hit.addEventListener('mouseleave', function() {
+        if (vdot) vdot.setAttribute('opacity', '0.6');
+        hideChartTooltip();
+      });
+    });
+  }
+
+  // ── Number formatting matching the established "9.66K" / "8.59M" style ──
+  function fmtNum(n) {
+    var sign = n < 0 ? '-' : '';
+    var abs = Math.abs(n);
+    if (abs >= 1e6) return sign + parseFloat((abs / 1e6).toPrecision(3)) + 'M';
+    if (abs >= 1e3) return sign + parseFloat((abs / 1e3).toPrecision(3)) + 'K';
+    return sign + Math.round(abs).toLocaleString();
+  }
+
+  // ── Per-range data (design-system-2.0/ds/core.txt — dummy until wired to a
+  //    real source; 1M/3M/6M/1Y reuse the exact figures from the original
+  //    KPI screenshot, 1W is an extrapolated shorter window) ──────────────
+  var RANGE_DATA = {
+    '1W': { mttd: { days: 1, vulns: 700000,   assets: 8900 }, mttr: { days: 7,  findings: 260000,  assets: 8000 },
+            kev:  { days: 5, vulns: 2100,     assets: 7900 }, reocc: { pct: '0.00', reopened: 12,  closed: 410000 },
+            countries: [['United States',1459],['India',65],['Others',45],['Canada',13],['United Kingdom',12],['Germany',7]],
+            truriskScale: 0.1416 },
+    '1M': { mttd: { days: 2, vulns: 3140000,  assets: 9140 }, mttr: { days: 10, findings: 1110000, assets: 8440 },
+            kev:  { days: 8, vulns: 6400,     assets: 8200 }, reocc: { pct: '0.00', reopened: 38,  closed: 1200000 },
+            countries: [['United States',3739],['India',166],['Others',114],['Canada',34],['United Kingdom',31],['Germany',18]],
+            truriskScale: 0.3628 },
+    '3M': { mttd: { days: 2, vulns: 10700000, assets: 9520 }, mttr: { days: 13, findings: 8000000, assets: 9260 },
+            kev:  { days: 11, vulns: 12800,   assets: 8400 }, reocc: { pct: '0.00', reopened: 95,  closed: 3600000 },
+            countries: [['United States',6566],['India',291],['Others',201],['Canada',59],['United Kingdom',55],['Germany',31]],
+            truriskScale: 0.6372 },
+    '6M': { mttd: { days: 3, vulns: 11200000, assets: 9540 }, mttr: { days: 13, findings: 8350000, assets: 9270 },
+            kev:  { days: 12, vulns: 15900,   assets: 8530 }, reocc: { pct: '0.01', reopened: 156, closed: 6100000 },
+            countries: [['United States',8755],['India',388],['Others',268],['Canada',79],['United Kingdom',73],['Germany',41]],
+            truriskScale: 0.8496 },
+    '1Y': { mttd: { days: 3, vulns: 11300000, assets: 9540 }, mttr: { days: 13, findings: 8460000, assets: 9270 },
+            kev:  { days: 13, vulns: 18500,   assets: 8630 }, reocc: { pct: '0.00', reopened: 247, closed: 8580000 },
+            countries: [['United States',10300],['India',457],['Others',315],['Canada',93],['United Kingdom',86],['Germany',49]],
+            truriskScale: 1 }
+  };
+
+  var BASE_TRURISK = [
+    { tag: 'Linux Server',                    assets: 7,    vulns: 282,    score: 384 },
+    { tag: 'Mac Client',                      assets: 130,  vulns: 1330,   score: 324 },
+    { tag: 'Windows Server',                  assets: 859,  vulns: 24500,  score: 488 },
+    { tag: 'Workstations - Physical Windows', assets: 6640, vulns: 126000, score: 391 },
+    { tag: 'Workstations - Virtualized',      assets: 1290, vulns: 29200,  score: 489 }
+  ];
+
+  // Relative period shapes (sum to 1) used to spread a range's known total
+  // "fixed"/"arrived" volume across periods — keeps every range's burndown
+  // chart internally consistent with that range's Reoccurrence Rate KPI.
+  var BURNDOWN_WEIGHTS = {
+    7:  { noun: 'Day',   arrived: [0.03,0.03,0.05,0.07,0.03,0.14,0.65], fixed: [0.02,0.04,0.05,0.12,0.23,0.32,0.22] },
+    4:  { noun: 'Week',  arrived: [0.10,0.15,0.30,0.45],                fixed: [0.05,0.20,0.35,0.40] },
+    3:  { noun: 'Month', arrived: [0.20,0.35,0.45],                     fixed: [0.20,0.35,0.45] },
+    6:  { noun: 'Month', arrived: [0.05,0.08,0.15,0.12,0.20,0.40],      fixed: [0.04,0.08,0.14,0.18,0.26,0.30] },
+    12: { noun: 'Month', arrived: [0.03,0.03,0.05,0.05,0.06,0.07,0.07,0.08,0.08,0.09,0.10,0.29],
+                          fixed:  [0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.23] }
+  };
+  var PERIOD_COUNT_BY_RANGE = { '1W': 7, '1M': 4, '3M': 3, '6M': 6, '1Y': 12 };
+
+  function lastNWeeklyDates(n) {
+    var dates = [], today = new Date();
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(today);
+      d.setDate(d.getDate() - i * 7);
+      dates.push(d);
+    }
+    return dates;
+  }
+  function datesForPeriodNoun(noun, n) {
+    if (noun === 'Day') return lastNDates(n);
+    if (noun === 'Week') return lastNWeeklyDates(n);
+    return lastNMonthlyDates(n);
+  }
+
+  function buildPeriodsForRange(range) {
+    var count = PERIOD_COUNT_BY_RANGE[range];
+    var shape = BURNDOWN_WEIGHTS[count];
+    var dates = datesForPeriodNoun(shape.noun, count);
+    var closedTotal = RANGE_DATA[range].reocc.closed;
+    var arrivedTotal = Math.round(closedTotal * 1.15);
+    var cumOpen = 0;
+    var periods = [];
+    for (var i = 0; i < count; i++) {
+      var arrived = Math.round(shape.arrived[i] * arrivedTotal);
+      var fixed = Math.round(shape.fixed[i] * closedTotal);
+      cumOpen = Math.max(0, cumOpen + arrived - fixed);
+      var isLast = i === count - 1;
+      periods.push({
+        label: fmtDateCompact(dates[i]),
+        arrived: arrived,
+        fixed: fixed,
+        cumOpen: cumOpen,
+        today: isLast,
+        tooltipLabel: isLast ? 'Today' : fmtDateShort(dates[i])
+      });
+    }
+    return periods;
+  }
+
+  // ── Country hbar (design-system-2.0/ds/charts/hbar.txt) — rebuilt per range ──
+  function buildCountryHbar(containerId, subtitleId, countries) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var total = countries.reduce(function(s, c) { return s + c[1]; }, 0);
+    var max = Math.max.apply(null, countries.map(function(c) { return c[1]; }));
+    var rows = countries.map(function(c) {
+      var pct = max > 0 ? (c[1] / max * 100) : 0;
+      return '<div class="css-hbar-row"><span class="css-hbar-label">' + c[0] + '</span>' +
+        '<div class="css-hbar" style="width:' + pct.toFixed(1) + '%;background:#6760d8;"></div>' +
+        '<span class="css-hbar-val">' + fmtNum(c[1]) + '</span></div>';
+    }).join('');
+    var ticks = [0, 0.25, 0.5, 0.75, 1].map(function(f) { return fmtNum(Math.round(max * f)); });
+    el.innerHTML = rows +
+      '<div class="css-hbar-axis"><span style="width:108px;flex-shrink:0;"></span>' +
+      '<div class="css-hbar-axis-ticks">' + ticks.map(function(t) { return '<span>' + t + '</span>'; }).join('') + '</div>' +
+      '<span style="width:34px;flex-shrink:0;"></span></div>';
+    var totalEl = document.getElementById(subtitleId);
+    if (totalEl) totalEl.textContent = fmtNum(total);
+    wireHbarTooltips();
+  }
+
+  // ── TruRisk table — rebuilt per range (asset/vuln counts scale with the
+  //    range's known-asset volume; score itself doesn't scale with time) ──
+  function renderTruRisk(range) {
+    var scale = RANGE_DATA[range].truriskScale;
+    var tbody = document.getElementById('trurisk-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = BASE_TRURISK.map(function(row) {
+      var assets = Math.max(1, Math.round(row.assets * scale));
+      var vulns = Math.max(1, Math.round(row.vulns * scale));
+      return '<tr><td class="ds-td">' + row.tag + '</td>' +
+        '<td class="ds-td">' + fmtNum(assets) + '</td>' +
+        '<td class="ds-td">' + fmtNum(vulns) + '</td>' +
+        '<td class="ds-td"><span class="rrm-trurisk-score">' + row.score + '</span></td></tr>';
+    }).join('');
+  }
+
+  function fmtDays(n) { return n + (n === 1 ? ' Day' : ' Days'); }
+
+  function renderKPIs(range) {
+    var d = RANGE_DATA[range];
+    document.getElementById('kpi-mttd-value').textContent = fmtDays(d.mttd.days);
+    document.getElementById('kpi-mttd-vulns').textContent = fmtNum(d.mttd.vulns);
+    document.getElementById('kpi-mttd-assets').textContent = fmtNum(d.mttd.assets);
+    document.getElementById('kpi-mttr-value').textContent = fmtDays(d.mttr.days);
+    document.getElementById('kpi-mttr-findings').textContent = fmtNum(d.mttr.findings);
+    document.getElementById('kpi-mttr-assets').textContent = fmtNum(d.mttr.assets);
+    document.getElementById('kpi-kev-value').textContent = fmtDays(d.kev.days);
+    document.getElementById('kpi-kev-vulns').textContent = fmtNum(d.kev.vulns);
+    document.getElementById('kpi-kev-assets').textContent = fmtNum(d.kev.assets);
+    document.getElementById('kpi-reocc-value').textContent = d.reocc.pct;
+    document.getElementById('kpi-reocc-reopened').textContent = d.reocc.reopened.toLocaleString();
+    document.getElementById('kpi-reocc-closed').textContent = fmtNum(d.reocc.closed);
+  }
+
+  function renderAll(range) {
+    var d = RANGE_DATA[range];
+    renderKPIs(range);
+    buildCountryHbar('country-hbar', 'country-total', d.countries);
+    buildBurndownChart('burndown-chart', buildPeriodsForRange(range), BURNDOWN_WEIGHTS[PERIOD_COUNT_BY_RANGE[range]].noun + 's');
+    renderTruRisk(range);
+  }
+
+  // ── Trend widgets (Active/New Vulnerabilities, CISA KEV, etc.) — stat +
+  //    smooth trend chart, same monotoneCubicPath curve technique as the
+  //    burndown widget, dummy data via a seeded PRNG so re-renders on the
+  //    same period are stable. ─────────────────────────────────────────
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function genTrendSeries(seed, days, baseline, volatility, endMultiplier) {
+    var rand = mulberry32(seed);
+    var vals = [], v = baseline;
+    for (var i = 0; i < days; i++) {
+      v += (rand() - 0.5) * volatility;
+      v = Math.max(baseline * 0.4, v);
+      var t = i / (days - 1);
+      var spike = t > 0.82 ? Math.pow((t - 0.82) / 0.18, 2) * (baseline * (endMultiplier - 1)) : 0;
+      vals.push(Math.max(0, Math.round(v + spike)));
+    }
+    return vals;
+  }
+
+  function lastNDates(n) {
+    var dates = [], today = new Date();
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d);
+    }
+    return dates;
+  }
+  function lastNMonthlyDates(n) {
+    var dates = [], today = new Date();
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(today);
+      d.setMonth(d.getMonth() - i);
+      dates.push(d);
+    }
+    return dates;
+  }
+  function fmtDateShort(d) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function fmtDateCompact(d) {
+    return d.getDate() + ' ' + d.toLocaleDateString('en-US', { month: 'short' });
+  }
+
+  function niceMax(v) {
+    if (v <= 0) return 10;
+    var exp = Math.floor(Math.log10(v));
+    var base = Math.pow(10, exp);
+    var f = v / base;
+    var niceF = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+    return niceF * base;
+  }
+
+  // series = [{values, color, area}], dates = [Date,...] (labels shown at first/last only)
+  function buildTrendChart(containerId, series, dates) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var W = el.offsetWidth || 500, H = 150;
+    var pad = { top: 10, right: 10, bottom: 24, left: 46 };
+    var innerW = W - pad.left - pad.right, innerH = H - pad.top - pad.bottom;
+
+    var allVals = [];
+    series.forEach(function(s) { allVals = allVals.concat(s.values); });
+    var yMax = niceMax(Math.max.apply(null, allVals) * 1.1);
+    var step = innerW / (dates.length - 1);
+
+    var numTicks = 4, gridLines = '', yLabels = '';
+    for (var t = 0; t <= numTicks; t++) {
+      var val = (t / numTicks) * yMax;
+      var gy = pad.top + innerH - (val / yMax) * innerH;
+      gridLines += '<line x1="' + pad.left + '" y1="' + gy + '" x2="' + (pad.left + innerW) + '" y2="' + gy + '" stroke="var(--shell-border)" stroke-width="1" stroke-dasharray="2 3"/>';
+      yLabels += '<text x="' + (pad.left - 8) + '" y="' + (gy + 4) + '" text-anchor="end" class="chart-axis-label">' + fmtNum(val) + '</text>';
+    }
+
+    var axes = '<line x1="' + pad.left + '" y1="' + (pad.top + innerH) + '" x2="' + (pad.left + innerW) + '" y2="' + (pad.top + innerH) + '" stroke="var(--shell-border)" stroke-width="1"/>';
+
+    // Skip labels adaptively so they never crowd — always keep first/last,
+    // show every Nth in between based on available width (~48px/label).
+    var maxLabels = Math.max(2, Math.floor(innerW / 48));
+    var labelStep = Math.ceil(dates.length / maxLabels);
+    var lastIdx = dates.length - 1;
+    var showIdx = {};
+    for (var li = 0; li <= lastIdx; li += labelStep) showIdx[li] = true;
+    var regularIdxs = Object.keys(showIdx).map(Number);
+    var nearLast = Math.max.apply(null, regularIdxs);
+    if (nearLast !== lastIdx && (lastIdx - nearLast) < labelStep) delete showIdx[nearLast];
+    showIdx[lastIdx] = true;
+
+    var xLabels = dates.map(function(d, i) {
+      if (!showIdx[i]) return '';
+      var x = pad.left + i * step;
+      var anchor = i === 0 ? 'start' : (i === lastIdx ? 'end' : 'middle');
+      return '<text x="' + x.toFixed(1) + '" y="' + (H - 4) + '" text-anchor="' + anchor + '" class="chart-axis-label">' + fmtDateCompact(d) + '</text>';
+    }).join('');
+
+    var svgBody = '';
+    var allDots = '';
+
+    series.forEach(function(s, si) {
+      var pts = s.values.map(function(v, i) {
+        return { x: pad.left + i * step, y: pad.top + innerH - (v / yMax) * innerH };
+      });
+      var d = monotoneCubicPath(pts);
+      svgBody += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      svgBody += pts.map(function(p, i) {
+        return '<circle class="tw-dot" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3.5" fill="' + s.color + '" stroke="none" opacity="0.6" pointer-events="none" data-si="' + si + '" data-i="' + i + '"></circle>';
+      }).join('');
+      allDots += pts.map(function(p, i) {
+        return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="12" fill="transparent" style="cursor:pointer;" data-si="' + si + '" data-i="' + i + '"></circle>';
+      }).join('');
+    });
+
+    el.innerHTML = '<svg width="100%" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" style="overflow:visible;">' +
+      gridLines + axes + svgBody + yLabels + xLabels + allDots + '</svg>';
+
+    // Dots rest at reduced opacity (matches Discover's dot={opacity:0.2}) and
+    // go fully opaque on hover, same as Discover's activeDot behavior.
+    el.querySelectorAll('circle[data-si]:not(.tw-dot)').forEach(function(hit) {
+      var vdot = el.querySelector('.tw-dot[data-si="' + hit.dataset.si + '"][data-i="' + hit.dataset.i + '"]');
+      hit.addEventListener('mouseover', function(e) {
+        if (vdot) vdot.setAttribute('opacity', '1');
+        var i = parseInt(this.dataset.i);
+        var rows = series.map(function(s) {
+          return { label: s.label, value: s.values[i].toLocaleString(), color: s.color, active: true };
+        });
+        showChartTooltip(e, fmtDateShort(dates[i]), rows, series[0].color);
+      });
+      hit.addEventListener('mousemove', positionChartTooltip);
+      hit.addEventListener('mouseleave', function() {
+        if (vdot) vdot.setAttribute('opacity', '0.6');
+        hideChartTooltip();
+      });
+    });
+  }
+
+  function pctChange(first, last) {
+    if (!first) return 0;
+    return ((last - first) / first) * 100;
+  }
+
+  var TREND_COLORS = { primary: '#6760d8', secondary: '#3a7fcb' };
+
+  var TREND_WIDGETS = {
+    active:     { seed: 11, days: 21, periods: [7, 14, 21, 30], baseline: 3900000, volatility: 180000, endMult: 1.27, dual: false },
+    new30:      { seed: 22, days: 21, periods: [7, 14, 21, 30], baseline: 3500000, volatility: 160000, endMult: 1.30, dual: false },
+    discovered: { seed: 33, days: 21, periods: [7, 14, 21, 30], baseline: 4600000, volatility: 300000, endMult: 1.0, endMult2: 1.19, secondaryScale: 1.4, dual: true },
+    foundasset: { seed: 44, days: 21, periods: [7, 14, 21, 30], baseline: 3500, volatility: 220, endMult: 1.10, endMult2: 0.76, dual: true },
+    fixedasset: { seed: 55, days: 21, periods: [7, 14, 21, 30], baseline: 6500, volatility: 350, endMult: 1.04, endMult2: 0.86, dual: true },
+    kev:        { seed: 66, days: 31, periods: [7, 14, 21, 31], baseline: 7500, volatility: 300, endMult: 0.97, dual: false }
+  };
+
+  // Global date-range pills (1W/1M/3M/6M/1Y) also drive the trend widgets'
+  // point count/granularity by default — 1Y shows 12 monthly points rather
+  // than 365 daily ones. A widget's own gear-icon period picker overrides
+  // this for that widget only, until the next global pill click resets it.
+  var trendGlobalRange = '1Y';
+  function resolveTrendPoints(cfg) {
+    if (cfg.manualOverride) {
+      return { points: cfg.days, dates: lastNDates(cfg.days), label: 'Showing last ' + cfg.days + ' days', unit: 'day' };
+    }
+    // Follows the global date-range pill's own granularity — same mapping
+    // the burndown widget uses: 1W→daily, 1M→weekly, 3M/6M/1Y→monthly.
+    var count = PERIOD_COUNT_BY_RANGE[trendGlobalRange];
+    var noun = BURNDOWN_WEIGHTS[count].noun;
+    var unit = noun.toLowerCase();
+    return {
+      points: count,
+      dates: datesForPeriodNoun(noun, count),
+      label: 'Showing last ' + count + ' ' + unit + (count === 1 ? '' : 's'),
+      unit: unit
+    };
+  }
+
+  function renderTrendWidget(key) {
+    var cfg = TREND_WIDGETS[key];
+    var res = resolveTrendPoints(cfg);
+    var n = res.points, dates = res.dates;
+    document.getElementById('tw-' + key + '-period-text').textContent = res.label;
+    document.getElementById('tw-' + key + '-suffix').textContent = 'from last ' + res.unit;
+    var widgetEl = document.getElementById('tw-' + key + '-chart').closest('.rrm-widget');
+    var legendEls = widgetEl.querySelectorAll('.chart-legend-item');
+
+    var seriesPrimary = genTrendSeries(cfg.seed, n, cfg.baseline, cfg.volatility, cfg.endMult);
+    var series = [{ label: legendEls[0].textContent, values: seriesPrimary, color: TREND_COLORS.primary }];
+    var last = seriesPrimary[seriesPrimary.length - 1];
+    var pct = pctChange(seriesPrimary[seriesPrimary.length - 2], last);
+
+    if (cfg.dual) {
+      var seriesSecondary = genTrendSeries(cfg.seed + 1, n, cfg.baseline * (cfg.secondaryScale || 0.85), cfg.volatility, cfg.endMult2);
+      series.push({ label: legendEls[1].textContent, values: seriesSecondary, color: TREND_COLORS.secondary });
+
+      var secLast = seriesSecondary[seriesSecondary.length - 1];
+      document.getElementById('tw-' + key + '-value').textContent = fmtNum(secLast);
+      var diff = secLast - last;
+      document.getElementById('tw-' + key + '-diff').textContent = 'Difference ' + (diff >= 0 ? '+' : '') + fmtNum(diff) + ' (' + Math.abs(pctChange(last, secLast)).toFixed(2) + '%)';
+      pct = pctChange(seriesSecondary[seriesSecondary.length - 2], secLast);
+    } else {
+      document.getElementById('tw-' + key + '-value').textContent = fmtNum(last);
+    }
+
+    document.getElementById('tw-' + key + '-pct').textContent = Math.abs(pct).toFixed(2) + '%';
+    var deltaEl = document.getElementById('tw-' + key + '-delta');
+    var isUp = pct >= 0;
+    var isGood = isUp ? deltaEl.dataset.good === 'up' : deltaEl.dataset.good === 'down';
+    deltaEl.className = 'ds-kpi-delta ' + (isUp ? 'up-' : 'down-') + (isGood ? 'good' : 'bad');
+
+    buildTrendChart('tw-' + key + '-chart', series, dates);
+  }
+
+  // ── Percentage trend widgets (% Recently Disclosed Remediated, Overall
+  //    Remediation Rate) — same stat+chart shell, but the stat is a ratio
+  //    (fixed/total) rather than a raw count, so the chart plots the ratio
+  //    itself and the "substats" show the numerator/denominator instead of
+  //    a delta. Reuses buildTrendChart as-is: values are already <1000, so
+  //    fmtNum's y-axis labels render as plain percentages with no K/M unit. ──
+  function genPercentSeries(seed, days, baseline, volatility, endMultiplier) {
+    var rand = mulberry32(seed);
+    var vals = [], v = baseline;
+    for (var i = 0; i < days; i++) {
+      v += (rand() - 0.5) * volatility;
+      v = Math.max(baseline * 0.4, v);
+      var t = i / (days - 1);
+      var spike = t > 0.82 ? Math.pow((t - 0.82) / 0.18, 2) * (baseline * (endMultiplier - 1)) : 0;
+      vals.push(Math.max(0, Math.min(100, v + spike)));
+    }
+    return vals;
+  }
+
+  var PERCENT_WIDGETS = {
+    pctrecent:  { seed: 77, days: 21, periods: [7, 14, 21, 30], denomBaseline: 3100000, denomVolatility: 120000, pctBaseline: 50, pctVolatility: 5, pctEndMult: 0.7 },
+    pctoverall: { seed: 88, days: 21, periods: [7, 14, 21, 30], denomBaseline: 18100000, denomVolatility: 300000, pctBaseline: 78, pctVolatility: 3, pctEndMult: 0.61 }
+  };
+
+  function renderPercentWidget(key) {
+    var cfg = PERCENT_WIDGETS[key];
+    var res = resolveTrendPoints(cfg);
+    var n = res.points, dates = res.dates;
+    document.getElementById('tw-' + key + '-period-text').textContent = res.label;
+    var widgetEl = document.getElementById('tw-' + key + '-chart').closest('.rrm-widget');
+    var legendLabel = widgetEl.querySelector('.chart-legend-item').textContent;
+
+    var denom = genTrendSeries(cfg.seed, n, cfg.denomBaseline, cfg.denomVolatility, 1.0);
+    var pct = genPercentSeries(cfg.seed + 1, n, cfg.pctBaseline, cfg.pctVolatility, cfg.pctEndMult);
+    var numer = pct.map(function(p, i) { return Math.round((p / 100) * denom[i]); });
+
+    var lastPct = pct[pct.length - 1];
+    document.getElementById('tw-' + key + '-value').textContent = lastPct.toFixed(2) + '%';
+    var fixedEl = document.getElementById('tw-' + key + '-fixed');
+    if (fixedEl) fixedEl.textContent = fmtNum(numer[numer.length - 1]);
+    var totalEl = document.getElementById('tw-' + key + '-published') || document.getElementById('tw-' + key + '-total');
+    if (totalEl) totalEl.textContent = fmtNum(denom[denom.length - 1]);
+
+    buildTrendChart('tw-' + key + '-chart', [{ label: legendLabel, values: pct, color: TREND_COLORS.primary }], dates);
+  }
+
+  function getTrendCfg(key) {
+    return TREND_WIDGETS[key] || PERCENT_WIDGETS[key];
+  }
+  function renderAnyTrendWidget(key) {
+    if (TREND_WIDGETS[key]) renderTrendWidget(key); else renderPercentWidget(key);
+  }
+
+  function wireTrendPeriodMenus() {
+    document.querySelectorAll('.rrm-trend-period').forEach(function(btn) {
+      var key = btn.dataset.widget;
+      var cfg = getTrendCfg(key);
+      var menu = document.getElementById('tw-' + key + '-menu');
+      menu.innerHTML = cfg.periods.map(function(p) {
+        return '<button class="rrm-trend-period-option' + (!cfg.manualOverride && p === cfg.days ? ' selected' : '') + '" data-days="' + p + '">Last ' + p + ' days</button>';
+      }).join('');
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        menu.classList.toggle('rrm-trend-period-menu--open');
+      });
+      menu.querySelectorAll('.rrm-trend-period-option').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+          menu.querySelectorAll('.rrm-trend-period-option').forEach(function(o) { o.classList.remove('selected'); });
+          opt.classList.add('selected');
+          cfg.days = parseInt(opt.dataset.days);
+          cfg.manualOverride = true;
+          menu.classList.remove('rrm-trend-period-menu--open');
+          renderAnyTrendWidget(key);
+        });
+      });
+    });
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.rrm-trend-period-menu--open').forEach(function(m) { m.classList.remove('rrm-trend-period-menu--open'); });
+    });
+  }
+
+  function renderAllTrendWidgets() {
+    Object.keys(TREND_WIDGETS).forEach(renderTrendWidget);
+    Object.keys(PERCENT_WIDGETS).forEach(renderPercentWidget);
+  }
+
+  function initTrendWidgets() {
+    wireTrendPeriodMenus();
+    renderAllTrendWidgets();
+  }
+
+  function wireRangePills() {
+    var wrap = document.getElementById('rangePills');
+    if (!wrap) return;
+    var pills = wrap.querySelectorAll('.kg-seg-btn');
+    var activePill = wrap.querySelector('.kg-seg-btn--active') || pills[pills.length - 1];
+    moveSegThumb(wrap, activePill);
+
+    pills.forEach(function(pill) {
+      pill.addEventListener('click', function() {
+        pills.forEach(function(p) { p.classList.remove('kg-seg-btn--active'); });
+        pill.classList.add('kg-seg-btn--active');
+        moveSegThumb(wrap, pill);
+        renderAll(pill.dataset.range);
+
+        trendGlobalRange = pill.dataset.range;
+        Object.keys(TREND_WIDGETS).forEach(function(k) { TREND_WIDGETS[k].manualOverride = false; });
+        Object.keys(PERCENT_WIDGETS).forEach(function(k) { PERCENT_WIDGETS[k].manualOverride = false; });
+        renderAllTrendWidgets();
+        document.querySelectorAll('.rrm-trend-period').forEach(function(btn) {
+          var cfg = getTrendCfg(btn.dataset.widget);
+          var menu = document.getElementById('tw-' + btn.dataset.widget + '-menu');
+          menu.querySelectorAll('.rrm-trend-period-option').forEach(function(o) {
+            o.classList.toggle('selected', !cfg.manualOverride && parseInt(o.dataset.days) === cfg.days);
+          });
+        });
+      });
+    });
+
+    window.addEventListener('resize', function() {
+      var current = wrap.querySelector('.kg-seg-btn--active');
+      if (current) moveSegThumb(wrap, current);
+    });
+  }
+
+  // ── Section tabs (Overview / Detection / Remediation) — sliding thumb,
+  //    same interaction as SegmentedTabs.jsx. Re-runs the render pipeline on
+  //    switch so newly-visible chart containers pick up their real
+  //    offsetWidth (they read 0 while display:none). ──────────────────────
+  function moveSegThumb(tabsEl, btn) {
+    var thumb = tabsEl.querySelector('.kg-seg-thumb');
+    thumb.style.left = btn.offsetLeft + 'px';
+    thumb.style.width = btn.offsetWidth + 'px';
+  }
+
+  function wireSectionTabs() {
+    var tabsEl = document.getElementById('sectionTabs');
+    if (!tabsEl) return;
+    var buttons = tabsEl.querySelectorAll('.kg-seg-btn');
+    var activeBtn = tabsEl.querySelector('.kg-seg-btn--active') || buttons[0];
+    moveSegThumb(tabsEl, activeBtn);
+
+    buttons.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        buttons.forEach(function(b) { b.classList.remove('kg-seg-btn--active'); });
+        btn.classList.add('kg-seg-btn--active');
+        moveSegThumb(tabsEl, btn);
+
+        ['overview', 'detection', 'remediation'].forEach(function(s) {
+          document.getElementById('section-' + s).style.display = (s === btn.dataset.section) ? '' : 'none';
+        });
+        renderAll(trendGlobalRange);
+        renderAllTrendWidgets();
+      });
+    });
+
+    window.addEventListener('resize', function() {
+      var current = tabsEl.querySelector('.kg-seg-btn--active');
+      if (current) moveSegThumb(tabsEl, current);
+    });
+  }
+
+  // ── Floating toolbar zoom (Undo/Redo stay disabled — no edit history
+  //    exists on this static dashboard, same as DashboardFloatingToolbar's
+  //    canUndo/canRedo both starting false on a freshly-loaded canvas) ────
+  var rrmZoom = 1;
+  function rrmUpdateZoomUI() {
+    var content = document.getElementById('rrmZoomContent');
+    content.style.transform = 'scale(' + rrmZoom + ')';
+    document.getElementById('rrmZoomLabel').textContent = Math.round(rrmZoom * 100) + '%';
+    document.getElementById('rrmZoomInBtn').disabled = rrmZoom >= 1.5;
+    document.getElementById('rrmZoomOutBtn').disabled = rrmZoom <= 0.5;
+  }
+  function wireFloatToolbar() {
+    document.getElementById('rrmZoomInBtn').addEventListener('click', function() {
+      rrmZoom = Math.min(1.5, rrmZoom + 0.25);
+      rrmUpdateZoomUI();
+    });
+    document.getElementById('rrmZoomOutBtn').addEventListener('click', function() {
+      rrmZoom = Math.max(0.5, rrmZoom - 0.25);
+      rrmUpdateZoomUI();
+    });
+    document.getElementById('rrmZoomLabel').addEventListener('click', function() {
+      rrmZoom = 1;
+      rrmUpdateZoomUI();
+    });
+    document.getElementById('rrmResetBtn').addEventListener('click', function() {
+      rrmZoom = 1;
+      rrmUpdateZoomUI();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initCharts, 60);
+  });
+  function initCharts() {
+    wireRangePills();
+    wireSectionTabs();
+    wireFloatToolbar();
+    renderAll('1Y');
+    initTrendWidgets();
+  }
+</script>
+
+</body>
+</html>

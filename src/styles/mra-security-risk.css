@@ -1,0 +1,282 @@
+/* ── MRA Security Risk dashboard page ─────────────────────────────── */
+.mra-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.mra-widget {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mra-widget-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mra-widget-header--split {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mra-widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text);
+}
+
+/* Risk threshold legend — High/Medium/Low chips with the score cutoff
+   shown inline next to each. */
+.mra-rag-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mra-rag-legend-label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.mra-rag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mra-rag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mra-rag-chip--red   { color: var(--pai-crit-fg); }
+.mra-rag-chip--amber { color: var(--pai-med-fg); }
+.mra-rag-chip--green { color: var(--pai-green); }
+.mra-rag-dot--red    { background: var(--pai-crit-fg); }
+.mra-rag-dot--amber  { background: var(--pai-med-fg); }
+.mra-rag-dot--green  { background: var(--pai-green); }
+
+/* RAG-colored data cells — text color only (no cell fill); severity is
+   already conveyed by the colored value itself. Compound selector
+   (.ds-td.mra-rag--x) so this always outranks the bare `.ds-td` rule from
+   navigator.css/workspace.css regardless of CSS import/injection order (a
+   same-specificity tie would otherwise be decided by load order, which
+   Vite doesn't guarantee in dev). */
+.ds-td.mra-rag--red   { color: var(--pai-crit-fg); font-weight: 600; }
+.ds-td.mra-rag--amber { color: var(--pai-med-fg);  font-weight: 600; }
+.ds-td.mra-rag--green { color: var(--pai-green);   font-weight: 600; }
+.ds-td.mra-rag--na    { color: var(--shell-text-muted); }
+
+.ds-td.mra-rag--red,
+.ds-td.mra-rag--amber,
+.ds-td.mra-rag--green,
+.ds-td.mra-rag--na {
+  white-space: nowrap;
+}
+
+/* Headline stat section — 5 standalone KPI cards (own border/background,
+   matching the app-wide ds-kpi-card pattern from navigator.css) sitting
+   directly on the page background, with a plain header above instead of an
+   enclosing widget card. Value/label/trend classes are shared with
+   BreakdownTable's own summary stats below. */
+.mra-summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mra-stat-row {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.mra-kpi-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 12px 16px;
+}
+
+.mra-stat-mini-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text);
+  padding-bottom: 12px;
+}
+
+.mra-kpi-card-value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--shell-text);
+}
+
+.mra-kpi-card-value.mra-rag--red   { color: var(--pai-crit-fg); }
+.mra-kpi-card-value.mra-rag--amber { color: var(--pai-med-fg); }
+.mra-kpi-card-value.mra-rag--green { color: var(--pai-green); }
+
+.mra-kpi-card-label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.17;
+  color: var(--shell-text);
+  margin-top: 8px;
+}
+
+/* Change % trend row is pinned to the bottom of its card (margin-top:auto
+   eats the remaining flex space) rather than following immediately after
+   the label/prev-score line — the card's own align-items:stretch (via the
+   parent .mra-stat-row) is what gives it room to push into. */
+.mra-kpi-card-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* Supported/EOL cards only — the trend row follows immediately (no
+   pin-to-bottom stretch) with a divider flush against the breakdown body
+   above it, matching the Figma KPI Card spec (node 56031-154040): the line
+   sits right at the row's bottom edge, then 12px before the trend text. */
+.mra-breakdown-body + .mra-kpi-card-trend {
+  margin-top: 0;
+  border-top: 1px solid var(--card-border);
+}
+
+.mra-kpi-card-trend .ds-kpi-delta {
+  font-size: 12px;
+  font-weight: 600;
+  gap: 2px;
+}
+
+.mra-kpi-card-trend-suffix {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+/* Previous Risk Score caption — sits below the "Risk Score" label, above
+   the change % trend row; plain grey text, no surrounding brackets. */
+.mra-prev-score-line {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  margin-top: 4px;
+  padding-bottom: 8px;
+}
+
+.mra-td-muted  { color: var(--shell-text-muted); }
+
+/* Total row — darker separator above it than the regular row dividers.
+   Deliberately doesn't set `color` here: the Risk Score/Previous Risk
+   Score cells in this row still carry a `.ds-td.mra-rag--x` class for
+   their RAG color, and that rule ties in specificity with a
+   `.mra-total-row > .ds-td` color rule — whichever appears later in the
+   stylesheet would win the tie and could silently override the other, so
+   color is left alone here and only set on the plain (non-RAG) cells via
+   .mra-td-total below. */
+.mra-total-row > .ds-td {
+  border-top: 1px solid black;
+  font-weight: 700;
+}
+
+.mra-td-total { color: var(--shell-text); }
+
+/* Supported/EOL card body — Risk Score (with its own prev-score caption)
+   on the left, a divider, then Total KEVs/Total Assets as label/value rows
+   stacked on the right instead of a third side-by-side column. The change %
+   trend sits outside/below this as a sibling in mra-kpi-card, spanning the
+   full card width. */
+.mra-breakdown-body {
+  display: flex;
+  align-items: stretch;
+}
+
+.mra-breakdown-primary {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--card-border);
+}
+
+.mra-breakdown-list {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Padding-left lives on the row, not the list container, so each row's own
+   border-bottom (its border-box, unaffected by padding) spans the full list
+   width and meets the vertical divider flush — a T-junction, not a gap. */
+.mra-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px;
+}
+
+.mra-breakdown-row:not(:last-child) { border-bottom: 1px solid var(--card-border); }
+.mra-breakdown-row:first-child { padding-top: 0; }
+.mra-breakdown-row:last-child { padding-bottom: 0; }
+
+.mra-breakdown-row-label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+}
+
+.mra-breakdown-row-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--shell-text);
+}
+
+.mra-widget-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--shell-text);
+}
+
+.mra-widget-stat-value.mra-rag--red   { color: var(--pai-crit-fg); }
+.mra-widget-stat-value.mra-rag--amber { color: var(--pai-med-fg); }
+.mra-widget-stat-value.mra-rag--green { color: var(--pai-green); }
+
+.mra-widget-stat-label {
+  font-size: 12px;
+  color: var(--shell-text-muted);
+  margin-top: 4px;
+}
+
+/* Change % cell — not RAG-colored; ds-kpi-delta (navigator.css) colors the
+   value itself by trend direction, matching the rest of the dashboards.
+   The compound selector below overrides ds-kpi-delta's default 10px/400
+   here only, without touching the shared class elsewhere in the app. */
+.mra-change-cell { white-space: nowrap; }
+.mra-change-cell .ds-kpi-delta { font-size: 12px; font-weight: 600; gap: 4px; }

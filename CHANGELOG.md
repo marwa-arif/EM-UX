@@ -28,6 +28,7 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
+- New client-specific dashboard pages: MRA Security Risk (React + standalone HTML), MTTD Trends (standalone HTML), Risk Remediation Metrics (standalone HTML)
 ### Changed
 ### Fixed
 

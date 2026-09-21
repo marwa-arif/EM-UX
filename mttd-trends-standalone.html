@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en" class="theme-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MTTD Trends — Prevalent AI</title>
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     Reset + base
+     ───────────────────────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button { font-family: inherit; }
+  svg { display: block; }
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+
+  /* ─────────────────────────────────────────────────────────────
+     Design tokens (design-system-2.0 — tokens/colors.json, global.css)
+     ───────────────────────────────────────────────────────────── */
+  :root {
+    --topbar-height:            48px;
+    --shell-topbar-bg:          #131313;
+    --shell-topbar-text:        #D1D1D1;
+    --shell-topbar-text-muted:  #9A9A9A;
+    --shell-bg:           #F7F9FC;
+    --shell-border:       #E6E6E6;
+    --shell-border-2:     #D6D6D6;
+    --shell-text:         #101010;
+    --shell-text-2:       #282828;
+    --shell-text-muted:   #6E6E6E;
+    --shell-text-faint:   #ADADAD;
+    --shell-accent:       #6360D8;
+    --shell-hover:        rgba(0,0,0,0.04);
+    --shell-active:       rgba(99,96,216,0.08);
+    --shell-raised:       #F5F5F5;
+
+    --card-bg:            #FFFFFF;
+    --card-border:        #E6E6E6;
+
+    --table-th-bg:        #F5F5F5;
+    --table-border:       #E6E6E6;
+
+    --pai-indigo:        #6360D8;
+    --pai-border:        #E6E6E6;
+    --pai-border-strong: #CFCFCF;
+
+    --pai-crit-fg:       #D12329;
+    --pai-crit-bg:       #F9EEEE;
+    --pai-high-fg:       #E15252;
+    --pai-high-bg:       #FEE2E2;
+    --pai-med-fg:        #D98B1D;
+    --pai-med-bg:        #FEF3E2;
+    --pai-low-fg:        #31A56D;
+    --pai-low-bg:        #EFF7ED;
+    --pai-green:         #31A56D;
+  }
+
+  html.theme-dark {
+    color-scheme: dark;
+    --shell-bg:           #0E0E0E;
+    --shell-raised:       #1C1C1C;
+    --shell-border:       #272727;
+    --shell-border-2:     #3B3A3A;
+    --shell-text:         #F9F9F9;
+    --shell-text-2:       #D1D1D1;
+    --shell-text-muted:   #8A8A8A;
+    --shell-text-faint:   #696969;
+    --shell-hover:        rgba(255,255,255,0.05);
+    --shell-active:       rgba(99,96,216,0.15);
+
+    --card-bg:            #1C1C1C;
+    --card-border:        #272727;
+    --table-th-bg:        #131313;
+    --table-border:       #272727;
+
+    --pai-border:               #272727;
+    --pai-border-strong:        #3B3A3A;
+
+    --pai-crit-fg:        #E84349;
+    --pai-crit-bg:        rgba(209,35,41,0.15);
+    --pai-high-fg:        #E09830;
+    --pai-high-bg:        rgba(225,82,82,0.15);
+    --pai-med-fg:         #CDB900;
+    --pai-med-bg:         rgba(217,139,29,0.15);
+    --pai-low-fg:         #31A56D;
+    --pai-low-bg:         rgba(49,165,109,0.15);
+    --pai-green:          #31A56D;
+  }
+  html.theme-dark body { background: #0E0E0E; color: #F9F9F9; }
+  body { background: var(--shell-bg); color: var(--shell-text); }
+
+  /* ─────────────────────────────────────────────────────────────
+     App shell / layout
+     ───────────────────────────────────────────────────────────── */
+  .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; color: var(--shell-text); background: var(--shell-bg); }
+  .app-body { display: flex; flex: 1; min-height: 0; }
+  .exp-main { flex: 1; min-width: 0; display: flex; overflow: hidden; background: var(--shell-bg); }
+  .exp-main--col { flex-direction: column; }
+  .exp-content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .page-scroll { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; background: var(--shell-bg); }
+
+  /* ─────────────────────────────────────────────────────────────
+     Topbar
+     ───────────────────────────────────────────────────────────── */
+  .topbar {
+    height: var(--topbar-height);
+    background: var(--shell-topbar-bg);
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    flex-shrink: 0; position: relative; z-index: 50;
+  }
+  .topbar__logo-btn { display: flex; align-items: center; padding: 0; border: none; background: transparent; cursor: pointer; }
+  .topbar__spacer { flex: 1; }
+  .topbar__btn {
+    width: 32px; height: 32px; border: none; background: transparent; color: var(--shell-topbar-text);
+    border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative;
+  }
+  .topbar__btn:hover { background: rgba(255,255,255,0.10); }
+  .topbar__navigator {
+    width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+    border: none; border-radius: 44px;
+    background: linear-gradient(90deg, #467FCD, #47ADCB);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar__navigator-icon { width: 16px; height: 16px; }
+  .vb-badge {
+    font-size: 10px; font-weight: 600; font-family: inherit;
+    color: var(--shell-topbar-text-muted);
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 44px; padding: 2px 8px; cursor: pointer; letter-spacing: 0.04em; flex-shrink: 0;
+  }
+  .vb-badge:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .topbar__notif-dot {
+    position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pai-crit-fg); border: 1px solid var(--shell-topbar-bg);
+  }
+  .topbar__avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); color: var(--shell-topbar-text);
+    border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar__avatar:hover { background: rgba(255,255,255,0.18); }
+
+  /* ─────────────────────────────────────────────────────────────
+     LeftNav
+     ───────────────────────────────────────────────────────────── */
+  .leftnav {
+    position: relative; flex-shrink: 0; width: 220px;
+    background: var(--card-bg); border-right: 1px solid var(--shell-border);
+    display: flex; flex-direction: column; overflow-y: hidden;
+  }
+  .leftnav__body { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .leftnav__divider { margin: 8px 12px; border-top: 1px solid var(--shell-border); }
+  .leftnav__section-label {
+    display: flex; align-items: center; justify-content: flex-start; gap: 4px;
+    width: 100%; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--shell-text-faint); padding: 8px 8px 4px 16px;
+    background: none; border: none; font-family: inherit; cursor: pointer; text-align: left;
+  }
+  .nav-item { padding: 0 8px; margin-bottom: 4px; }
+  .nav-item__btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px; background: transparent; color: var(--shell-text-2);
+    border: none; border-radius: 6px; cursor: pointer; text-align: left;
+    font-size: 12px; font-weight: 400; font-family: inherit; justify-content: flex-start;
+  }
+  .nav-item__btn--active { background: var(--shell-raised); color: var(--shell-text); font-weight: 500; }
+  .nav-item__btn:hover:not(.nav-item__btn--active) { background: var(--shell-hover); }
+  .nav-item__icon { flex-shrink: 0; width: 16px; height: 16px; opacity: 0.72; }
+  .nav-item__icon--active { opacity: 0.9; }
+  .nav-item__label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-item__chevron { display: inline-flex; color: var(--shell-text-muted); }
+
+  /* ─────────────────────────────────────────────────────────────
+     SubHeader
+     ───────────────────────────────────────────────────────────── */
+  .subheader {
+    height: 48px; box-sizing: border-box; flex-shrink: 0;
+    background: var(--card-bg); border-bottom: 1px solid var(--shell-border);
+    display: flex; align-items: center; padding: 0 24px; gap: 12px;
+  }
+  .subheader__title-block { display: flex; flex-direction: column; min-width: 0; }
+  .subheader__title { font-size: 12px; font-weight: 600; color: var(--shell-text); line-height: 1.2; white-space: nowrap; }
+  .subheader__breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--shell-text-muted); margin-top: 2px; }
+  .subheader__breadcrumb-sep { color: var(--shell-text-muted); }
+  .subheader__breadcrumb-current { color: var(--shell-accent); font-weight: 500; }
+  .subheader__spacer { flex: 1; }
+
+  /* ─────────────────────────────────────────────────────────────
+     DS table + delta primitives
+     ───────────────────────────────────────────────────────────── */
+  .ds-table-wrap { width: 100%; overflow-x: auto; }
+  .ds-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ds-th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--shell-text-muted); background: var(--table-th-bg); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
+  .ds-td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); color: var(--shell-text-2); vertical-align: middle; font-size: 12px; }
+  .ds-table tbody tr:last-child td { border-bottom: none; }
+  .ds-table tbody tr:hover td { background: var(--shell-hover); }
+  .ds-kpi-delta { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 400; }
+  .ds-kpi-delta.up-bad { color: var(--pai-crit-fg); }
+  .ds-kpi-delta.down-good { color: var(--pai-green); }
+
+  .sev-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 20px; padding: 0 8px; border-radius: 44px;
+    font-size: 10px; font-weight: 600; white-space: nowrap;
+  }
+  .sev-chip--critical { background: var(--pai-crit-bg); color: var(--pai-crit-fg); border: 1px solid rgba(209,35,41,0.3); }
+  .sev-chip--high     { background: var(--pai-high-bg); color: var(--pai-high-fg); border: 1px solid rgba(225,82,82,0.3); }
+  .sev-chip--medium   { background: var(--pai-med-bg);  color: var(--pai-med-fg);  border: 1px solid rgba(217,139,29,0.3); }
+  .sev-chip--low      { background: var(--pai-low-bg);  color: var(--pai-low-fg);  border: 1px solid rgba(49,165,109,0.3); }
+
+  /* ── Table pagination footer (components/TablePagination.jsx) ─────── */
+  .tpg { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--shell-border); flex-shrink: 0; }
+  .tpg__left { display: flex; align-items: center; gap: 16px; }
+  .tpg__right { display: flex; align-items: center; gap: 16px; }
+  .tpg__counts { display: flex; align-items: center; gap: 12px; }
+  .tpg__count { font-size: 14px; font-family: inherit; font-weight: 400; background: none; border: none; padding: 0; cursor: pointer; color: var(--shell-text-muted); line-height: 1; transition: color 0.1s; }
+  .tpg__count:hover { color: var(--shell-text); }
+  .tpg__count--active { color: var(--shell-text); }
+  .tpg__info { font-size: 14px; color: var(--shell-text-muted); white-space: nowrap; }
+  .tpg__pg { font-size: 14px; font-family: inherit; font-weight: 400; background: none; border: none; padding: 0; cursor: pointer; color: var(--shell-text-muted); line-height: 1; transition: color 0.1s; }
+  .tpg__pg:hover { color: var(--shell-text); }
+  .tpg__pg--active { color: var(--shell-text); font-weight: 600; }
+  .tpg__ellipsis { font-size: 14px; color: var(--shell-text-muted); }
+  .tpg__nav { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 3px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--shell-text-2); transition: background 0.1s; }
+  .tpg__nav:hover:not(:disabled) { background: var(--shell-hover); }
+  .tpg__nav:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cve-link     { color: var(--shell-accent); font-weight: 500; }
+  .lag-value    { color: var(--pai-crit-fg); font-weight: 600; }
+
+  /* ─────────────────────────────────────────────────────────────
+     Chart primitives (design-system-2.0/ds/charts — base + line + hbar)
+     ───────────────────────────────────────────────────────────── */
+  .chart-axis-label { font-size: 10px; fill: var(--shell-text-muted); font-family: inherit; }
+  .chart-threshold-label { font-size: 10px; fill: var(--shell-text-muted); font-family: inherit; }
+
+  .css-hbar-chart { display: flex; flex-direction: column; gap: 16px; }
+  .css-hbar-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .css-hbar-label { width: 76px; font-size: 11px; color: var(--shell-text-muted); text-align: right; flex-shrink: 0; }
+  .css-hbar { height: 13px; border-radius: 0 3px 3px 0; transition: opacity 150ms; }
+  .css-hbar:hover { opacity: 0.78; }
+  .css-hbar-val { font-size: 11px; color: var(--shell-text-muted); margin-left: 4px; flex-shrink: 0; }
+  .css-hbar-axis { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .css-hbar-axis-ticks { flex: 1; display: flex; justify-content: space-between; font-size: 10px; color: var(--shell-text-muted); border-top: 1px solid var(--shell-border); padding-top: 4px; }
+  .css-hbar-axis-title { text-align: center; font-size: 11px; color: var(--shell-text-muted); margin-top: 4px; }
+
+
+  /* Sortable table header (workspace.css .ds-th-inner / .ds-th-sort) */
+  .ds-th-inner { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  .ds-th-sort { display: inline-flex; opacity: 0.5; color: var(--shell-text-muted); }
+
+  /* ─────────────────────────────────────────────────────────────
+     MTTD Trends page (page-specific widget layout)
+     ───────────────────────────────────────────────────────────── */
+  .mttd-page { display: flex; flex-direction: column; gap: 16px; padding: 12px; height: 100%; box-sizing: border-box; overflow: auto; }
+  .mttd-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .mttd-widget-title { font-size: 13px; font-weight: 600; color: var(--shell-text); }
+
+  .mttd-kpi-row { display: flex; align-items: stretch; gap: 16px; }
+  .mttd-kpi-card { flex: 1 1 0; min-width: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; padding: 12px 16px; display: flex; flex-direction: column; }
+  .mttd-kpi-value { font-size: 20px; font-weight: 600; color: var(--shell-text); line-height: 1.2; }
+  .mttd-kpi-label { font-size: 14px; font-weight: 600; color: var(--shell-text); line-height: 1.17; margin-top: 8px; }
+  .mttd-kpi-trend { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 12px; }
+  .mttd-kpi-trend .ds-kpi-delta { font-size: 12px; font-weight: 600; }
+  .mttd-kpi-trend-suffix { font-size: 11px; color: var(--shell-text-muted); }
+
+  .mttd-chart-row { display: flex; align-items: stretch; gap: 16px; }
+  .mttd-chart-row .mttd-widget { flex: 1 1 0; min-width: 0; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ────────────────────────── Topbar ────────────────────────── -->
+  <header class="topbar">
+    <button class="topbar__logo-btn" title="Navigator" aria-label="Go to Navigator home">
+      <svg width="150" height="24" viewBox="0 0 172 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.0003 23.2593C8.8871 23.2593 4.74205 19.1144 4.74183 14.0014C4.74183 8.88784 8.88678 4.74284 13.9999 4.74257C19.1134 4.74257 23.2585 8.88752 23.2587 14.0006C23.2587 19.1132 19.1139 23.2581 14.0007 23.2584M14.0003 4.00021C8.47705 4.00021 3.99989 8.47742 4 14.0002C4 19.523 8.47726 24.0001 14.0002 24C19.5228 24 24.0001 19.5228 24 13.9999C24 8.47699 19.5232 4.00011 14.0003 4.00021Z" fill="#FFFFFF"/>
+        <path d="M16.6438 9.29042H16.0563C15.9766 9.27002 15.8918 9.28401 15.8238 9.32891C15.7557 9.37376 15.7112 9.44482 15.7018 9.52384L12.6616 18.4047C12.6457 18.4442 12.636 18.486 12.6328 18.5284C12.6329 18.6118 12.6747 18.7103 12.8743 18.7103H13.4678C13.5482 18.7305 13.6337 18.7162 13.7023 18.671C13.7708 18.6258 13.8158 18.5542 13.8257 18.4746L16.8545 9.59213C16.8702 9.553 16.88 9.51167 16.8832 9.46976C16.8832 9.38647 16.8418 9.28935 16.6441 9.28935" fill="#FFFFFF"/>
+        <path d="M18.6919 13.0692C18.6203 13.0219 18.5339 13.0008 18.4478 13.0092H17.9305C17.8444 13.0007 17.758 13.0219 17.6867 13.0692C17.6307 13.1333 17.6049 13.217 17.6157 13.3003V18.4204C17.6049 18.5037 17.6307 18.5876 17.687 18.6517C17.7582 18.699 17.8446 18.7203 17.9304 18.7116H18.4478C18.5339 18.7201 18.6204 18.6989 18.6918 18.6516C18.7478 18.5875 18.7735 18.5037 18.7628 18.4204V13.3003C18.7735 13.217 18.7479 13.1333 18.6919 13.0692Z" fill="#FFFFFF"/>
+        <path d="M12.4864 10.2031C12.4166 10.1109 12.3378 10.0254 12.2512 9.94772C11.787 9.54071 11.3078 9.30301 10.2319 9.29308L9.53316 9.29089H9.52885C9.49214 9.28929 9.45533 9.29297 9.41962 9.30162C9.34742 9.32448 9.27313 9.38502 9.32708 9.546L9.39662 9.75198L9.48518 10.0149C9.50043 10.0839 9.53636 10.147 9.58833 10.1965C9.64847 10.2268 9.71613 10.241 9.78379 10.2376H9.97406C10.6481 10.2376 11.098 10.3706 11.3894 10.6565C11.6769 10.9372 11.8148 11.4228 11.8148 12.141C11.8148 12.8592 11.6758 13.3448 11.3894 13.6257C11.098 13.9115 10.6485 14.0447 9.97439 14.0447H9.78501C9.7169 14.0411 9.64913 14.0552 9.58866 14.0855C9.53659 14.135 9.50054 14.1981 9.48518 14.267L9.39662 14.5299L9.32708 14.736C9.27313 14.8967 9.34742 14.9581 9.41973 14.9803C9.45499 14.989 9.49148 14.9926 9.52796 14.9911L10.2319 14.9889C11.3078 14.9789 11.787 14.7412 12.2512 14.3343C12.3378 14.2565 12.4165 14.1709 12.4864 14.0788C12.8313 13.6347 12.9997 13.0013 12.9997 12.1396C12.9997 11.2779 12.8319 10.6435 12.4864 10.2004" fill="#FFFFFF"/>
+      </svg>
+    </button>
+
+    <div class="topbar__spacer"></div>
+
+    <button class="topbar__navigator" title="Navigator" aria-label="Navigator">
+      <svg class="topbar__navigator-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>
+      </svg>
+    </button>
+
+    <span class="vb-badge">v0.20.0</span>
+
+    <button class="topbar__btn" id="themeToggle" title="Switch to dark theme">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+
+    <button class="topbar__btn" title="Notifications">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="topbar__notif-dot"></span>
+    </button>
+
+    <button class="topbar__avatar" title="Account menu">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- ────────────────────────── Body ────────────────────────── -->
+  <div class="app-body">
+
+    <!-- LeftNav -->
+    <aside class="leftnav">
+      <div class="leftnav__body">
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="-0.78 1.34 16 16" fill="none">
+              <path d="M12.29 4.41897C12.8876 4.29122 13.3732 4.90261 13.1143 5.45608L8.93848 14.3809C9.22506 13.2409 9.6112 12.5785 9.74414 11.9141C9.79121 11.6787 9.76662 11.4353 9.67871 11.2119C9.10743 9.76096 6.88488 6.99516 4.94434 6.81936C4.20476 6.75234 3.01379 6.54441 1.06152 6.81936L12.29 4.41897ZM7.34863 6.62893C8.03894 7.13819 9.53743 8.4164 10.0107 9.4551L11.7861 5.71291L7.34863 6.62893Z" fill="url(#navGradA)"/>
+              <defs><linearGradient id="navGradA" x1="1.06" y1="9.39" x2="13.19" y2="9.39" gradientUnits="userSpaceOnUse"><stop stop-color="#467FCD"/><stop offset="1" stop-color="#47ADCB"/></linearGradient></defs>
+            </svg>
+            <span class="nav-item__label">Navigator</span>
+          </button>
+        </div>
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M2.49854 5.79059V3.48059C2.49854 3.20445 2.72239 2.98059 2.99854 2.98059H5.30615C5.58229 2.98059 5.80615 3.20445 5.80615 3.48059V5.79059C5.80615 6.06673 5.58229 6.29059 5.30615 6.29059H2.99854C2.72239 6.29059 2.49854 6.06673 2.49854 5.79059Z"/>
+              <path d="M10.1938 11.0584V8.74841C10.1938 8.47227 10.4177 8.24841 10.6938 8.24841H13.0015C13.2776 8.24841 13.5015 8.47227 13.5015 8.74841V11.0584C13.5015 11.3346 13.2776 11.5584 13.0015 11.5584H10.6938C10.4177 11.5584 10.1938 11.3346 10.1938 11.0584Z"/>
+              <path d="M7.78076 5.79059V3.48059C7.78076 3.20445 8.00462 2.98059 8.28076 2.98059H13.0015C13.2776 2.98059 13.5015 3.20445 13.5015 3.48059V5.79059C13.5015 6.06673 13.2776 6.29059 13.0015 6.29059H8.28076C8.00462 6.29059 7.78076 6.06673 7.78076 5.79059Z"/>
+              <path d="M2.49854 12.5194V8.74841C2.49854 8.47227 2.72239 8.24841 2.99854 8.24841H7.71924C7.99538 8.24841 8.21924 8.47227 8.21924 8.74841V12.5194C8.21924 12.7956 7.99538 13.0194 7.71924 13.0194H2.99854C2.72239 13.0194 2.49854 12.7956 2.49854 12.5194Z"/>
+            </svg>
+            <span class="nav-item__label">Workspace</span>
+          </button>
+        </div>
+        <div class="leftnav__divider"></div>
+
+        <button class="leftnav__section-label"><span>Insights</span></button>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M7.40519 9.69937C7.57355 9.86809 7.7897 9.94484 8.05364 9.92964C8.31759 9.91479 8.51021 9.81993 8.6315 9.64506L10.6148 6.88022C10.7792 6.65098 10.4973 6.36741 10.2671 6.53052L7.48665 8.50075C7.3049 8.62168 7.2037 8.80959 7.18306 9.06449C7.16242 9.31938 7.23647 9.53064 7.40519 9.69937Z" fill="currentColor" stroke="none"/>
+              <path d="M3.28962 12.1326C2.77996 11.3087 2.48633 10.3406 2.48633 9.30481C2.48633 6.30169 4.95488 3.86719 8 3.86719C11.0451 3.86719 13.5137 6.30169 13.5137 9.30481C13.5137 10.3406 13.22 11.3087 12.7104 12.1326" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-item__label">Exposure</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn nav-item__btn--active">
+            <svg class="nav-item__icon nav-item__icon--active" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.5 11.0764L6.1 7.4733L8.5 9.8754L13.3 5.0713"/>
+              <path d="M11.1 4.8467H13.5V7.2487"/>
+            </svg>
+            <span class="nav-item__label">MTTD Trends</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M5.87904 10.4486L8.84637 9.5983C9.03393 9.54219 9.19204 9.4498 9.32071 9.32113C9.44937 9.19247 9.54176 9.03435 9.59787 8.8468L10.4495 5.87813C10.482 5.78002 10.4595 5.69269 10.3822 5.61613C10.3049 5.53958 10.2175 5.51797 10.12 5.5513L7.15271 6.40163C6.96515 6.45774 6.80704 6.55013 6.67837 6.6788C6.54971 6.80747 6.45732 6.96558 6.40121 7.15313L5.54954 10.1218C5.51709 10.2199 5.53954 10.3072 5.61687 10.3838C5.69421 10.4604 5.78159 10.482 5.87904 10.4486ZM7.99804 8.6718C7.81104 8.68291 7.6526 8.62136 7.52271 8.48713C7.39271 8.35302 7.32771 8.19013 7.32771 7.99847C7.32771 7.81147 7.39321 7.65302 7.52421 7.52313C7.6551 7.39313 7.81404 7.32813 8.00104 7.32813C8.18804 7.32813 8.34648 7.39363 8.47637 7.52463C8.60637 7.65552 8.67137 7.81447 8.67137 8.00147C8.67137 8.18847 8.60587 8.34691 8.47487 8.4768C8.34398 8.6068 8.18504 8.6718 7.99804 8.6718Z" fill="currentColor" stroke="none"/>
+              <circle cx="8" cy="8" r="5.5"/>
+            </svg>
+            <span class="nav-item__label">Discover</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.2001 3.59988H11.3001C11.5918 3.59988 11.8716 3.71577 12.0779 3.92206C12.2842 4.12835 12.4001 4.40814 12.4001 4.69988V12.3999C12.4001 12.6916 12.2842 12.9714 12.0779 13.1777C11.8716 13.384 11.5918 13.4999 11.3001 13.4999H4.7001C4.40836 13.4999 4.12857 13.384 3.92228 13.1777C3.71599 12.9714 3.6001 12.6916 3.6001 12.3999V4.69988C3.6001 4.40814 3.71599 4.12835 3.92228 3.92206C4.12857 3.71577 4.40836 3.59988 4.7001 3.59988H5.8001M5.92267 9.32774H8.39587M5.92267 7.1529H10.2001M5.92267 11.5026H7.10175M6.3501 2.49988H9.6501C9.95385 2.49988 10.2001 2.74612 10.2001 3.04988V4.14988C10.2001 4.45363 9.95385 4.69988 9.6501 4.69988H6.3501C6.04634 4.69988 5.8001 4.45363 5.8001 4.14988V3.04988C5.8001 2.74612 6.04634 2.49988 6.3501 2.49988Z"/>
+            </svg>
+            <span class="nav-item__label">Report</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M5.56898 12.1508H3.5C2.94772 12.1508 2.5 11.7031 2.5 11.1508V5.06128C2.5 4.50899 2.94772 4.06128 3.5 4.06128H12.0127C12.316 4.06128 12.5619 4.30718 12.5619 4.61051"/>
+              <circle cx="8.6532" cy="12.4161" r="1.08386"/>
+              <circle cx="12.4159" cy="7.21619" r="1.08386"/>
+              <path d="M8.67776 11.0276L8.67771 10.7709C8.67759 10.2185 9.12534 9.77065 9.67771 9.77065H11.4096C11.9618 9.77065 12.4095 9.32306 12.4096 8.77085L12.4097 8.44458"/>
+              <path d="M4.43555 6.62769H7.34277M4.43555 9.41937H7.34277"/>
+            </svg>
+            <span class="nav-item__label">Knowledge Graph</span>
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button class="nav-item__btn">
+            <svg class="nav-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2.51172 4.3493C2.51172 5.14709 4.61366 5.79382 7.20654 5.79382C9.79942 5.79382 11.9014 5.14709 11.9014 4.3493C11.9014 3.55152 9.79942 2.90479 7.20654 2.90479C4.61366 2.90479 2.51172 3.55152 2.51172 4.3493ZM2.51172 4.3493V11.0904C2.51172 11.4735 3.00635 11.8409 3.8868 12.1118C4.76725 12.3827 5.9614 12.5349 7.20654 12.5349M2.51172 7.71985C2.51172 8.10296 3.00635 8.47038 3.8868 8.74128C4.76725 9.01218 5.9614 9.16437 7.20654 9.16437"/>
+              <path d="M13.641 10.395C13.641 11.8948 12.5912 12.6447 11.3434 13.0796C11.278 13.1017 11.2071 13.1007 11.1424 13.0766C9.89162 12.6447 8.8418 11.8948 8.8418 10.395V8.29539C8.8418 8.21584 8.8734 8.13955 8.92965 8.0833C8.9859 8.02704 9.06219 7.99544 9.14175 7.99544C9.74165 7.99544 10.4915 7.6355 11.0134 7.17958C11.077 7.12529 11.1578 7.09546 11.2414 7.09546C11.325 7.09546 11.4058 7.12529 11.4694 7.17958C11.9943 7.6385 12.7411 7.99544 13.341 7.99544C13.4206 7.99544 13.4969 8.02704 13.5531 8.0833C13.6094 8.13955 13.641 8.21584 13.641 8.29539V10.395Z"/>
+              <path d="M10.2061 10.455L10.8271 11.0761L12.2764 9.62689" stroke-width="0.6"/>
+            </svg>
+            <span class="nav-item__label">Data Quality</span>
+            <span class="nav-item__chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="exp-main exp-main--col">
+      <div class="exp-content-col">
+
+        <div class="subheader">
+          <div class="subheader__title-block">
+            <div class="subheader__title">MTTD Trends</div>
+            <div class="subheader__breadcrumb">
+              <span>Home</span><span class="subheader__breadcrumb-sep">›</span>
+              <span class="subheader__breadcrumb-current">MTTD Trends</span>
+            </div>
+          </div>
+          <div class="subheader__spacer"></div>
+        </div>
+
+        <div class="page-scroll">
+          <div class="mttd-page">
+
+            <!-- KPI row -->
+            <div class="mttd-kpi-row">
+              <div class="mttd-kpi-card">
+                <span class="mttd-kpi-value">6.8 days</span>
+                <span class="mttd-kpi-label">Overall MTTD</span>
+                <div class="mttd-kpi-trend">
+                  <span class="ds-kpi-delta up-bad">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.50586 11.0764L6.10893 7.47334L8.51098 9.87538L13.3151 5.07129" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.1223 4.84668H13.5244V7.24873" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    0.9d
+                  </span>
+                  <span class="mttd-kpi-trend-suffix">from last month</span>
+                </div>
+              </div>
+              <div class="mttd-kpi-card">
+                <span class="mttd-kpi-value">1,284</span>
+                <span class="mttd-kpi-label">Total Findings</span>
+              </div>
+              <div class="mttd-kpi-card">
+                <span class="mttd-kpi-value">94</span>
+                <span class="mttd-kpi-label">No Disclosure Date</span>
+              </div>
+            </div>
+
+            <!-- MTTD trend by month -->
+            <div class="mttd-widget">
+              <span class="mttd-widget-title">MTTD Trend by Month</span>
+              <div id="mttd-line-chart" style="width:100%;"></div>
+            </div>
+
+            <!-- MTTD by severity / MTTD by origin -->
+            <div class="mttd-chart-row">
+              <div class="mttd-widget">
+                <span class="mttd-widget-title">MTTD by Severity</span>
+                <div class="css-hbar-chart">
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">Critical</span>
+                    <div class="css-hbar" style="width:26.4%;background:var(--pai-crit-fg);"></div>
+                    <span class="css-hbar-val">3.2d</span>
+                  </div>
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">High</span>
+                    <div class="css-hbar" style="width:44.6%;background:var(--pai-med-fg);"></div>
+                    <span class="css-hbar-val">5.4d</span>
+                  </div>
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">Medium</span>
+                    <div class="css-hbar" style="width:81.8%;background:#F5B700;"></div>
+                    <span class="css-hbar-val">9.9d</span>
+                  </div>
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">Low</span>
+                    <div class="css-hbar" style="width:100%;background:var(--pai-green);"></div>
+                    <span class="css-hbar-val">12.1d</span>
+                  </div>
+                  <div class="css-hbar-axis">
+                    <span style="width:76px;flex-shrink:0;"></span>
+                    <div class="css-hbar-axis-ticks"><span>0</span><span>4</span><span>8</span><span>12</span></div>
+                    <span style="width:34px;flex-shrink:0;"></span>
+                  </div>
+                </div>
+                <div class="css-hbar-axis-title">Days</div>
+              </div>
+
+              <div class="mttd-widget">
+                <span class="mttd-widget-title">MTTD by Origin</span>
+                <div class="css-hbar-chart">
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">Qualys</span>
+                    <div class="css-hbar" style="width:100%;background:#3a7fcb;"></div>
+                    <span class="css-hbar-val">6.1d</span>
+                  </div>
+                  <div class="css-hbar-row">
+                    <span class="css-hbar-label">Defender</span>
+                    <div class="css-hbar" style="width:77.0%;background:#2ea8a8;"></div>
+                    <span class="css-hbar-val">4.7d</span>
+                  </div>
+                  <div class="css-hbar-axis">
+                    <span style="width:76px;flex-shrink:0;"></span>
+                    <div class="css-hbar-axis-ticks"><span>0</span><span>2</span><span>4</span><span>6</span></div>
+                    <span style="width:34px;flex-shrink:0;"></span>
+                  </div>
+                </div>
+                <div class="css-hbar-axis-title">Days</div>
+              </div>
+            </div>
+
+            <!-- Worst offenders -->
+            <div class="mttd-widget">
+              <span class="mttd-widget-title">Underperforming Findings (4)</span>
+              <div class="ds-table-wrap">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="ds-th"><span class="ds-th-inner">CVE<span class="ds-th-sort"><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M6.4 8.125H2M5.3 5.875H2M4.2 3.625H2M7.5 10.375H2M11.35 11.5V2.5M9.7 9.8125L11.35 11.5L13 9.8125M9.7 4.1875L11.35 2.5L13 4.1875" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></th>
+                      <th class="ds-th"><span class="ds-th-inner">Host<span class="ds-th-sort"><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M6.4 8.125H2M5.3 5.875H2M4.2 3.625H2M7.5 10.375H2M11.35 11.5V2.5M9.7 9.8125L11.35 11.5L13 9.8125M9.7 4.1875L11.35 2.5L13 4.1875" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></th>
+                      <th class="ds-th"><span class="ds-th-inner">Severity<span class="ds-th-sort"><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M6.4 8.125H2M5.3 5.875H2M4.2 3.625H2M7.5 10.375H2M11.35 11.5V2.5M9.7 9.8125L11.35 11.5L13 9.8125M9.7 4.1875L11.35 2.5L13 4.1875" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></th>
+                      <th class="ds-th"><span class="ds-th-inner">Source<span class="ds-th-sort"><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M6.4 8.125H2M5.3 5.875H2M4.2 3.625H2M7.5 10.375H2M11.35 11.5V2.5M9.7 9.8125L11.35 11.5L13 9.8125M9.7 4.1875L11.35 2.5L13 4.1875" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></th>
+                      <th class="ds-th"><span class="ds-th-inner">Detection lag<span class="ds-th-sort"><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M6.4 8.125H2M5.3 5.875H2M4.2 3.625H2M7.5 10.375H2M11.35 11.5V2.5M9.7 9.8125L11.35 11.5L13 9.8125M9.7 4.1875L11.35 2.5L13 4.1875" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="ds-td"><span class="cve-link">CVE-2024-3183</span></td>
+                      <td class="ds-td">db-prod-07</td>
+                      <td class="ds-td"><span class="sev-chip sev-chip--critical">Critical</span></td>
+                      <td class="ds-td">Qualys</td>
+                      <td class="ds-td lag-value">21d</td>
+                    </tr>
+                    <tr>
+                      <td class="ds-td"><span class="cve-link">CVE-2023-9112</span></td>
+                      <td class="ds-td">web-app-14</td>
+                      <td class="ds-td"><span class="sev-chip sev-chip--high">High</span></td>
+                      <td class="ds-td">Defender</td>
+                      <td class="ds-td lag-value">18d</td>
+                    </tr>
+                    <tr>
+                      <td class="ds-td"><span class="cve-link">CVE-2024-0552</span></td>
+                      <td class="ds-td">file-srv-02</td>
+                      <td class="ds-td"><span class="sev-chip sev-chip--high">High</span></td>
+                      <td class="ds-td">Qualys</td>
+                      <td class="ds-td lag-value">16d</td>
+                    </tr>
+                    <tr>
+                      <td class="ds-td"><span class="cve-link">CVE-2023-7701</span></td>
+                      <td class="ds-td">vm-legacy-09</td>
+                      <td class="ds-td"><span class="sev-chip sev-chip--medium">Medium</span></td>
+                      <td class="ds-td">Qualys</td>
+                      <td class="ds-td lag-value">15d</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="tpg">
+                <div class="tpg__left">
+                  <div class="tpg__counts">
+                    <button class="tpg__count tpg__count--active">10</button>
+                    <button class="tpg__count">25</button>
+                    <button class="tpg__count">50</button>
+                    <button class="tpg__count">100</button>
+                  </div>
+                  <span class="tpg__info">Showing rows 1 to 4 of 4</span>
+                </div>
+                <div class="tpg__right">
+                  <button class="tpg__nav" disabled title="Previous page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <button class="tpg__pg tpg__pg--active">1</button>
+                  <button class="tpg__nav" disabled title="Next page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="tpg__nav" disabled title="Last page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart tooltip -->
+<div id="chart-tooltip" style="position:fixed;z-index:1000;pointer-events:none;display:none;
+     background:var(--card-bg);border-radius:8px;padding:12px 13px;min-width:180px;
+     box-shadow:0 4px 16px rgba(0,0,0,0.14);font-family:inherit;"></div>
+
+
+<script>
+  // Theme toggle — mirrors the real Topbar's light/dark switch
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    document.documentElement.classList.toggle('theme-dark');
+  });
+
+  // ── Chart tooltip (design-system-2.0/ds/charts/base.txt) ──────────
+  var _ctEl = null;
+  function _ct() { if (!_ctEl) _ctEl = document.getElementById('chart-tooltip'); return _ctEl; }
+
+  function showChartTooltip(e, title, rows, borderColor) {
+    var el = _ct(); if (!el) return;
+    var rowsHtml = rows.map(function(r) {
+      var dot = r.color ? '<span style="width:8px;height:8px;border-radius:50%;background:' + r.color + ';flex-shrink:0;display:inline-block;"></span>' : '';
+      var fw = r.active ? '700' : '500', vc = r.active ? r.color : 'inherit';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;font-weight:' + fw + ';color:var(--shell-text);white-space:nowrap;">' +
+        '<span style="display:flex;align-items:center;gap:6px;">' + dot + r.label + '</span>' +
+        '<span style="color:' + vc + ';">' + r.value + '</span></div>';
+    }).join('');
+    el.innerHTML =
+      '<div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:7px solid ' + borderColor + ';"></div>' +
+      '<div style="position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid var(--card-bg);"></div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--shell-text);margin-bottom:8px;">' + title + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:11px;">' + rowsHtml + '</div>';
+    el.style.border = '1px solid ' + borderColor;
+    el.style.display = 'block';
+    positionChartTooltip(e);
+  }
+  function positionChartTooltip(e) {
+    var el = _ct(); if (!el || el.style.display === 'none') return;
+    var x = e.clientX - el.offsetWidth / 2, y = e.clientY + 18;
+    if (x + el.offsetWidth > window.innerWidth - 8) x = window.innerWidth - el.offsetWidth - 8;
+    if (x < 8) x = 8;
+    if (y + el.offsetHeight > window.innerHeight - 8) y = e.clientY - el.offsetHeight - 18;
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+  }
+  function hideChartTooltip() { var el = _ct(); if (el) el.style.display = 'none'; }
+
+  // ── Line chart (design-system-2.0/ds/charts/line.txt), extended with
+  //    an optional dashed SLA-threshold line — the only deviation from
+  //    the verbatim DS function, since the reference design calls for
+  //    a target-line + label the base chart doesn't support. ─────────
+  function buildLineChart(containerId, data, labels, opts) {
+    opts = opts || {};
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var W = el.offsetWidth || 700;
+    var H = 214;
+    var pad = { top: 16, right: 20, bottom: 46, left: 58 };
+    var innerW = W - pad.left - pad.right;
+    var innerH = H - pad.top - pad.bottom;
+    var max = Math.max.apply(null, data);
+    var yMax = Math.ceil(max / 10) * 10 || 10;
+    var step = innerW / (data.length - 1);
+
+    var numTicks = 5;
+    var gridLines = '', yLabels = '';
+    for (var t = 0; t <= numTicks; t++) {
+      var val = Math.round((t / numTicks) * yMax);
+      var gy = pad.top + innerH - (val / yMax) * innerH;
+      gridLines += '<line x1="' + pad.left + '" y1="' + gy + '" x2="' + (pad.left + innerW) + '" y2="' + gy + '" stroke="var(--shell-border)" stroke-width="1"/>';
+      yLabels += '<text x="' + (pad.left - 6) + '" y="' + (gy + 4) + '" text-anchor="end" class="chart-axis-label">' + val + '</text>';
+    }
+
+    var pts = data.map(function(v, i) {
+      return (pad.left + i * step).toFixed(1) + ',' + (pad.top + innerH - (v / yMax) * innerH).toFixed(1);
+    }).join(' ');
+
+    var areaFirst = pad.left + ',' + (pad.top + innerH);
+    var areaLast  = (pad.left + (data.length - 1) * step).toFixed(1) + ',' + (pad.top + innerH);
+    var areaPts   = areaFirst + ' ' + pts + ' ' + areaLast;
+
+    var monthLabelY = pad.top + innerH + 16;
+    var xLabels = labels.map(function(l, i) {
+      var x = (pad.left + i * step).toFixed(1);
+      return '<text x="' + x + '" y="' + monthLabelY + '" text-anchor="middle" class="chart-axis-label">' + l + '</text>';
+    }).join('');
+
+    var xAxisTitle = opts.xAxisLabel
+      ? '<text x="' + (pad.left + innerW / 2) + '" y="' + (H - 6) + '" text-anchor="middle" class="chart-axis-label" style="font-weight:600;">' + opts.xAxisLabel + '</text>'
+      : '';
+    var yAxisTitle = opts.yAxisLabel
+      ? '<text x="14" y="' + (pad.top + innerH / 2) + '" text-anchor="middle" class="chart-axis-label" style="font-weight:600;" transform="rotate(-90 14 ' + (pad.top + innerH / 2) + ')">' + opts.yAxisLabel + '</text>'
+      : '';
+
+    var dotStroke = document.documentElement.classList.contains('theme-dark') ? '#0E0E0E' : '#FFFFFF';
+
+    var pointCoords = data.map(function(v, i) {
+      return { x: parseFloat((pad.left + i * step).toFixed(1)), y: parseFloat((pad.top + innerH - (v / yMax) * innerH).toFixed(1)) };
+    });
+    var visibleDots = pointCoords.map(function(p) {
+      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="5" fill="#6760d8" stroke="' + dotStroke + '" stroke-width="1.5" pointer-events="none"></circle>';
+    }).join('');
+    var overlayDots = pointCoords.map(function(p, i) {
+      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="16" fill="transparent" style="cursor:pointer;" data-li="' + i + '"></circle>';
+    }).join('');
+
+    var axes =
+      '<line x1="' + pad.left + '" y1="' + pad.top + '" x2="' + pad.left + '" y2="' + (pad.top + innerH) + '" stroke="var(--shell-border)" stroke-width="1"/>' +
+      '<line x1="' + pad.left + '" y1="' + (pad.top + innerH) + '" x2="' + (pad.left + innerW) + '" y2="' + (pad.top + innerH) + '" stroke="var(--shell-border)" stroke-width="1"/>';
+
+    var thresholdSvg = '';
+    if (opts.threshold) {
+      var ty = pad.top + innerH - (opts.threshold.value / yMax) * innerH;
+      thresholdSvg =
+        '<line x1="' + pad.left + '" y1="' + ty + '" x2="' + (pad.left + innerW) + '" y2="' + ty + '" stroke="var(--shell-text-muted)" stroke-width="1" stroke-dasharray="4 3"/>' +
+        '<text x="' + (pad.left + innerW) + '" y="' + (ty - 5) + '" text-anchor="end" class="chart-threshold-label">' + opts.threshold.label + '</text>';
+    }
+
+    var uid = 'lg' + Date.now();
+    el.innerHTML = '<svg width="100%" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" style="overflow:visible;">' +
+      '<defs><linearGradient id="' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#6760d8" stop-opacity="0.25"/>' +
+        '<stop offset="100%" stop-color="#6760d8" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      gridLines + axes +
+      '<polygon points="' + areaPts + '" fill="url(#' + uid + ')"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="#6760d8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      visibleDots + xLabels + yLabels + xAxisTitle + yAxisTitle + thresholdSvg + overlayDots + '</svg>';
+
+    el.querySelectorAll('circle[data-li]').forEach(function(circle) {
+      var i = parseInt(circle.dataset.li);
+      circle.addEventListener('mouseover', function() {
+        var svgEl = circle.closest('svg');
+        var rect = svgEl.getBoundingClientRect();
+        var syntheticE = { clientX: rect.left + pointCoords[i].x * (rect.width / W), clientY: rect.top + pointCoords[i].y * (rect.height / H) };
+        showChartTooltip(syntheticE, labels[i], [
+          { label: 'MTTD', value: data[i] + 'd', color: '#6760d8', active: true }
+        ], '#6760d8');
+      });
+      circle.addEventListener('mousemove', positionChartTooltip);
+      circle.addEventListener('mouseleave', hideChartTooltip);
+    });
+  }
+
+  // ── Horizontal bar tooltip wiring (design-system-2.0/ds/charts/hbar.txt) ──
+  function wireHbarTooltips() {
+    document.querySelectorAll('.css-hbar-row').forEach(function(row) {
+      var bar = row.querySelector('.css-hbar');
+      var labelEl = row.querySelector('.css-hbar-label');
+      var valEl = row.querySelector('.css-hbar-val');
+      if (!bar || !labelEl || !valEl) return;
+      var color = getComputedStyle(bar).backgroundColor;
+      var label = labelEl.textContent.trim();
+      var value = valEl.textContent.trim();
+      row.addEventListener('mouseover', function(e) {
+        showChartTooltip(e, label, [
+          { label: 'MTTD', value: value, color: color, active: true }
+        ], color);
+      });
+      row.addEventListener('mousemove', positionChartTooltip);
+      row.addEventListener('mouseleave', hideChartTooltip);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initCharts, 60);
+  });
+  function initCharts() {
+    buildLineChart('mttd-line-chart',
+      [5, 5.5, 6.8, 7.6, 6.3, 5.9, 6.1, 6.8],
+      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+      { threshold: { value: 5, label: '5-day SLA target' }, xAxisLabel: 'Month', yAxisLabel: 'Days' }
+    );
+    wireHbarTooltips();
+  }
+</script>
+
+</body>
+</html>
