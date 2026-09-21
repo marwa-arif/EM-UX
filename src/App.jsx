@@ -801,6 +801,11 @@ function App() {
   useEffect(() => { setNavigatorExploreActive(false); }, [current]);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [filtersByPage, setFiltersByPage] = useState({});
+  // Raw traversal chains from a page's own ad-hoc Graph Filter, keyed by
+  // pageId — mirrors filtersByPage but for the relationship structure a flat
+  // chip can't carry (see buildDashboardScopeImplicitConfig's comment on the
+  // Workspace side for why this is needed).
+  const [pathsByPage, setPathsByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
   const [complianceExpanded, setComplianceExpanded] = useState({});
@@ -1065,6 +1070,7 @@ function App() {
   const handleExplore = (destId) => {
     const src = filtersByPage[current] || { count: 0, chips: [] };
     setFiltersByPage(prev => ({ ...prev, [destId]: { count: src.count, chips: src.chips } }));
+    setPathsByPage(prev => ({ ...prev, [destId]: prev[current] || [] }));
     handleNav(destId);
   };
 
@@ -1074,16 +1080,15 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
       visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
-        if (merge) {
-          setFiltersByPage(prev => {
-            const cur = prev[current] || { count: 0, chips: [] };
-            const merged = [...cur.chips, ...(chips || [])];
-            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
-          });
-        } else {
-          setPageFilters(current, c, chips || []);
-        }
+      filterProps={{ pageId: current, onApply: (c, chips, paths) => {
+        // FilterPanel's onApply always hands back (count, chips, paths) now —
+        // paths carries the Graph Filter tab's real traversal chains (e.g.
+        // [['host','vulnerability']]) since a flat chip alone can't
+        // reconstruct which entities a relation connects (see the
+        // WorkspacePage/ActiveFilterPanel graphFilterChains wiring for the
+        // equivalent on dashboards/reports).
+        setPageFilters(current, c, chips || []);
+        setPathsByPage(prev => ({ ...prev, [current]: paths || [] }));
       }}}
       navigatorProps={{
         onNav: handleNav,
@@ -1231,7 +1236,7 @@ function App() {
               breadcrumbHrefs={breadcrumb.map(() => null)}
               breadcrumbClicks={breadcrumbClicks}
               onEdit={() => handleNav(`workspace/dashboard/edit-${pinnedDashboard.id}`)}
-              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs)}
+              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs, pinnedDashboard.dashboardScopePaths)}
               showExplore={false}
             />
             <div className="wp-main-body">
@@ -1320,6 +1325,7 @@ function App() {
                   pageId={current}
                   activeFilterCount={activeFilterCount}
                   activeFilters={activeFilters}
+                  graphFilterPaths={pathsByPage[current] || []}
                   onRemoveFilter={(idx) => {
                     setFiltersByPage(prev => {
                       const cur = prev[current] || { count: 0, chips: [] };
@@ -1329,6 +1335,7 @@ function App() {
                   }}
                   onClearFilters={() => {
                     setPageFilters(current, 0, []);
+                    setPathsByPage(prev => ({ ...prev, [current]: [] }));
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}

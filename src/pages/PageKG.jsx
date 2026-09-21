@@ -8,6 +8,7 @@ import { PAI, Icons, Ic } from '../ui.jsx';
 import TablePagination from '../components/TablePagination.jsx';
 import EntityRelSummaryGraph from '../components/EntityRelSummaryGraph.jsx';
 import { useDownloads } from '../DownloadsContext.jsx';
+import { INITIAL_EDGES } from '../data/kgRelationships.js';
 
 function useDark() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('theme-dark'));
@@ -82,60 +83,6 @@ const NODE_POS = (() => {
   }
   return pos;
 })();
-
-// Edges — [src, tgt, label, hidden?, srcAlias?, tgtAlias?]
-const INITIAL_EDGES = [
-  ['account', 'identity', 'Associated with'],
-  ['account', 'finding', 'Has'],
-  ['application', 'host', 'Running on'],
-  ['application', 'vulnerability', 'Has'],
-  ['assessment', 'finding', 'Associated with'],
-  ['cloudAccount', 'finding', 'Has'],
-  ['cloudAccount', 'storage', 'Has'],
-  ['cloudAccount', 'container', 'Has'],
-  ['cloudAccount', 'host', 'Has'],
-  ['cloudAccount', 'cluster', 'Has'],
-  ['cluster', 'cluster', 'Has', null, 'MapReduce Cluster', 'Compute Instance Group'],
-  ['cluster', 'finding', 'Has'],
-  ['cluster', 'container', 'Has', null, 'Container Group'],
-  ['cluster', 'container', 'Has', null, 'Container Service'],
-  ['cluster', 'cluster', 'Has', null, 'Kubernetes Cluster', 'Compute Instance Group'],
-  ['cluster', 'host', 'Has', null, 'Compute Instance Group', 'Virtual Machine'],
-  ['cluster', 'cloudAccount', 'Belongs to', true],
-  ['container', 'cluster', 'Belongs to', true, null, 'Container Service'],
-  ['container', 'cloudAccount', 'Belongs to', true],
-  ['container', 'finding', 'Has'],
-  ['container', 'vulnerability', 'Has'],
-  ['container', 'cluster', 'Belongs to', true, null, 'Container Group'],
-  ['host', 'person', 'Owned by'],
-  ['host', 'cloudAccount', 'Belongs to', true],
-  ['host', 'identity', 'Has'],
-  ['host', 'finding', 'Has'],
-  ['host', 'application', 'Hosting', true],
-  ['host', 'vulnerability', 'Has'],
-  ['host', 'cluster', 'Belongs to', true, 'Virtual Machine', 'Compute Instance Group'],
-  ['host', 'storage', 'Has', null, 'Virtual Machine', 'Volume'],
-  ['identity', 'person', 'Associated with'],
-  ['identity', 'account', 'Has', true],
-  ['identity', 'finding', 'Has'],
-  ['identity', 'host', 'Associated with', true],
-  ['network', 'finding', 'Has'],
-  ['netSvc', 'finding', 'Has'],
-  ['person', 'host', 'Owns', true],
-  ['person', 'identity', 'Has', true],
-  ['person', 'finding', 'Has'],
-  ['storage', 'storage', 'Has', null, null, 'Queue Service'],
-  ['storage', 'finding', 'Has'],
-  ['storage', 'storage', 'Belongs to', null, 'Table Service'],
-  ['storage', 'storage', 'Has', null, null, 'Bucket'],
-  ['storage', 'cloudAccount', 'Belongs to', true, 'Storage Resource'],
-  ['storage', 'storage', 'Belongs to', null, 'File System Service'],
-  ['storage', 'host', 'To', true, 'Volume Associates', 'Virtual Machine'],
-  ['vulnerability', 'host', 'On', true],
-  ['vulnerability', 'container', 'On', true],
-  ['vulnerability', 'finding', 'Has'],
-  ['vulnerability', 'application', 'On', true],
-];
 
 // ── Per-edge entity counts ───────────────────────────────────────────
 // When a relationship is selected, the two endpoint nodes show a reduced

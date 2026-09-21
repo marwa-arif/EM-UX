@@ -8,6 +8,7 @@ import '../styles/drawer.css'
 import '../styles/active-filter-panel.css'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { useToast } from '../context/ToastCtx.jsx'
+import { comparisonLabelForRange } from '../utils/rangeLabel.js'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const IcSearch = () => (
@@ -2762,7 +2763,7 @@ export default function CompliancePage({ expanded: expandedProp, onExpandChange,
                     <IcTrendUp />
                     2%
                   </span>
-                  <span className="comp-score-trend-label">from last week</span>
+                  <span className="comp-score-trend-label">from {comparisonLabelForRange(timeRange)}</span>
                 </div>
                 <div className="comp-score-count">
                   <span className="comp-score-count-closed">7,754,803</span>
