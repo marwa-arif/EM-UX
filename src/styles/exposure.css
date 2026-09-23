@@ -359,7 +359,7 @@
 .exp-asknav-chip:hover { background: linear-gradient(90deg, rgba(71,173,203,0.1), rgba(70,127,205,0.1)); }
 /* Gradient ring at 30% opacity — drawn as its own masked layer (not a plain
    border) since a solid `border` can't hold a gradient. Same brand gradient
-   (#467FCD/#47ADCB) as .topbar__navigator and the chip text below. */
+   (#467FCD/#47ADCB) as .copilot-fab and the chip text below. */
 .exp-asknav-chip::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
   background: linear-gradient(90deg, rgba(70,127,205,0.3), rgba(71,173,203,0.3));

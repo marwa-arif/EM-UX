@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Ic } from '../ui.jsx'
 import { createExchange } from './ReasoningEngine.jsx'
 import { BuildExchangeTurn, parseWidgetIntent, buildWidgetSpec, detectChartId, cleanWidgetTitle } from '../pages/NavigatorPage.jsx'
@@ -775,20 +776,25 @@ function FirstRunHero({ onSend, suggestions = FIRSTRUN_SUGGESTIONS, pageLabel, c
         <p className="np-firstrun-sub">Ask about hosts, findings, identities, or CVEs</p>
       </div>
 
-      <div className="np-firstrun-chips" aria-label="Data available to Navigator">
-        {chips.slice(0, 2).map((c, i) => (
-          <span key={i} className="np-firstrun-chip">
-            <strong>{c.count}</strong> {c.label}
-          </span>
-        ))}
+      <div className="np-firstrun-chips-block">
+        <div className="np-section-label">Connected data</div>
+        <div className="np-firstrun-chips" aria-label="Data available to Navigator">
+          {chips.slice(0, 2).map((c, i) => (
+            <span key={i} className="np-firstrun-chip">
+              <strong>{c.count}</strong> {c.label}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="np-firstrun-ask">
         <div className="np-section-label">Try asking</div>
         <div className="np-firstrun-suggestions">
-          {suggestions.slice(0, 2).map((q, i) => (
+          {suggestions.slice(0, 3).map((q, i) => (
             <button key={i} className="np-firstrun-suggestion" onClick={() => onSend(q)}>
-              {q}
+              <span className="np-firstrun-suggestion-icon" aria-hidden="true"><IcSparkle /></span>
+              <span className="np-firstrun-suggestion-text">{q}</span>
+              <span className="np-firstrun-suggestion-arrow" aria-hidden="true"><IcArrow /></span>
             </button>
           ))}
         </div>
@@ -1338,7 +1344,7 @@ const VIEW_MODES = [
 ]
 
 // ── Panel root ────────────────────────────────────────────────────────
-export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, draftAutoSend = false, dockSide = 'right', forceFloatToken = 0, exploreActive = false }) {
+export default function NavigatorPanel({ open, onClose, onNav, embedded = false, initialViewMode = 'sidebar', onViewModeChange, builderMode = false, builderApi = null, builderKind = 'assessment', builderContext = null, pageId = null, pageLabel = null, draftQuery = '', draftToken = 0, draftAutoSend = false, dockSide = 'right', forceFloatToken = 0, forceSidebarToken = 0, exploreActive = false }) {
   const [view, setView]             = useState('home')
   const handleToggleExplore = () => onNav?.('navigator-explore-toggle', { enabled: !exploreActive })
 
@@ -1354,6 +1360,17 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
   const [floatPos, setFloatPos]     = useState(() => initialViewMode === 'floating'
     ? { x: dockSide === 'left' ? 16 : window.innerWidth - 400 - 16, y: 60 }
     : { x: 0, y: 0 })
+  // Floating mode only: plays a genie-style shrink-toward-the-launcher-FAB
+  // exit animation before the parent actually unmounts this panel, mirroring
+  // the codebase's existing drawer-closing-class pattern (DiscoverDevicePage's
+  // dev-drawer, DrawerShell's comp-drawer) rather than cutting the animation
+  // short by unmounting immediately on click.
+  const [floatClosing, setFloatClosing] = useState(false)
+  const handleClose = useCallback(() => {
+    if (viewMode !== 'floating') { onClose?.(); return }
+    setFloatClosing(true)
+    setTimeout(() => onClose?.(), 320)
+  }, [onClose, viewMode])
 
   // A fresh "ask about X" request (e.g. clicking a trend chart point) bumps
   // draftToken — drop back to the composer with the new draft loaded, and
@@ -1391,6 +1408,19 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceFloatToken])
+
+  // The rp-shell tab switcher's "Navigator" tab is an explicit dock gesture —
+  // it must always land as sidebar, even if this panel was already mounted
+  // and floating (initialViewMode only seeds state on first mount, so a plain
+  // prop change here wouldn't otherwise reach an already-mounted panel).
+  useEffect(() => {
+    if (!forceSidebarToken) return
+    if (viewModeRef.current !== 'sidebar') {
+      setViewMode('sidebar')
+      onViewModeChange?.('sidebar')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceSidebarToken])
   const [isDragging, setIsDragging] = useState(false)
   const [copyToast, setCopyToast]   = useState(null)
   const [isFirstRun, setFirstRun]   = useState(true)
@@ -1525,7 +1555,13 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         top:           floatPos.y,
         width:         w,
         height:        'calc(100vh - 80px)',
-        zIndex:        300,
+        // Above the docked rp-shell (950) so a floating panel opened alongside an
+        // already-open docked tab (e.g. Filter) isn't hidden underneath it — and
+        // above every full-screen drawer overlay the CopilotFab launcher can be
+        // clicked next to (comp-drawer/dev-drawer/help-panel, highest at 961), so
+        // opening Navigator from the FAB while one of those is open still surfaces
+        // on top of it instead of being hidden behind it.
+        zIndex:        980,
         borderRadius:  16,
         boxShadow:     '0 12px 48px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.10)',
         background:    'var(--card-bg)',
@@ -1555,9 +1591,10 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
         position:      'relative',
       }
 
-  return (
+  const panelEl = (
     <div
       style={panelStyle}
+      className={isFloating ? `np-genie${floatClosing ? ' np-genie--closing' : ''}` : undefined}
       ref={panelRef}
       role="complementary"
       aria-label="Navigator AI assistant"
@@ -1665,7 +1702,7 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
               )}
             </div>
 
-            <button className="np-icon-btn" onClick={onClose} aria-label="Close Navigator">
+            <button className="np-icon-btn" onClick={handleClose} aria-label="Close Navigator">
               <IcX />
             </button>
           </div>
@@ -1785,4 +1822,21 @@ export default function NavigatorPanel({ open, onClose, onNav, embedded = false,
       </div>
     </div>
   )
+
+  // Floating mode is `position: fixed`, but it's still mounted deep inside
+  // .rp-shell (RightPanelShell → .rp-shell__inner → .rp-content) so it can
+  // coexist with a docked tab (see the "Deliberately does NOT touch
+  // rightPanel" comment in App.jsx's handleNav). .rp-shell itself sets its
+  // own z-index (950) and is `position: relative`, which makes it a
+  // stacking-context root — every descendant's z-index (including this
+  // panel's, however high) is capped at that ancestor's position in the
+  // global stacking order, no matter what value is set here. That's fine
+  // for docked content (rp-shell is deliberately kept below comp-drawer/
+  // dev-drawer, see drawer.css), but it silently trapped the floating panel
+  // underneath those same drawers too — invisible and unreachable behind
+  // whatever overlay the CopilotFab launcher was clicked next to. Porting
+  // to document.body (same technique as ActiveFilterPanel.jsx's afp-panel)
+  // escapes .rp-shell's stacking context entirely, so this panel's own
+  // z-index actually governs its stacking order again.
+  return isFloating ? createPortal(panelEl, document.body) : panelEl
 }

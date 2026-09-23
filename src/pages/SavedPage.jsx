@@ -100,8 +100,8 @@ function SavedPage({ typeLock }) {
     savedVisibility, setSavedVisibility,
     savedSearch, setSavedSearch,
     deleteTarget, openDeleteModal, closeDeleteModal,
-    savedReports,
-    savedDashboards,
+    savedReports, addSavedReport,
+    savedDashboards, addSavedDashboard, removeSavedDashboard,
     setEditDashboardSeed,
   } = useWorkspace()
   const { addDownload } = useDownloads()
@@ -120,7 +120,6 @@ function SavedPage({ typeLock }) {
   }
 
   const [deletedIds, setDeletedIds] = useState(new Set())
-  const [clonedRows, setClonedRows] = useState([])
   const [scheduleOverrides, setScheduleOverrides] = useState({})
   const [scheduleTarget, setScheduleTarget] = useState(null)
   const [scheduleRecipients, setScheduleRecipients] = useState('')
@@ -129,16 +128,31 @@ function SavedPage({ typeLock }) {
 
   const handleDuplicate = (row) => {
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
-    const copyName = `${row.name} (Copy)`
-    setClonedRows(prev => [{ ...row, id: `d-${Date.now()}`, name: copyName, isNew: true, lastUpdated: today }, ...prev])
+    // Unique against every name currently in play, not just a bare "(Copy)"
+    // suffix — duplicating the same row twice would otherwise produce two
+    // identically-named entries, and (since addSavedDashboard/addSavedReport
+    // dedup by name as well as id — see their own definitions) the second
+    // would silently replace the first instead of coexisting.
+    const existingNames = new Set([...savedDashboards, ...savedReports, ...SAVED_ROWS].map(r => r.name))
+    let copyName = `${row.name} (Copy)`
+    for (let n = 2; existingNames.has(copyName); n++) copyName = `${row.name} (Copy ${n})`
+    // Routed through the real, app-wide store (not component-local state) so
+    // the copy survives navigating away from this tab — see
+    // SavedDashboardsCtx.jsx. navSection is deliberately dropped: pinning a
+    // dashboard to a left-nav section is a deliberate choice made through
+    // the Save modal, and silently cloning that placement for a one-click
+    // Duplicate would clutter the nav without the user asking for it.
+    const copy = { ...row, id: `d-${Date.now()}`, name: copyName, isNew: true, lastUpdated: today, navSection: null }
+    if (row.type === 'DASHBOARD') addSavedDashboard(copy)
+    else addSavedReport(copy)
     showToast({ type: 'success', msg: `Duplicated as "${copyName}".` })
   }
 
-  // clonedRows/savedDashboards/savedReports are listed first so a freshly
-  // saved edit (same id as a SAVED_ROWS mock entry) replaces it instead of
-  // appearing as a duplicate row.
+  // savedDashboards/savedReports are listed first so a freshly saved edit
+  // (same id as a SAVED_ROWS mock entry) replaces it instead of appearing as
+  // a duplicate row.
   const seenIds = new Set()
-  const allRows = [...clonedRows, ...savedDashboards, ...savedReports, ...SAVED_ROWS]
+  const allRows = [...savedDashboards, ...savedReports, ...SAVED_ROWS]
     .filter(row => seenIds.has(row.id) ? false : (seenIds.add(row.id), true))
     .filter(row => !deletedIds.has(row.id))
     .map(row => scheduleOverrides[row.id] ? { ...row, ...scheduleOverrides[row.id] } : row)
@@ -176,6 +190,13 @@ function SavedPage({ typeLock }) {
   const handleConfirmDelete = () => {
     if (!deleteTarget) return
     setDeletedIds(prev => new Set(prev).add(deleteTarget.id))
+    // Actually remove it from the real store, not just hide the row — a
+    // no-op for SAVED_ROWS mock rows/reports (never in there to begin with),
+    // but required for a real saved dashboard: without this its
+    // left-nav pin (see the Save modal's "Save Dashboard Under" field) and
+    // its `${section}/saved-${id}` route would both keep working after
+    // "deleting" it, since neither is derived from deletedIds.
+    removeSavedDashboard(deleteTarget.id)
     showToast({ type: 'success', msg: `"${deleteTarget.name}" has been deleted.` })
     closeDeleteModal()
   }

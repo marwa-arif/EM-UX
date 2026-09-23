@@ -421,7 +421,7 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
   const [drawerFilter,  setDrawerFilter]  = useState('All');
   const closeDrawer = useCallback(() => {
     setDrawerClosing(true);
-    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 240);
+    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 280); // matches .dev-drawer.closing in device.css
   }, []);
   const hoveredBarRef    = useRef(null);
   const hoveredTypeRef   = useRef(null);
@@ -508,13 +508,12 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
 
   return (
     <div className="page dev-page">
-      <div className="dev-grid">
+      {/* ── 4-column grid: top row spans 2/1/1, bottom row spans 2/2 —
+           one shared grid so column boundaries line up between rows ── */}
+      <div className="dev-grid-4">
 
-        {/* ── Left column ──────────────────────────────── */}
-        <div className="dev-col-left">
-
-          {/* Total stat + trend chart */}
-          <div className="card dev-card" data-nav-explore="chart" data-nav-label="Total Identities Trend">
+        {/* Total stat + trend chart */}
+        <div className="card dev-card dev-span-2" data-nav-explore="chart" data-nav-label="Total Identities Trend">
             <div className="dev-stat-header">
               <div className="dev-stat-title-row">
                 <span className="dev-stat-label">Total</span>
@@ -591,13 +590,10 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+        </div>
 
-          {/* Bottom row: Data Source + Type */}
-          <div className="dev-bottom-row">
-
-            {/* Data Source */}
-            <div className="card dev-card dev-source-card" data-nav-explore="chart" data-nav-label="Data Source">
+        {/* Data Source */}
+        <div className="card dev-card dev-source-card" data-nav-explore="chart" data-nav-label="Data Source">
               <div className="dev-card-title">Data Source</div>
               <div className="dev-chart-fill">
                 <ResponsiveContainer width="100%" height="100%">
@@ -714,81 +710,8 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
               </div>
             </div>
 
-          </div>
-        </div>
-
-        {/* ── Right column ─────────────────────────────── */}
-        <div className="dev-col-right">
-
-          {/* Key Security Insights */}
-          <div className="card dev-card dev-insights-card">
-            <div className="dev-card-hdr">
-              <span className="dev-card-title">Key Security Insights</span>
-              <DSPillSearch
-                value={insightSearch}
-                onChange={v => { setInsightSearch(v); setInsightPage(1); }}
-                placeholder="Search assessments…"
-              />
-            </div>
-            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Key Security Insights">
-              <table className="ds-table dev-insights-table">
-                <thead>
-                  <tr>
-                    <TH>Assessment</TH>
-                    <TH>Findings Failed</TH>
-                    <TH>Exposure Category</TH>
-                    <th className="ds-th cfp-th-actions">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => {
-                    const globalIdx = (insightPage - 1) * rowsPer + i;
-                    return (
-                    <tr key={i} className="kg-tr--clickable" onClick={() => setInsightDrawerNode(insightToAssessmentNode(r, globalIdx))}>
-                      <td className="ds-td dev-td-name">
-                        <span className="dev-cell-icon-text">
-                          {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
-                          <span className="dev-td-name-text">{r.text}</span>
-                        </span>
-                      </td>
-                      <td className="ds-td dev-td-findings">
-                        <div className="dev-findings-bar">
-                          <div className="dev-findings-bar__track">
-                            <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
-                          </div>
-                          <span className="dev-findings-bar__pct">{r.failPctLabel || `${r.failPct}%`}</span>
-                        </div>
-                      </td>
-                      <td className="ds-td">
-                        {r.cat}
-                      </td>
-                      <td className="ds-td" onClick={e => e.stopPropagation()}>
-                        <div className="cfp-td-actions">
-                          <span className="dc-tip dc-tip--end" data-tip="Filter dashboard by this assessment">
-                            <button
-                              className={`comp-drawer-action-icon comp-drawer-action-icon--filter${activeAssessmentIds.has(fakeAssessmentId(r.text)) ? ' comp-drawer-action-icon--active' : ''}`}
-                              onClick={() => toggleAssessmentFilter(r)}
-                            ><IcInsightFilter /></button>
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <TablePagination
-              total={filteredInsights.length}
-              page={insightPage}
-              rowsPerPage={rowsPer}
-              onPageChange={setInsightPage}
-              onRowsPerPageChange={n => { setRowsPer(n); setInsightPage(1); }}
-            />
-          </div>
-
-          {/* Criticality */}
-          <div className="card dev-card dev-crit-card">
+        {/* Criticality */}
+        <div className="card dev-card dev-crit-card dev-span-2">
             <div className="dev-card-hdr">
               <span className="dev-card-title">Criticality Insights</span>
             </div>
@@ -874,7 +797,73 @@ export default function DiscoverIdentityPage({ onNav, crossFilters = [], onToggl
             />
           </div>
 
-        </div>
+          {/* Key Security Insights (brought down, below Criticality Insights) */}
+          <div className="card dev-card dev-insights-card dev-span-2">
+            <div className="dev-card-hdr">
+              <span className="dev-card-title">Key Security Insights</span>
+              <DSPillSearch
+                value={insightSearch}
+                onChange={v => { setInsightSearch(v); setInsightPage(1); }}
+                placeholder="Search assessments…"
+              />
+            </div>
+            <div className="ds-table-wrap dev-no-hscroll" data-nav-explore="table" data-nav-label="Key Security Insights">
+              <table className="ds-table dev-insights-table">
+                <thead>
+                  <tr>
+                    <TH>Assessment</TH>
+                    <TH>Findings Failed</TH>
+                    <TH>Exposure Category</TH>
+                    <th className="ds-th cfp-th-actions">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInsights.slice((insightPage-1)*rowsPer, insightPage*rowsPer).map((r, i) => {
+                    const globalIdx = (insightPage - 1) * rowsPer + i;
+                    return (
+                    <tr key={i} className="kg-tr--clickable" onClick={() => setInsightDrawerNode(insightToAssessmentNode(r, globalIdx))}>
+                      <td className="ds-td dev-td-name">
+                        <span className="dev-cell-icon-text">
+                          {r.sev === 'high' ? <IcSevHigh /> : <IcSevMed />}
+                          <span className="dev-td-name-text">{r.text}</span>
+                        </span>
+                      </td>
+                      <td className="ds-td dev-td-findings">
+                        <div className="dev-findings-bar">
+                          <div className="dev-findings-bar__track">
+                            <div className="dev-findings-bar__fill" style={{ width: `${r.failPct}%` }} />
+                          </div>
+                          <span className="dev-findings-bar__pct">{r.failPctLabel || `${r.failPct}%`}</span>
+                        </div>
+                      </td>
+                      <td className="ds-td">
+                        {r.cat}
+                      </td>
+                      <td className="ds-td" onClick={e => e.stopPropagation()}>
+                        <div className="cfp-td-actions">
+                          <span className="dc-tip dc-tip--end" data-tip="Filter dashboard by this assessment">
+                            <button
+                              className={`comp-drawer-action-icon comp-drawer-action-icon--filter${activeAssessmentIds.has(fakeAssessmentId(r.text)) ? ' comp-drawer-action-icon--active' : ''}`}
+                              onClick={() => toggleAssessmentFilter(r)}
+                            ><IcInsightFilter /></button>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <TablePagination
+              total={filteredInsights.length}
+              page={insightPage}
+              rowsPerPage={rowsPer}
+              onPageChange={setInsightPage}
+              onRowsPerPageChange={n => { setRowsPer(n); setInsightPage(1); }}
+            />
+          </div>
+
       </div>
 
       {showDrawer && (() => {

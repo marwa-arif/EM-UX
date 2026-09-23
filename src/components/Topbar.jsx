@@ -6,8 +6,8 @@ import HelpSupportPanel from './HelpSupportPanel.jsx'
 import { useDownloads } from '../DownloadsContext.jsx'
 import { IcPanelToggle, IcConsoleNav } from './LeftNav.jsx'
 
-const SunIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const SunIcon = ({ className }) => (
+  <svg className={className} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="5"/>
     <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
     <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
@@ -16,8 +16,8 @@ const SunIcon = () => (
   </svg>
 );
 
-const MoonIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const MoonIcon = ({ className }) => (
+  <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 );
@@ -58,7 +58,7 @@ const UserIcon = () => (
   </svg>
 );
 
-function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse }) {
+function Topbar({ onNav, theme = 'light', onToggleTheme, onStartTour, navCollapsed, onToggleNavCollapse }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -134,27 +134,23 @@ function Topbar({ onNav, navigatorActive, showNavigatorButton = true, theme = 'l
 
       <div className="topbar__spacer" />
 
-      {showNavigatorButton && (
-        <button
-          className={`topbar__navigator${navigatorActive ? ' active' : ''}`}
-          onClick={() => onNav?.('navigator')}
-          title="Navigator"
-          aria-label="Navigator"
-          data-tour="topbar-navigator"
-        >
-          <span className="topbar__navigator-icon" />
-        </button>
-      )}
-
       <VersionBadge />
 
       <button
+        type="button"
+        role="switch"
+        aria-checked={theme === 'dark'}
         title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-        className="topbar__btn topbar__theme-toggle"
+        aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+        className={`topbar__theme-toggle${theme === 'dark' ? ' topbar__theme-toggle--dark' : ''}`}
         onClick={onToggleTheme}
         data-tour="topbar-theme"
       >
-        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+        <span className="topbar__theme-toggle-track" aria-hidden="true" />
+        <span className="topbar__theme-toggle-knob" aria-hidden="true">
+          <SunIcon className="topbar__theme-toggle-icon topbar__theme-toggle-icon--sun" />
+          <MoonIcon className="topbar__theme-toggle-icon topbar__theme-toggle-icon--moon" />
+        </span>
       </button>
 
       <div ref={notifRef} className="topbar__notif">

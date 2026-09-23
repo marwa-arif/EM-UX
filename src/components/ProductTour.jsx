@@ -14,7 +14,7 @@ import '../styles/productTour.css'
 const STEPS = [
   { id: 'welcome', title: 'Welcome to Prevalent AI', body: 'Take a quick tour of the dashboard — navigation, Insights pages, filters, tables, and the Admin Panel. You can exit anytime.' },
   { id: 'topbar-logo', target: '[data-tour="topbar-logo"]', title: 'Home', body: 'Click the Prevalent AI logo anytime to return to Navigator, your home base.' },
-  { id: 'topbar-navigator', target: '[data-tour="topbar-navigator"]', title: 'Navigator', body: 'Open Navigator for quick AI-assisted answers without leaving the page you’re on.' },
+  { id: 'topbar-navigator', target: '[data-tour="copilot-fab"]', title: 'Navigator', body: 'Open Navigator for quick AI-assisted answers without leaving the page you’re on.' },
   { id: 'topbar-theme', target: '[data-tour="topbar-theme"]', title: 'Theme', body: 'Switch between light and dark themes to match your preference.' },
   { id: 'topbar-notif', target: '[data-tour="topbar-notif"]', title: 'Notifications', body: 'Notifications keep you updated on findings, downloads, and system activity.' },
   { id: 'topbar-account', target: '[data-tour="topbar-account"]', title: 'Account menu', body: 'Access Settings, Help & Support, and Log Out from here — you can reopen this tour anytime from Help & Support.' },

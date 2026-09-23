@@ -2140,17 +2140,17 @@ html.theme-light .ct-btn--danger:hover { background: var(--pai-crit-bg-hover); }
 }
 
 .comp-matrix-badge--green {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--pai-green);
 }
 
 .comp-matrix-badge--red {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--pai-crit-fg);
 }
 
 .comp-matrix-badge--neutral {
-  background: #fff;
+  background: var(--card-bg);
   color: var(--comp-badge-color, var(--shell-text-muted));
 }
 
@@ -2813,6 +2813,13 @@ html.theme-dark .comp-fw-logo-img--dark {
 .comp-sort-menu--full {
   width: 100%;
   left: 0;
+}
+/* Opens above the trigger instead of below — for a dropdown that's the last
+   field in a scrollable container (e.g. a modal body with overflow-y:auto),
+   where opening downward would get clipped by that ancestor's overflow. */
+.comp-sort-menu--up {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 .comp-sort-menu--scrollable {
   max-height: 220px;

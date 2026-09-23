@@ -88,6 +88,7 @@ body { background: #F7F9FC; color: #101010; }
 
   /* Teal — positive trend indicator */
   --pai-teal:                #21929B;
+  --pai-teal-bg:             #ECF8FD;   /* dashboard/quick-action teal badge background */
 
   /* Navigator / AI panel brand gradient tokens */
   --pai-nav-teal:            #47ADCB;   /* AI heading & icon gradient teal */
@@ -116,6 +117,27 @@ body { background: #F7F9FC; color: #101010; }
   --tooltip-fg:              #D1D1D1;   /* light tooltip text */
 }
 
+/* ── App-wide theme-switch crossfade ─────────────────────────────────
+   Toggled on briefly (see App.jsx toggleTheme) so surfaces ease between
+   light/dark instead of snapping — without slowing down every other
+   hover/open/close transition in the app the rest of the time.
+   Text/icon color is deliberately fast (not synced to the slower
+   background ease): animating both at the same rate makes text cross
+   through a low-contrast grey mid-transition and visibly disappear for
+   a beat before "reappearing" — keeping color near-instant avoids that
+   dip while the surfaces underneath still glide. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 260ms cubic-bezier(0.4,0,0.2,1),
+              border-color 260ms cubic-bezier(0.4,0,0.2,1),
+              box-shadow 260ms cubic-bezier(0.4,0,0.2,1),
+              color 100ms linear,
+              fill 100ms linear,
+              stroke 100ms linear !important;
+}
+
 button { font-family: inherit; }
 
 /* ── KG variable aliases (map KG-specific tokens to design-system tokens) ── */
@@ -140,41 +162,42 @@ html.theme-dark {
   color-scheme: dark;
 
   /* Shell surfaces */
-  --shell-bg:           #0E0E0E;
-  --shell-raised:       #1C1C1C;
-  --shell-border:       #272727;
-  --shell-border-2:     #3B3A3A;
-  --shell-text:         #F9F9F9;
-  --shell-text-2:       #D1D1D1;
-  --shell-text-muted:   #8A8A8A;
+  --shell-bg:           #06060A;
+  --shell-raised:       #17181D;
+  --shell-elevated:     #202129;
+  --shell-border:       #2C2D34;
+  --shell-border-2:     #3A3B45;
+  --shell-text:         #F6F6F9;
+  --shell-text-2:       #C7C9D2;
+  --shell-text-muted:   #8B8D98;
   --shell-text-faint:   #696969;
-  --shell-accent:       #6360D8;
-  --shell-hover:        rgba(255,255,255,0.05);
-  --shell-active:       rgba(99,96,216,0.15);
+  --shell-accent:       #8481EA;
+  --shell-hover:        rgba(255,255,255,0.06);
+  --shell-active:       rgba(132,129,234,0.16);
 
   /* Card / table surfaces */
-  --card-bg:            #1C1C1C;
-  --card-border:        #272727;
-  --table-th-bg:        #131313;
-  --table-border:       #272727;
+  --card-bg:            #121318;
+  --card-border:        #292A31;
+  --table-th-bg:        #16171C;
+  --table-border:       #24252C;
 
   /* Control / input */
-  --ctrl-bg:            #131313;
-  --ctrl-border:        #333333;
-  --ctrl-placeholder:   #696969;
+  --ctrl-bg:            #17181D;
+  --ctrl-border:        #3A3B45;
+  --ctrl-placeholder:   #75767F;
 
   /* PAI semantic aliases */
-  --pai-fg1:                  #F9F9F9;
-  --pai-fg2:                  #D1D1D1;
-  --pai-fg3:                  #8A8A8A;
-  --pai-border:               #272727;
-  --pai-border-strong:        #3B3A3A;
-  --pai-bg-app:               #0E0E0E;
-  --pai-bg-raised:            #1F1F1F;
-  --pai-surface:              #1C1C1C;
+  --pai-fg1:                  #F6F6F9;
+  --pai-fg2:                  #C7C9D2;
+  --pai-fg3:                  #8B8D98;
+  --pai-border:               #2C2D34;
+  --pai-border-strong:        #3A3B45;
+  --pai-bg-app:               #06060A;
+  --pai-bg-raised:            #202129;
+  --pai-surface:              #121318;
   --pai-disabled:             #555555;
-  --pai-indigo-tint:          rgba(99,96,216,0.15);
-  --pai-indigo-secondary:     rgba(99,96,216,0.22);
+  --pai-indigo-tint:          rgba(132,129,234,0.15);
+  --pai-indigo-secondary:     rgba(132,129,234,0.22);
   --pai-indigo-secondary-fg:  #A09EEB;
 
   /* Severity — fg lightened for dark backgrounds, bg tinted */
@@ -188,17 +211,18 @@ html.theme-dark {
   --pai-low-fg:         #31A56D;
   --pai-low-bg:         rgba(49,165,109,0.15);
   --pai-warn-bg:        rgba(205,185,0,0.08);
+  --pai-teal-bg:        rgba(33,146,155,0.15);
 
   /* Navigator panel — slightly lightened for dark context */
   --pai-nav-teal:       #5BBDD4;
 }
 
 html.theme-dark body {
-  background: #0E0E0E;
-  color: #F9F9F9;
+  background: #06060A;
+  color: #F6F6F9;
 }
 
-html.theme-dark *::-webkit-scrollbar-thumb { background: #3B3A3A; }
+html.theme-dark *::-webkit-scrollbar-thumb { background: #3A3B45; }
 
 /* ── Shared page wrapper ─────────────────────────────────────────── */
 .page {

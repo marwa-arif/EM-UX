@@ -1,5 +1,122 @@
 [
   {
+    "version": "0.26.0",
+    "date": "2026-09-23",
+    "changes": {
+      "Added": [
+        "rp-shell Filter panel: attribute grouping (Identity/Device/Access & Security/Metadata) with source tags, and Apply/Reset dirty-state tracking for Quick and Saved Filters.",
+        "Active Filter panel: per-source (quick/graph/saved) filter count breakdown, plus an info tooltip explaining Implicit Filters.",
+        "Navigator first-run view: \"Connected data\" section label, a third suggested prompt, and icons on suggestion buttons.",
+        "Floating Navigator can now stay open independently of the docked right-panel tab, so it coexists with Filter or other docked panels.",
+        "Release History (version badge) now shows the 3 most recent releases by default, with a \"View all releases\" button to expand the full history."
+      ],
+      "Changed": [
+        "Drawer close timing unified to 280ms across Compliance, Data Quality, Discover (Cloud/Device/Identity), and Exposure Overview pages to match their CSS closing animations.",
+        "Discover Identity page layout switched to a single shared 4-column grid so column boundaries line up between rows.",
+        "Theme toggle button now exposes proper `role=\"switch\"` / `aria-checked` / `aria-label` state.",
+        "CopilotFab overlap tracking now samples every animation frame during panel transitions instead of a single recompute, so it moves in lockstep with sliding panels.",
+        "Graph Filter's entity attribute side panel is now positioned from the trigger's rect instead of relying on `overflow` clipping, and its canvas sizer only reserves fan-out space when a fan is actually showing.",
+        "Findings page: removed unused mock \"Remediate Now\" / backlog / SLA / top-exposed operational-intelligence widgets.",
+        "Removed the legacy Knowledge Graph page (`PageKG.jsx`) and its stylesheet (`kg.css`)."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.25.0",
+    "date": "2026-09-18",
+    "changes": {
+      "Added": [
+        "rp-shell Filter panel: live \"Matching records\" count in the Quick/Saved Filters footer, updating as filter values are selected.",
+        "rp-shell Filter panel: \"Apply to all pages\" toggle (with info tooltip) that applies the current filter across every page instead of just the current one.",
+        "rp-shell Filter panel: \"Save current filter\" action in the Saved Filters tab, adding the active Quick Filter selection to Recent Filters."
+      ],
+      "Changed": [
+        "Filter panel footer restyled into a single card (icon + accent-colored count, active-state toggle label) instead of separate floating elements."
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.24.1",
+    "date": "2026-09-17",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Favicon icon color changed from purple (`#6360D8`) to white"
+      ]
+    }
+  },
+  {
+    "version": "0.24.0",
+    "date": "2026-09-16",
+    "changes": {
+      "Added": [
+        "Control Plane: Environment Directory (list, detail, manual add, coverage reconciliation) under Admin Panel"
+      ],
+      "Changed": [],
+      "Fixed": [
+        "Dark theme token overhaul (shell/card/control surfaces) and hardcoded white badge backgrounds replaced with `var(--card-bg)` across compliance, data-quality, library, drawer, and shell styles"
+      ]
+    }
+  },
+  {
+    "version": "0.23.1",
+    "date": "2026-09-11",
+    "changes": {
+      "Added": [],
+      "Changed": [],
+      "Fixed": [
+        "Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href=\"/EM-UX/\">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app"
+      ]
+    }
+  },
+  {
+    "version": "0.23.0",
+    "date": "2026-09-10",
+    "changes": {
+      "Added": [
+        "Save modal's \"Save Dashboard Under\" field can pin a saved dashboard as a real left-nav destination — nested inside Exposure/Discover/Report/Data Quality, as its own top-level \"Standalone Dashboard\" leaf, or under a new user-created section — instead of only appearing in Workspace > Saved",
+        "App-wide `SavedDashboardsCtx` so pinned/saved dashboards survive navigating out of Workspace instead of being lost on unmount"
+      ],
+      "Changed": [
+        "Saved page's Duplicate action routes through the real saved-dashboards/reports store (so a copy survives leaving the tab) and dedupes generated \"(Copy)\" names against every existing name instead of just appending a bare suffix",
+        "`ActiveFilterPanel` accepts a per-dashboard `implicitConfig` (built from a pinned dashboard's scope/scope-attrs) so a pinned dashboard's own scope becomes its locked filters, the same role static per-route `PAGE_AFP_CONFIG` plays elsewhere"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.22.1",
+    "date": "2026-09-10",
+    "changes": {
+      "Added": [],
+      "Changed": [
+        "Reconciled `feature/studio-workspace` with `develop`'s PR #23/#24/#25 history (MRA Security Risk route repair, `MatrixDropdown.jsx` fix) after merging `origin/develop`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
+    "version": "0.22.0",
+    "date": "2026-09-10",
+    "changes": {
+      "Added": [
+        "`CopilotFab` floating launcher, auto-repositions around any right-docked panel/drawer (Filter Panel, Widget Settings, Add Widget, Help & Support, Navigator, Findings/Compliance drawers) and rotates contextual/generic hint messages",
+        "Discard-unsaved-changes guard on Workspace nav while a dashboard/report is mid-build, matching the canvas's own Back button behavior",
+        "Navigator rail item opens the inline guided-builder panel instead of the floating Navigator panel while a dashboard/report is being built",
+        "Dashboard widget KPI aggregation operations and value-size options; Excel/PDF export icons on `DashboardCanvas`"
+      ],
+      "Changed": [
+        "Merged `develop` (v0.21.1) into `feature/studio-workspace`, reconciling this branch's v0.22.0 bump with develop's independent v0.21.1 merge",
+        "Merged `feature/studio-workspace` left-nav/dashboard work with the hover-flyout left nav and multi-entity graph filter changes",
+        "`Topbar` no longer takes `navigatorActive`/`showNavigatorButton` — Navigator entry now lives in `CopilotFab`"
+      ],
+      "Fixed": []
+    }
+  },
+  {
     "version": "0.21.1",
     "date": "2026-09-02",
     "changes": {

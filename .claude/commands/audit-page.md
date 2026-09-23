@@ -1,16 +1,16 @@
-Fetch ALL of these URLs fully before doing anything:
-1. https://anthu211.github.io/design-system-2.0/ds/context.json
-2. https://anthu211.github.io/design-system-2.0/ds/tokens/colors.json
-3. https://anthu211.github.io/design-system-2.0/ds/tokens/spacing.json
-4. https://anthu211.github.io/design-system-2.0/ds/tokens/typography.json
-5. https://anthu211.github.io/design-system-2.0/ds/components/buttons.json
-6. https://anthu211.github.io/design-system-2.0/ds/components/tables.json
-7. https://anthu211.github.io/design-system-2.0/ds/components/badges.json
-8. https://anthu211.github.io/design-system-2.0/ds/components/feedback.json
-9. https://anthu211.github.io/design-system-2.0/ds/components/states.json
-10. https://anthu211.github.io/design-system-2.0/ds/core.txt
+Read ALL of these local files fully before doing anything (never WebFetch — this directory is checked out locally in this repo):
+1. design-system-2.0/ds/context.json
+2. design-system-2.0/ds/tokens/colors.json
+3. design-system-2.0/ds/tokens/spacing.json
+4. design-system-2.0/ds/tokens/typography.json
+5. design-system-2.0/ds/components/buttons.json
+6. design-system-2.0/ds/components/tables.json
+7. design-system-2.0/ds/components/badges.json
+8. design-system-2.0/ds/components/feedback.json
+9. design-system-2.0/ds/components/states.json
+10. design-system-2.0/ds/core.md
 
-Do not proceed until every URL above is fully fetched and read.
+Do not proceed until every file above is fully read.
 
 ---
 

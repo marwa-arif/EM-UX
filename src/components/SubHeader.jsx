@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Ic } from '../ui.jsx'
 import ActiveFilterPanel, { SaveFilterModal } from './ActiveFilterPanel.jsx'
 
-const EXPLORE_GROUPS = [
+export const EXPLORE_GROUPS = [
   { label: 'Exposure', icon: 'navbar-exposure', items: [
     { label: 'Overview',            id: 'exposure/overview',          icon: 'nav-overview' },
     { label: 'Findings',            id: 'exposure/findings',          icon: 'nav-findings' },
@@ -23,7 +23,7 @@ const EXPLORE_GROUPS = [
   ]},
 ];
 
-function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId }) {
+function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks = [], activeFilterCount = 0, activeFilters = [], onRemoveFilter, onClearFilters, onExplore, onFilter, filterActive, actions, leading, showMenu = true, showExplore = true, onEdit, pageId, implicitConfig }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -151,7 +151,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               className="subheader__save-btn"
               onClick={() => setShowSaveModal(true)}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pai-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pai-on-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
@@ -186,6 +186,7 @@ function SubHeader({ title, breadcrumb, breadcrumbHrefs = [], breadcrumbClicks =
               onClose={() => setFilterPillOpen(false)}
               position={pillPos}
               pageId={pageId}
+              implicitConfig={implicitConfig}
             />
           )}
 

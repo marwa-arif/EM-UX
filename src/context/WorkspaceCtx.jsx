@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSavedDashboards } from './SavedDashboardsCtx.jsx'
 
 // Workspace context — shared state for all workspace pages
 
@@ -68,14 +69,14 @@ function WorkspaceProvider({ children, onNav, editDashboardSeed, setEditDashboar
   const [savedSearch, setSavedSearch] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [savedReports, setSavedReports] = React.useState([]);
-  const [savedDashboards, setSavedDashboards] = React.useState([]);
+  // Sourced from the app-wide SavedDashboardsProvider (mounted in App.jsx),
+  // not owned here — this provider fully unmounts on every trip out of
+  // workspace/*, which would otherwise lose any dashboard pinned to a
+  // left-nav section. See SavedDashboardsCtx.jsx.
+  const { savedDashboards, addSavedDashboard, removeSavedDashboard, customSections, addCustomSection } = useSavedDashboards();
 
   const addSavedReport = React.useCallback((entry) => {
     setSavedReports(prev => [entry, ...prev.filter(r => r.name !== entry.name)]);
-  }, []);
-
-  const addSavedDashboard = React.useCallback((entry) => {
-    setSavedDashboards(prev => [entry, ...prev.filter(d => d.id !== entry.id && d.name !== entry.name)]);
   }, []);
   const [uploadedFile, setUploadedFile] = React.useState(null);   // File object
   const [uploadSource, setUploadSource] = React.useState('html'); // 'html' | 'design'
@@ -126,7 +127,8 @@ function WorkspaceProvider({ children, onNav, editDashboardSeed, setEditDashboar
       savedSearch, setSavedSearch,
       deleteTarget, openDeleteModal, closeDeleteModal,
       savedReports, addSavedReport,
-      savedDashboards, addSavedDashboard,
+      savedDashboards, addSavedDashboard, removeSavedDashboard,
+      customSections, addCustomSection,
       uploadedFile, setUploadedFile,
       uploadSource, setUploadSource,
     }}>

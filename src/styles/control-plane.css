@@ -1,0 +1,120 @@
+/* Control Plane — Environment Directory.
+   Built from existing DS tokens/classes (ds-table, ds-badge, ds-btn, ds-modal,
+   ds-text-caption) plus a few DS-spec pieces (design-system-2.0/ds/) not yet
+   implemented anywhere in this app — sortable table headers, the filter
+   popup/active-filter-chip pattern, and empty-state composition. Those are
+   scoped with a cp- prefix rather than claiming the unprefixed global DS
+   class names, since backfilling the whole app's design system isn't this
+   feature's call to make. Confidence never uses green/amber/red — see
+   cp-badge--verified/--stale/--unknown below, which vary weight and opacity
+   instead of hue. */
+
+.cp-page { display: flex; flex-direction: column; gap: 16px; padding: 16px 0 32px; }
+
+/* ── Toolbar / search / filters ─────────────────────────────────────── */
+.cp-toolbar { display: flex; align-items: center; gap: 8px; }
+.cp-toolbar__spacer { flex: 1; }
+
+.ds-text-caption { font-size: 11px; font-weight: 400; color: var(--shell-text-muted); }
+
+.ds-filter-popup-wrap { position: relative; }
+.ds-filter-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 32px; padding: 0 12px; border-radius: 44px;
+  border: 1px solid var(--shell-border); background: var(--shell-raised);
+  color: var(--shell-text); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.ds-filter-btn--open { border-color: var(--pai-indigo); }
+.ds-filter-btn__count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 44px;
+  background: var(--pai-indigo); color: #fff; font-size: 11px; font-weight: 600;
+}
+
+.ds-filter-popup {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 20;
+  width: 280px; max-height: 420px; overflow-y: auto;
+  background: var(--shell-elevated); border: 1px solid var(--shell-border);
+  border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+  padding: 12px; display: flex; flex-direction: column; gap: 16px;
+}
+.ds-filter-popup__group { display: flex; flex-direction: column; gap: 4px; }
+.ds-filter-popup__group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--shell-text-muted); margin-bottom: 4px; }
+.ds-filter-popup__option { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-text); padding: 4px 0; cursor: pointer; }
+.ds-filter-popup__footer { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--shell-border); }
+
+.ds-active-filters-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ds-filter-chip-active {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 8px; border-radius: 44px;
+  background: var(--shell-raised); color: var(--shell-text); font-size: 12px;
+}
+.ds-filter-chip-active button { border: none; background: transparent; color: var(--shell-text-muted); cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
+.ds-active-filters-bar__clear { border: none; background: transparent; color: var(--pai-indigo); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 4px; }
+
+/* ── Sortable table headers ─────────────────────────────────────────── */
+.ds-th-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.ds-th-sortable::after { content: ''; display: inline-block; width: 8px; height: 8px; margin-left: 4px; opacity: 0.4; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.ds-th-sortable-asc::after { opacity: 1; transform: translateY(0) rotate(-135deg); }
+.ds-th-sortable-desc::after { opacity: 1; transform: translateY(-4px) rotate(45deg); }
+
+.cp-row { cursor: pointer; }
+.cp-td-name { font-weight: 600; color: var(--shell-text); }
+.cp-muted { color: var(--shell-text-faint); }
+
+/* ── Empty states ────────────────────────────────────────────────────── */
+.cp-empty-table, .cp-empty-section {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; text-align: center; padding: 48px 20px; color: var(--shell-text-muted);
+}
+.cp-empty-section--inline { padding: 20px; }
+.cp-empty-table__icon, .cp-empty-section__icon { font-size: 32px; margin-bottom: 8px; }
+.cp-empty-table__title, .cp-empty-section__title { font-size: 14px; font-weight: 600; color: var(--shell-text); }
+.cp-empty-table__desc, .cp-empty-section__desc { font-size: 12px; margin-bottom: 8px; }
+
+/* ── Confidence badges — weight/opacity, never hue ──────────────────── */
+.cp-badge--verified { color: var(--shell-text); font-weight: 700; }
+.cp-badge--stale { color: var(--shell-text-muted); opacity: 0.75; }
+.cp-badge--unknown { color: var(--shell-text-faint); font-style: italic; }
+.cp-badge--manual { color: var(--shell-text); border: 1px solid var(--shell-border); background: transparent; }
+.cp-badge--no-baseline { color: var(--shell-text-muted); font-style: italic; }
+.cp-badge--drift { color: var(--shell-text); font-weight: 700; }
+
+/* ── Section / provenance header ─────────────────────────────────────── */
+.cp-section { display: flex; flex-direction: column; gap: 12px; padding: 20px; border: 1px solid var(--shell-border); border-radius: 4px; background: var(--shell-raised); }
+.cp-section-header { display: flex; flex-direction: column; gap: 4px; }
+.cp-section-header__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cp-section-header__title { font-size: 13px; font-weight: 700; color: var(--shell-text); text-transform: uppercase; letter-spacing: 0.04em; }
+.cp-section__edit { align-self: flex-start; }
+
+.cp-conflict-banner { margin-top: 4px; padding: 12px; border: 1px solid var(--status-caution, #CDB900); border-radius: 4px; font-size: 12px; color: var(--shell-text); background: transparent; }
+
+/* ── Grids for key/value fields ──────────────────────────────────────── */
+.cp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.cp-grid-cell { display: flex; flex-direction: column; gap: 4px; }
+.cp-grid-key { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--shell-text-muted); }
+.cp-grid-val { font-size: 13px; color: var(--shell-text); }
+
+/* ── Detail page ─────────────────────────────────────────────────────── */
+.cp-detail__header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.cp-detail__title { font-size: 20px; font-weight: 700; color: var(--shell-text); margin: 0; }
+.cp-detail__subtitle { font-size: 12px; color: var(--shell-text-muted); }
+.cp-back-link { align-self: flex-start; border: none; background: transparent; color: var(--pai-indigo); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 8px; }
+
+/* ── Form modal / form page ──────────────────────────────────────────── */
+.cp-form-modal { width: 480px; }
+.cp-form-body, .cp-form-page__grid { display: flex; flex-direction: column; gap: 12px; }
+.cp-form-page__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.cp-form-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--shell-text-muted); }
+.cp-form-field input, .cp-form-field select {
+  height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--shell-border);
+  background: var(--shell-elevated); color: var(--shell-text); font-size: 13px;
+}
+.cp-form-page__hint { max-width: 640px; }
+.cp-form-page__actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── Coverage page ───────────────────────────────────────────────────── */
+.cp-coverage__summary { display: flex; gap: 24px; }
+.cp-coverage__stat { display: flex; flex-direction: column; gap: 4px; padding: 20px; border: 1px solid var(--shell-border); border-radius: 4px; background: var(--shell-raised); }
+.cp-coverage__stat-value { font-size: 28px; font-weight: 700; color: var(--shell-text); }
+.cp-coverage__stat-label { font-size: 12px; color: var(--shell-text-muted); max-width: 280px; }

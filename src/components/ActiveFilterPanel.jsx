@@ -318,14 +318,33 @@ export function SaveFilterModal({ onClose, onSave }) {
   )
 }
 
+// Turns a saved Workspace dashboard's scope (dashboardScopes: GF_ENTITIES rows;
+// dashboardScopeAttrs: { [entityId]: { [attr]: { mode, values } } }, both set via
+// DashboardCanvas's DashboardScopeModal/ScopeAttrsPanel) into the entityTree +
+// per-entity implicit-filter shape this panel renders — the dashboard's scope
+// becomes this view's locked filters, the same role PAGE_AFP_CONFIG plays for
+// Discover's static pages, just computed per-dashboard instead of per-route.
+export function buildDashboardScopeImplicitConfig(dashboardScopes = [], dashboardScopeAttrs = {}) {
+  const entityTree = dashboardScopes.map(e => ({ entity: e.label, relation: null }))
+  const perEntityImplicitFilters = {}
+  dashboardScopes.forEach(e => {
+    const attrs = dashboardScopeAttrs[e.id] || {}
+    const rows = Object.entries(attrs).map(([key, cfg]) => ({
+      key, mode: (cfg.mode || 'Include').toUpperCase(), values: cfg.values || [],
+    }))
+    if (rows.length) perEntityImplicitFilters[e.label] = rows
+  })
+  return { entityTree, perEntityImplicitFilters, implicitFindingFilters: [] }
+}
+
 // ── Active Filter Panel ───────────────────────────────────────────────────────
-export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId }) {
+export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId, implicitConfig }) {
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [resetImplicitToo, setResetImplicitToo] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
 
-  const { entityTree, implicitEntityFilters, implicitFindingFilters } = getAfpConfig(pageId)
+  const { entityTree, implicitEntityFilters, implicitFindingFilters, perEntityImplicitFilters } = implicitConfig || getAfpConfig(pageId)
 
   const savedFilterIdx  = activeFilters.findIndex(f => f.attrId === 'saved-filter')
   const savedFilterChip = savedFilterIdx >= 0 ? activeFilters[savedFilterIdx] : null
@@ -345,6 +364,18 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       entity,
       attrs: Array.from(attrs.values()),
     }))
+  }, [activeFilters])
+
+  // Per-tab attribution — chips carry an explicit `source` since 2026; fall back to the
+  // attrId convention (graph-*, saved-filter) for any that predate the field.
+  const sourceBreakdown = useMemo(() => {
+    const counts = { quick: 0, graph: 0, saved: 0 }
+    activeFilters.forEach(chip => {
+      const src = chip.source
+        || (chip.attrId === 'saved-filter' ? 'saved' : chip.attrId?.startsWith('graph-') ? 'graph' : 'quick')
+      if (counts[src] !== undefined) counts[src]++
+    })
+    return counts
   }, [activeFilters])
 
   // top/right are runtime-calculated pixel positions — must stay inline
@@ -371,10 +402,26 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                 <div className="afp-toggle-thumb" />
               </div>
               <span className="afp-toggle-label">Implicit Filters</span>
+              <span
+                className="afp-info-tip"
+                data-tip="Implicit: also include entities indirectly related through the current filters, not just the ones directly connected."
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </span>
             </label>
             <button className="afp-close-btn" onClick={onClose} data-tour="page-filter-close"><IcClose /></button>
           </div>
         </div>
+
+        {activeFilters.length > 0 && (
+          <div className="afp-source-breakdown">
+            <span className="afp-source-breakdown__item">{sourceBreakdown.quick} from Quick Filters</span>
+            <span className="afp-source-breakdown__sep">·</span>
+            <span className="afp-source-breakdown__item">{sourceBreakdown.graph} from Graph Filter</span>
+            <span className="afp-source-breakdown__sep">·</span>
+            <span className="afp-source-breakdown__item">{sourceBreakdown.saved} from Saved Filters</span>
+          </div>
+        )}
 
         <div className="afp-body">
           {savedFilterChip && (
@@ -397,6 +444,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
             // of once per entity in the tree (entityTree can have several `relation`s, e.g.
             // the fallback ENTITY_TREE, which would otherwise repeat the same chips N times).
             const isFirstRelated   = relation && entityIdx === entityTree.findIndex(e => e.relation)
+            const entityImplicit   = perEntityImplicitFilters ? (perEntityImplicitFilters[entity] || []) : implicitEntityFilters
 
             return (
               <div key={entity} className="afp-entity-block">
@@ -417,7 +465,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                             <button className="afp-fc-remove" title="Remove filter" onClick={() => attr.indices.slice().reverse().forEach(idx => onRemove?.(idx))}>×</button>
                           </span>
                         ))}
-                        {implicitFilters && implicitEntityFilters.map(f => (
+                        {implicitFilters && entityImplicit.map(f => (
                           <span key={f.key} className="afp-filter-chip">
                             <span className="afp-fc-label">{f.key}</span>
                             <span className="afp-fc-sep">&nbsp;:&nbsp;</span>

@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import ErrorPage from './pages/ErrorPage.jsx'
 import Topbar from './components/Topbar.jsx'
 import { LeftNavHybrid } from './components/LeftNavAlt.jsx'
+import { INSIGHTS_MODEL, withSavedDashboards } from './components/LeftNav.jsx'
+import DashboardCanvas from './pages/DashboardCanvas.jsx'
+import { WorkspaceProvider } from './context/WorkspaceCtx.jsx'
+import { SavedDashboardsProvider, useSavedDashboards } from './context/SavedDashboardsCtx.jsx'
 import ProductTour from './components/ProductTour.jsx'
 import SubHeader from './components/SubHeader.jsx'
 import KGPage from './pages/KGPage.jsx'
 import { FilterPanel } from './components/FilterPanel.jsx'
+import { buildDashboardScopeImplicitConfig } from './components/ActiveFilterPanel.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle } from './components/tweaks-panel.jsx'
 import { PAI } from './ui.jsx'
 import WorkspacePage from './pages/WorkspacePage.jsx'
@@ -18,6 +23,7 @@ import UserSettingsPage from './pages/UserSettingsPage.jsx'
 import { useUserSettingsState } from './pages/settings/UserSettingsBody.jsx'
 import StudioHomePage from './pages/StudioHomePage.jsx'
 import NavigatorPanel from './components/NavigatorPanel.jsx'
+import CopilotFab from './components/CopilotFab.jsx'
 import ClickExploreOverlay from './components/ClickExploreOverlay.jsx'
 import FindingsPage from './pages/FindingsPage.jsx'
 import ExposureOverviewPage from './pages/ExposureOverviewPage.jsx'
@@ -307,7 +313,7 @@ const TAB_DEFS = [
 ];
 
 // ── Shared right panel tab strip ─────────────────────────────────────
-function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProps, visitedTabs = [], navigatorFloating = false }) {
+function RightPanelShell({ tab, onTabSwitch, onClose, onCloseFloatingNavigator, filterProps, navigatorProps, visitedTabs = [], navigatorFloating = false }) {
   const SHELL_WIDTH = 400;
   const isOpen = tab !== null;
   const isCollapsedForFloat = navigatorFloating && tab === 'navigator';
@@ -358,11 +364,14 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               onClose={onClose}
             />
           )}
-          {tab === 'navigator' && (
+          {/* Mounted whenever it's the docked tab, OR independently floating —
+              the floating case must NOT depend on `tab === 'navigator'` so it can
+              coexist with whatever else (e.g. Filter) is currently docked. */}
+          {(tab === 'navigator' || navigatorFloating) && (
             <NavigatorPanel
               open={true}
               embedded={true}
-              onClose={onClose}
+              onClose={tab === 'navigator' ? onClose : onCloseFloatingNavigator}
               onNav={navigatorProps?.onNav}
               initialViewMode={navigatorProps?.initialViewMode}
               onViewModeChange={navigatorProps?.onViewModeChange}
@@ -377,6 +386,7 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               draftAutoSend={navigatorProps?.draftAutoSend}
               dockSide={navigatorProps?.dockSide}
               forceFloatToken={navigatorProps?.forceFloatToken}
+              forceSidebarToken={navigatorProps?.forceSidebarToken}
               exploreActive={navigatorProps?.exploreActive}
             />
           )}
@@ -617,6 +627,27 @@ const PAGE_META = {
   },
 };
 
+// A dashboard pinned to a left-nav section (see the Save modal's "Save
+// Dashboard Under" field, DashboardCanvas.jsx, and withSavedDashboards in
+// LeftNav.jsx) routes to `${section}/saved-${id}` — this supplies that
+// branch's breadcrumb label and its "back" destination, since those ids
+// aren't in PAGE_META (they're generated at save time, not fixed routes).
+const SAVED_DASHBOARD_SECTION = {
+  exposure:       { label: 'Exposure',        root: 'exposure/overview' },
+  discover:       { label: 'Discover',        root: 'discover/device' },
+  report:         { label: 'Report',          root: 'report/compliance' },
+  'data-quality': { label: 'Data Quality',    root: 'data-quality/overview' },
+  // "Standalone Dashboard" (see SAVE_DASHBOARD_UNDER_OPTIONS in
+  // DashboardCanvas.jsx) lands as its own top-level nav item, not nested
+  // under any section (see STANDALONE_ANCHOR_ID in LeftNav.jsx) — so unlike
+  // every other entry here, it has no section label to show as a breadcrumb
+  // middle segment. `label: null` tells the pinnedDashboard branch below to
+  // render a plain two-part "Insights > name" breadcrumb instead of three.
+  // Its "back"/edit destination is the Saved list, same as any other
+  // dashboard with no pinned section of its own.
+  standalone:     { label: null, root: 'workspace/saved' },
+};
+
 function App() {
   const [current, setCurrent] = useState(() => {
     const path = stripBase(window.location.pathname);
@@ -647,6 +678,8 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const onSplashDone = useCallback(() => setShowSplash(false), []);
   const { locked, unlock } = useAuthGate();
+  const { savedDashboards, customSections } = useSavedDashboards();
+  const insightsModel = useMemo(() => withSavedDashboards(INSIGHTS_MODEL, savedDashboards, customSections), [savedDashboards, customSections]);
   const [matrixFilter, setMatrixFilter] = useState(null); // { framework, frameworkName, groupBy, row, col, colId, score }
   const [kgFocusEntity, setKgFocusEntity] = useState(null); // { type, label } — entity to pre-select when landing on Knowledge Graph
   const [assessmentBuilderOpen, setAssessmentBuilderOpen] = useState(false);
@@ -681,6 +714,15 @@ function App() {
   // so Navigator only "feels" like the current section once the user
   // actually starts a conversation.
   const [navigatorAtHome, setNavigatorAtHome] = useState(true);
+  // Starting a chat/build in Navigator reclaims the main nav's width for its
+  // own history sidebar (see NavigatorPage.jsx's matching sidebarCollapsed
+  // effect) — a one-time transition off Home, not a recurring "always
+  // collapsed on this route" rule, so it doesn't fight a manual re-expand
+  // the way the comment above collapsedForNav explicitly avoids.
+  const handleNavigatorHomeStateChange = useCallback((atHome) => {
+    setNavigatorAtHome(atHome);
+    if (!atHome) setNavCollapsed(true);
+  }, []);
   const [navigatorViewMode, setNavigatorViewMode] = useState('sidebar');
   const [navigatorFloating, setNavigatorFloating] = useState(false);
 
@@ -735,6 +777,9 @@ function App() {
   // to switch to floating so the two don't fight over the same space,
   // without resetting whatever conversation is already in progress.
   const [navigatorForceFloatToken, setNavigatorForceFloatToken] = useState(0);
+  // Bumped when the rp-shell tab switcher's "Navigator" tab is clicked explicitly
+  // — forces an already-mounted (possibly floating) panel to dock as sidebar.
+  const [navigatorForceSidebarToken, setNavigatorForceSidebarToken] = useState(0);
   // "Click and explore" — while true, ClickExploreOverlay listens for a click
   // on any data-nav-explore element in the current page and turns it into a
   // navigator-ask draft; one-shot, so a pick (or navigating away) clears it.
@@ -747,7 +792,14 @@ function App() {
   const [dashboardSeed, setDashboardSeed] = useState(null);
   const BUILDER_SURFACES = {
     assessment: { matchRoute: c => c === 'report/assessments', api: assessmentBuilderApi },
-    dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard'), api: dashboardBuilderApi },
+    // Excludes workspace/dashboard/view-* — a saved dashboard being *viewed*
+    // (read-only, no toolbar — see DashboardCanvas's viewMode) isn't a build
+    // surface the way new/edit routes are; WorkspacePage's own isBuilderRoute
+    // makes the same distinction for its in-canvas discard-guard, and this
+    // must match it or the left-nav Navigator click (routed here once
+    // WorkspacePage's own check lets it fall through) wrongly opens the
+    // inline guided-builder panel instead of navigating to Navigator.
+    dashboard:  { matchRoute: c => c.startsWith('workspace/dashboard') && !c.startsWith('workspace/dashboard/view-'), api: dashboardBuilderApi },
     dataConfig: { matchRoute: c => c === 'workspace/configure-screen', api: null },
   };
   const activeBuilderSurface = BUILDER_SURFACES[navigatorBuilderKind];
@@ -768,7 +820,16 @@ function App() {
     localStorage.setItem('pai-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  const themeTransitionTimeoutRef = useRef(null);
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    html.classList.add('theme-transitioning');
+    if (themeTransitionTimeoutRef.current) clearTimeout(themeTransitionTimeoutRef.current);
+    themeTransitionTimeoutRef.current = setTimeout(() => {
+      html.classList.remove('theme-transitioning');
+    }, 300);
+    setTheme(t => t === 'dark' ? 'light' : 'dark');
+  };
 
   // Set BEFORE first render of children so KGPage can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
@@ -819,6 +880,17 @@ function App() {
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
     setRightPanel(prev => (prev === tabName ? null : tabName));
+    // Picking "Navigator" from the rp-shell tab switcher is an explicit dock
+    // gesture — it should always land as sidebar, even if Navigator was left
+    // floating from an earlier open (e.g. via the Copilot FAB). Setting the
+    // state here covers a fresh mount; bumping the token forces an
+    // already-mounted panel (initialViewMode only seeds on first mount) to
+    // actually switch over.
+    if (tabName === 'navigator') {
+      setNavigatorFloating(false);
+      setNavigatorViewMode('sidebar');
+      setNavigatorForceSidebarToken(n => n + 1);
+    }
   };
 
   const handleModeChange = (mode) => {
@@ -843,6 +915,19 @@ function App() {
     // it out first — clicking a primary-nav item while Settings is nested
     // beside it is a normal "go here instead" action.
     if (settingsOpen && id !== 'admin-page' && id !== 'admin-exit') setSettingsOpen(false);
+    // The CopilotFab bubble (id 'navigator') and the dashboard builder are
+    // meant to work side by side — while a dashboard canvas is mounted (see
+    // BUILDER_SURFACES.dashboard), the bubble opens its inline guided-builder
+    // panel on top of the canvas, same as the canvas's own "Ask AI" button,
+    // instead of the standalone floating Navigator panel. This must NOT catch
+    // 'navigator-page' (the LeftNav's plain Navigator item, routed here once
+    // WorkspacePage's own matching check lets it fall through) — that's
+    // ordinary top-level navigation and has to go through the normal
+    // discard-unsaved-changes guard, then land on the real Navigator page.
+    if (id === 'navigator' && BUILDER_SURFACES.dashboard.matchRoute(current) && dashboardBuilderApi?.current) {
+      handleNav('navigator-builder', { kind: 'dashboard' });
+      return;
+    }
     if (id === 'navigator') {
       setNavigatorViewMode('floating');
       setNavigatorFloating(true);
@@ -851,7 +936,10 @@ function App() {
       // every other entry point (this one included) must fall back to the
       // normal right side, not inherit a 'left' left over from that drawer.
       setNavigatorDock('right');
-      openRightTab('navigator');
+      // Deliberately does NOT touch rightPanel — floating Navigator mounts
+      // independently (see RightPanelShell) so it doesn't evict whatever is
+      // currently docked (e.g. an open Filter panel).
+      setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       return;
     }
     if (id === 'navigator-builder') {
@@ -877,8 +965,8 @@ function App() {
       setNavigatorDraftQuery(data?.query || '');
       setNavigatorDraftAutoSend(!!data?.autoSend);
       setNavigatorDraftToken(n => n + 1);
+      // Deliberately does NOT touch rightPanel — see the 'navigator' branch above.
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
-      setRightPanel('navigator');
       return;
     }
     if (id === 'navigator-explore-toggle') {
@@ -988,8 +1076,9 @@ function App() {
     history.pushState(null, '', navPath(url));
   };
 
-  // Per-page filter accessors
-  const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
+  // Per-page filter accessors — an "apply to all pages" filter (stored under the
+  // __all__ sentinel) overrides whatever the current page's own filter is.
+  const curPageFilters   = filtersByPage.__all__ || filtersByPage[current] || { count: 0, chips: [] };
   const activeFilterCount = curPageFilters.count;
   const activeFilters     = curPageFilters.chips;
 
@@ -1015,22 +1104,39 @@ function App() {
       tab={rightPanel}
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
+      onCloseFloatingNavigator={() => setNavigatorFloating(false)}
       visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, merge = false) => {
-        if (merge) {
+      filterProps={{ pageId: current, onApply: (c, chips, merge = false, applyToAllPages = false) => {
+        if (applyToAllPages) {
+          setFiltersByPage(prev => ({ ...prev, __all__: { count: c, chips: chips || [] } }));
+        } else if (merge) {
           setFiltersByPage(prev => {
             const cur = prev[current] || { count: 0, chips: [] };
             const merged = [...cur.chips, ...(chips || [])];
-            return { ...prev, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
           });
         } else {
-          setPageFilters(current, c, chips || []);
+          setFiltersByPage(prev => {
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: c, chips: chips || [] } };
+          });
         }
       }}}
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
-        onViewModeChange: (mode) => { setNavigatorFloating(mode === 'floating'); setNavigatorViewMode(mode); },
+        onViewModeChange: (mode) => {
+          setNavigatorFloating(mode === 'floating');
+          setNavigatorViewMode(mode);
+          // Docking as sidebar needs the rp-shell slot — take it over explicitly,
+          // same as any other dock action (this matters when Navigator was mounted
+          // as an independent floating panel alongside a different docked tab).
+          if (mode === 'sidebar') {
+            setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
+            setRightPanel('navigator');
+          }
+        },
         builderMode: navigatorBuilderMode && !!activeBuilderSurface?.matchRoute(current),
         builderApi: activeBuilderSurface?.api ?? null,
         builderKind: navigatorBuilderKind,
@@ -1042,6 +1148,7 @@ function App() {
         draftAutoSend: navigatorDraftAutoSend,
         dockSide: navigatorDock,
         forceFloatToken: navigatorForceFloatToken,
+        forceSidebarToken: navigatorForceSidebarToken,
         exploreActive: navigatorExploreActive,
       }}
       navigatorFloating={navigatorFloating}
@@ -1083,7 +1190,7 @@ function App() {
             onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
             rightPanelSlot={sharedRightPanel}
             rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
-            navigatorActive={rightPanel === 'navigator'}
+            navigatorActive={rightPanel === 'navigator' || navigatorFloating}
             seedDashboard={dashboardSeed}
             appMode={appMode}
             onModeChange={handleModeChange}
@@ -1120,6 +1227,75 @@ function App() {
     return <ErrorPage type="error" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
 
+  // A dashboard pinned to a left-nav section (see withSavedDashboards in
+  // LeftNav.jsx and the Save modal's "Save Dashboard Under" field) routes to
+  // `${section}/saved-${id}` for a section it nests inside (Exposure/
+  // Discover/Report/Data Quality), or the slash-free `standalone-saved-${id}`
+  // for one saved as its own individual top-level leaf ("Standalone
+  // Dashboard" in that field) — both generated at save time, so neither can
+  // live in PAGE_META's fixed table. Handled as its own early-return branch,
+  // same shape as the workspace/ux3 branches above, rather than threading
+  // through the PAGE_META/isKG chain below which only knows the fixed set of
+  // built-in pages.
+  const pinnedDashboard = savedDashboards.find(d => {
+    if (!d.navSection || d.navSection === 'workspace') return false
+    return d.navSection === 'standalone' ? current === `standalone-saved-${d.id}` : current === `${d.navSection}/saved-${d.id}`
+  }) ?? null;
+  if (pinnedDashboard) {
+    // A custom section (see the Save modal's "+ Create New Section") has no
+    // fixed entry in SAVED_DASHBOARD_SECTION and no landing page of its own
+    // to route "back" to — resolve its label from the reusable registry
+    // instead, and leave root unset so that breadcrumb segment renders as
+    // plain text rather than a link to nowhere.
+    const customSection = customSections.find(cs => cs.id === pinnedDashboard.navSection);
+    const section = SAVED_DASHBOARD_SECTION[pinnedDashboard.navSection]
+      ?? (customSection ? { label: customSection.label, root: null } : SAVED_DASHBOARD_SECTION.exposure);
+    // Standalone's null label means no section to show as a middle
+    // breadcrumb segment — "Insights > name" instead of "Insights > x > name".
+    const breadcrumb = section.label ? ['Insights', section.label, pinnedDashboard.name] : ['Insights', pinnedDashboard.name];
+    const breadcrumbClicks = section.label
+      ? [undefined, section.root ? () => handleNav(section.root) : undefined, undefined]
+      : [undefined, undefined];
+    return (
+      <div className="app-shell">
+        {showSplash && <SplashScreen onDone={onSplashDone} authRequired={locked} onUnlock={unlock} />}
+        {!showSplash && locked && (
+          <div className="pw-lock-overlay">
+            <PasswordGate onUnlock={unlock} />
+          </div>
+        )}
+        <Topbar onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
+        <div className="app-body">
+          <LeftNavHybrid
+            current={current}
+            onNav={handleNav}
+            collapsed={collapsedForNav}
+            onToggleCollapse={toggleNavCollapse}
+            insightsModel={insightsModel}
+          />
+          <main className="wp-main">
+            <SubHeader
+              title={pinnedDashboard.name}
+              breadcrumb={breadcrumb}
+              breadcrumbHrefs={breadcrumb.map(() => null)}
+              breadcrumbClicks={breadcrumbClicks}
+              onEdit={() => handleNav(`workspace/dashboard/edit-${pinnedDashboard.id}`)}
+              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs)}
+              showExplore={false}
+            />
+            <div className="wp-main-body">
+              <div className="wp-main-content">
+                <WorkspaceProvider onNav={handleNav} editDashboardSeed={pinnedDashboard} setEditDashboardSeed={() => {}}>
+                  <DashboardCanvas key={pinnedDashboard.id} onNav={handleNav} viewMode backTarget={section.root ?? 'workspace/saved'} />
+                </WorkspaceProvider>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   if (appMode !== 'studio' && !PAGE_META[current] && current !== 'kg') {
     return <ErrorPage type="notFound" onHome={() => { setCurrent('navigator'); history.pushState(null, '', navPath('/navigator')); }} />;
   }
@@ -1138,7 +1314,7 @@ function App() {
           <PasswordGate onUnlock={unlock} />
         </div>
       )}
-      <Topbar onNav={handleNav} navigatorActive={rightPanel === 'navigator'} showNavigatorButton={!isNavigatorRoute} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
+      <Topbar onNav={handleNav} theme={theme} onToggleTheme={toggleTheme} onStartTour={() => setTourActive(true)} navCollapsed={collapsedForNav} onToggleNavCollapse={toggleNavCollapse} />
 
       <div ref={isKG && appMode !== 'studio' ? canvasRef : null} className="app-body">
         <LeftNavHybrid
@@ -1150,6 +1326,7 @@ function App() {
           onAdminSelect={adminState.setActiveSection}
           collapsed={collapsedForNav}
           onToggleCollapse={toggleNavCollapse}
+          insightsModel={insightsModel}
         />
 
         {settingsOpen ? (
@@ -1171,7 +1348,7 @@ function App() {
               )}
               <div className="page-scroll">
                 {isNavigatorRoute ? (
-                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />
+                  <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={handleNavigatorHomeStateChange} />
                 ) : (
                   <StudioHomePage onNav={handleNav} />
                 )}
@@ -1194,13 +1371,17 @@ function App() {
                   activeFilters={activeFilters}
                   onRemoveFilter={(idx) => {
                     setFiltersByPage(prev => {
-                      const cur = prev[current] || { count: 0, chips: [] };
+                      const key = prev.__all__ ? '__all__' : current;
+                      const cur = prev[key] || { count: 0, chips: [] };
                       const updated = cur.chips.filter((_, i) => i !== idx);
-                      return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                      return { ...prev, [key]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
                   }}
                   onClearFilters={() => {
-                    setPageFilters(current, 0, []);
+                    setFiltersByPage(prev => {
+                      const key = prev.__all__ ? '__all__' : current;
+                      return { ...prev, [key]: { count: 0, chips: [] } };
+                    });
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}
@@ -1213,7 +1394,7 @@ function App() {
                 />
               )}
               <div className="page-scroll">
-                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={setNavigatorAtHome} />}
+                {isNavigatorRoute && <NavigatorPage initialQuery={navigatorQuery} resetToken={navigatorReset} initialOverlay={navigatorOverlay} onNav={handleNav} onHomeStateChange={handleNavigatorHomeStateChange} />}
                 {current === 'exposure/overview'   && <ExposureOverviewPage onNav={handleNav} />}
                 {current === 'exposure/findings'   && <FindingsPage onNav={handleNav} crossFilters={filtersByPage['exposure/findings']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('exposure/findings', chips)} />}
                 {current === 'discover/device'     && <DiscoverDevicePage onNav={handleNav} crossFilters={filtersByPage['discover/device']?.chips ?? []} onToggleFilter={chips => toggleCrossFilterChip('discover/device', chips)} />}
@@ -1268,6 +1449,10 @@ function App() {
         onPick={(label, type) => handleNav('navigator-ask', { query: buildExploreQuestion(label, type), autoSend: true })}
         onExit={() => setNavigatorExploreActive(false)}
       />
+
+      {!showSplash && !locked && (!isNavigatorRoute || settingsOpen) && (
+        <CopilotFab onClick={() => handleNav('navigator')} active={rightPanel === 'navigator' || navigatorFloating} pageContext={settingsOpen ? null : pageMeta?.title} />
+      )}
     </div>
   );
 }
@@ -1277,9 +1462,11 @@ function AppWithBoundary() {
     <ToastProvider>
       <DownloadsProvider>
         <NavigatorActivityProvider>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
+          <SavedDashboardsProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </SavedDashboardsProvider>
         </NavigatorActivityProvider>
       </DownloadsProvider>
     </ToastProvider>

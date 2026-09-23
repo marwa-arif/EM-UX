@@ -184,7 +184,7 @@ const TOP_ITEM_FLYOUT_CHILDREN = { navigator: NAVIGATOR_FLYOUT_CHILDREN, workspa
 //   - Drag-to-resize between 52px and 220px (and a third, fully-hidden
 //     sliver state past that) is removed for now, may come back later —
 //     the Topbar toggle is the only way to collapse/expand this nav.
-export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, consoleActive = false, adminActiveSection, onAdminSelect, navigatorAtHome = false }) {
+export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, consoleActive = false, adminActiveSection, onAdminSelect, navigatorAtHome = false, insightsModel = INSIGHTS_MODEL }) {
   // No navigatorAtHome suppression here — Navigator's home landing is the
   // one screen a user is on immediately after a fresh load, so leaving its
   // rail icon unhighlighted there read as "nothing shows I'm on this page"
@@ -215,7 +215,7 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
     return () => document.removeEventListener('keydown', onKey);
   }, [railFlyoutOpen]);
 
-  const insightsIds = new Set(INSIGHTS_MODEL.map(e => e.id));
+  const insightsIds = new Set(insightsModel.map(e => e.id));
 
   // Expanded state: Insights and Fabric Configuration collapse independently
   // — same Set-of-collapsed-keys mechanic Classic's own LeftNav.jsx uses,
@@ -327,7 +327,7 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
               isCollapsed={collapsedTopSections.has('insights')}
               onClick={() => toggleTopSection('insights')}
             />
-            {!collapsedTopSections.has('insights') && INSIGHTS_MODEL.map(item => (
+            {!collapsedTopSections.has('insights') && insightsModel.map(item => (
               <NavItem
                 key={item.id}
                 item={item}
@@ -377,11 +377,24 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
           <>
             {TOP_ITEMS.map(item => {
               const isActive = activeParent === item.id;
+              // Navigator mid-chat/build is the one case this flyout *is*
+              // a redundant preview of where the user already is: its
+              // "New chat"/History/Agents rows now sit right beside
+              // Navigator's own already-expanded sidebar (see NavigatorPage's
+              // sidebarCollapsed effect + App.jsx's matching main-nav
+              // auto-collapse on chat start), close enough that a hover
+              // meant for that sidebar can pop this one open instead — and
+              // clicking its "New chat" silently discards the conversation,
+              // reading as an unexplained "redirect to new chat". Suppressed
+              // only for this exact overlap; every other rail item (and
+              // Navigator itself from any other page, or at its own Home)
+              // keeps the always-available flyout described below.
+              const suppressFlyout = item.id === 'navigator' && isActive && !navigatorAtHome;
               return (
                 <RailFlyoutRow
                   key={item.id}
                   entity={{ ...item, children: TOP_ITEM_FLYOUT_CHILDREN[item.id] }}
-                  isOpen={railFlyoutOpen === item.id}
+                  isOpen={!suppressFlyout && railFlyoutOpen === item.id}
                   isActive={isActive}
                   activeId={activeId}
                   // A plain click still lands on the section's own default
@@ -396,15 +409,17 @@ export function LeftNavHybrid({ current, onNav, collapsed, onToggleCollapse, con
                   // section, not a redundant preview of where you already
                   // are — matching Insights entities, whose own flyout
                   // (renderCompactInsightsGroup) never gates on isActive
-                  // either.
-                  onOpen={() => openRailFlyout(item.id)}
+                  // either. (suppressFlyout above is a narrower, separate
+                  // exception for one specific overlap, not a reversal of
+                  // this.)
+                  onOpen={() => { if (!suppressFlyout) openRailFlyout(item.id); }}
                   onClose={scheduleCloseRailFlyout}
                   onNavigateChild={(id) => navigateFromRailFlyout(id)}
                 />
               );
             })}
             <div className="leftnav__divider" />
-            {renderCompactInsightsGroup(INSIGHTS_MODEL, 'em')}
+            {renderCompactInsightsGroup(insightsModel, 'em')}
             <div className="leftnav__divider" />
             {/* Fabric Configuration renders as four flat icons here, same as
                 the expanded view's FABRIC_MODEL.map — no accordion, since

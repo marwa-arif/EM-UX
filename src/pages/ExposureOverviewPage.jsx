@@ -893,7 +893,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
   const [customPickerOpen, setCustomPickerOpen] = useState(false);
   const customPickerRef = useRef(null);
 
-  const handleClose = () => { setClosing(true); setTimeout(onClose, 180); };
+  const handleClose = () => { setClosing(true); setTimeout(onClose, 280); }; // matches .comp-drawer--closing in drawer.css
   const changeRange = (t) => { setTRange(t); setCustomPickerOpen(false); };
 
   const openCustomPicker = () => {
@@ -1210,7 +1210,7 @@ export default function ExposureOverviewPage({ onNav }) {
           </div>
           <div className="exp-contrib-hdr-right">
             <div className="exp-search-box">
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${groupBy}`} className="exp-search-input" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search table rows" className="exp-search-input" />
               {search && (
                 <button
                   onMouseDown={e => { e.preventDefault(); setSearch(''); }}

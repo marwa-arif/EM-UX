@@ -6,16 +6,24 @@
    styling regardless of what else the host page imports. */
 
 /* ── Shell chrome ─────────────────────────────────────────────────────── */
+/* Stacked above the docked Filter/Navigator panel (.rp-shell, z-index 950) so a
+   drawer opened from a table row or a chart always draws on top of it, not
+   behind it — the one exception is the Graph Filter canvas slide-in, which is
+   deliberately kept below .rp-shell (see shell.css's comment on .rp-shell). */
 .comp-drawer-backdrop {
   position: fixed;
   top: var(--topbar-height);
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(0,0,0,0.22);
-  z-index: 200;
+  background: rgba(0,0,0,0.5);
+  z-index: 960;
+  animation: comp-drawer-backdrop-in 280ms cubic-bezier(.4,0,.2,1);
 }
 
+@keyframes comp-drawer-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* DS drawer.json token: "Use cubic-bezier(.4,0,.2,1) 0.28s for slide transition" */
 .comp-drawer {
   position: fixed;
   top: var(--topbar-height);
@@ -27,11 +35,11 @@
   border-left: 1px solid var(--shell-border);
   border-radius: 12px 0 0 12px;
   overflow: hidden;
-  z-index: 201;
+  z-index: 961;
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 32px rgba(0,0,0,0.14);
-  animation: comp-drawer-in 180ms ease;
+  animation: comp-drawer-in 280ms cubic-bezier(.4,0,.2,1);
 }
 
 @keyframes comp-drawer-in {
@@ -45,7 +53,7 @@
 }
 
 .comp-drawer--closing {
-  animation: comp-drawer-out 180ms ease forwards;
+  animation: comp-drawer-out 280ms cubic-bezier(.4,0,.2,1) forwards;
 }
 
 .comp-drawer-close-ext {
@@ -63,7 +71,7 @@
   align-items: center;
   justify-content: center;
   color: var(--shell-text-muted);
-  z-index: 202;
+  z-index: 962;
   transition: background 120ms;
 }
 
@@ -131,7 +139,7 @@
 .kg-dp-icon-stack-line--tail::before { width: 1px; background: var(--shell-border, #E6E6E6); }
 /* Relationship dot — overlaps the line at its midpoint (absolutely positioned so it drops out
    of the line's flex layout instead of sitting beside it) between two entities. Hovering it
-   shows a DS-style dark tooltip (CSS :hover only, no JS show/hide) naming the relationship,
+   shows a DS-style white-card tooltip (CSS :hover only, no JS show/hide) naming the relationship,
    e.g. "Host has Vulnerability" — never the browser's native title tooltip. */
 .kg-dp-icon-stack-rel-dot {
   position: absolute; top: 50%; left: 50%; z-index: 1;
@@ -147,8 +155,9 @@
   transform: translate(8px, -50%);
   white-space: nowrap;
   font-size: 11px; font-weight: 500; font-family: inherit;
-  color: var(--card-bg, #fff);
-  background: var(--shell-text, #101010);
+  color: var(--shell-text, #101010);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   border-radius: 4px; padding: 4px 8px;
   pointer-events: none; opacity: 0;
   transition: opacity 120ms;
