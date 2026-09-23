@@ -801,6 +801,11 @@ function App() {
   useEffect(() => { setNavigatorExploreActive(false); }, [current]);
   const [visitedTabs, setVisitedTabs] = useState([]);
   const [filtersByPage, setFiltersByPage] = useState({});
+  // Raw traversal chains from a page's own ad-hoc Graph Filter, keyed by
+  // pageId — mirrors filtersByPage but for the relationship structure a flat
+  // chip can't carry (see buildDashboardScopeImplicitConfig's comment on the
+  // Workspace side for why this is needed).
+  const [pathsByPage, setPathsByPage] = useState({});
   const [tweaks, setTweak] = useTweaks(FLOAT_TWEAK_DEFAULTS);
   const [canvasTop, setCanvasTop] = useState(0);
   const [complianceExpanded, setComplianceExpanded] = useState({});
@@ -1052,9 +1057,6 @@ function App() {
   const activeFilterCount = curPageFilters.count;
   const activeFilters     = curPageFilters.chips;
 
-  const setPageFilters = (pageId, count, chips) =>
-    setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
-
   // Toggles the chip(s) behind one chart-segment click (1 chip for a single-dimension
   // mark, 2 for a stacked-segment intersection) — the single entry point every dashboard's
   // click-to-filter charts call. filtersByPage is the only copy of "what's active"; pages
@@ -1066,6 +1068,7 @@ function App() {
   const handleExplore = (destId) => {
     const src = filtersByPage[current] || { count: 0, chips: [] };
     setFiltersByPage(prev => ({ ...prev, [destId]: { count: src.count, chips: src.chips } }));
+    setPathsByPage(prev => ({ ...prev, [destId]: prev[current] || [] }));
     handleNav(destId);
   };
 
@@ -1075,7 +1078,13 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
       visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, merge = false, applyToAllPages = false) => {
+      filterProps={{ pageId: current, onApply: (c, chips, arg3, applyToAllPages = false) => {
+        // FilterPanel's tabs disagree on what the 3rd positional arg means: the Graph
+        // Filter tab hands back its real traversal chains (an array — see the
+        // WorkspacePage/ActiveFilterPanel graphFilterChains wiring for the dashboard
+        // equivalent), while Quick/Saved Filters pass a `merge` boolean instead.
+        const paths = Array.isArray(arg3) ? arg3 : [];
+        const merge = arg3 === true;
         if (applyToAllPages) {
           setFiltersByPage(prev => ({ ...prev, __all__: { count: c, chips: chips || [] } }));
         } else if (merge) {
@@ -1090,6 +1099,9 @@ function App() {
             const { __all__, ...rest } = prev;
             return { ...rest, [current]: { count: c, chips: chips || [] } };
           });
+        }
+        if (!merge) {
+          setPathsByPage(prev => ({ ...prev, [current]: paths }));
         }
       }}}
       navigatorProps={{
@@ -1238,7 +1250,7 @@ function App() {
               breadcrumbHrefs={breadcrumb.map(() => null)}
               breadcrumbClicks={breadcrumbClicks}
               onEdit={() => handleNav(`workspace/dashboard/edit-${pinnedDashboard.id}`)}
-              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs)}
+              implicitConfig={buildDashboardScopeImplicitConfig(pinnedDashboard.dashboardScopes, pinnedDashboard.dashboardScopeAttrs, pinnedDashboard.dashboardScopePaths)}
               showExplore={false}
             />
             <div className="wp-main-body">
@@ -1327,6 +1339,7 @@ function App() {
                   pageId={current}
                   activeFilterCount={activeFilterCount}
                   activeFilters={activeFilters}
+                  graphFilterPaths={pathsByPage[current] || []}
                   onRemoveFilter={(idx) => {
                     setFiltersByPage(prev => {
                       const key = prev.__all__ ? '__all__' : current;
@@ -1340,6 +1353,7 @@ function App() {
                       const key = prev.__all__ ? '__all__' : current;
                       return { ...prev, [key]: { count: 0, chips: [] } };
                     });
+                    setPathsByPage(prev => ({ ...prev, [current]: [] }));
                   }}
                   filterActive={rightPanel === 'filter'}
                   onFilter={() => openRightTab('filter')}

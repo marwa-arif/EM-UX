@@ -59,6 +59,17 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.23.2] — 2026-09-21
+### Added
+- Graph Filter tab now tracks real traversal chains (paths) alongside flat chips, so relationship-based filters can be reconstructed and reapplied across Explore/dashboard scope
+- Shared `kgRelationships.js` edge set (previously duplicated in `KGPage.jsx`/`PageKG.jsx`) also used by `DashboardCanvas.jsx` to label the real verb for a traversed hop in a Widget Filter chip's path
+- Date-range-aware comparison labels ("from last day/week/month") via `comparisonLabelForRange`, replacing hardcoded "from last week" on Discover Cloud/Device/Identity trend charts
+- LCNC duplicate/nested-widget icons
+### Changed
+- DashboardCanvas widget filtering/rendering rework to support the new Graph Filter path-based scope
+
+---
+
 ## [0.23.1] — 2026-09-11
 ### Fixed
 - Entity/attribute icons (Graph Filter modal, Dashboard Scope modal, Filter Panel saved/pin/explore icons, Navigator canvas loader) rendered as broken images on the GitHub Pages `/EM-UX/` deploy — those `<img>` sources used a leading-slash `/assets/...` path, which resolves from the domain root and ignores the page's `<base href="/EM-UX/">`; switched to the same base-relative `assets/...` form already used by every other icon reference in the app

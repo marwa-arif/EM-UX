@@ -159,6 +159,7 @@ const GF_ENABLED_PAGES = new Set([
   'exposure/overview', 'exposure/findings',
   'discover/device', 'discover/cloud', 'discover/identity',
   'report/compliance', 'report/assessments', 'report/compliance-matrix', 'report/compliance-findings',
+  'workspace/report',
 ]);
 function isGraphFilterEnabled(pageId) {
   return GF_ENABLED_PAGES.has(pageId);
@@ -1631,6 +1632,97 @@ function GFAttrsPanel({ entityId, onClose, filters, onFiltersChange }) {
   );
 }
 
+// ── Active filter tree view (nested) ──────────────────────────────────────────
+// Renders one relationship chain as a single continuous tree — same
+// afp-entity-chip / afp-entity-content / afp-relation-chip / afp-filter-chip
+// nesting (straight out of shell.css) as the topbar's ActiveFilterPanel and
+// the widget settings' GraphFilterModal (PathChainNode in DashboardCanvas.jsx)
+// — instead of GFTreeView below, which only ever rendered a single hop with a
+// static "No filters applied" placeholder and no per-entity attribute chips
+// at all (those were shown separately, in a flat list above the tree).
+function GFPathChainNode({ path, idx, entityAttrFilters, onRemoveAttr, onRemoveConnection }) {
+  const entityId = path[idx];
+  const entity   = GF_ENTITIES.find(e => e.id === entityId);
+  const attrs    = getEntityAttrs(entityId);
+  const entries  = Object.entries(entityAttrFilters[entityId] || {}).filter(([, f]) => f?.values?.length > 0);
+  const hasNext  = idx < path.length - 1;
+
+  return (
+    <>
+      <span className="afp-entity-chip">{entity?.label || entityId}</span>
+      {(entries.length > 0 || hasNext) && (
+        <div className="afp-entity-content">
+          {entries.length > 0 && (
+            <>
+              <span className="afp-where">where</span>
+              <div className="afp-filter-chips">
+                {entries.map(([attrId, f]) => {
+                  const a      = attrs.find(x => x.id === attrId);
+                  const isDate = a?.type === 'date';
+                  const preset = isDate ? f.values[0] : null;
+                  const range  = preset && preset !== 'Select Period' ? computePresetRange(preset, new Date()) : null;
+                  const valStr = range ? `${fmtDateRange(range, new Date())} (${preset})` : f.values.join(', ');
+                  return (
+                    <span key={attrId} className="afp-filter-chip">
+                      <span className="afp-fc-label">{a?.label}</span>
+                      <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                      <span className="afp-fc-badge">[{(f.mode || 'Include').toUpperCase()}]</span>
+                      <span className="afp-fc-values">&nbsp;{valStr}</span>
+                      <button className="afp-fc-remove" title="Remove filter" onClick={() => onRemoveAttr(entityId, attrId)}>×</button>
+                    </span>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {hasNext && (
+            <>
+              <span className="afp-entity-chip afp-relation-chip">
+                {entity?.label} Has {GF_ENTITIES.find(e => e.id === path[idx + 1])?.label}
+                <button className="afp-relation-remove" title="Remove relationship" onClick={() => onRemoveConnection(entityId, path[idx + 1])}>×</button>
+              </span>
+              <div className="afp-entity-content">
+                <GFPathChainNode path={path} idx={idx + 1} entityAttrFilters={entityAttrFilters} onRemoveAttr={onRemoveAttr} onRemoveConnection={onRemoveConnection} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+function GFActiveFilterTree({ paths, entityAttrFilters, onRemoveAttr, onRemoveConnection }) {
+  const chains    = paths.filter(p => p.length >= 2);
+  const inChainIds = new Set(chains.flat());
+  // An entity with its own attribute filters that was never traversed into a
+  // relationship (e.g. filtering the root node directly) still needs its own
+  // single-node branch, same as PathFilterTree's orphan handling.
+  const orphanIds = Object.keys(entityAttrFilters).filter(id =>
+    !inChainIds.has(id) && Object.values(entityAttrFilters[id] || {}).some(f => f?.values?.length > 0)
+  );
+  if (chains.length === 0 && orphanIds.length === 0) {
+    return (
+      <span className="gft-empty">
+        Select a node, then click a connected node to build a path filter
+      </span>
+    );
+  }
+  return (
+    <>
+      {chains.map((path, i) => (
+        <div key={`chain-${i}`} className="afp-entity-block">
+          <GFPathChainNode path={path} idx={0} entityAttrFilters={entityAttrFilters} onRemoveAttr={onRemoveAttr} onRemoveConnection={onRemoveConnection} />
+        </div>
+      ))}
+      {orphanIds.map(id => (
+        <div key={`orphan-${id}`} className="afp-entity-block">
+          <GFPathChainNode path={[id]} idx={0} entityAttrFilters={entityAttrFilters} onRemoveAttr={onRemoveAttr} onRemoveConnection={onRemoveConnection} />
+        </div>
+      ))}
+    </>
+  );
+}
+
 // ── Active filter tree view ───────────────────────────────────────────────────
 function GFTreeView({ connections, onRemove }) {
   if (connections.length === 0) {
@@ -2180,7 +2272,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
     (sum, filters) => sum + Object.values(filters || {}).filter(f => f?.values?.length > 0).length, 0
   );
 
-  const handleReset  = () => { setPaths([]); setActivePathIdx(null); setEntityAttrFilters({}); onApply && onApply(0, []); };
+  const handleReset  = () => { setPaths([]); setActivePathIdx(null); setEntityAttrFilters({}); onApply && onApply(0, [], []); };
   const handleApply  = () => {
     const connChips = allConnections.map(c => {
       const fromE = GF_ENTITIES.find(e => e.id === c.from);
@@ -2188,17 +2280,30 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
       return { key: 'Graph Filter', attrId: 'graph-entity', value: `${fromE?.label} → ${toE?.label}` };
     });
     const chips = [...connChips, ...attrFilterChips()];
-    onApply && onApply(chips.length, chips);
+    // paths (the raw traversal chains, e.g. [['host','vulnerability']]) travel
+    // alongside the flattened chips — chips alone lose the relationship
+    // structure (every hop collapses to the same generic 'graph-entity'
+    // attrId), which is what made a viewer-applied Host → Vulnerability graph
+    // filter render as a flat, mislabeled chip instead of a nested tree in
+    // the Active Filter Preview. Callers that don't care can just ignore the
+    // 3rd argument.
+    onApply && onApply(chips.length, chips, paths);
   };
 
   const totalFilterCount = allConnections.length + attrFilterCount();
 
-  // Expose reset/apply to parent (FilterPanel footer) via ref
+  // Expose reset/apply to parent (FilterPanel footer) via ref. Must also
+  // depend on entityAttrFilters/paths, not just totalFilterCount — adding a
+  // second value to an attribute that's already counted (e.g. checking NVD
+  // after EPSS on the same Origin filter) doesn't change totalFilterCount,
+  // so with only that dependency the exposed apply() stayed bound to the
+  // stale handleApply from before the second value was added, silently
+  // dropping it from what actually got applied.
   useImperativeHandle(ref, () => ({
     reset: handleReset,
     apply: handleApply,
     connectionCount: totalFilterCount,
-  }), [totalFilterCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [totalFilterCount, entityAttrFilters, paths]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notify parent of filter count changes so footer Apply button can be enabled/disabled
   useEffect(() => {
@@ -2422,66 +2527,24 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
           </label>
         </div>
         <div className="gf-bottom-tree">
-          {/* Attribute filter chips per entity */}
-          {Object.entries(entityAttrFilters).map(([entityId, filters]) => {
-            const entries = Object.entries(filters || {}).filter(([, f]) => f?.values?.length > 0);
-            if (entries.length === 0) return null;
-            const entity = GF_ENTITIES.find(e => e.id === entityId);
-            const attrs  = getEntityAttrs(entityId);
-            return (
-              <div key={entityId} className="gf-preview-entity-group">
-                <div className="gf-preview-entity-label" style={{ '--ent-tint': entity?.tint, '--ent-stroke': entity?.stroke }}>
-                  <div className="gf-preview-entity-swatch">
-                    {entity && <img src={`assets/icons/${entity.file}`} width={11} height={11} alt="" />}
-                  </div>
-                  {entity?.label}
-                </div>
-                {entries.map(([attrId, f]) => {
-                  const a      = attrs.find(x => x.id === attrId);
-                  const isDate = a?.type === 'date';
-                  const preset = isDate ? f.values[0] : null;
-                  const range  = preset && preset !== 'Select Period' ? computePresetRange(preset, new Date()) : null;
-                  const valStr = range
-                    ? `${fmtDateRange(range, new Date())} (${preset})`
-                    : f.values.join(', ');
-                  return (
-                    <div key={attrId} className="gf-preview-attr-chip">
-                      <span className="gf-preview-attr-name">{a?.label}</span>
-                      <span className="gf-preview-attr-sep">:</span>
-                      <span className="gf-preview-attr-badge">{f.mode}</span>
-                      <span className="gf-preview-attr-val">{valStr}</span>
-                      <button
-                        className="gf-preview-attr-remove"
-                        onClick={() => setEntityAttrFilters(prev => {
-                          const updated = { ...prev[entityId] }; delete updated[attrId];
-                          return { ...prev, [entityId]: updated };
-                        })}
-                      >
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-
-          {/* Path connections */}
-          {allConnections.length === 0 && Object.values(entityAttrFilters).every(f => Object.keys(f || {}).length === 0)
-            ? <p className="gf-bottom-empty">Select a node, then click a connected node to build a path filter</p>
-            : allConnections.length > 0 && <GFTreeView connections={allConnections} onRemove={(from, to) => {
-                const pathIdx = paths.findIndex(p => {
-                  const i = p.indexOf(to);
-                  return i > 0 && p[i - 1] === from;
-                });
-                if (pathIdx < 0) return;
-                const cutAt = paths[pathIdx].indexOf(to);
-                setPaths(prev => prev.map((p, i) => i === pathIdx ? p.slice(0, cutAt) : p).filter(p => p.length > 0));
-                if (pathIdx === activePathIdx) setActivePathIdx(null);
-              }} />
-          }
+          <GFActiveFilterTree
+            paths={paths}
+            entityAttrFilters={entityAttrFilters}
+            onRemoveAttr={(entityId, attrId) => setEntityAttrFilters(prev => {
+              const updated = { ...prev[entityId] }; delete updated[attrId];
+              return { ...prev, [entityId]: updated };
+            })}
+            onRemoveConnection={(from, to) => {
+              const pathIdx = paths.findIndex(p => {
+                const i = p.indexOf(to);
+                return i > 0 && p[i - 1] === from;
+              });
+              if (pathIdx < 0) return;
+              const cutAt = paths[pathIdx].indexOf(to);
+              setPaths(prev => prev.map((p, i) => i === pathIdx ? p.slice(0, cutAt) : p).filter(p => p.length > 0));
+              if (pathIdx === activePathIdx) setActivePathIdx(null);
+            }}
+          />
         </div>
       </div>
 
@@ -3426,7 +3489,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
               Reset all filters
             </button>
             <button
-              onClick={() => gfRef.current?.apply()}
+              onClick={() => { gfRef.current?.apply(); onClose && onClose(); }}
               disabled={gfConnCount === 0}
               className={`fp-footer-btn fp-footer-btn--primary${gfConnCount === 0 ? ' fp-footer-btn--disabled' : ''}`}
             >
@@ -3496,7 +3559,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
           hidden={tab !== 'graph'}
           onEntitySelect={(id) => setSelectedEntityId(id)}
           selectedEntityId={selectedEntityId}
-          onApply={(count, chips) => onApply && onApply(count, chips)}
+          onApply={(count, chips, paths) => onApply && onApply(count, chips, paths)}
           onConnectionsChange={setGfConnCount}
           entityAttrFilters={gfEntityAttrFilters}
           onEntityAttrFiltersChange={setGfEntityAttrFilters}
@@ -3507,4 +3570,4 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   );
 }
 
-export { FilterPanel, GraphFilterDrawer, GF_ENTITIES, GFAttrPanelBody, getEntityAttrs };
+export { FilterPanel, GraphFilterDrawer, GF_ENTITIES, GFAttrPanelBody, getEntityAttrs, ENTITY_RELATIONS };

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { DSPillSearch } from '../context/WorkspaceCtx.jsx'
+import { GF_ENTITIES } from './FilterPanel.jsx'
 import '../styles/active-filter-panel.css'
 
 const ATTR_ENTITY = {
@@ -319,32 +320,117 @@ export function SaveFilterModal({ onClose, onSave }) {
 }
 
 // Turns a saved Workspace dashboard's scope (dashboardScopes: GF_ENTITIES rows;
-// dashboardScopeAttrs: { [entityId]: { [attr]: { mode, values } } }, both set via
-// DashboardCanvas's DashboardScopeModal/ScopeAttrsPanel) into the entityTree +
-// per-entity implicit-filter shape this panel renders — the dashboard's scope
-// becomes this view's locked filters, the same role PAGE_AFP_CONFIG plays for
-// Discover's static pages, just computed per-dashboard instead of per-route.
-export function buildDashboardScopeImplicitConfig(dashboardScopes = [], dashboardScopeAttrs = {}) {
-  const entityTree = dashboardScopes.map(e => ({ entity: e.label, relation: null }))
-  const perEntityImplicitFilters = {}
-  dashboardScopes.forEach(e => {
-    const attrs = dashboardScopeAttrs[e.id] || {}
-    const rows = Object.entries(attrs).map(([key, cfg]) => ({
-      key, mode: (cfg.mode || 'Include').toUpperCase(), values: cfg.values || [],
-    }))
-    if (rows.length) perEntityImplicitFilters[e.label] = rows
-  })
-  return { entityTree, perEntityImplicitFilters, implicitFindingFilters: [] }
+// dashboardScopeAttrs: { [entityId]: { [attr]: { mode, values } } };
+// dashboardScopePaths: [[entityId, ...], ...] relationship chains — all three
+// set via DashboardCanvas's DashboardScopeModal/ScopeAttrsPanel) into the
+// `scopeChains` shape this panel renders — the dashboard's scope becomes this
+// view's locked filters, the same role PAGE_AFP_CONFIG plays for Discover's
+// static pages, just computed per-dashboard instead of per-route.
+//
+// Unlike the old flat entityTree (every scope entity its own top-level block,
+// always ending in a hardcoded "Has Finding" → Finding leaf), scopeChains
+// mirrors the graph filter's own relationship tree — dashboardScopePaths'
+// actual Host → X → Y chains, each hop nested under the last exactly like
+// PathFilterTree renders it in the Set Dashboard Scope modal — so a filter
+// applied on an entity only reached via traversal (e.g. Vulnerability under
+// Host → Vulnerability, never a scope root itself) still shows up here
+// instead of being silently dropped for not being one of dashboardScopes.
+export function buildDashboardScopeImplicitConfig(dashboardScopes = [], dashboardScopeAttrs = {}, dashboardScopePaths = []) {
+  const labelOf = (id) => GF_ENTITIES.find(e => e.id === id)?.label
+    || dashboardScopes.find(e => e.id === id)?.label
+    || id
+  const filtersOf = (id) => Object.entries(dashboardScopeAttrs[id] || {})
+    .filter(([, f]) => f?.values?.length)
+    .map(([key, f]) => ({ key, mode: (f.mode || 'Include').toUpperCase(), values: f.values }))
+
+  const chains = (dashboardScopePaths || []).filter(p => p.length >= 2)
+  const chainedIds = new Set(chains.flat())
+  // A scope root not already the root of a multi-hop chain above still needs
+  // its own (single-node) chain so a plain, non-traversed entity and its own
+  // attribute filters keep showing up.
+  const rootOnlyChains = dashboardScopes.filter(e => !chainedIds.has(e.id)).map(e => [e.id])
+
+  const scopeChains = [...chains, ...rootOnlyChains].map(path =>
+    path.map(id => ({ id, label: labelOf(id), filters: filtersOf(id) }))
+  )
+  return { scopeChains }
+}
+
+// Recursive renderer for one dashboard-scope relationship chain (see
+// buildDashboardScopeImplicitConfig) — same afp-entity-chip / afp-entity-
+// content / afp-relation-chip / afp-filter-chip nesting PathChainNode uses
+// in the Graph Filter's own Active Filter Preview, so a chain reads
+// identically in both places. Dashboard-scope filters are read-only here
+// (no per-chip remove) since this panel doesn't own the dashboard's scope —
+// only this view's own explicit filters (entityGroups) are removable.
+// alwaysShowFilters: used for graphFilterChains (a viewer's own ad-hoc Graph
+// Filter selection, explicit — always visible) as opposed to scopeChains (the
+// dashboard's saved scope, implicit — gated behind the Implicit Filters
+// toggle like every other implicit filter on this panel).
+function ScopeChainNode({ chain, idx, entityGroups, implicitFilters, onRemove, alwaysShowFilters = false }) {
+  const node = chain[idx]
+  const hasNext = idx < chain.length - 1
+  // graph-* chips are handled entirely by graphFilterChains (correct entity
+  // attribution + real attribute labels) — excluded here so a Graph-Filter-
+  // built attribute doesn't also show up mis-labeled/mis-bucketed under
+  // whichever chain node ATTR_ENTITY's fallback happened to default it to.
+  const explicitAttrs = (entityGroups.find(g => g.entity === node.label)?.attrs || [])
+    .filter(attr => !(attr.attrId || '').startsWith('graph-'))
+  const showOwnFilters = implicitFilters || alwaysShowFilters
+  const showWhere = explicitAttrs.length > 0 || (showOwnFilters && node.filters.length > 0)
+
+  return (
+    <>
+      <span className="afp-entity-chip">{node.label}</span>
+      {(showWhere || hasNext) && (
+        <div className="afp-entity-content">
+          {showWhere && (
+            <>
+              <span className="afp-where">where</span>
+              <div className="afp-filter-chips">
+                {explicitAttrs.map((attr, i) => (
+                  <span key={i} className="afp-filter-chip">
+                    <span className="afp-fc-label">{attr.key.replace(/ · .*$/, '')}</span>
+                    <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                    <span className="afp-fc-badge">[INCLUDE]</span>
+                    {attr.values.length > 1 && <span className="afp-fc-badge afp-fc-badge--op">[OR]</span>}
+                    <span className="afp-fc-values">&nbsp;{attr.values.join(', ')}</span>
+                    <button className="afp-fc-remove" title="Remove filter" onClick={() => attr.indices.slice().reverse().forEach(i2 => onRemove?.(i2))}>×</button>
+                  </span>
+                ))}
+                {showOwnFilters && node.filters.map(f => (
+                  <span key={f.key} className="afp-filter-chip">
+                    <span className="afp-fc-label">{f.key}</span>
+                    <span className="afp-fc-sep">&nbsp;:&nbsp;</span>
+                    <span className="afp-fc-badge">[{f.mode}]</span>
+                    <span className="afp-fc-values">&nbsp;{f.values.join(', ')}</span>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+          {hasNext && (
+            <>
+              <span className="afp-entity-chip afp-relation-chip">{node.label} Has {chain[idx + 1].label}</span>
+              <div className="afp-entity-content">
+                <ScopeChainNode chain={chain} idx={idx + 1} entityGroups={entityGroups} implicitFilters={implicitFilters} onRemove={onRemove} alwaysShowFilters={alwaysShowFilters} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  )
 }
 
 // ── Active Filter Panel ───────────────────────────────────────────────────────
-export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId, implicitConfig }) {
+export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClear, onClose, position, pageId, implicitConfig, graphFilterPaths = [] }) {
   const [implicitFilters, setImplicitFilters] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [resetImplicitToo, setResetImplicitToo] = useState(false)
   const [showSaveModal, setShowSaveModal]       = useState(false)
 
-  const { entityTree, implicitEntityFilters, implicitFindingFilters, perEntityImplicitFilters } = implicitConfig || getAfpConfig(pageId)
+  const resolvedConfig = implicitConfig || getAfpConfig(pageId)
+  const { entityTree, implicitEntityFilters, implicitFindingFilters, perEntityImplicitFilters, scopeChains } = resolvedConfig
 
   const savedFilterIdx  = activeFilters.findIndex(f => f.attrId === 'saved-filter')
   const savedFilterChip = savedFilterIdx >= 0 ? activeFilters[savedFilterIdx] : null
@@ -355,7 +441,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       const entity = ATTR_ENTITY[chip.attrId] || 'Host'
       if (!entities.has(entity)) entities.set(entity, new Map())
       const attrs = entities.get(entity)
-      if (!attrs.has(chip.attrId)) attrs.set(chip.attrId, { key: chip.key, values: [], indices: [] })
+      if (!attrs.has(chip.attrId)) attrs.set(chip.attrId, { key: chip.key, attrId: chip.attrId, values: [], indices: [] })
       const a = attrs.get(chip.attrId)
       a.values.push(chip.value)
       a.indices.push(idx)
@@ -365,6 +451,42 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
       attrs: Array.from(attrs.values()),
     }))
   }, [activeFilters])
+
+  // A viewer's own ad-hoc Graph Filter, applied via this page's Filter button
+  // (GFSidePanel in FilterPanel.jsx) rather than the dashboard's saved scope —
+  // graphFilterPaths carries the real traversal chains (e.g. [['host',
+  // 'vulnerability']]) since GFSidePanel's flattened chips collapse every hop
+  // to the same generic 'graph-entity' attrId and can't reconstruct which
+  // entity a relation connects. Per-entity attribute chips (graph-attr-
+  // <entityId>-<attrId>) DO carry a real entity id, recovered here instead of
+  // relying on ATTR_ENTITY (which doesn't know about them and would bucket
+  // them all under 'Host').
+  const graphFilterChains = useMemo(() => {
+    const chains = (graphFilterPaths || []).filter(p => p.length > 0)
+    if (!chains.length) return []
+    const filtersByEntity = {}
+    activeFilters.forEach(chip => {
+      const m = /^graph-attr-([a-zA-Z]+)-(.+)$/.exec(chip.attrId || '')
+      if (!m) return
+      const [, entityId] = m
+      const label = (chip.key || '').split(' · ')[1] || m[2]
+      // mode prefix casing differs by source (GFAttrPanelBody reports
+      // 'Include'/'Exclude'; DashboardCanvas's ScopeAttrsPanel-style flows
+      // report 'INCLUDE'/'EXCLUDE') — match case-insensitively so the prefix
+      // is always stripped from the values string instead of leaking into it
+      // (e.g. a value rendering as "Include EPSS" instead of just "EPSS").
+      const valueMatch = /^(include|exclude)\s([\s\S]*)$/i.exec(chip.value || '')
+      const mode   = valueMatch ? valueMatch[1].toUpperCase() : 'INCLUDE'
+      const values = (valueMatch ? valueMatch[2] : (chip.value || '')).split(', ').filter(Boolean)
+      if (!filtersByEntity[entityId]) filtersByEntity[entityId] = []
+      filtersByEntity[entityId].push({ key: label, mode, values })
+    })
+    return chains.map(path => path.map(id => ({
+      id,
+      label: GF_ENTITIES.find(e => e.id === id)?.label || id,
+      filters: filtersByEntity[id] || [],
+    })))
+  }, [graphFilterPaths, activeFilters])
 
   // top/right are runtime-calculated pixel positions — must stay inline
   const panelPosVars = {
@@ -406,10 +528,32 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
               <button className="afp-fc-remove" title="Remove saved filter" onClick={() => onRemove?.(savedFilterIdx)}>×</button>
             </div>
           )}
-          {entityTree.map(({ entity, relation }, entityIdx) => {
-            const explicitAttrs    = entityGroups.find(g => g.entity === entity)?.attrs || []
+          {scopeChains && scopeChains.map((chain, i) => (
+            <div key={`scope-${i}`} className="afp-entity-block">
+              <ScopeChainNode chain={chain} idx={0} entityGroups={entityGroups} implicitFilters={implicitFilters} onRemove={onRemove} />
+            </div>
+          ))}
+          {/* A viewer's own ad-hoc Graph Filter (graphFilterChains) renders as its
+              own nested tree regardless of which page/context this panel is on —
+              a dashboard with scopeChains, a report or any other page still on the
+              old static entityTree fallback below. Rendered here, outside either
+              branch, so it isn't limited to dashboard-view routes. */}
+          {graphFilterChains.map((chain, i) => (
+            <div key={`gf-${i}`} className="afp-entity-block">
+              <ScopeChainNode chain={chain} idx={0} entityGroups={entityGroups} implicitFilters={implicitFilters} onRemove={onRemove} alwaysShowFilters />
+            </div>
+          ))}
+          {!scopeChains && entityTree.map(({ entity, relation }, entityIdx) => {
+            // graph-* chips are excluded here too (see ScopeChainNode) — they're
+            // rendered exclusively via graphFilterChains above, correctly
+            // attributed to their real entity and nested under their relation,
+            // instead of also leaking into this entity's flat chip list as a
+            // generic mislabeled "Graph Filter" attribute.
+            const explicitAttrs    = (entityGroups.find(g => g.entity === entity)?.attrs || [])
+              .filter(attr => !(attr.attrId || '').startsWith('graph-'))
             const showEntityWhere  = explicitAttrs.length > 0 || implicitFilters
-            const findingAttrs     = entityGroups.find(g => g.entity === 'Finding')?.attrs || []
+            const findingAttrs     = (entityGroups.find(g => g.entity === 'Finding')?.attrs || [])
+              .filter(attr => !(attr.attrId || '').startsWith('graph-'))
             const showFindingWhere = implicitFilters || findingAttrs.length > 0
             // The Finding sub-block's contents (implicitFindingFilters/findingAttrs) aren't
             // scoped per entity — render them once, under the first related entity, instead
@@ -491,7 +635,7 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
         </div>
 
         <div className="afp-footer">
-          <button className="afp-reset-btn" data-tooltip="Resets explicit filters — implicit filters optional" onClick={() => setShowResetConfirm(true)}>
+          <button className="afp-reset-btn" data-tooltip="Resets explicit filters" onClick={() => setShowResetConfirm(true)}>
             Reset Filters
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 7.2561C8.84388 7.2562 9.5127 7.92682 9.5127 8.76978C9.5126 9.61265 8.84382 10.2824 8 10.2825C7.15609 10.2825 6.48642 9.61271 6.48633 8.76978C6.48633 7.92676 7.15603 7.2561 8 7.2561Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
@@ -527,39 +671,26 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                   <path d="M3.26953 8.76914C3.26953 9.70481 3.54697 10.6195 4.06676 11.3974C4.58655 12.1754 5.32534 12.7818 6.18972 13.1399C7.05409 13.4979 8.00523 13.5916 8.92285 13.4091C9.84047 13.2265 10.6834 12.776 11.3449 12.1143C12.0065 11.4527 12.457 10.6098 12.6395 9.69208C12.8221 8.77439 12.7284 7.82317 12.3704 6.95873C12.0123 6.09428 11.406 5.35543 10.6281 4.8356C9.87356 4.3314 8.99047 4.05522 8.08433 4.03906" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M7.80005 5.6189L5.68774 4.02417L7.80005 2.42944V5.6189Z" fill="currentColor" stroke="currentColor" strokeWidth="0.555556"/>
                 </svg>
-                Reset All Filters
+                Reset Filters
               </span>
-              <button className="ds-modal-close" onClick={() => { setShowResetConfirm(false); setResetImplicitToo(false) }} aria-label="Close">×</button>
+              <button className="ds-modal-close" onClick={() => setShowResetConfirm(false)} aria-label="Close">×</button>
             </div>
             <div className="ds-modal-body">
               <p className="afp-reset-modal-copy">
                 This clears every explicit filter you've applied to this view. This action cannot be undone.
               </p>
-              <label className="afp-reset-implicit-row">
-                <input
-                  type="checkbox"
-                  checked={resetImplicitToo}
-                  onChange={e => setResetImplicitToo(e.target.checked)}
-                />
-                <span>
-                  Also remove implicit filters
-                  <span className="afp-reset-implicit-hint">Implicit filters set this page's default scope — removing them may broaden what data you see.</span>
-                </span>
-              </label>
             </div>
             <div className="ds-modal-footer">
-              <button className="ds-btn sz-md t-outline" onClick={() => { setShowResetConfirm(false); setResetImplicitToo(false) }}>Cancel</button>
+              <button className="ds-btn sz-md t-outline" onClick={() => setShowResetConfirm(false)}>Cancel</button>
               <button
                 className="ds-btn sz-md t-danger"
                 onClick={() => {
                   onClear?.()
-                  if (resetImplicitToo) setImplicitFilters(false)
                   setShowResetConfirm(false)
-                  setResetImplicitToo(false)
                   onClose()
                 }}
               >
-                {resetImplicitToo ? 'Reset All Filters' : 'Reset Explicit Filters'}
+                Reset Explicit Filters
               </button>
             </div>
           </div>

@@ -89,6 +89,9 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const [reportFilterOpen, setReportFilterOpen] = useState(false)
   const [reportFilters, setReportFilters] = useState([])
   const [reportFilterCount, setReportFilterCount] = useState(0)
+  // Raw traversal chains from a report viewer's own ad-hoc Graph Filter — see
+  // dashboardFilterPaths below for the dashboard-view equivalent.
+  const [reportFilterPaths, setReportFilterPaths] = useState([])
   // Ad-hoc filters a viewer adds on top of a saved dashboard's own scope (see
   // dashboardImplicitConfig below) — kept separate from reportFilters since a
   // dashboard view and a report preview are reached via different routes and
@@ -96,6 +99,12 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   const [dashboardFilterOpen, setDashboardFilterOpen] = useState(false)
   const [dashboardFilters, setDashboardFilters] = useState([])
   const [dashboardFilterCount, setDashboardFilterCount] = useState(0)
+  // Raw traversal chains (e.g. [['host','vulnerability']]) from a viewer's own
+  // ad-hoc Graph Filter — kept alongside dashboardFilters' flattened chips so
+  // ActiveFilterPanel can render the relationship as a nested tree instead of
+  // a flat, mislabeled "Graph Filter" chip (see buildDashboardScopeImplicitConfig
+  // for the equivalent on the dashboard's own saved scope).
+  const [dashboardFilterPaths, setDashboardFilterPaths] = useState([])
   const [customReportTitles, setCustomReportTitles] = useState({})
   // Set by SavedPage's "Edit" action on a saved dashboard row (see the
   // 'workspace/dashboard/edit-<id>' route below) so DashboardCanvas can seed
@@ -245,10 +254,11 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     setReportFilters(updated)
     setReportFilterCount(new Set(updated.map(c => c.attrId)).size)
   }
-  const handleClearFilters = () => { setReportFilters([]); setReportFilterCount(0) }
-  const handleApplyFilters = (count, chips) => {
+  const handleClearFilters = () => { setReportFilters([]); setReportFilterCount(0); setReportFilterPaths([]) }
+  const handleApplyFilters = (count, chips, paths) => {
     setReportFilterCount(count)
     setReportFilters(chips || [])
+    setReportFilterPaths(paths || [])
     setReportFilterOpen(false)
   }
 
@@ -257,10 +267,11 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
     setDashboardFilters(updated)
     setDashboardFilterCount(new Set(updated.map(c => c.attrId)).size)
   }
-  const handleClearDashboardFilters = () => { setDashboardFilters([]); setDashboardFilterCount(0) }
-  const handleApplyDashboardFilters = (count, chips) => {
+  const handleClearDashboardFilters = () => { setDashboardFilters([]); setDashboardFilterCount(0); setDashboardFilterPaths([]) }
+  const handleApplyDashboardFilters = (count, chips, paths) => {
     setDashboardFilterCount(count)
     setDashboardFilters(chips || [])
+    setDashboardFilterPaths(paths || [])
     setDashboardFilterOpen(false)
   }
   // A saved dashboard's scope (entities + Include/Exclude attributes, set via
@@ -268,7 +279,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
   // surfaced the same way Discover's page-level implicit filters are, just
   // computed per-dashboard from what was saved instead of hardcoded per-route.
   const dashboardImplicitConfig = isViewDashboard
-    ? buildDashboardScopeImplicitConfig(resolvedEditSeed?.dashboardScopes, resolvedEditSeed?.dashboardScopeAttrs)
+    ? buildDashboardScopeImplicitConfig(resolvedEditSeed?.dashboardScopes, resolvedEditSeed?.dashboardScopeAttrs, resolvedEditSeed?.dashboardScopePaths)
     : undefined
 
   const pageTitle =
@@ -342,6 +353,7 @@ export default function WorkspacePage({ onNav, initialRoute = 'workspace/library
               actions={(isReportPage || isViewDashboard) ? undefined : null}
               pageId={isReportPage ? 'workspace/report' : undefined}
               implicitConfig={dashboardImplicitConfig}
+              graphFilterPaths={isReportPage ? reportFilterPaths : isViewDashboard ? dashboardFilterPaths : undefined}
               activeFilters={isReportPage ? reportFilters : isViewDashboard ? dashboardFilters : []}
               activeFilterCount={isReportPage ? reportFilterCount : isViewDashboard ? dashboardFilterCount : 0}
               onRemoveFilter={isViewDashboard ? handleRemoveDashboardFilter : handleRemoveFilter}
