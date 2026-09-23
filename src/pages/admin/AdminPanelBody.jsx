@@ -13,6 +13,11 @@ import { DataSourcesSection, TicketingSection, WebhooksSection } from './DataInt
 import { SecuritySection, AuditLogSection, ComplianceSection, DataRetentionSection } from './SecurityCompliance.jsx'
 import { RiskScoringSection, NotificationRulesSection } from './RiskConfig.jsx'
 import { OrganizationSection, BillingSection } from './Workspace.jsx'
+import { IcServer, IcCheckShield } from '../control-plane/shared.jsx'
+import EnvironmentDirectoryPage from '../control-plane/EnvironmentDirectoryPage.jsx'
+import EnvironmentDetailPage from '../control-plane/EnvironmentDetailPage.jsx'
+import EnvironmentFormPage from '../control-plane/EnvironmentFormPage.jsx'
+import CoveragePage from '../control-plane/CoveragePage.jsx'
 
 /* ── Settings nav structure — shared by every shell the Settings panel
    can nest inside (classic EM, Studio, UX3, and the Workspace fallback).
@@ -62,6 +67,18 @@ export const ADMIN_NAV_GROUPS = [
       { id: 'billing',      label: 'Billing & Plan', iconNode: <IcCreditCard /> },
     ],
   },
+  // Control Plane — first capability is the Environment Directory (read-only
+  // directory + detail, manual record entry, coverage reconciliation). Lives
+  // here in Admin Panel rather than a top-level LeftNav section per request.
+  // Room for more items (Deployments/Health/Audit/Cost) later in this same
+  // group, no restructuring needed.
+  {
+    label: 'Control Plane',
+    items: [
+      { id: 'cp-environments', label: 'Environments', iconNode: <IcServer /> },
+      { id: 'cp-coverage',     label: 'Coverage', iconNode: <IcCheckShield /> },
+    ],
+  },
 ];
 const ALL_ITEMS = ADMIN_NAV_GROUPS.flatMap(g => g.items);
 
@@ -84,6 +101,28 @@ export function useAdminPanelState() {
   });
   const [confirmAction, setConfirmAction] = useState(null);
 
+  // Environment Directory has its own list/detail/new sub-views, same as
+  // every other Admin Panel section renders a flat page for its one
+  // `activeSection` id — nested here instead of promoted into `current`/
+  // PAGE_META (App.jsx) since it's reached only through Admin Panel, not a
+  // top-level destination.
+  const [cpEnvView, setCpEnvView] = useState('list'); // 'list' | 'detail' | 'new'
+  const [cpSelectedEnvId, setCpSelectedEnvId] = useState(null);
+  const [cpNewCustomer, setCpNewCustomer] = useState('');
+
+  // Single onNav for all four control-plane pages (Directory/Detail/Form/
+  // Coverage) — they were built to call onNav with real route ids
+  // ('control-plane/environments', '.../new', '.../<id>', '.../coverage');
+  // this translates those into local view-state instead of a URL change, so
+  // none of those page components needed to change to live inside Admin
+  // Panel's single-activeSection model.
+  const handleControlPlaneNav = (id, data) => {
+    if (id === 'control-plane/coverage') { setActiveSection('cp-coverage'); return; }
+    if (id === 'control-plane/environments') { setActiveSection('cp-environments'); setCpEnvView('list'); return; }
+    if (id === 'control-plane/environments/new') { setActiveSection('cp-environments'); setCpEnvView('new'); setCpNewCustomer(data?.customerName || ''); return; }
+    if (id.startsWith('control-plane/environments/')) { setActiveSection('cp-environments'); setCpEnvView('detail'); setCpSelectedEnvId(id.split('/')[2]); return; }
+  };
+
   const sectionLabel = ALL_ITEMS.find(s => s.id === activeSection)?.label || 'Admin Panel';
 
   return {
@@ -93,6 +132,7 @@ export function useAdminPanelState() {
     roles, setRoles,
     settings, setSettings,
     confirmAction, setConfirmAction,
+    cpEnvView, cpSelectedEnvId, cpNewCustomer, handleControlPlaneNav,
     sectionLabel,
   };
 }
@@ -127,7 +167,7 @@ export function AdminSettingsNav({ activeSection, onSelect }) {
 }
 
 export function AdminPanelContent({ state, onNav, onClose }) {
-  const { activeSection, users, setUsers, groups, setGroups, roles, setRoles, settings, setSettings, setConfirmAction, sectionLabel } = state;
+  const { activeSection, users, setUsers, groups, setGroups, roles, setRoles, settings, setSettings, setConfirmAction, sectionLabel, cpEnvView, cpSelectedEnvId, cpNewCustomer, handleControlPlaneNav } = state;
   return (
     <>
       <SubHeader
@@ -166,6 +206,10 @@ export function AdminPanelContent({ state, onNav, onClose }) {
             <OrganizationSection userCount={users.length} onConfirm={setConfirmAction} />
           )}
           {activeSection === 'billing' && <BillingSection userCount={users.length} />}
+          {activeSection === 'cp-environments' && cpEnvView === 'list' && <EnvironmentDirectoryPage onNav={handleControlPlaneNav} />}
+          {activeSection === 'cp-environments' && cpEnvView === 'detail' && <EnvironmentDetailPage id={cpSelectedEnvId} onNav={handleControlPlaneNav} />}
+          {activeSection === 'cp-environments' && cpEnvView === 'new' && <EnvironmentFormPage onNav={handleControlPlaneNav} initialCustomerName={cpNewCustomer} />}
+          {activeSection === 'cp-coverage' && <CoveragePage onNav={handleControlPlaneNav} />}
         </div>
       </div>
     </>
@@ -174,12 +218,13 @@ export function AdminPanelContent({ state, onNav, onClose }) {
 
 export function AdminConfirmModal({ confirmAction, onClose }) {
   if (!confirmAction) return null;
+  const isDelete = /^(Delete|Remove)/i.test(confirmAction.confirmLabel);
   return (
     <div className="ds-modal-overlay">
       <div className="ds-modal" role="dialog" aria-modal="true">
         <div className="ds-modal-header">
-          <span className={`ds-modal-title ${confirmAction.tier === 'warning' ? 'warning' : 'danger'}${/^(Delete|Remove)/i.test(confirmAction.confirmLabel) ? ' admin-delete-modal-title' : ''}`}>
-            {/^(Delete|Remove)/i.test(confirmAction.confirmLabel) && (
+          <span className={`ds-modal-title ${confirmAction.tier === 'warning' ? 'warning' : 'danger'}${isDelete ? ' admin-delete-modal-title' : ''}`}>
+            {isDelete && (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>

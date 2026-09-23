@@ -1051,13 +1051,11 @@ function App() {
     history.pushState(null, '', navPath(url));
   };
 
-  // Per-page filter accessors
-  const curPageFilters   = filtersByPage[current] || { count: 0, chips: [] };
+  // Per-page filter accessors — an "apply to all pages" filter (stored under the
+  // __all__ sentinel) overrides whatever the current page's own filter is.
+  const curPageFilters   = filtersByPage.__all__ || filtersByPage[current] || { count: 0, chips: [] };
   const activeFilterCount = curPageFilters.count;
   const activeFilters     = curPageFilters.chips;
-
-  const setPageFilters = (pageId, count, chips) =>
-    setFiltersByPage(prev => ({ ...prev, [pageId]: { count, chips } }));
 
   // Toggles the chip(s) behind one chart-segment click (1 chip for a single-dimension
   // mark, 2 for a stacked-segment intersection) — the single entry point every dashboard's
@@ -1080,15 +1078,31 @@ function App() {
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
       visitedTabs={visitedTabs}
-      filterProps={{ pageId: current, onApply: (c, chips, paths) => {
-        // FilterPanel's onApply always hands back (count, chips, paths) now —
-        // paths carries the Graph Filter tab's real traversal chains (e.g.
-        // [['host','vulnerability']]) since a flat chip alone can't
-        // reconstruct which entities a relation connects (see the
-        // WorkspacePage/ActiveFilterPanel graphFilterChains wiring for the
-        // equivalent on dashboards/reports).
-        setPageFilters(current, c, chips || []);
-        setPathsByPage(prev => ({ ...prev, [current]: paths || [] }));
+      filterProps={{ pageId: current, onApply: (c, chips, arg3, applyToAllPages = false) => {
+        // FilterPanel's tabs disagree on what the 3rd positional arg means: the Graph
+        // Filter tab hands back its real traversal chains (an array — see the
+        // WorkspacePage/ActiveFilterPanel graphFilterChains wiring for the dashboard
+        // equivalent), while Quick/Saved Filters pass a `merge` boolean instead.
+        const paths = Array.isArray(arg3) ? arg3 : [];
+        const merge = arg3 === true;
+        if (applyToAllPages) {
+          setFiltersByPage(prev => ({ ...prev, __all__: { count: c, chips: chips || [] } }));
+        } else if (merge) {
+          setFiltersByPage(prev => {
+            const cur = prev[current] || { count: 0, chips: [] };
+            const merged = [...cur.chips, ...(chips || [])];
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: new Set(merged.map(f => f.attrId)).size, chips: merged } };
+          });
+        } else {
+          setFiltersByPage(prev => {
+            const { __all__, ...rest } = prev;
+            return { ...rest, [current]: { count: c, chips: chips || [] } };
+          });
+        }
+        if (!merge) {
+          setPathsByPage(prev => ({ ...prev, [current]: paths }));
+        }
       }}}
       navigatorProps={{
         onNav: handleNav,
@@ -1328,13 +1342,17 @@ function App() {
                   graphFilterPaths={pathsByPage[current] || []}
                   onRemoveFilter={(idx) => {
                     setFiltersByPage(prev => {
-                      const cur = prev[current] || { count: 0, chips: [] };
+                      const key = prev.__all__ ? '__all__' : current;
+                      const cur = prev[key] || { count: 0, chips: [] };
                       const updated = cur.chips.filter((_, i) => i !== idx);
-                      return { ...prev, [current]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
+                      return { ...prev, [key]: { count: new Set(updated.map(c => c.attrId)).size, chips: updated } };
                     });
                   }}
                   onClearFilters={() => {
-                    setPageFilters(current, 0, []);
+                    setFiltersByPage(prev => {
+                      const key = prev.__all__ ? '__all__' : current;
+                      return { ...prev, [key]: { count: 0, chips: [] } };
+                    });
                     setPathsByPage(prev => ({ ...prev, [current]: [] }));
                   }}
                   filterActive={rightPanel === 'filter'}

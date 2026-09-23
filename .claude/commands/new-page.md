@@ -1,34 +1,33 @@
-Fetch these URLs before doing anything else:
-1. https://anthu211.github.io/design-system-2.0/ds/rules.json
-2. https://anthu211.github.io/design-system-2.0/ds/tokens/colors.json
-3. https://anthu211.github.io/design-system-2.0/ds/tokens/spacing.json
-4. https://anthu211.github.io/design-system-2.0/ds/tokens/typography.json
-5. https://anthu211.github.io/design-system-2.0/ds/patterns/navigation.json
-6. https://anthu211.github.io/design-system-2.0/ds/components/buttons.json
-7. https://anthu211.github.io/design-system-2.0/ds/components/tables.json
-8. https://anthu211.github.io/design-system-2.0/ds/components/badges.json
-9. https://anthu211.github.io/design-system-2.0/ds/components/modals.json
-10. https://anthu211.github.io/design-system-2.0/ds/page-spec.txt
+Read these local files before doing anything else (never WebFetch — this directory is checked out locally in this repo):
+1. design-system-2.0/ds/rules.json
+2. design-system-2.0/ds/tokens/colors.json
+3. design-system-2.0/ds/tokens/spacing.json
+4. design-system-2.0/ds/tokens/typography.json
+5. design-system-2.0/ds/patterns/navigation.json
+6. design-system-2.0/ds/components/buttons.json
+7. design-system-2.0/ds/components/tables.json
+8. design-system-2.0/ds/components/badges.json
+9. design-system-2.0/ds/components/modals.json
+10. design-system-2.0/ds/page-spec.md
 
-Then read $ARGUMENTS (or ask "What is this page called and who is its primary user?" if empty) and fetch only what the page needs:
-- Cards on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/cards.json
-- Charts on page → fetch https://anthu211.github.io/design-system-2.0/ds/charts/base.txt PLUS only the chart types needed:
-    Bar chart → ds/charts/bar.txt
-    Line chart → ds/charts/line.txt
-    Multi-line chart → ds/charts/multiline.txt
-    Donut chart → ds/charts/donut.txt
-    Horizontal bar → ds/charts/hbar.txt
-    Stacked bar → ds/charts/stacked.txt
-  All at base URL: https://anthu211.github.io/design-system-2.0/
-- Forms / inputs / dropdowns / toggles on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/inputs.json
-- Three-panel layout or auth shell → fetch https://anthu211.github.io/design-system-2.0/ds/patterns/shells.json
-- Toasts / callouts / error states on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/feedback.json
-- Tabs on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/tabs.json
-- Tooltip / accordion / progress / steps / avatar / skeleton on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/utilities.json
-- Detail drawer (row-click asset detail panel) on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/drawer.json
-- Filter popup (multi-entity filter builder) on page → fetch https://anthu211.github.io/design-system-2.0/ds/components/filters.json
+Then read $ARGUMENTS (or ask "What is this page called and who is its primary user?" if empty) and read only what the page needs:
+- Cards on page → read design-system-2.0/ds/components/cards.json
+- Charts on page → read design-system-2.0/ds/charts/base.json PLUS only the chart types needed:
+    Bar chart → design-system-2.0/ds/charts/bar.json
+    Line chart → design-system-2.0/ds/charts/line.json
+    Multi-line chart → design-system-2.0/ds/charts/multiline.json
+    Donut chart → design-system-2.0/ds/charts/donut.json
+    Horizontal bar → design-system-2.0/ds/charts/hbar.json
+    Stacked bar → design-system-2.0/ds/charts/stacked.json
+- Forms / inputs / dropdowns / toggles on page → read design-system-2.0/ds/components/inputs.json
+- Three-panel layout or auth shell → read design-system-2.0/ds/patterns/shells.json
+- Toasts / callouts / error states on page → read design-system-2.0/ds/components/feedback.json
+- Tabs on page → read design-system-2.0/ds/components/tabs.json
+- Tooltip / accordion / progress / steps / avatar / skeleton on page → read design-system-2.0/ds/components/utilities.json
+- Detail drawer (row-click asset detail panel) on page → read design-system-2.0/ds/components/drawer.json
+- Filter popup (multi-entity filter builder) on page → read design-system-2.0/ds/components/filters.json
 
-Do not fetch files for components the page does not need.
+Do not read files for components the page does not need.
 
 BUILD CHECKLIST — complete every item in order:
 
@@ -40,7 +39,7 @@ BUILD CHECKLIST — complete every item in order:
        soc-analyst → Alert queue first, severity sorted, quick row actions on hover
        NOTE: Never add KPI cards unless the user explicitly asks for them.
 
-[ ] 2. SHELL — copy the complete shell HTML from page-spec.txt VERBATIM.
+[ ] 2. SHELL — copy the complete shell HTML from page-spec.md VERBATIM.
        Copy the ENTIRE <style> block — do not skip or shorten any CSS.
        Copy the ENTIRE <script> block — do not skip or shorten any JS.
        Only replace: page <title>, nav SVG icons, breadcrumb + sub-header text, page content slot.
@@ -54,20 +53,20 @@ BUILD CHECKLIST — complete every item in order:
 [ ] 5. LEFT NAV — must include:
        - id="shell-nav" on the nav element
        - id="shell-nav-btn" on the toggle button
-       - shellNavToggle() JS function from page-spec.txt — never remove or rewrite.
+       - shellNavToggle() JS function from page-spec.md — never remove or rewrite.
 
 [ ] 6. SUB-HEADER — exactly TWO lines:
        Line 1: page title <div style="font-size:12px;font-weight:500"> — NEVER <h1>
        Line 2: breadcrumb <div style="font-size:11px"> — last crumb color:#6360D8
        Never merge into one line.
 
-[ ] 7. CHARTS (only if page has charts) — fetch ds/charts/base.txt + only the chart type files needed (not all of them).
-       Copy each function VERBATIM from the fetched files.
+[ ] 7. CHARTS (only if page has charts) — read design-system-2.0/ds/charts/base.json + only the chart type files needed (not all of them).
+       Copy each function VERBATIM from the files already read.
        Add <div id="chart-tooltip"> at end of <body>.
-       Copy showChartTooltip, positionChartTooltip, hideChartTooltip from ds/charts/base.txt verbatim.
+       Copy showChartTooltip, positionChartTooltip, hideChartTooltip from ds/charts/base.json verbatim.
        Init: document.addEventListener('DOMContentLoaded', function() { setTimeout(initCharts, 60); });
 
-[ ] 8. COMPONENTS — use exact HTML patterns from the component JSONs fetched.
+[ ] 8. COMPONENTS — use exact HTML patterns from the component JSONs already read.
        Buttons: class names and border-radius:44px from components/buttons.json.
        Cards: border-radius:4px only, patterns from components/cards.json.
        Tables: column order, row-actions, badge placement from components/tables.json.

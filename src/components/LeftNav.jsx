@@ -112,13 +112,13 @@ export const INSIGHTS_MODEL = [
       { id: 'discover/cloud',    label: 'Cloud',    icon: 'nav-discover-cloud' },
       { id: 'discover/identity', label: 'Identity', icon: 'nav-discover-identity' },
   ]},
+  { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
   { id: 'report',     label: 'Report',          icon: 'navbar-report',     children: [
       { id: 'report/compliance',          label: 'Compliance',          icon: 'nav-report-compliance' },
       { id: 'report/assessments',         label: 'Assessments',         icon: 'nav-report-assessments' },
       { id: 'report/compliance-matrix',   label: 'Compliance Matrix',   icon: 'nav-report-matrix' },
       { id: 'report/compliance-findings', label: 'Compliance Findings', icon: 'nav-findings' },
   ]},
-  { id: 'kg',         label: 'Knowledge Graph', icon: 'navbar-kg',         solo: true },
   { id: 'data-quality', label: 'Data Quality',  icon: 'navbar-data quality', children: [
       { id: 'data-quality/overview', label: 'Overview',  icon: 'nav-overview' },
       { id: 'data-quality/in-depth', label: 'In-Depth',  icon: 'nav-dq-indepth' },

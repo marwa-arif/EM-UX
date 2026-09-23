@@ -326,8 +326,8 @@
 }
 .gf-canvas__zoom-controls {
   position: absolute;
-  top: 12px;
-  left: 16px;
+  bottom: 16px;
+  right: 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -346,7 +346,11 @@
   justify-content: center;
   color: var(--pai-fg2);
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: border-color 100ms, color 100ms;
 }
+.gf-canvas-btn:hover:not(:disabled) { border-color: var(--pai-border-strong); color: var(--pai-fg1); }
+.gf-canvas-btn:focus-visible { outline: 2px solid var(--pai-indigo); outline-offset: 1px; }
+.gf-canvas-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .gf-canvas__show-attrs {
   position: absolute;
   top: 12px;
@@ -997,6 +1001,10 @@
 }
 .gf-canvas-area::-webkit-scrollbar { display: none; }
 
+/* Zoomable inner layer — becomes the containing block for the sizer/nodes/svg so
+   CSS zoom (which scales layout, unlike transform) grows gf-canvas-area's scroll extent */
+.gf-canvas-zoom-layer { position: relative; }
+
 /* Sizer: in-flow block that defines canvas scroll extents — width & height driven inline */
 .gf-canvas-sizer {
   min-height: 500px;
@@ -1487,6 +1495,29 @@
 
 /* ── Quick Settings ──────────────────────────────────────────────── */
 .fp-quick-settings { padding: 12px 16px 0; }
+.fp-toggle-wrap { display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+.fp-toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 99px;
+  background: var(--shell-border);
+  transition: background 200ms ease;
+  flex-shrink: 0;
+}
+.fp-toggle-track--on { background: var(--pai-indigo); }
+.fp-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  transition: left 200ms ease;
+}
+.fp-toggle-track--on .fp-toggle-thumb { left: 23px; }
 .fp-quick-settings__actions {
   display: flex;
   gap: 8px;
@@ -1757,6 +1788,24 @@
   color: var(--pai-indigo);
   font-family: inherit;
 }
+.fp-save-current-btn {
+  height: 34px;
+  padding: 0 14px;
+  background: var(--pai-indigo-tint);
+  border: 1.5px solid var(--pai-indigo);
+  border-radius: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pai-indigo);
+  font-family: inherit;
+  width: 100%;
+}
+.fp-save-current-btn:disabled { opacity: .5; cursor: not-allowed; }
 .fp-saved-section {
   display: flex;
   flex-direction: column;
@@ -1993,6 +2042,78 @@
   gap: 8px;
 }
 .fp-footer__row { display: flex; gap: 8px; }
+.fp-footer__panel {
+  background: var(--shell-raised);
+  border-radius: 4px;
+  padding: 0 12px;
+}
+.fp-footer__panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  transition: opacity 150ms ease;
+}
+.fp-footer__panel-divider { height: 1px; background: var(--pai-border-strong); opacity: .6; }
+.fp-footer__panel-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pai-fg2);
+  transition: color 150ms ease;
+}
+.fp-footer__panel-icon { display: inline-flex; color: var(--pai-fg3); flex-shrink: 0; }
+.fp-footer__panel-label-wrap { display: inline-flex; align-items: center; gap: 6px; }
+.fp-footer__panel-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pai-indigo);
+  font-variant-numeric: tabular-nums;
+}
+.fp-footer__panel-row--active .fp-footer__panel-label { color: var(--pai-fg1); }
+
+/* Info-icon tooltip — CSS-only hover, no JS show/hide (matches the app-wide
+   .dc-tip pattern in dashboard.css); kept local so it renders on every page
+   FilterPanel mounts on, regardless of which page stylesheet is loaded. */
+.fp-info-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--pai-fg3);
+  cursor: help;
+  flex-shrink: 0;
+}
+.fp-info-tip:hover { color: var(--pai-fg2); }
+.fp-info-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 300;
+}
+.fp-info-tip--wrap::after {
+  white-space: normal;
+  max-width: 240px;
+  width: max-content;
+  text-align: left;
+}
+.fp-info-tip:hover::after { opacity: 1; }
 
 .fp-footer-btn {
   flex: 1;
@@ -2163,6 +2284,17 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  animation: gfa-body-in 160ms ease-out;
+}
+
+@keyframes gfa-body-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gfa-strip-pulse {
+  from { background: var(--pai-indigo-tint); }
+  to   { background: transparent; }
 }
 
 .gfa-entity-strip {
@@ -2172,6 +2304,7 @@
   padding: 10px 14px 8px;
   border-bottom: 1px solid var(--pai-border);
   flex-shrink: 0;
+  animation: gfa-strip-pulse 700ms ease-out;
 }
 
 .gfa-entity-swatch {
@@ -2429,6 +2562,7 @@
 /* Bottom section: filter preview + apply */
 .gf-side-panel__bottom {
   flex-shrink: 0;
+  min-height: 200px;
   border-top: 1px solid var(--pai-border);
   border-radius: 0 0 0 8px;
   padding: 8px 12px;
