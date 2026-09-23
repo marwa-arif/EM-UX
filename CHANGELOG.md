@@ -35,6 +35,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.25.1] — 2026-09-23
+### Changed
+- Merged `develop` into `feature/control-plane`, reconciling the Graph Filter traversal-path/date-range-label work (already released as v0.23.2 on `develop`) with this branch's filter-panel changes.
+
+---
+
 ## [0.25.0] — 2026-09-18
 ### Added
 - rp-shell Filter panel: live "Matching records" count in the Quick/Saved Filters footer, updating as filter values are selected.
