@@ -274,47 +274,34 @@
      two-stat layout the requested KPI set needs — value+label+delta alone
      can't express "value + 2 labeled counts". Plain card bg only, per
      "KPI cards... NEVER custom bg" — no tinting. */
-  .rrm-kpi-row { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; }
+  .rrm-kpi-row { display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; }
   .rrm-kpi { position: relative; flex: 1 1 0; min-width: 168px; height: 125px; background: var(--card-bg); border-radius: 4px; padding: 16px; display: flex; flex-direction: column; border: 1px solid var(--card-border); }
   .rrm-kpi__value { font-size: 20px; font-weight: 600; line-height: 1.2; color: var(--shell-text); }
   .rrm-kpi__title { font-size: 14px; font-weight: 600; line-height: 1.17; color: var(--shell-text); margin-top: 6px; }
   .rrm-kpi__footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 16px; }
+  .rrm-kpi__footer--stacked { flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px; padding-top: 0; }
 
-  /* MTTD + MTTR combined into one card (one shared Trend Explore button,
-     two value columns split by a divider) since both open the same drawer. */
-  .rrm-kpi--combined { flex: 2 1 0; flex-direction: row; align-items: stretch; }
+  /* MTTD + MTTR combined into one card: KPI content row on top, then an
+     inline trend chart (own date-range pills) below — no more Trend Explore
+     drawer. The combined-row keeps the original per-KPI 125px rhythm; the
+     card itself grows to fit the chart below it. */
+  .rrm-kpi--combined { flex: 2 1 0; height: auto; flex-direction: column; gap: 12px; }
+  .rrm-kpi__combined-row { display: flex; align-items: stretch; height: 100px; }
   .rrm-kpi__combined-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
-  .rrm-kpi__combined-divider { width: 1px; background: var(--card-border); margin: 0 16px; flex-shrink: 0; }
+  .rrm-kpi__combined-divider { width: 1px; background: var(--card-border); margin: 0 20px; flex-shrink: 0; }
+  /* Pulled up by the parent's 12px gap so this line meets the bottom of the
+     vertical divider above it instead of leaving a visible break. */
+  .rrm-kpi__combined-hr { border-top: 1px solid var(--card-border); margin-top: -12px; }
   .rrm-kpi__stat { font-size: 12px; color: var(--shell-text-muted); white-space: nowrap; }
   .rrm-kpi__stat-num { font-weight: 700; color: var(--shell-text); margin-right: 4px; }
   .rrm-kpi__stat-num--red { color: var(--pai-crit-fg); }
   .rrm-kpi__stat-num--green { color: var(--pai-green); }
 
-  /* DS Button (src/styles/workspace.css — .ds-btn, reused verbatim) */
-  .ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; border-radius: 44px; font-family: inherit; transition: background 150ms, color 150ms, border-color 150ms; white-space: nowrap; user-select: none; line-height: 1; }
-  .ds-btn.sz-sm { height: 24px; padding: 0 10px; font-size: 11px; font-weight: 500; }
-  .ds-btn.t-tertiary { background: transparent; border: 1px solid rgba(99,96,216,0.45); color: var(--pai-indigo); }
-  .ds-btn.t-tertiary:hover { background: rgba(99,96,216,0.06); border-color: var(--pai-indigo); }
-  /* Sits in the KPI card's top-right corner instead of the DS default inline
-     placement; no stroke — plain text+icon over the card's own bg. */
-  .ds-btn.rrm-trend-explore-btn { position: absolute; top: 16px; right: 16px; padding: 0; border: none; }
-  .ds-btn.rrm-trend-explore-btn:hover { background: transparent; text-decoration: underline; }
-
-  /* Drawer shell (src/styles/drawer.css + src/styles/compliance.css — comp-drawer*,
-     reused verbatim: same chrome/animation/close-button as every drawer in the app). */
-  .comp-drawer-backdrop { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.22); z-index: 200; }
-  .comp-drawer { position: fixed; top: var(--topbar-height); right: 0; width: 76vw; max-width: 76vw; height: calc(100vh - var(--topbar-height)); background: var(--card-bg); border-left: 1px solid var(--shell-border); border-radius: 12px 0 0 12px; overflow: hidden; z-index: 201; display: flex; flex-direction: column; box-shadow: -4px 0 32px rgba(0,0,0,0.14); animation: comp-drawer-in 180ms ease; }
-  @keyframes comp-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-  @keyframes comp-drawer-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
-  .comp-drawer--closing { animation: comp-drawer-out 180ms ease forwards; }
-  .comp-drawer-close-ext { position: fixed; top: calc(var(--topbar-height) + 16px); right: calc(76vw + 8px); width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); box-shadow: -2px 2px 8px rgba(0,0,0,0.10); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--shell-text-muted); z-index: 202; transition: background 120ms; }
-  .comp-drawer-close-ext:hover { background: var(--shell-raised); }
-  .comp-drawer-header { display: flex; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; gap: 12px; }
-  .comp-drawer-header-content { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
-  .comp-drawer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; flex-wrap: wrap; }
-  .comp-drawer-title { font-size: 14px; font-weight: 600; color: var(--shell-text); line-height: 1.4; }
-  .comp-drawer-body { flex: 1; overflow-y: auto; min-height: 0; }
-  .comp-drawer-section { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  /* CISA KEV-MTTR + Reoccurrence Rate stacked vertically beside the combined
+     card, stretched (via .rrm-kpi-row's align-items:stretch) to match its
+     now-taller height instead of sitting side by side at a fixed 125px. */
+  .rrm-kpi-stack { display: flex; flex-direction: column; gap: 12px; flex: 1 1 0; min-width: 168px; }
+  .rrm-kpi-stack > .rrm-kpi { flex: 1 1 0; height: auto; }
 
   /* Badges (design-system-2.0/ds/components/badges.json) */
   .rrm-trurisk-score { color: var(--pai-med-fg); font-weight: 700; }
@@ -527,48 +514,61 @@
             <!-- KPI row -->
             <div class="rrm-kpi-row">
               <div class="rrm-kpi rrm-kpi--combined">
-                <!-- src/pages/DiscoverDevicePage.jsx's "Trend Explore" button (ds-btn
-                     sz-sm t-tertiary + IcExplore), reused verbatim minus the border.
-                     One button covers both MTTD and MTTR — same combined drawer either way. -->
-                <button class="ds-btn sz-sm t-tertiary rrm-trend-explore-btn" title="Trend Explore">
-                  Trend Explore
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.72222 13.5C3.39807 13.5 3.08719 13.3712 2.85798 13.142C2.62877 12.9128 2.5 12.6019 2.5 12.2778V8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5H3.72222Z" fill="currentColor"/>
-                    <path d="M13.5 9.34636V12.2778C13.5 12.6019 13.3712 12.9128 13.142 13.142C12.9128 13.3712 12.6019 13.5 12.2778 13.5H8M6.69508 2.5H3.72222C3.39807 2.5 3.08719 2.62877 2.85798 2.85798C2.62877 3.08719 2.5 3.39807 2.5 3.72222V8M13.5 2.5L9.36629 6.63371M13.5 6.62568V2.5H9.36629M2.5 8V12.2778C2.5 12.6019 2.62877 12.9128 2.85798 13.142C3.08719 13.3712 3.39807 13.5 3.72222 13.5H8M2.5 8H6.00379C7.1092 8 8.00498 8.89675 8.00379 10.0022L8 13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-                <div class="rrm-kpi__combined-col">
-                  <span class="rrm-kpi__value" id="kpi-mttd-value">3 Days</span>
-                  <span class="rrm-kpi__title">MTTD</span>
-                  <div class="rrm-kpi__footer">
-                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-vulns">11.3M</span>Vulnerabilities</span>
-                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-assets">9.54K</span>Assets</span>
+                <!-- Header applies to both KPIs and the chart below — reuses
+                     buildTrendChart's date-range pills (comp-time-pill) instead
+                     of a Trend Explore drawer. -->
+                <div class="rrm-trend-hdr">
+                  <span class="rrm-widget-title">MTTD &amp; MTTR Trend</span>
+                  <div class="comp-time-pills-wrap" id="mttdMttrRangePills">
+                    <button class="comp-time-pill" data-range="1W">1W</button>
+                    <button class="comp-time-pill" data-range="1M">1M</button>
+                    <button class="comp-time-pill" data-range="3M">3M</button>
+                    <button class="comp-time-pill" data-range="6M">6M</button>
+                    <button class="comp-time-pill comp-time-pill--active" data-range="1Y">1Y</button>
                   </div>
                 </div>
-                <div class="rrm-kpi__combined-divider"></div>
-                <div class="rrm-kpi__combined-col">
-                  <span class="rrm-kpi__value" id="kpi-mttr-value">13 Days</span>
-                  <span class="rrm-kpi__title">MTTR</span>
-                  <div class="rrm-kpi__footer">
-                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-findings">8.46M</span>Findings</span>
-                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-assets">9.27K</span>Assets</span>
+                <div class="rrm-kpi__combined-row">
+                  <div class="rrm-kpi__combined-col">
+                    <span class="rrm-kpi__value" id="kpi-mttd-value">3 Days</span>
+                    <span class="rrm-kpi__title">MTTD</span>
+                    <div class="rrm-kpi__footer rrm-kpi__footer--stacked">
+                      <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-vulns">11.3M</span>Vulnerabilities</span>
+                      <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttd-assets">9.54K</span>Assets</span>
+                    </div>
+                  </div>
+                  <div class="rrm-kpi__combined-divider"></div>
+                  <div class="rrm-kpi__combined-col">
+                    <span class="rrm-kpi__value" id="kpi-mttr-value">13 Days</span>
+                    <span class="rrm-kpi__title">MTTR</span>
+                    <div class="rrm-kpi__footer rrm-kpi__footer--stacked">
+                      <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-findings">8.46M</span>Findings</span>
+                      <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-mttr-assets">9.27K</span>Assets</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="rrm-kpi">
-                <span class="rrm-kpi__value" id="kpi-kev-value">13 Days</span>
-                <span class="rrm-kpi__title">CISA KEV - MTTR</span>
-                <div class="rrm-kpi__footer">
-                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-vulns">18.5K</span>Vulnerabilities</span>
-                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-assets">8.63K</span>Assets</span>
+                <div class="rrm-kpi__combined-hr"></div>
+                <div id="mttdMttrChart" style="width:100%;margin-top:8px;"></div>
+                <div class="chart-legend chart-legend--center">
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>MTTD</span>
+                  <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--pai-green);"></span>MTTR</span>
                 </div>
               </div>
-              <div class="rrm-kpi">
-                <span class="rrm-kpi__value"><span id="kpi-reocc-value">0.00</span>%</span>
-                <span class="rrm-kpi__title">Reoccurrence Rate</span>
-                <div class="rrm-kpi__footer">
-                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--red" id="kpi-reocc-reopened">247</span>Reopened</span>
-                  <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--green" id="kpi-reocc-closed">8.58M</span>Closed</span>
+              <div class="rrm-kpi-stack">
+                <div class="rrm-kpi">
+                  <span class="rrm-kpi__value" id="kpi-kev-value">13 Days</span>
+                  <span class="rrm-kpi__title">CISA KEV - MTTR</span>
+                  <div class="rrm-kpi__footer">
+                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-vulns">18.5K</span>Vulnerabilities</span>
+                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num" id="kpi-kev-assets">8.63K</span>Assets</span>
+                  </div>
+                </div>
+                <div class="rrm-kpi">
+                  <span class="rrm-kpi__value"><span id="kpi-reocc-value">0.00</span>%</span>
+                  <span class="rrm-kpi__title">Reoccurrence Rate</span>
+                  <div class="rrm-kpi__footer">
+                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--red" id="kpi-reocc-reopened">247</span>Reopened</span>
+                    <span class="rrm-kpi__stat"><span class="rrm-kpi__stat-num rrm-kpi__stat-num--green" id="kpi-reocc-closed">8.58M</span>Closed</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -830,42 +830,6 @@
 <div id="chart-tooltip" style="position:fixed;z-index:1000;pointer-events:none;display:none;
      background:var(--card-bg);border-radius:8px;padding:12px 13px;min-width:180px;
      box-shadow:0 4px 16px rgba(0,0,0,0.14);font-family:inherit;"></div>
-
-<!-- Trend Explore drawer (src/components/DrawerShell.jsx chrome, reused verbatim) —
-     opened from the MTTD/MTTR KPI cards' "Trend Explore" button. Same chart
-     component (buildTrendChart) as every other line-chart widget on this page. -->
-<div class="comp-drawer-backdrop" id="trendDrawerBackdrop" style="display:none;"></div>
-<button class="comp-drawer-close-ext" id="trendDrawerClose" style="display:none;" aria-label="Close">
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-    <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
-  </svg>
-</button>
-<div class="comp-drawer" id="trendDrawer" style="display:none;">
-  <div class="comp-drawer-header">
-    <div class="comp-drawer-header-content">
-      <div class="comp-drawer-title-row">
-        <span class="comp-drawer-title">MTTD &amp; MTTR Trend</span>
-        <div class="comp-time-pills-wrap" id="trendDrawerRangePills">
-          <button class="comp-time-pill" data-range="1W">1W</button>
-          <button class="comp-time-pill" data-range="1M">1M</button>
-          <button class="comp-time-pill" data-range="3M">3M</button>
-          <button class="comp-time-pill" data-range="6M">6M</button>
-          <button class="comp-time-pill comp-time-pill--active" data-range="1Y">1Y</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="comp-drawer-body">
-    <div class="comp-drawer-section">
-      <div id="trendDrawerChart" style="width:100%;"></div>
-      <div class="chart-legend chart-legend--center">
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--shell-accent);"></span>MTTD</span>
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--pai-green);"></span>MTTR</span>
-      </div>
-    </div>
-  </div>
-</div>
-
 
 <script>
   // Theme toggle — mirrors the real Topbar's light/dark switch
@@ -1235,10 +1199,11 @@
 
   function renderKPIs(range) {
     var d = RANGE_DATA[range];
-    document.getElementById('kpi-mttd-value').textContent = fmtDays(d.mttd.days);
+    // kpi-mttd-value/kpi-mttr-value are NOT set here — they always mirror the
+    // MTTD/MTTR trend chart's own last data point (see renderMttdMttrChart),
+    // which has its own independent date-range pills.
     document.getElementById('kpi-mttd-vulns').textContent = fmtNum(d.mttd.vulns);
     document.getElementById('kpi-mttd-assets').textContent = fmtNum(d.mttd.assets);
-    document.getElementById('kpi-mttr-value').textContent = fmtDays(d.mttr.days);
     document.getElementById('kpi-mttr-findings').textContent = fmtNum(d.mttr.findings);
     document.getElementById('kpi-mttr-assets').textContent = fmtNum(d.mttr.assets);
     // CISA KEV-MTTR and Reoccurrence Rate always show the latest snapshot,
@@ -1561,21 +1526,22 @@
     return vals;
   }
 
-  // ── MTTD/MTTR Trend Explore drawer — reuses buildTrendChart (same monotone
-  //    line/dot/legend design as every other trend widget) plus a dashed
-  //    SLA-target reference line. Its own date-range pills follow the exact
-  //    granularity mapping the burndown/trend widgets use (PERIOD_COUNT_BY_
-  //    RANGE + BURNDOWN_WEIGHTS[count].noun), independent of the page's
-  //    global range. Tooltip is single-series (hovering an MTTD point shows
-  //    only MTTD) with a change-% row below, same ds-kpi-delta convention
-  //    (icon + up-bad/down-bad/down-good/up-good) as every stat+chart widget
-  //    on this page — down is "good" for both metrics (faster = better). ──
+  // ── MTTD/MTTR Trend — inline chart in the combined KPI card, reuses
+  //    buildTrendChart (same monotone line/dot/legend design as every other
+  //    trend widget) plus a dashed SLA-target reference line. Its own
+  //    date-range pills follow the exact granularity mapping the burndown/
+  //    trend widgets use (PERIOD_COUNT_BY_RANGE + BURNDOWN_WEIGHTS[count]
+  //    .noun), independent of the page's global range. Tooltip is
+  //    single-series (hovering an MTTD point shows only MTTD) with a
+  //    change-% row below, same ds-kpi-delta convention (icon + up-bad/
+  //    down-bad/down-good/up-good) as every stat+chart widget on this page
+  //    — down is "good" for both metrics (faster = better). ──────────────
   var MTTD_MTTR_SLA = 5;
-  var trendDrawerRange = '1Y';
+  var mttdMttrRange = '1Y';
 
   function fmtDaysDecimal(v) { return v.toFixed(1); }
 
-  function trendDrawerData(range) {
+  function mttdMttrData(range) {
     var count = PERIOD_COUNT_BY_RANGE[range];
     var noun = BURNDOWN_WEIGHTS[count].noun;
     return {
@@ -1593,9 +1559,13 @@
     return { dir: dir, good: diff <= 0, text: Math.abs(diff).toFixed(1) + 'd', suffixText: 'from last ' + unit };
   }
 
-  function renderTrendDrawerChart() {
-    var d = trendDrawerData(trendDrawerRange);
-    buildTrendChart('trendDrawerChart', [
+  function renderMttdMttrChart() {
+    var d = mttdMttrData(mttdMttrRange);
+    // The big KPI value always mirrors the chart's own last data point (this
+    // range's most recent day/week/month), not the page's global date range.
+    document.getElementById('kpi-mttd-value').textContent = fmtDaysDecimal(d.mttd[d.mttd.length - 1]) + ' Days';
+    document.getElementById('kpi-mttr-value').textContent = fmtDaysDecimal(d.mttr[d.mttr.length - 1]) + ' Days';
+    buildTrendChart('mttdMttrChart', [
       { label: 'MTTD', values: d.mttd, color: 'var(--shell-accent)' },
       { label: 'MTTR', values: d.mttr, color: 'var(--pai-green)' }
     ], d.dates, {
@@ -1603,59 +1573,24 @@
       yAxisFormat: fmtDaysDecimal,
       tooltipValueFormat: function(v) { return fmtDaysDecimal(v) + 'd'; },
       singleSeriesTooltip: true,
-      height: 400,
       xAxisTitle: axisUnitTitle(d.unit),
       yAxisTitle: 'Days',
       deltaFor: function(si, i) { return trendDeltaFor(si === 0 ? d.mttd : d.mttr, i, d.unit); }
     });
   }
 
-  function wireTrendDrawerRangePills() {
-    var wrap = document.getElementById('trendDrawerRangePills');
+  function wireMttdMttrRangePills() {
+    var wrap = document.getElementById('mttdMttrRangePills');
     if (!wrap) return;
     wrap.querySelectorAll('.comp-time-pill').forEach(function(pill) {
       pill.addEventListener('click', function() {
         wrap.querySelectorAll('.comp-time-pill').forEach(function(p) { p.classList.remove('comp-time-pill--active'); });
         pill.classList.add('comp-time-pill--active');
-        trendDrawerRange = pill.dataset.range;
-        renderTrendDrawerChart();
+        mttdMttrRange = pill.dataset.range;
+        renderMttdMttrChart();
       });
     });
-  }
-
-  function openTrendDrawer() {
-    document.getElementById('trendDrawerBackdrop').style.display = 'block';
-    document.getElementById('trendDrawerClose').style.display = 'flex';
-    var drawer = document.getElementById('trendDrawer');
-    drawer.classList.remove('comp-drawer--closing');
-    drawer.style.display = 'flex';
-    renderTrendDrawerChart();
-  }
-
-  function closeTrendDrawer() {
-    var drawer = document.getElementById('trendDrawer');
-    drawer.classList.add('comp-drawer--closing');
-    setTimeout(function() {
-      drawer.style.display = 'none';
-      drawer.classList.remove('comp-drawer--closing');
-      document.getElementById('trendDrawerBackdrop').style.display = 'none';
-      document.getElementById('trendDrawerClose').style.display = 'none';
-    }, 180);
-  }
-
-  function wireTrendExploreButtons() {
-    wireTrendDrawerRangePills();
-    document.querySelectorAll('.rrm-trend-explore-btn').forEach(function(btn) {
-      btn.addEventListener('click', openTrendDrawer);
-    });
-    document.getElementById('trendDrawerBackdrop').addEventListener('click', closeTrendDrawer);
-    document.getElementById('trendDrawerClose').addEventListener('click', closeTrendDrawer);
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeTrendDrawer();
-    });
-    window.addEventListener('resize', function() {
-      if (document.getElementById('trendDrawer').style.display === 'flex') renderTrendDrawerChart();
-    });
+    window.addEventListener('resize', renderMttdMttrChart);
   }
 
   var PERCENT_WIDGETS = {
@@ -1761,8 +1696,9 @@
   function initCharts() {
     wireRangePills();
     wireSectionTabs();
-    wireTrendExploreButtons();
+    wireMttdMttrRangePills();
     renderAll('1Y');
+    renderMttdMttrChart();
     initTrendWidgets();
   }
 </script>
