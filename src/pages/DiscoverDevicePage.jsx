@@ -432,7 +432,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
   const [drawerFilter,  setDrawerFilter]  = useState('All');
   const closeDrawer = useCallback(() => {
     setDrawerClosing(true);
-    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 240);
+    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 280); // matches .dev-drawer.closing in device.css
   }, []);
   const assetsSectionRef = useRef(null);
   const hoveredBarRef    = useRef(null);

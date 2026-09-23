@@ -1298,7 +1298,7 @@ function AssessmentDrawer({ node, onClose, onNav }) {
 
   const handleClose = useCallback(() => {
     setClosing(true)
-    setTimeout(onClose, 180)
+    setTimeout(onClose, 280) // matches .comp-drawer--closing in drawer.css
   }, [onClose])
 
   useEffect(() => {
@@ -1851,7 +1851,7 @@ function FunctionDrawer({ node, level, onClose }) {
 
   const handleClose = useCallback(() => {
     setClosing(true)
-    setTimeout(onClose, 180)
+    setTimeout(onClose, 280) // matches .comp-drawer--closing in drawer.css
   }, [onClose])
 
   useEffect(() => {

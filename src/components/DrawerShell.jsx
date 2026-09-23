@@ -281,7 +281,7 @@ export function useDrawerNav(rootItem) {
       setNav({ history: [], index: -1 });
       closeTimerRef.current = null;
       if (typeof onClosed === 'function') onClosed();
-    }, 180);
+    }, 280); // matches .comp-drawer--closing's animation duration in drawer.css
   };
 
   return { history: nav.history, index: nav.index, closing, open, navigate, goToIndex, close };

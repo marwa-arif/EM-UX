@@ -15,9 +15,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 //    mounted, so a plain childList check finds them.
 // All of the above are either in-flow (no fixed positioning to race
 // against) or plain conditional mounts/style-attribute changes, so the
-// existing MutationObserver + ResizeObserver + settle-poll setup below
-// already covers their open/close timing; this list only had to grow to
-// include them.
+// MutationObserver + ResizeObserver + per-frame tracking loop below already
+// covers their open/close timing; this list only had to grow to include them.
 // Navigator's own floating chat panel is deliberately NOT in this list —
 // since the FAB is what opens it, there's no need to keep the launcher
 // visible (shifted or otherwise) once it's already open; see the `active`
@@ -82,8 +81,8 @@ function CopilotFab({ onClick, active, pageContext }) {
 
   useEffect(() => {
     let raf = null;
+    let trackUntil = 0;
     const recompute = () => {
-      raf = null;
       const fabRect = defaultFabRect();
       let maxRight = BASE_RIGHT;
       document.querySelectorAll(OVERLAP_SELECTORS).forEach((el) => {
@@ -96,26 +95,35 @@ function CopilotFab({ onClick, active, pageContext }) {
       });
       setRightOffset(maxRight);
     };
-    const scheduleRecompute = () => { if (raf == null) raf = requestAnimationFrame(recompute); };
+    // These panels animate width/transform via a CSS transition rather than further DOM
+    // mutations, so a single recompute right as the transition starts would only capture
+    // its very first frame. Instead, once triggered, sample the real geometry on every
+    // animation frame for the transition's duration — the FAB then moves in lockstep with
+    // whatever panel is actually sliding, frame for frame, rather than jumping to a stale
+    // target and correcting later (which read as a delayed catch-up). 340ms comfortably
+    // covers the longest panel transition (280ms) plus a settle margin.
+    const TRACK_MS = 340;
+    const tick = (now) => {
+      recompute();
+      raf = now < trackUntil ? requestAnimationFrame(tick) : null;
+    };
+    const startTracking = () => {
+      trackUntil = performance.now() + TRACK_MS;
+      if (raf == null) raf = requestAnimationFrame(tick);
+    };
 
-    scheduleRecompute();
-    const resizeObserver = new ResizeObserver(scheduleRecompute);
+    startTracking();
+    const resizeObserver = new ResizeObserver(startTracking);
     resizeObserver.observe(document.body);
-    const mutationObserver = new MutationObserver(scheduleRecompute);
+    const mutationObserver = new MutationObserver(startTracking);
     mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-    window.addEventListener('resize', scheduleRecompute);
-    // These panels animate width via a CSS transition (not further DOM
-    // mutations), so the observers above fire once right as the transition
-    // *starts* — a poll catches the settled state once it finishes, since
-    // transition durations vary by panel and aren't worth hardcoding.
-    const settlePoll = setInterval(scheduleRecompute, 400);
+    window.addEventListener('resize', startTracking);
 
     return () => {
       if (raf != null) cancelAnimationFrame(raf);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
-      window.removeEventListener('resize', scheduleRecompute);
-      clearInterval(settlePoll);
+      window.removeEventListener('resize', startTracking);
     };
   }, []);
 

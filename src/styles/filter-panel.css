@@ -103,7 +103,7 @@
   flex-wrap: wrap;
 }
 .fp-saved-card__name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--pai-fg1);
 }
@@ -325,13 +325,9 @@
   background-color: var(--ctrl-bg);
 }
 .gf-canvas__zoom-controls {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 4px;
-  z-index: 5;
 }
 .gf-canvas-btn {
   width: 32px;
@@ -794,55 +790,83 @@
 
 /* Shared date picker */
 .gf-datepicker { display: flex; flex-direction: column; gap: 12px; }
-.gf-datepicker--compact .gf-date-shortcut { padding: 4px 10px; font-size: 11px; }
 .gf-datepicker--compact .gf-cal-nav-row { gap: 4px; }
 
-/* Shortcut buttons */
-.gf-date-shortcuts { display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
-.gf-date-shortcut {
-  padding: 5px 12px;
-  background: none;
-  border: 1px solid var(--shell-border);
-  border-radius: 44px;
+/* Date-range fields: two "dd/mm/yyyy" boxes + a calendar icon that opens the presets dropdown */
+.gf-date-fields { display: flex; align-items: center; gap: 8px; }
+.gf-date-box {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px;
+  background: var(--ctrl-bg);
+  border: 1px solid var(--ctrl-border);
+  border-radius: 8px;
   font-family: inherit;
   font-size: 12px;
-  font-weight: 500;
+  color: var(--ctrl-placeholder);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 100ms;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gf-date-box:hover { border-color: var(--pai-border-strong); }
+.gf-date-box--filled { color: var(--pai-fg1); }
+.gf-date-box--active { border-color: var(--pai-indigo); box-shadow: 0 0 0 3px var(--pai-indigo-tint); }
+.gf-date-fields-sep { flex-shrink: 0; color: var(--pai-fg3); font-size: 12px; }
+
+.gf-date-preset-wrap { position: relative; flex-shrink: 0; }
+.gf-date-cal-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ctrl-bg);
+  border: 1px solid var(--ctrl-border);
+  border-radius: 8px;
   color: var(--pai-fg2);
   cursor: pointer;
   transition: all 100ms;
+}
+.gf-date-cal-btn:hover { border-color: var(--pai-border-strong); color: var(--pai-fg1); }
+.gf-date-cal-btn--active { border-color: var(--pai-indigo); color: var(--pai-indigo); background: var(--pai-indigo-tint); }
+
+.gf-date-preset-panel {
+  /* fixed, not absolute — the accordion body this sits in uses overflow:hidden for its
+     expand/collapse animation, which would otherwise clip the panel; position comes from
+     the trigger button's own getBoundingClientRect() via inline style. */
+  position: fixed;
+  z-index: 10006;
+  min-width: 200px;
+  background: var(--card-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.gf-date-preset-option {
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--pai-fg1);
+  text-align: left;
+  cursor: pointer;
   white-space: nowrap;
 }
-.gf-date-shortcut:hover { border-color: var(--pai-border-strong); color: var(--pai-fg1); background: var(--pai-surface-raised); }
-.gf-date-shortcut--active { background: var(--pai-indigo-tint); border-color: var(--pai-indigo); color: var(--pai-indigo); font-weight: 600; }
-
-/* Active filter preview chip */
-.gf-date-preview { display: flex; flex-direction: column; gap: 4px; }
-.gf-date-preview-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--pai-fg3); }
-.gf-date-preview-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px 6px 12px;
-  background: var(--pai-indigo-tint);
-  border: 1px solid var(--pai-indigo);
-  border-radius: 44px;
-  width: fit-content;
-}
-.gf-date-preview-chip--partial { background: var(--pai-surface-raised); border-color: var(--shell-border); border-style: dashed; }
-.gf-date-chip-date { font-size: 12px; font-weight: 600; color: var(--pai-indigo); }
-.gf-date-chip-lbl  { font-size: 11px; font-weight: 400; color: var(--pai-indigo); opacity: 0.75; }
-.gf-date-preview-chip--partial .gf-date-chip-date { color: var(--pai-fg1); }
-.gf-date-preview-chip--partial .gf-date-chip-lbl  { color: var(--pai-fg3); opacity: 1; }
-.gf-date-preview-remove {
-  display: flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; padding: 0;
-  background: none; border: none; cursor: pointer;
-  color: var(--pai-indigo); opacity: 0.6;
-  border-radius: 50%;
-  transition: opacity 100ms;
-}
-.gf-date-preview-remove:hover { opacity: 1; }
-.gf-date-preview-chip--partial .gf-date-preview-remove { color: var(--pai-fg3); }
+.gf-date-preset-option:hover { background: var(--shell-hover); }
+.gf-date-preset-option--selected { background: var(--pai-indigo-tint); color: var(--pai-indigo); font-weight: 600; }
+.gf-date-preset-sep { height: 1px; margin: 4px 0; background: var(--shell-border); }
+.gf-date-preset-option--clear { color: var(--pai-fg3); }
+.gf-date-preset-option--clear:disabled { opacity: 0.4; cursor: not-allowed; }
+.gf-date-preset-option--clear:not(:disabled):hover { background: var(--shell-hover); color: var(--pai-fg1); }
 
 /* Calendar nav row */
 .gf-cal-nav-row { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; }
@@ -864,16 +888,16 @@
   line-height: 1;
 }
 .gf-cal-nav-btn:hover { border-color: var(--pai-border-strong); color: var(--pai-fg1); }
-.gf-attrs-cals { display: flex; gap: 20px; flex-wrap: wrap; flex-shrink: 0; }
+.gf-attrs-cals { display: flex; gap: 20px; flex-wrap: wrap; flex: 1; min-width: 0; }
 
-/* Mini calendar */
-.gf-cal { flex-shrink: 0; }
+/* Mini calendar — fluid width, fills the row instead of sitting fixed-width and cramped */
+.gf-cal { flex: 1; min-width: 0; }
 .gf-cal-title { font-size: 12px; font-weight: 600; color: var(--pai-fg1); margin-bottom: 6px; text-align: center; }
-.gf-cal-grid { display: grid; grid-template-columns: repeat(7, 28px); gap: 2px; }
+.gf-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .gf-cal-day-hdr { font-size: 10px; font-weight: 600; color: var(--pai-fg3); text-align: center; padding: 2px 0; }
 .gf-cal-cell {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: none;
   border: none;
@@ -1064,12 +1088,9 @@
   background: var(--card-bg);
 }
 
-/* Add / Hide button — absolute in canvas-wrap */
+/* Add / Hide button — lives in the persistent side-panel toolbar */
+.gf-canvas-add-hide-wrap { position: relative; }
 .gf-canvas-add-hide {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  z-index: 10;
   height: 32px;
   padding: 0 14px;
   background: var(--card-bg);
@@ -1088,12 +1109,8 @@
 .gf-canvas-add-hide:hover { background: var(--shell-raised); border-color: var(--pai-indigo); color: var(--pai-indigo); }
 .gf-canvas-add-hide--active { background: var(--shell-raised); border-color: var(--pai-indigo); color: var(--pai-indigo); }
 
-/* Delete-selected button — stacked above Add/Hide */
+/* Delete-selected button — sits in the persistent side-panel toolbar */
 .gf-canvas-delete-btn {
-  position: absolute;
-  bottom: 60px;
-  left: 16px;
-  z-index: 10;
   width: 36px;
   height: 36px;
   border-radius: 8px;
@@ -1841,7 +1858,7 @@
 .fp-attr-group { border-bottom: 1px solid var(--shell-border); }
 .fp-attr-group__btn {
   width: 100%;
-  padding: 8px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1854,7 +1871,7 @@
 .fp-attr-group__icon { color: var(--pai-fg3); flex-shrink: 0; display: flex; }
 .fp-attr-group__label {
   flex: 1;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--pai-fg1);
   display: flex;
@@ -2119,7 +2136,7 @@
   flex: 1;
   height: 32px;
   border-radius: 44px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
@@ -2359,7 +2376,7 @@
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 8px 14px;
+  padding: 12px 14px;
   background: none;
   border: none;
   cursor: pointer;
@@ -2370,7 +2387,7 @@
 .gfa-attr__label {
   flex: 1;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--pai-fg1);
   text-align: left;
 }
@@ -2513,6 +2530,60 @@
 }
 .gfa-applied__remove:hover { background: var(--shell-raised); color: var(--pai-red-high, #e5534b); }
 
+/* Pinned variant — sits above the attribute list instead of below it, so users don't
+   have to scroll the full list to see what's already applied */
+.gfa-applied--pinned {
+  border-top: none;
+  border-bottom: 1px solid var(--pai-border);
+  background: var(--ctrl-selected-bg, var(--shell-raised));
+}
+
+/* ── Attribute grouping (Identity / Device / Access & Security / Metadata) ──────── */
+.gfa-group + .gfa-group { margin-top: 4px; }
+.gfa-group__header {
+  padding: 8px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pai-fg3);
+}
+
+/* ── Source tag (AAD vs on-prem AD) ─────────────────────────────────────────────── */
+.ds-tag--source {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--uxp-radius-full, 44px);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.ds-tag--aad { background: color-mix(in srgb, var(--pai-indigo) 14%, transparent); color: var(--pai-indigo); }
+.ds-tag--ad  { background: color-mix(in srgb, #00895e 14%, transparent); color: #00895e; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GFSidePanel — scrim (separates the panel from the dashboard behind it; DS
+   filter-popup overlay treatment: rgba(0,0,0,0.5), sits just under the panel)
+   ───────────────────────────────────────────────────────────────────────────── */
+.gf-side-panel-backdrop {
+  position: fixed;
+  left: 0;
+  top: 48px;
+  right: 400px;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 899;
+}
+.gf-side-panel-backdrop--open {
+  opacity: 1;
+  pointer-events: all;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    GFSidePanel — floating draggable/resizable panel (portal-rendered)
    ───────────────────────────────────────────────────────────────────────────── */
@@ -2531,12 +2602,26 @@
   z-index: 900;
   overflow: visible;
   min-width: 300px;
+  transform: translateX(0);
+  /* Enter: gentle, unhurried deceleration into place — no snap at the end */
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  visibility: visible;
+  will-change: transform;
+}
+/* Slide-over enter/exit — slides in from the right instead of just appearing */
+.gf-side-panel--hidden {
+  transform: translateX(120%);
+  visibility: hidden;
+  pointer-events: none;
+  /* Exit: eases away calmly rather than snapping out; visibility flips only once
+     the slide has actually finished so nothing pops mid-motion */
+  transition: transform 440ms cubic-bezier(0.45, 0, 0.55, 1), visibility 0s linear 440ms;
 }
 
 .gf-side-panel__header {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
   padding: 8px 12px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--pai-border);
@@ -2550,6 +2635,22 @@
   font-weight: 600;
   color: var(--pai-fg1);
 }
+
+.gf-side-panel__subtitle {
+  font-size: 11px;
+  color: var(--pai-fg3);
+}
+
+.gf-side-panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--pai-border);
+  flex-shrink: 0;
+}
+.gf-side-panel__toolbar-spacer { flex: 1; }
 
 /* Canvas area fills middle */
 .gf-side-panel .gf-canvas-area {
@@ -2764,13 +2865,14 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   GFAddHidePopup — anchored popup above Add/Hide Entity button
+   GFAddHidePopup — anchored popup below the Add/Hide Entity toolbar button
    ───────────────────────────────────────────────────────────────────────────── */
 .gf-addhide-popup {
   position: absolute;
-  bottom: 56px;
-  left: 16px;
-  right: 16px;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 32px);
   z-index: 200;
   background: var(--card-bg);
   border: 1px solid var(--pai-border-strong);
@@ -2829,7 +2931,7 @@
 
 .gf-addhide-popup__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -2846,6 +2948,7 @@
   cursor: pointer;
   font-size: 12px;
   color: var(--pai-fg1);
+  min-width: 0;
 }
 .gf-addhide-popup__item:hover { background: var(--ctrl-bg-hover); }
 

@@ -30,7 +30,19 @@ All notable UI changes are tracked here.
 > Add your changes here as you work. Run `npm run version:patch` before pushing.
 
 ### Added
+- rp-shell Filter panel: attribute grouping (Identity/Device/Access & Security/Metadata) with source tags, and Apply/Reset dirty-state tracking for Quick and Saved Filters.
+- Active Filter panel: per-source (quick/graph/saved) filter count breakdown, plus an info tooltip explaining Implicit Filters.
+- Navigator first-run view: "Connected data" section label, a third suggested prompt, and icons on suggestion buttons.
+- Floating Navigator can now stay open independently of the docked right-panel tab, so it coexists with Filter or other docked panels.
+- Release History (version badge) now shows the 3 most recent releases by default, with a "View all releases" button to expand the full history.
 ### Changed
+- Drawer close timing unified to 280ms across Compliance, Data Quality, Discover (Cloud/Device/Identity), and Exposure Overview pages to match their CSS closing animations.
+- Discover Identity page layout switched to a single shared 4-column grid so column boundaries line up between rows.
+- Theme toggle button now exposes proper `role="switch"` / `aria-checked` / `aria-label` state.
+- CopilotFab overlap tracking now samples every animation frame during panel transitions instead of a single recompute, so it moves in lockstep with sliding panels.
+- Graph Filter's entity attribute side panel is now positioned from the trigger's rect instead of relying on `overflow` clipping, and its canvas sizer only reserves fan-out space when a fan is actually showing.
+- Findings page: removed unused mock "Remediate Now" / backlog / SLA / top-exposed operational-intelligence widgets.
+- Removed the legacy Knowledge Graph page (`PageKG.jsx`) and its stylesheet (`kg.css`).
 ### Fixed
 
 ---

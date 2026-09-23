@@ -895,7 +895,7 @@ function EntityPicker({ entity, onChange }) {
 function AttributeDetailDrawer({ attr, node, entity, vendors, onClose }) {
   const [closing, setClosing] = useState(false)
   const [copied, setCopied] = useState(false)
-  const handleClose = () => { setClosing(true); setTimeout(onClose, 180) }
+  const handleClose = () => { setClosing(true); setTimeout(onClose, 280) } // matches .comp-drawer--closing in drawer.css
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') handleClose() }
     document.addEventListener('keydown', handler)
