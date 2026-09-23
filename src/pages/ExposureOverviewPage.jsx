@@ -4,6 +4,7 @@ import '../styles/exposure.css'
 import '../styles/compliance.css'
 import '../styles/device.css'
 import TablePagination from '../components/TablePagination.jsx'
+import { comparisonLabelForRange } from '../utils/rangeLabel.js'
 
 // ── Data ──────────────────────────────────────────────────────────
 const GROUP_BY_OPTIONS = [
@@ -520,7 +521,7 @@ function EnterpriseScore({ onOpenTrend }) {
           <button className="exp-gauge-trend" onClick={() => onOpenTrend && onOpenTrend()}>
             <IcTrendDown color="#21929B" size={13} />
             <span className="exp-gauge-trend-pct">5%</span>
-            <span className="exp-gauge-trend-from">From last month</span>
+            <span className="exp-gauge-trend-from">From {comparisonLabelForRange('1M')}</span>
           </button>
         </div>
 
@@ -620,7 +621,7 @@ function ExposureOverviewSection({ onNav }) {
             <IcExposure size={20} color="var(--pai-fg1)" />
             <span className="exp-trend-label-text">Exposure Trend</span>
             <InfoTooltip>
-              <p>Down 5% from last month: {EXP_DELTA_BREAKDOWN['1M'].newFindings} new findings, {EXP_DELTA_BREAKDOWN['1M'].severityEscalations} severity escalations, {EXP_DELTA_BREAKDOWN['1M'].newAssessments} newly-open assessments.</p>
+              <p>Down 5% from {comparisonLabelForRange('1M')}: {EXP_DELTA_BREAKDOWN['1M'].newFindings} new findings, {EXP_DELTA_BREAKDOWN['1M'].severityEscalations} severity escalations, {EXP_DELTA_BREAKDOWN['1M'].newAssessments} newly-open assessments.</p>
               <p>Click to explore what changed.</p>
             </InfoTooltip>
           </span>
@@ -628,7 +629,7 @@ function ExposureOverviewSection({ onNav }) {
           <span className="exp-trend-pct">
             <IcTrendDown color="var(--pai-teal)" size={13} />
             <span className="exp-trend-pct-val">5%</span>
-            <span className="exp-trend-from">from last month</span>
+            <span className="exp-trend-from">from {comparisonLabelForRange('1M')}</span>
           </span>
           <IcExplore />
         </button>
@@ -706,7 +707,7 @@ function YAxisTitle({ value, viewBox }) {
   );
 }
 
-function makeExpTrendTooltip(data, { label, format, offset = 0, entity = 'All', color = 'var(--pai-teal)' }) {
+function makeExpTrendTooltip(data, { label, format, offset = 0, entity = 'All', color = 'var(--pai-teal)', range }) {
   return function ExpTrendTooltip({ active, payload, label: pointLabel }) {
     if (!active || !payload?.length) return null;
     const value = payload[0].value;
@@ -728,7 +729,7 @@ function makeExpTrendTooltip(data, { label, format, offset = 0, entity = 'All', 
               {isUp ? <IcTrendUp size={12} /> : <IcTrendDown size={12} />}
               {Math.abs(pct).toFixed(2)}%
             </span>
-            &nbsp;from last week
+            &nbsp;from {comparisonLabelForRange(range)}
           </div>
         )}
         {drivers && (
@@ -1039,6 +1040,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
                       format: v => metric === 'sum' ? fmtCompact(v) : v.toFixed(2),
                       offset: 0,
                       entity: exposureBy,
+                      range: tRange,
                     })}
                     cursor={false}
                   />
@@ -1072,7 +1074,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
                       label={{ value: TREND_UNIT[tRange], position: 'insideBottom', offset: -16, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                     <YAxis tick={axisTick} axisLine={false} tickLine={false} width={60} tickFormatter={fmtCompact}
                       label={<YAxisTitle value="Density" />} />
-                    <Tooltip content={makeExpTrendTooltip(riskData, { label: 'Density', format: v => v.toLocaleString(), offset: 1, entity: exposureBy })} cursor={false} />
+                    <Tooltip content={makeExpTrendTooltip(riskData, { label: 'Density', format: v => v.toLocaleString(), offset: 1, entity: exposureBy, range: tRange })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
                       fill="url(#expTrendRiskFill)"
                       dot={makeExpTrendDot('var(--pai-teal)', riskPeakIdx, peakColor(riskData, riskPeakIdx))}
@@ -1103,7 +1105,7 @@ function TrendExploreDrawer({ onClose, onNav }) {
                       label={{ value: TREND_UNIT[tRange], position: 'insideBottom', offset: -16, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
                     <YAxis tick={axisTick} axisLine={false} tickLine={false} width={60} tickFormatter={fmtCompact}
                       label={<YAxisTitle value="Count" />} />
-                    <Tooltip content={makeExpTrendTooltip(findingsData, { label: 'Count', format: v => v.toLocaleString(), offset: 3, entity: exposureBy })} cursor={false} />
+                    <Tooltip content={makeExpTrendTooltip(findingsData, { label: 'Count', format: v => v.toLocaleString(), offset: 3, entity: exposureBy, range: tRange })} cursor={false} />
                     <Area type="monotone" dataKey="value" stroke="var(--pai-teal)" strokeWidth={2}
                       fill="url(#expTrendFindingsFill)"
                       dot={makeExpTrendDot('var(--pai-teal)', findingsPeakIdx, peakColor(findingsData, findingsPeakIdx))}

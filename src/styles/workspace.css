@@ -43,6 +43,8 @@
 .ds-th { padding: var(--table-th-padding); text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--shell-text-muted); background: var(--table-th-bg, #F5F5F5); border-bottom: 1px solid var(--shell-border); white-space: nowrap; }
 .ds-th-inner { display: inline-flex; align-items: center; gap: 4px; }
 .ds-th-sort { opacity: 0.5; }
+.ds-th--sortable { cursor: pointer; user-select: none; }
+.ds-th--sortable:hover { color: var(--shell-text); }
 .ds-td { padding: var(--table-td-padding); border-bottom: 1px solid var(--table-border, #E6E6E6); color: var(--shell-text-2); vertical-align: middle; }
 .ds-table tbody tr:last-child td { border-bottom: none; }
 .ds-table tbody tr:hover td { background: var(--shell-hover); }

@@ -7,6 +7,7 @@ import { AssessmentDrawer } from './CompliancePage.jsx'
 import AssetDetailDrawer from '../components/AssetDetailDrawer.jsx'
 import { useChartFilters } from '../hooks/useChartFilters.js'
 import { makeDiscoverRecords, aggregateBySource, aggregateByType, aggregateByCriticality, fakeAssessmentId } from '../data/discoverRecords.js'
+import { comparisonLabelForRange } from '../utils/rangeLabel.js'
 import '../styles/device.css'
 import '../styles/compliance.css'
 import '../styles/dashboard.css'
@@ -81,7 +82,7 @@ function DonutTooltip({ active, payload }) {
   );
 }
 
-function makeTrendTooltip(data) {
+function makeTrendTooltip(data, range) {
   return function({ active, payload, label }) {
     if (!active || !payload?.length) return null;
     const value = payload[0].value;
@@ -105,7 +106,7 @@ function makeTrendTooltip(data) {
               }
               {Math.abs(pct)}%
             </span>
-            &nbsp;from last week
+            &nbsp;from {comparisonLabelForRange(range)}
           </div>
         )}
       </div>
@@ -601,7 +602,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                 <div className="dev-stat-meta">
                   <IcTrendUp size={13} color="var(--pai-crit-fg)" />
                   <span className="dev-stat-change up">2%</span>
-                  <span className="dev-stat-from">from last month</span>
+                  <span className="dev-stat-from">from {comparisonLabelForRange(timeRange)}</span>
                 </div>
               </div>
             </div>
@@ -624,7 +625,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                     dy={6}
                   />
                   <YAxis hide />
-                  <Tooltip content={makeTrendTooltip(activeChartData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
+                  <Tooltip content={makeTrendTooltip(activeChartData, timeRange)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
                   <Area
                     type="monotone"
                     dataKey="value"
@@ -1085,7 +1086,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                               : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>}
                             {Math.abs(Number(typeTooltipData.pct))}%
                           </span>
-                          &nbsp;from last period
+                          &nbsp;from {comparisonLabelForRange(drawerRange)}
                         </div>
                       )}
                     </div>
@@ -1137,7 +1138,7 @@ export default function DiscoverDevicePage({ dashboardMode = false, typeColors, 
                         <YAxis tick={{ fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' }} axisLine={false} tickLine={false} width={52}
                           tickFormatter={yFmt}
                           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11, fill: 'var(--shell-text-muted)', fontFamily: 'Inter,system-ui' } }} />
-                        <Tooltip content={makeTrendTooltip(rawBaseData)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
+                        <Tooltip content={makeTrendTooltip(rawBaseData, drawerRange)} isAnimationActive={false} wrapperStyle={TIP_WRAP} cursor={false} />
                         <Area type="monotone" dataKey="value" name="Total" stroke="var(--pai-indigo)" strokeWidth={2} fill="url(#drawerFill)"
                           dot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} activeDot={{ r: 5, fill: 'var(--pai-indigo)', strokeWidth: 0 }} />
                       </AreaChart>

@@ -2776,9 +2776,24 @@
 .gf-apply-btn--disabled { opacity: 0.45; cursor: not-allowed; }
 
 .gf-bottom-tree {
-  max-height: 240px;
+  /* Was 80px, sized for the old flat attribute-list + single-hop tree. The
+     nested relationship tree (entity chip -> relation chip -> entity chip ->
+     where -> filter chips) is taller per chain, and this app hides scrollbars
+     globally (global.css) — a capped box with an invisible scrollbar just
+     looks like the entity/relation chips silently vanished (they're still
+     there, scrolled above the visible slice), reading as a broken preview
+     that can't be applied. Taller cap + a visible thin scrollbar (same fix
+     as .dc-gf-preview-section in dashboard.css) so it reads as "more below",
+     not "broken".
+   */
+  max-height: 220px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pai-border-strong) transparent;
 }
+.gf-bottom-tree::-webkit-scrollbar { width: 6px; height: 6px; }
+.gf-bottom-tree::-webkit-scrollbar-track { background: transparent; }
+.gf-bottom-tree::-webkit-scrollbar-thumb { background: var(--pai-border-strong); border-radius: 44px; }
 
 /* Resize handles */
 .gf-side-panel__resize {
