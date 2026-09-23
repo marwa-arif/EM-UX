@@ -35,6 +35,12 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.26.1] — 2026-09-23
+### Changed
+- Merged `develop` into `feature/ui-updates`, reconciling the Graph Filter traversal-path/date-range-label work (already released as v0.23.2 on `develop`) with this branch's filter-panel changes.
+
+---
+
 ## [0.26.0] — 2026-09-23
 ### Added
 - rp-shell Filter panel: attribute grouping (Identity/Device/Access & Security/Metadata) with source tags, and Apply/Reset dirty-state tracking for Quick and Saved Filters.
