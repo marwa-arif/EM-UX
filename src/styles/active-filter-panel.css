@@ -163,3 +163,50 @@
   cursor: not-allowed;
 }
 .sfm-create--disabled:hover { opacity: 1; }
+
+/* ── Inline info tooltip (mirrors .fp-info-tip in filter-panel.css) ─────── */
+.afp-info-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--pai-fg3);
+  cursor: help;
+  flex-shrink: 0;
+}
+.afp-info-tip:hover { color: var(--pai-fg2); }
+.afp-info-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--card-bg);
+  color: var(--shell-text, #101010);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: normal;
+  max-width: 220px;
+  width: max-content;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 300;
+}
+.afp-info-tip:hover::after { opacity: 1; }
+
+/* ── Per-tab breakdown (Active Filters attribution) ─────────────────────── */
+.afp-source-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pai-fg3);
+  border-bottom: 1px solid var(--pai-border);
+}
+.afp-source-breakdown__sep { color: var(--pai-border-strong); }

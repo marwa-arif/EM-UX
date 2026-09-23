@@ -452,6 +452,18 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
     }))
   }, [activeFilters])
 
+  // Per-tab attribution — chips carry an explicit `source` since 2026; fall back to the
+  // attrId convention (graph-*, saved-filter) for any that predate the field.
+  const sourceBreakdown = useMemo(() => {
+    const counts = { quick: 0, graph: 0, saved: 0 }
+    activeFilters.forEach(chip => {
+      const src = chip.source
+        || (chip.attrId === 'saved-filter' ? 'saved' : chip.attrId?.startsWith('graph-') ? 'graph' : 'quick')
+      if (counts[src] !== undefined) counts[src]++
+    })
+    return counts
+  }, [activeFilters])
+
   // A viewer's own ad-hoc Graph Filter, applied via this page's Filter button
   // (GFSidePanel in FilterPanel.jsx) rather than the dashboard's saved scope —
   // graphFilterPaths carries the real traversal chains (e.g. [['host',
@@ -512,10 +524,26 @@ export default function ActiveFilterPanel({ activeFilters = [], onRemove, onClea
                 <div className="afp-toggle-thumb" />
               </div>
               <span className="afp-toggle-label">Implicit Filters</span>
+              <span
+                className="afp-info-tip"
+                data-tip="Implicit: also include entities indirectly related through the current filters, not just the ones directly connected."
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </span>
             </label>
             <button className="afp-close-btn" onClick={onClose} data-tour="page-filter-close"><IcClose /></button>
           </div>
         </div>
+
+        {activeFilters.length > 0 && (
+          <div className="afp-source-breakdown">
+            <span className="afp-source-breakdown__item">{sourceBreakdown.quick} from Quick Filters</span>
+            <span className="afp-source-breakdown__sep">·</span>
+            <span className="afp-source-breakdown__item">{sourceBreakdown.graph} from Graph Filter</span>
+            <span className="afp-source-breakdown__sep">·</span>
+            <span className="afp-source-breakdown__item">{sourceBreakdown.saved} from Saved Filters</span>
+          </div>
+        )}
 
         <div className="afp-body">
           {savedFilterChip && (

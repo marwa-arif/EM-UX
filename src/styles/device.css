@@ -29,6 +29,18 @@
   overflow: hidden;
 }
 
+/* Identity page only: one shared 4-column grid for both rows (top row
+   Total/Data Source/Type spans 2/1/1, bottom row Criticality/Key Security
+   Insights spans 2/2) so column boundaries line up exactly between rows —
+   two separate grids with different column counts round their fr-tracks
+   differently and drift out of alignment by a few px. */
+.dev-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.dev-span-2 { grid-column: span 2; }
+
 /* ── Time range pill selector ────────────────────────────────────── */
 
 .dev-time-pills { display: flex; align-items: center; gap: 2px; }
@@ -536,6 +548,8 @@
 
 
 /* ── Trend Explore Drawer ────────────────────────────────────────── */
+/* Stacked above the docked Filter/Navigator panel (.rp-shell, z-index 950) — see
+   drawer.css's .comp-drawer-backdrop comment for the full stacking rationale. */
 
 .dev-drawer-overlay {
   position: fixed;
@@ -544,11 +558,14 @@
   bottom: 0;
   left: 0;
   background: rgba(0, 0, 0, 0.28);
-  z-index: 200;
-  animation: devOverlayIn 0.22s ease forwards;
+  z-index: 960;
+  animation: devOverlayIn 0.28s cubic-bezier(.4,0,.2,1) forwards;
 }
-.dev-drawer-overlay.closing { animation: devOverlayOut 0.22s ease forwards; }
+.dev-drawer-overlay.closing { animation: devOverlayOut 0.28s cubic-bezier(.4,0,.2,1) forwards; }
 
+/* DS drawer.json token: "Use cubic-bezier(.4,0,.2,1) 0.28s for slide transition" — same
+   curve/duration on the way in and out so the close doesn't feel like a different, more
+   abrupt motion than the open. */
 .dev-drawer {
   position: fixed;
   top: var(--topbar-height);
@@ -558,13 +575,13 @@
   background: var(--card-bg, #fff);
   box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
   border-radius: 12px 0 0 12px;
-  z-index: 201;
+  z-index: 961;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: devDrawerIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: devDrawerIn 0.28s cubic-bezier(.4,0,.2,1) forwards;
 }
-.dev-drawer.closing { animation: devDrawerOut 0.24s cubic-bezier(0.4, 0, 1, 1) forwards; }
+.dev-drawer.closing { animation: devDrawerOut 0.28s cubic-bezier(.4,0,.2,1) forwards; }
 
 @keyframes devOverlayIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes devOverlayOut { from { opacity: 1; } to { opacity: 0; } }
@@ -586,7 +603,7 @@
   align-items: center;
   justify-content: center;
   color: var(--shell-text-muted);
-  z-index: 202;
+  z-index: 962;
   padding: 0;
   flex-shrink: 0;
 }

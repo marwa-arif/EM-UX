@@ -117,6 +117,27 @@ body { background: #F7F9FC; color: #101010; }
   --tooltip-fg:              #D1D1D1;   /* light tooltip text */
 }
 
+/* ── App-wide theme-switch crossfade ─────────────────────────────────
+   Toggled on briefly (see App.jsx toggleTheme) so surfaces ease between
+   light/dark instead of snapping — without slowing down every other
+   hover/open/close transition in the app the rest of the time.
+   Text/icon color is deliberately fast (not synced to the slower
+   background ease): animating both at the same rate makes text cross
+   through a low-contrast grey mid-transition and visibly disappear for
+   a beat before "reappearing" — keeping color near-instant avoids that
+   dip while the surfaces underneath still glide. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 260ms cubic-bezier(0.4,0,0.2,1),
+              border-color 260ms cubic-bezier(0.4,0,0.2,1),
+              box-shadow 260ms cubic-bezier(0.4,0,0.2,1),
+              color 100ms linear,
+              fill 100ms linear,
+              stroke 100ms linear !important;
+}
+
 button { font-family: inherit; }
 
 /* ── KG variable aliases (map KG-specific tokens to design-system tokens) ── */

@@ -3,8 +3,12 @@ import { createPortal } from 'react-dom';
 import pkg from '../../package.json';
 import changelog from '../data/changelog.json';
 
+const VISIBLE_COUNT = 3;
+
 export function ChangelogModal({ onClose }) {
   const currentVersion = pkg.version;
+  const [showAll, setShowAll] = useState(false);
+  const visibleEntries = showAll ? changelog : changelog.slice(0, VISIBLE_COUNT);
 
   return createPortal(
     <div className="vb-overlay" onClick={onClose}>
@@ -14,7 +18,7 @@ export function ChangelogModal({ onClose }) {
           <button className="vb-modal__close" onClick={onClose}>✕</button>
         </div>
         <div className="vb-modal__body">
-          {changelog.map(entry => {
+          {visibleEntries.map(entry => {
             const isCurrent = entry.version === currentVersion;
             return (
               <div key={entry.version} className={`vb-entry${isCurrent ? ' vb-entry--current' : ''}`}>
@@ -48,6 +52,13 @@ export function ChangelogModal({ onClose }) {
             );
           })}
         </div>
+        {!showAll && changelog.length > VISIBLE_COUNT && (
+          <div className="vb-modal__footer">
+            <button className="ds-btn sz-sm t-outline" onClick={() => setShowAll(true)}>
+              View all releases
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body

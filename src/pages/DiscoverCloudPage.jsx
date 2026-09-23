@@ -410,7 +410,7 @@ export default function DiscoverCloudPage({ onNav, crossFilters = [], onToggleFi
   const [drawerFilter,  setDrawerFilter]  = useState('All');
   const closeDrawer = useCallback(() => {
     setDrawerClosing(true);
-    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 240);
+    setTimeout(() => { setShowDrawer(false); setDrawerClosing(false); }, 280); // matches .dev-drawer.closing in device.css
   }, []);
   const hoveredBarRef    = useRef(null);
   const hoveredTypeRef   = useRef(null);

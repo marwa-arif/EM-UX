@@ -1113,6 +1113,35 @@ function getEntityAttrs(id) {
   ];
 }
 
+// ── Attribute grouping & source tagging ───────────────────────────────────────
+// Heuristic first pass — buckets ~800+ attributes by keyword rather than hand-curating
+// each one. Good enough to break up the flat unsorted list; refine with design/content
+// review once this spike is validated.
+const ATTR_GROUP_ORDER = ['Identity', 'Device', 'Access & Security', 'Metadata'];
+function classifyAttrGroup(attr) {
+  const s = `${attr.id} ${attr.label}`.toLowerCase();
+  if (/device|endpoint|hypervisor|hostname|machine/.test(s)) return 'Device';
+  if (/block|security|access|mfa|firewall|antivirus|av[- ]|quarantine|encrypt|vulnerab|exploit|patch/.test(s)) return 'Access & Security';
+  if (/identity|account|user|person|login|upn|sam|principal|aad-|ad-|\baad\b|\bad\b/.test(s)) return 'Identity';
+  return 'Metadata';
+}
+function getAttrSourceTag(attr) {
+  const s = `${attr.id} ${attr.label}`.toLowerCase();
+  if (/(^|[^a])aad[-_ ]|\baad\b/.test(s)) return 'AAD';
+  if (/(^|[^a])ad[-_ ]|\bad\b/.test(s)) return 'AD';
+  return null;
+}
+function groupAttrs(attrs) {
+  const buckets = new Map(ATTR_GROUP_ORDER.map(g => [g, []]));
+  attrs.forEach(a => buckets.get(classifyAttrGroup(a)).push(a));
+  return ATTR_GROUP_ORDER.map(group => ({ group, attrs: buckets.get(group) })).filter(g => g.attrs.length > 0);
+}
+function AttrSourceTag({ attr }) {
+  const tag = getAttrSourceTag(attr);
+  if (!tag) return null;
+  return <span className={`ds-tag ds-tag--source ds-tag--${tag.toLowerCase()}`}>{tag}</span>;
+}
+
 function initNodePositions(ids) {
   const COLS = 9, GX = 120, GY = 150, X0 = 60, Y0 = 48;
   return Object.fromEntries(ids.map((id, i) => [
@@ -1401,10 +1430,13 @@ function computePresetRange(preset, today) {
   return null;
 }
 
-function fmtDateRange(range, now) {
+function fmtSingleDate(date, now) {
   const curY = now.getFullYear();
-  const fmt  = (date) => `${GF_SHORT_MONTHS[date.getMonth()]} ${date.getDate()}${date.getFullYear() !== curY ? ` ${date.getFullYear()}` : ''}`;
-  return `${fmt(range.start)} – ${fmt(range.end)}`;
+  return `${GF_SHORT_MONTHS[date.getMonth()]} ${date.getDate()}${date.getFullYear() !== curY ? ` ${date.getFullYear()}` : ''}`;
+}
+
+function fmtDateRange(range, now) {
+  return `${fmtSingleDate(range.start, now)} – ${fmtSingleDate(range.end, now)}`;
 }
 
 function GFMiniCalendar({ monthName, year, month, rangeStart, rangeEnd, hoverDate, onDayClick, onDayHover }) {
@@ -1448,23 +1480,46 @@ function GFMiniCalendar({ monthName, year, month, rangeStart, rangeEnd, hoverDat
 }
 
 // ── Attributes panel (slides in beside canvas) ────────────────────────────────
-const GF_DATE_PRESETS = ['Last Calendar Week','Last Calendar Month','Last 6 Calendar Weeks','Last 6 Calendar Months','Last Year','Select Period'];
+const GF_DATE_PRESETS = ['Last Calendar Week','Last Calendar Month','Last 6 Calendar Weeks','Last 6 Calendar Months','Last Year'];
+
+function fmtBoxDate(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
 
 function GFDatePicker({ compact, onChange }) {
   const now = new Date();
-  const [datePreset,  setDatePreset]  = useState(null);
+  const [start,       setStart]       = useState(null);
+  const [end,         setEnd]         = useState(null);
+  const [activeField, setActiveField] = useState(null); // 'from' | 'to' | null — which box the calendar is picking for
+  const [presetOpen,  setPresetOpen]  = useState(false);
   const [cal1Month,   setCal1Month]   = useState(now.getMonth());
   const [cal1Year,    setCal1Year]    = useState(now.getFullYear());
-  const [customStart, setCustomStart] = useState(null);
-  const [customEnd,   setCustomEnd]   = useState(null);
   const [hoverDate,   setHoverDate]   = useState(null);
+  const [presetPos,   setPresetPos]   = useState(null);
+  const presetRef = useRef(null);
+  const presetBtnRef = useRef(null);
 
-  const notifyChange = (preset, start, end) => {
-    if (!onChange) return;
-    if (preset && preset !== 'Select Period') onChange(preset);
-    else if (preset === 'Select Period' && start && end) onChange('Select Period');
-    else onChange(null);
+  useEffect(() => {
+    if (!presetOpen) return;
+    const handler = (e) => { if (presetRef.current && !presetRef.current.contains(e.target)) setPresetOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [presetOpen]);
+
+  // The accordion body this lives in uses overflow:hidden for its expand/collapse
+  // animation, which would clip an absolutely-positioned panel — so this is fixed-
+  // positioned from the trigger's own rect instead (same technique as the SubHeader
+  // filter pill / ActiveFilterPanel popover elsewhere in this codebase).
+  const togglePreset = () => {
+    if (!presetOpen && presetBtnRef.current) {
+      const r = presetBtnRef.current.getBoundingClientRect();
+      setPresetPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    }
+    setPresetOpen(o => !o);
   };
+
+  const notify = (s, e) => { if (onChange) onChange(s && e ? fmtDateRange({ start: s, end: e }, now) : null); };
 
   const cal2Month = cal1Month === 11 ? 0 : cal1Month + 1;
   const cal2Year  = cal1Month === 11 ? cal1Year + 1 : cal1Year;
@@ -1472,50 +1527,103 @@ function GFDatePicker({ compact, onChange }) {
   const goPrev = () => { if (cal1Month === 0) { setCal1Month(11); setCal1Year(y => y - 1); } else setCal1Month(m => m - 1); };
   const goNext = () => { if (cal1Month === 11) { setCal1Month(0);  setCal1Year(y => y + 1); } else setCal1Month(m => m + 1); };
 
-  const activeRange = datePreset && datePreset !== 'Select Period'
-    ? computePresetRange(datePreset, now)
-    : datePreset === 'Select Period' && customStart
-      ? { start: customStart, end: customEnd || customStart }
-      : null;
+  const openField = (field) => { setActiveField(f => f === field ? null : field); setPresetOpen(false); };
 
   const handleDayClick = (date) => {
-    if (datePreset !== 'Select Period') return;
-    if (!customStart || customEnd) { setCustomStart(date); setCustomEnd(null); notifyChange('Select Period', date, null); }
-    else if (date < customStart) { const prev = customStart; setCustomStart(date); setCustomEnd(prev); notifyChange('Select Period', date, prev); }
-    else { setCustomEnd(date); notifyChange('Select Period', customStart, date); }
+    if (activeField === 'to') {
+      const newStart = start && date < start ? date : start;
+      const newEnd   = start && date < start ? start : date;
+      setStart(newStart); setEnd(newEnd); setActiveField(null);
+      notify(newStart, newEnd);
+    } else {
+      const newEnd = end && date > end ? null : end;
+      setStart(date); setEnd(newEnd); setActiveField('to');
+      notify(date, newEnd);
+    }
   };
 
-  const clear = () => { setDatePreset(null); setCustomStart(null); setCustomEnd(null); notifyChange(null, null, null); };
+  const applyPreset = (p) => {
+    const range = computePresetRange(p, now);
+    if (!range) return;
+    setStart(range.start); setEnd(range.end); setActiveField(null); setPresetOpen(false);
+    setCal1Month(range.start.getMonth()); setCal1Year(range.start.getFullYear());
+    notify(range.start, range.end);
+  };
+
+  const clearAll = () => { setStart(null); setEnd(null); setActiveField(null); setPresetOpen(false); notify(null, null); };
+
+  const presetMatches = (p) => {
+    const r = computePresetRange(p, now);
+    return !!(r && start && end && r.start.getTime() === start.getTime() && r.end.getTime() === end.getTime());
+  };
 
   return (
     <div className={`gf-datepicker${compact ? ' gf-datepicker--compact' : ''}`}>
-      {/* Quick-select shortcuts */}
-      <div className="gf-date-shortcuts">
-        {GF_DATE_PRESETS.map(p => (
+      <div className="gf-date-fields">
+        <button
+          type="button"
+          className={`gf-date-box${activeField === 'from' ? ' gf-date-box--active' : ''}${start ? ' gf-date-box--filled' : ''}`}
+          onClick={() => openField('from')}
+        >{start ? fmtBoxDate(start) : 'dd/mm/yyyy'}</button>
+        <span className="gf-date-fields-sep" aria-hidden="true">–</span>
+        <button
+          type="button"
+          className={`gf-date-box${activeField === 'to' ? ' gf-date-box--active' : ''}${end ? ' gf-date-box--filled' : ''}`}
+          onClick={() => openField('to')}
+        >{end ? fmtBoxDate(end) : 'dd/mm/yyyy'}</button>
+
+        <div className="gf-date-preset-wrap" ref={presetRef}>
           <button
-            key={p}
-            onClick={() => { setDatePreset(p); setCustomStart(null); setCustomEnd(null); notifyChange(p, null, null); }}
-            className={`gf-date-shortcut${datePreset === p ? ' gf-date-shortcut--active' : ''}`}
-          >{p}</button>
-        ))}
+            ref={presetBtnRef}
+            type="button"
+            className={`gf-date-cal-btn${presetOpen ? ' gf-date-cal-btn--active' : ''}`}
+            onClick={togglePreset}
+            title="Quick date ranges"
+            aria-label="Quick date ranges"
+            aria-expanded={presetOpen}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </button>
+          {presetOpen && presetPos && (
+            <div className="gf-date-preset-panel" style={{ top: presetPos.top, right: presetPos.right }}>
+              {GF_DATE_PRESETS.map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`gf-date-preset-option${presetMatches(p) ? ' gf-date-preset-option--selected' : ''}`}
+                  onClick={() => applyPreset(p)}
+                >{p}</button>
+              ))}
+              <div className="gf-date-preset-sep" />
+              <button
+                type="button"
+                className="gf-date-preset-option gf-date-preset-option--clear"
+                onClick={clearAll}
+                disabled={!start && !end}
+              >Clear dates</button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Calendar — shown when a shortcut is active or Select Period */}
-      {datePreset && (
+      {/* Calendar — shown only while actively picking a start or end date */}
+      {activeField && (
         <div className="gf-cal-nav-row">
           <button className="gf-cal-nav-btn" onClick={goPrev}>‹</button>
           <div className="gf-attrs-cals">
             <GFMiniCalendar
               monthName={GF_MONTH_NAMES[cal1Month]} year={cal1Year} month={cal1Month}
-              rangeStart={activeRange?.start} rangeEnd={activeRange?.end}
-              hoverDate={datePreset === 'Select Period' && customStart && !customEnd ? hoverDate : null}
+              rangeStart={start} rangeEnd={end}
+              hoverDate={activeField === 'to' ? hoverDate : null}
               onDayClick={handleDayClick} onDayHover={setHoverDate}
             />
             {!compact && (
               <GFMiniCalendar
                 monthName={GF_MONTH_NAMES[cal2Month]} year={cal2Year} month={cal2Month}
-                rangeStart={activeRange?.start} rangeEnd={activeRange?.end}
-                hoverDate={datePreset === 'Select Period' && customStart && !customEnd ? hoverDate : null}
+                rangeStart={start} rangeEnd={end}
+                hoverDate={activeField === 'to' ? hoverDate : null}
                 onDayClick={handleDayClick} onDayHover={setHoverDate}
               />
             )}
@@ -1791,7 +1899,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
   const attrs  = getEntityAttrs(entityId);
 
   const [search,         setSearch]         = useState('');
-  const [expanded,       setExpanded]       = useState(attrs[0]?.id ?? null);
+  const [expanded,       setExpanded]       = useState(null);
   const [selections,     setSelections]     = useState({});
   const [attrModes,      setAttrModes]      = useState({});
   const [seqModes,       setSeqModes]       = useState({});
@@ -1800,8 +1908,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
   const [dateSelections, setDateSelections] = useState({});
 
   useEffect(() => {
-    const newAttrs = getEntityAttrs(entityId);
-    setSearch(''); setExpanded(newAttrs[0]?.id ?? null);
+    setSearch(''); setExpanded(null);
     setSelections({}); setAttrModes({}); setSeqModes({}); setGroupSearch({}); setRangeVals({}); setDateSelections({});
   }, [entityId]);
 
@@ -1821,6 +1928,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
   }, [selections, attrModes, dateSelections, rangeVals]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = attrs.filter(a => !search || a.label.toLowerCase().includes(search.toLowerCase()));
+  const groupedFiltered = groupAttrs(filtered);
 
   const toggle = (id) => setExpanded(prev => prev === id ? null : id);
 
@@ -1848,9 +1956,12 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
         <DSPillSearch value={search} onChange={setSearch} placeholder="Search attribute" width="100%" />
       </div>
 
-      {/* Attribute accordions */}
+      {/* Attribute accordions — grouped by topic instead of one flat alphabetical list */}
       <div className="gfa-attrs">
-        {filtered.map(attr => {
+        {groupedFiltered.map(({ group, attrs: groupAttrList }) => (
+          <div key={group} className="gfa-group">
+            <div className="gfa-group__header">{group}</div>
+            {groupAttrList.map(attr => {
           const isOpen = expanded === attr.id;
           const sel    = selections[attr.id] || new Set();
           const mode   = attrModes[attr.id] || 'Include';
@@ -1867,6 +1978,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
               <button className="gfa-attr__header" onClick={() => toggle(attr.id)}>
                 <span className="gfa-attr__label">{attr.label}</span>
                 {sel.size > 0 && <span className="gfa-attr__badge">{sel.size}</span>}
+                <AttrSourceTag attr={attr} />
                 <span className={`fp-chevron${isOpen ? ' fp-chevron--open' : ''}`}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
                 </span>
@@ -1891,7 +2003,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
                         <DSPillSearch
                           value={groupSearch[attr.id] || ''}
                           onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))}
-                          placeholder={`Search ${attr.label}`}
+                          placeholder={`Filter ${attr.label} values`}
                           width="100%"
                         />
                       </div>
@@ -1938,7 +2050,7 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
                         <DSPillSearch
                           value={groupSearch[attr.id] || ''}
                           onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))}
-                          placeholder={`Search ${attr.label}…`}
+                          placeholder={`Filter ${attr.label} values…`}
                           width="100%"
                         />
                       </div>
@@ -1969,54 +2081,16 @@ function GFAttrPanelBody({ entityId, onFiltersChange }) {
               </div>
             </div>
           );
-        })}
+            })}
+          </div>
+        ))}
       </div>
-
-      {/* Applied filters summary */}
-      {appliedCount > 0 && (
-        <div className="gfa-applied">
-          <div className="gfa-applied__label">Filters</div>
-          {Object.entries(selections).map(([attrId, sel]) => {
-            if (!sel || sel.size === 0) return null;
-            const a    = attrs.find(x => x.id === attrId);
-            const mode = attrModes[attrId] || 'Include';
-            return (
-              <div key={attrId} className="gfa-applied__chip">
-                <span className="gfa-applied__mode">{mode}</span>
-                <span className="gfa-applied__text">{a?.label}: {[...sel].join(', ')}</span>
-                <button className="gfa-applied__remove"
-                  onClick={() => setSelections(p => { const n = {...p}; delete n[attrId]; return n; })}>
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            );
-          })}
-          {Object.entries(dateSelections).map(([attrId, preset]) => {
-            if (!preset) return null;
-            const a = attrs.find(x => x.id === attrId);
-            return (
-              <div key={attrId} className="gfa-applied__chip">
-                <span className="gfa-applied__mode">Include</span>
-                <span className="gfa-applied__text">{a?.label}: {preset}</span>
-                <button className="gfa-applied__remove"
-                  onClick={() => setDateSelections(p => { const n = {...p}; delete n[attrId]; return n; })}>
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
 
 // ── GFSidePanel — floating draggable/resizable graph canvas panel ─────────────
-const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEntityId, onApply, onConnectionsChange, hidden, entityAttrFilters, onEntityAttrFiltersChange }, ref) {
+const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEntityId, onApply, onDirtyChange, hidden, entityAttrFilters, onEntityAttrFiltersChange }, ref) {
   const [paths,             setPaths]             = useState([]);
   const [activePathIdx,     setActivePathIdx]     = useState(null);
   const [hoveredId,         setHoveredId]         = useState(null);
@@ -2051,6 +2125,24 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
 
   const visibleEntities = GF_ENTITIES.filter(e => shownEntityIds.has(e.id));
 
+  // Real schema-relationship edges among the entities currently shown on the canvas —
+  // drawn as a persistent baseline layer so the graph reads as a graph at rest, not just
+  // on hover. Also used to decide whether "click a connected node" instructions are true.
+  const visibleRelationEdges = (() => {
+    const seen = new Set();
+    const edges = [];
+    visibleEntities.forEach(e => {
+      (ENTITY_RELATIONS[e.id] || []).forEach(relId => {
+        if (relId === e.id || !shownEntityIds.has(relId)) return;
+        const key = [e.id, relId].sort().join('|');
+        if (seen.has(key)) return;
+        seen.add(key);
+        edges.push([e.id, relId]);
+      });
+    });
+    return edges;
+  })();
+
   // Layout constants
   const NODE_SLOT         = 96;
   const ENTITY_ROW_Y_BASE = 24;
@@ -2066,7 +2158,6 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
   const contentW   = n * TOP_SLOT_W;
   // Center the node row when it fits inside the panel; otherwise it stays left-aligned and scrollable
   const rowOffsetX = Math.max(0, (size.w - contentW) / 2);
-  const SIZER_W    = contentW + 2 * rowOffsetX + FAN_PAD + NODE_SLOT;
 
   const maxPathLength = paths.length > 0 ? Math.max(...paths.map(p => p.length)) : 1;
   // Center the node rows vertically when they fit inside the canvas; otherwise stays top-anchored and scrollable
@@ -2102,6 +2193,11 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
   const potentialNextIds = previewId
     ? (ENTITY_RELATIONS[previewId] || []).filter(id => !previewPath.includes(id))
     : [];
+
+  // Only reserve fan-out room when a fan is actually showing — otherwise the sizer
+  // matches the entity row exactly, so idle canvas doesn't carry ~430px of dead
+  // dotted-grid space that was reserved "just in case".
+  const SIZER_W = contentW + 2 * rowOffsetX + (potentialNextIds.length > 0 ? FAN_PAD + NODE_SLOT : 0);
 
   const fanSrcX = (() => {
     if (hoveredId !== null && !hoveredIsRoot) return slotCenterX(hoveredId);
@@ -2261,9 +2357,9 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
         const a      = attrs.find(x => x.id === attrId);
         const isDate = a?.type === 'date';
         const preset = isDate ? f.values[0] : null;
-        const range  = preset && preset !== 'Select Period' ? computePresetRange(preset, new Date()) : null;
+        const range  = preset ? computePresetRange(preset, new Date()) : null;
         const valStr = range ? `${fmtDateRange(range, new Date())} (${preset})` : f.values.join(', ');
-        chips.push({ key: `${entity?.label} · ${a?.label}`, attrId: `graph-attr-${entityId}-${attrId}`, value: `${f.mode} ${valStr}` });
+        chips.push({ key: `${entity?.label} · ${a?.label}`, attrId: `graph-attr-${entityId}-${attrId}`, value: `${f.mode} ${valStr}`, source: 'graph' });
       });
     });
     return chips;
@@ -2272,14 +2368,30 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
     (sum, filters) => sum + Object.values(filters || {}).filter(f => f?.values?.length > 0).length, 0
   );
 
-  const handleReset  = () => { setPaths([]); setActivePathIdx(null); setEntityAttrFilters({}); onApply && onApply(0, [], []); };
-  const handleApply  = () => {
+  const buildChips = () => {
     const connChips = allConnections.map(c => {
       const fromE = GF_ENTITIES.find(e => e.id === c.from);
       const toE   = GF_ENTITIES.find(e => e.id === c.to);
-      return { key: 'Graph Filter', attrId: 'graph-entity', value: `${fromE?.label} → ${toE?.label}` };
+      return { key: 'Graph Filter', attrId: 'graph-entity', value: `${fromE?.label} → ${toE?.label}`, source: 'graph' };
     });
-    const chips = [...connChips, ...attrFilterChips()];
+    return [...connChips, ...attrFilterChips()];
+  };
+
+  // appliedSignature is null until Apply has been clicked at least once — Reset stays
+  // disabled until then, and Apply itself disables right after a click, re-enabling only
+  // once the current selection actually differs from what was last applied.
+  const [appliedSignature, setAppliedSignature] = useState(null);
+  const currentSignature = JSON.stringify(buildChips());
+  const isDirty  = currentSignature !== (appliedSignature ?? '[]');
+  const canReset = appliedSignature !== null;
+
+  const handleReset  = () => {
+    setPaths([]); setActivePathIdx(null); setEntityAttrFilters({});
+    setAppliedSignature(null);
+    onApply && onApply(0, [], []);
+  };
+  const handleApply  = () => {
+    const chips = buildChips();
     // paths (the raw traversal chains, e.g. [['host','vulnerability']]) travel
     // alongside the flattened chips — chips alone lose the relationship
     // structure (every hop collapses to the same generic 'graph-entity'
@@ -2288,6 +2400,7 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
     // the Active Filter Preview. Callers that don't care can just ignore the
     // 3rd argument.
     onApply && onApply(chips.length, chips, paths);
+    setAppliedSignature(JSON.stringify(chips));
   };
 
   const totalFilterCount = allConnections.length + attrFilterCount();
@@ -2305,22 +2418,85 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
     connectionCount: totalFilterCount,
   }), [totalFilterCount, entityAttrFilters, paths]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Notify parent of filter count changes so footer Apply button can be enabled/disabled
+  // Notify parent of dirty state so footer Apply & Reset buttons reflect it
   useEffect(() => {
-    onConnectionsChange && onConnectionsChange(totalFilterCount);
-  }, [totalFilterCount]); // eslint-disable-line react-hooks/exhaustive-deps
+    onDirtyChange && onDirtyChange({ isDirty, canReset });
+  }, [isDirty, canReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const panelStyle = {
-    width: size.w,
-    ...(hidden ? { display: 'none' } : {}),
-  };
+  const panelStyle = { width: size.w };
 
   return (
-    <div className="gf-side-panel" style={panelStyle} ref={panelRef}>
+    <div className={`gf-side-panel${hidden ? ' gf-side-panel--hidden' : ''}`} style={panelStyle} ref={panelRef}>
 
       {/* Title header */}
       <div className="gf-side-panel__header">
-        <span className="gf-side-panel__title">Graph Filter</span>
+        <span className="gf-side-panel__title">Path Builder</span>
+        <span className="gf-side-panel__subtitle">Graph Filter · connect related entities into a path</span>
+      </div>
+
+      {/* Persistent toolbar — zoom, delete-selected, Add/Hide Entity all live here instead
+          of floating over the canvas, so they don't overlap entity nodes at any scroll position */}
+      <div className="gf-side-panel__toolbar">
+        <div className="gf-canvas__zoom-controls">
+          <button
+            className="gf-canvas-btn"
+            title="Zoom in"
+            disabled={zoom >= 1.5}
+            onClick={(e) => { e.stopPropagation(); zoomIn(); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button
+            className="gf-canvas-btn"
+            title="Zoom out"
+            disabled={zoom <= 0.5}
+            onClick={(e) => { e.stopPropagation(); zoomOut(); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
+
+        <button
+          className={`gf-canvas-delete-btn${selectedNode ? ' gf-canvas-delete-btn--enabled' : ''}`}
+          disabled={!selectedNode}
+          title={selectedNode ? 'Delete selected node' : 'Select a node first'}
+          onClick={(e) => { e.stopPropagation(); handleDeleteSelected(); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+
+        <div className="gf-side-panel__toolbar-spacer" />
+
+        <div className="gf-canvas-add-hide-wrap">
+          <button
+            className={`gf-canvas-add-hide${showAddHide ? ' gf-canvas-add-hide--active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); setShowAddHide(v => !v); }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add / Hide Entity
+          </button>
+
+          {showAddHide && (
+            <GFAddHidePopup
+              shownIds={[...shownEntityIds]}
+              onApply={(ids) => {
+                const newSet = new Set(ids);
+                setShownEntityIds(newSet);
+                setPaths(prev => prev.filter(p => newSet.has(p[0])));
+                setShowAddHide(false);
+              }}
+              onClose={() => setShowAddHide(false)}
+            />
+          )}
+        </div>
       </div>
 
       {/* Canvas — wrap keeps button pinned to visible area; area is the scrollable inner */}
@@ -2337,6 +2513,18 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
         <div className="gf-canvas-sizer" style={{ width: SIZER_W, minHeight: PATH_Y0 + (maxPathLength + 2) * LEVEL_H + 80 }} />
 
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          {/* Baseline schema-relationship edges — always visible, real graph structure at rest */}
+          {visibleRelationEdges.map(([fromId, toId]) => {
+            const x1 = slotCenterX(fromId), x2 = slotCenterX(toId);
+            const y  = ENTITY_ROW_Y + CIRCLE_MID;
+            const dip = Math.min(28, Math.abs(x2 - x1) / 6);
+            const d = `M${x1},${y} Q${(x1 + x2) / 2},${y + dip} ${x2},${y}`;
+            return (
+              <path key={`edge-${fromId}-${toId}`} d={d}
+                stroke="var(--shell-border)" strokeWidth={1.25} strokeDasharray="3 3"
+                fill="none" opacity={0.6} />
+            );
+          })}
           {paths.map((p, pathIdx) => {
             const cx = slotCenterX(p[0]);
             return (
@@ -2447,67 +2635,6 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
 
         </div>{/* end gf-canvas-zoom-layer */}
       </div>{/* end gf-canvas-area */}
-
-        {/* Zoom controls — pinned to canvas-wrap, unaffected by canvas zoom/scroll */}
-        <div className="gf-canvas__zoom-controls">
-          <button
-            className="gf-canvas-btn"
-            title="Zoom in"
-            disabled={zoom >= 1.5}
-            onClick={(e) => { e.stopPropagation(); zoomIn(); }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </button>
-          <button
-            className="gf-canvas-btn"
-            title="Zoom out"
-            disabled={zoom <= 0.5}
-            onClick={(e) => { e.stopPropagation(); zoomOut(); }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* Delete selected node button — above Add/Hide */}
-        <button
-          className={`gf-canvas-delete-btn${selectedNode ? ' gf-canvas-delete-btn--enabled' : ''}`}
-          disabled={!selectedNode}
-          title={selectedNode ? 'Delete selected node' : 'Select a node first'}
-          onClick={(e) => { e.stopPropagation(); handleDeleteSelected(); }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-        </button>
-
-        {/* Add/Hide button — outside scrollable area, stays pinned to canvas-wrap corner */}
-        <button
-          className={`gf-canvas-add-hide${showAddHide ? ' gf-canvas-add-hide--active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setShowAddHide(v => !v); }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add / Hide Entity
-        </button>
-
-        {/* Add/Hide popup — anchored above the button, inside the panel */}
-        {showAddHide && (
-          <GFAddHidePopup
-            shownIds={[...shownEntityIds]}
-            onApply={(ids) => {
-              const newSet = new Set(ids);
-              setShownEntityIds(newSet);
-              setPaths(prev => prev.filter(p => newSet.has(p[0])));
-              setShowAddHide(false);
-            }}
-            onClose={() => setShowAddHide(false)}
-          />
-        )}
       </div>{/* end gf-canvas-wrap */}
 
       {/* Active filter preview */}
@@ -2524,6 +2651,12 @@ const GFSidePanel = forwardRef(function GFSidePanel({ onEntitySelect, selectedEn
               <div className="gf-implicit-thumb" />
             </div>
             <span className="gf-implicit-label">Implicit</span>
+            <span
+              className="fp-info-tip fp-info-tip--wrap"
+              data-tip="Implicit: also include entities indirectly related through the current path, not just the ones directly connected."
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
           </label>
         </div>
         <div className="gf-bottom-tree">
@@ -2727,7 +2860,7 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
     const chips = allConnections.map(c => {
       const fromE = GF_ENTITIES.find(e => e.id === c.from);
       const toE   = GF_ENTITIES.find(e => e.id === c.to);
-      return { key: 'Graph Filter', attrId: 'graph-entity', value: `${fromE?.label} → ${toE?.label}` };
+      return { key: 'Graph Filter', attrId: 'graph-entity', value: `${fromE?.label} → ${toE?.label}`, source: 'graph' };
     });
     onApply && onApply(chips.length, chips);
     onClose();
@@ -3017,14 +3150,14 @@ function GraphFilterDrawer({ open, onClose, onApply, top = 0 }) {
 function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   const [tab,              setTab]             = useState('quick');
   const [selectedEntityId, setSelectedEntityId] = useState('host');
-  const [gfConnCount,      setGfConnCount]      = useState(0);
+  const [gfDirty,          setGfDirty]          = useState({ isDirty: false, canReset: false });
   const [gfEntityAttrFilters, setGfEntityAttrFilters] = useState({});
   const [gfResetToken,    setGfResetToken]      = useState(0);
   const gfRef = useRef(null);
   const [settingsView,    setSettingsView]   = useState(false);
   const [search,          setSearch]         = useState('');
   const [savedSearch,     setSavedSearch]    = useState('');
-  const [expanded,        setExpanded]       = useState(() => new Set([getPageAttrs(pageId)[0]?.id].filter(Boolean)));
+  const [expanded,        setExpanded]       = useState(() => new Set());
   const [selections,      setSelections]     = useState({});
   const [groupSearch,     setGroupSearch]    = useState({});
   const [showAll,         setShowAll]        = useState({});
@@ -3054,7 +3187,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
     setSelections({});
     setAttrModes({});
     setRangeSelections({});
-    setExpanded(new Set([newAttrs[0]?.id].filter(Boolean)));
+    setExpanded(new Set());
     setPendingAttrs(null);
     if (!isGraphFilterEnabled(pageId)) setTab(prev => prev === 'graph' ? 'quick' : prev);
   }, [pageId]);
@@ -3099,41 +3232,61 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
   const onSDrop      = (e, i) => { e.preventDefault(); if (sdragIdx === null || sdragIdx === i) { setSdragIdx(null); setSdragOver(null); return; } const arr = [...liveSaved.order]; const [m] = arr.splice(sdragIdx, 1); arr.splice(i, 0, m); setPendingSaved({ ...liveSaved, order: arr }); setSdragIdx(null); setSdragOver(null); };
   const onSDragEnd   = () => { setSdragIdx(null); setSdragOver(null); };
 
+  const buildQuickChips = () => {
+    const chips = [];
+    attrs.forEach(attr => {
+      if (attr.type === 'range') {
+        const r = rangeSelections[attr.id];
+        if (r && (r.from !== attr.min || r.to !== attr.max)) {
+          chips.push({ key: attr.label, attrId: attr.id, value: `${r.from} – ${r.to}`, source: 'quick' });
+        }
+      } else {
+        const sel = selections[attr.id];
+        if (sel && sel.size > 0) {
+          const key = attr.label + (attr.sub ? ` · ${attr.sub}` : '');
+          const mode = attr.modes ? (attrModes[attr.id] || 'OR') : null;
+          sel.forEach(value => chips.push({ key, attrId: attr.id, value, source: 'quick', ...(mode ? { mode } : {}) }));
+        }
+      }
+    });
+    return chips;
+  };
+
+  // Quick Filters: null appliedQuickSignature means Apply has never been clicked for the
+  // current selection set — Reset stays disabled until then, and Apply disables itself
+  // right after a click, re-enabling only once the selection actually changes again.
+  const [appliedQuickSignature, setAppliedQuickSignature] = useState(null);
+  const quickSignature = JSON.stringify(buildQuickChips());
+  const quickIsDirty  = quickSignature !== (appliedQuickSignature ?? '[]');
+  const quickCanReset = appliedQuickSignature !== null;
+
+  // Saved Filters: selectedSavedId is the highlighted-but-not-yet-applied choice,
+  // appliedSavedId is what's actually in effect — the same dirty/applied pairing.
+  const savedIsDirty  = selectedSavedId !== appliedSavedId;
+  const savedCanReset = appliedSavedId !== null;
+
   const handleReset = () => {
     if (tab === 'saved') { setSelectedSavedId(null); setAppliedSavedId(null); onApply && onApply(0); }
-    else { setSelections({}); setRangeSelections({}); }
+    else { setSelections({}); setRangeSelections({}); setAppliedQuickSignature(null); }
   };
   const handleApply = () => {
     if (tab === 'saved') {
       setAppliedSavedId(selectedSavedId);
       const item = allSavedItems.find(i => i.id === selectedSavedId);
       if (item) {
-        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name }], false, applyToAllPages);
+        onApply && onApply(1, [{ key: 'Saved Filter', attrId: 'saved-filter', value: item.name, source: 'saved' }], false, applyToAllPages);
       }
     } else {
-      const chips = [];
-      attrs.forEach(attr => {
-        if (attr.type === 'range') {
-          const r = rangeSelections[attr.id];
-          if (r && (r.from !== attr.min || r.to !== attr.max)) {
-            chips.push({ key: attr.label, attrId: attr.id, value: `${r.from} – ${r.to}` });
-          }
-        } else {
-          const sel = selections[attr.id];
-          if (sel && sel.size > 0) {
-            const key = attr.label + (attr.sub ? ` · ${attr.sub}` : '');
-            const mode = attr.modes ? (attrModes[attr.id] || 'OR') : null;
-            sel.forEach(value => chips.push({ key, attrId: attr.id, value, ...(mode ? { mode } : {}) }));
-          }
-        }
-      });
+      const chips = buildQuickChips();
       const count = Object.values(selections).filter(s => s && s.size > 0).length
         + attrs.filter(a => a.type === 'range' && rangeSelections[a.id] && (rangeSelections[a.id].from !== a.min || rangeSelections[a.id].to !== a.max)).length;
       onApply && onApply(count, chips, false, applyToAllPages);
+      setAppliedQuickSignature(JSON.stringify(chips));
     }
   };
 
   const filteredAttrs = attrs.filter(a => !search || (a.label + (a.sub ? ` ${a.sub}` : '')).toLowerCase().includes(search.toLowerCase()));
+  const groupedFilteredAttrs = groupAttrs(filteredAttrs);
   const filteredSaved = allSavedItems.filter(item => !savedSearch || item.name.toLowerCase().includes(savedSearch.toLowerCase()));
   const currentFilterCount = Object.values(selections).filter(s => s && s.size > 0).length
     + attrs.filter(a => a.type === 'range' && rangeSelections[a.id] && (rangeSelections[a.id].from !== a.min || rangeSelections[a.id].to !== a.max)).length;
@@ -3386,7 +3539,11 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
             <div className="fp-quick-search-wrap">
               <DSPillSearch value={search} onChange={setSearch} placeholder="Search Quick Filters" width="100%" />
             </div>
-            {filteredAttrs.map((attr) => {
+
+            {groupedFilteredAttrs.map(({ group, attrs: groupAttrList }) => (
+            <div key={group} className="gfa-group">
+              <div className="gfa-group__header">{group}</div>
+            {groupAttrList.map((attr) => {
               const isOpen  = expanded.has(attr.id);
               const sel     = selections[attr.id] || new Set();
               const gSrch   = groupSearch[attr.id] || '';
@@ -3405,6 +3562,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                     <span className="fp-attr-group__icon"><FPAttrIcon icon={attr.icon} size={16} /></span>
                     <span className="fp-attr-group__label">
                       {attr.label}
+                      <AttrSourceTag attr={attr} />
                       {attr.sub && (
                         <FPSubTooltip sub={attr.sub}>
                           <span className="fp-attr-group__sub-text"> · {attr.sub}</span>
@@ -3438,7 +3596,7 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                           )}
                           <div className="fp-options__search-row">
                             <div className="fp-options__search-wrap">
-                              <DSPillSearch value={gSrch} onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))} placeholder={`Search ${attr.label}`} width="100%" />
+                              <DSPillSearch value={gSrch} onChange={v => setGroupSearch(p => ({ ...p, [attr.id]: v }))} placeholder={`Filter ${attr.label} values`} width="100%" />
                             </div>
                             <div className="fp-options__sort">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--pai-fg3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
@@ -3476,6 +3634,8 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
                 </div>
               );
             })}
+            </div>
+            ))}
           </div>
         )}
       </div>
@@ -3484,14 +3644,18 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
       <div className="fp-footer">
         {tab === 'graph' ? (
           <div className="fp-footer__row">
-            <button onClick={() => { gfRef.current?.reset(); setGfResetToken(t => t + 1); }} className="fp-footer-btn fp-footer-btn--danger">
+            <button
+              onClick={() => { gfRef.current?.reset(); setGfResetToken(t => t + 1); }}
+              disabled={!gfDirty.canReset}
+              className={`fp-footer-btn fp-footer-btn--danger${!gfDirty.canReset ? ' fp-footer-btn--disabled' : ''}`}
+            >
               <span className="fp-mask-icon" />
-              Reset all filters
+              Reset All Filters
             </button>
             <button
               onClick={() => { gfRef.current?.apply(); onClose && onClose(); }}
-              disabled={gfConnCount === 0}
-              className={`fp-footer-btn fp-footer-btn--primary${gfConnCount === 0 ? ' fp-footer-btn--disabled' : ''}`}
+              disabled={!gfDirty.isDirty}
+              className={`fp-footer-btn fp-footer-btn--primary${!gfDirty.isDirty ? ' fp-footer-btn--disabled' : ''}`}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               Apply Filter
@@ -3510,60 +3674,48 @@ function FilterPanel({ onApply, onClose, embedded = false, pageId }) {
           </div>
         ) : (
           <>
-            <div className="fp-footer__panel">
-              {tab === 'quick' && (
-                <>
-                  <div className="fp-footer__panel-row">
-                    <span className="fp-footer__panel-label">
-                      <span className="fp-footer__panel-icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                      </span>
-                      Matching records
-                    </span>
-                    <span className="fp-footer__panel-value">{previewResultCount.toLocaleString()}</span>
-                  </div>
-                  <div className="fp-footer__panel-divider" />
-                </>
-              )}
-              <div className={`fp-footer__panel-row${applyToAllPages ? ' fp-footer__panel-row--active' : ''}`}>
-                <span className="fp-footer__panel-label-wrap">
-                  <span className="fp-footer__panel-label">Apply to all pages</span>
-                  <span
-                    className="fp-info-tip fp-info-tip--wrap"
-                    data-tip="After enabling, this filter is applied across every page. Pages that don't have these attributes will ignore it."
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  </span>
-                </span>
-                <FPToggle checked={applyToAllPages} onChange={setApplyToAllPages} />
-              </div>
-            </div>
             <div className="fp-footer__row">
-              <button onClick={handleReset} className="fp-footer-btn fp-footer-btn--danger">
+              <button
+                onClick={handleReset}
+                disabled={tab === 'saved' ? !savedCanReset : !quickCanReset}
+                className={`fp-footer-btn fp-footer-btn--danger${(tab === 'saved' ? !savedCanReset : !quickCanReset) ? ' fp-footer-btn--disabled' : ''}`}
+              >
                 <span className="fp-mask-icon" />
-                Reset
+                Reset All Filters
               </button>
-              <button onClick={handleApply} className="fp-footer-btn fp-footer-btn--primary">
+              <button
+                onClick={handleApply}
+                disabled={tab === 'saved' ? !savedIsDirty : !quickIsDirty}
+                className={`fp-footer-btn fp-footer-btn--primary${(tab === 'saved' ? !savedIsDirty : !quickIsDirty) ? ' fp-footer-btn--disabled' : ''}`}
+              >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Apply
+                Apply Filter
               </button>
             </div>
           </>
         )}
       </div>
 
-      {/* GFSidePanel — portal-rendered floating panel when Graph Filter tab is active */}
+      {/* GFSidePanel — portal-rendered floating panel when Graph Filter tab is active.
+          A scrim sits behind it so the dashboard underneath is clearly separated, not
+          bleeding through (matches the DS filter-popup overlay treatment). */}
       {createPortal(
-        <GFSidePanel
-          ref={gfRef}
-          hidden={tab !== 'graph'}
-          onEntitySelect={(id) => setSelectedEntityId(id)}
-          selectedEntityId={selectedEntityId}
-          onApply={(count, chips, paths) => onApply && onApply(count, chips, paths)}
-          onConnectionsChange={setGfConnCount}
-          entityAttrFilters={gfEntityAttrFilters}
-          onEntityAttrFiltersChange={setGfEntityAttrFilters}
-        />,
+        <>
+          <div
+            className={`gf-side-panel-backdrop${tab === 'graph' ? ' gf-side-panel-backdrop--open' : ''}`}
+            onClick={() => setTab('quick')}
+          />
+          <GFSidePanel
+            ref={gfRef}
+            hidden={tab !== 'graph'}
+            onEntitySelect={(id) => setSelectedEntityId(id)}
+            selectedEntityId={selectedEntityId}
+            onApply={(count, chips, paths) => onApply && onApply(count, chips, paths)}
+            onDirtyChange={setGfDirty}
+            entityAttrFilters={gfEntityAttrFilters}
+            onEntityAttrFiltersChange={setGfEntityAttrFilters}
+          />
+        </>,
         document.body
       )}
     </div>

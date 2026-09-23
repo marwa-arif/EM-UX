@@ -313,7 +313,7 @@ const TAB_DEFS = [
 ];
 
 // ── Shared right panel tab strip ─────────────────────────────────────
-function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProps, visitedTabs = [], navigatorFloating = false }) {
+function RightPanelShell({ tab, onTabSwitch, onClose, onCloseFloatingNavigator, filterProps, navigatorProps, visitedTabs = [], navigatorFloating = false }) {
   const SHELL_WIDTH = 400;
   const isOpen = tab !== null;
   const isCollapsedForFloat = navigatorFloating && tab === 'navigator';
@@ -364,11 +364,14 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               onClose={onClose}
             />
           )}
-          {tab === 'navigator' && (
+          {/* Mounted whenever it's the docked tab, OR independently floating —
+              the floating case must NOT depend on `tab === 'navigator'` so it can
+              coexist with whatever else (e.g. Filter) is currently docked. */}
+          {(tab === 'navigator' || navigatorFloating) && (
             <NavigatorPanel
               open={true}
               embedded={true}
-              onClose={onClose}
+              onClose={tab === 'navigator' ? onClose : onCloseFloatingNavigator}
               onNav={navigatorProps?.onNav}
               initialViewMode={navigatorProps?.initialViewMode}
               onViewModeChange={navigatorProps?.onViewModeChange}
@@ -383,6 +386,7 @@ function RightPanelShell({ tab, onTabSwitch, onClose, filterProps, navigatorProp
               draftAutoSend={navigatorProps?.draftAutoSend}
               dockSide={navigatorProps?.dockSide}
               forceFloatToken={navigatorProps?.forceFloatToken}
+              forceSidebarToken={navigatorProps?.forceSidebarToken}
               exploreActive={navigatorProps?.exploreActive}
             />
           )}
@@ -773,6 +777,9 @@ function App() {
   // to switch to floating so the two don't fight over the same space,
   // without resetting whatever conversation is already in progress.
   const [navigatorForceFloatToken, setNavigatorForceFloatToken] = useState(0);
+  // Bumped when the rp-shell tab switcher's "Navigator" tab is clicked explicitly
+  // — forces an already-mounted (possibly floating) panel to dock as sidebar.
+  const [navigatorForceSidebarToken, setNavigatorForceSidebarToken] = useState(0);
   // "Click and explore" — while true, ClickExploreOverlay listens for a click
   // on any data-nav-explore element in the current page and turns it into a
   // navigator-ask draft; one-shot, so a pick (or navigating away) clears it.
@@ -818,7 +825,16 @@ function App() {
     localStorage.setItem('pai-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  const themeTransitionTimeoutRef = useRef(null);
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    html.classList.add('theme-transitioning');
+    if (themeTransitionTimeoutRef.current) clearTimeout(themeTransitionTimeoutRef.current);
+    themeTransitionTimeoutRef.current = setTimeout(() => {
+      html.classList.remove('theme-transitioning');
+    }, 300);
+    setTheme(t => t === 'dark' ? 'light' : 'dark');
+  };
 
   // Set BEFORE first render of children so KGPage can read persisted edges synchronously
   if (typeof window !== 'undefined' && window.__floatTweaks !== tweaks) {
@@ -869,6 +885,17 @@ function App() {
   const openRightTab = (tabName) => {
     setVisitedTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
     setRightPanel(prev => (prev === tabName ? null : tabName));
+    // Picking "Navigator" from the rp-shell tab switcher is an explicit dock
+    // gesture — it should always land as sidebar, even if Navigator was left
+    // floating from an earlier open (e.g. via the Copilot FAB). Setting the
+    // state here covers a fresh mount; bumping the token forces an
+    // already-mounted panel (initialViewMode only seeds on first mount) to
+    // actually switch over.
+    if (tabName === 'navigator') {
+      setNavigatorFloating(false);
+      setNavigatorViewMode('sidebar');
+      setNavigatorForceSidebarToken(n => n + 1);
+    }
   };
 
   const handleModeChange = (mode) => {
@@ -914,7 +941,10 @@ function App() {
       // every other entry point (this one included) must fall back to the
       // normal right side, not inherit a 'left' left over from that drawer.
       setNavigatorDock('right');
-      openRightTab('navigator');
+      // Deliberately does NOT touch rightPanel — floating Navigator mounts
+      // independently (see RightPanelShell) so it doesn't evict whatever is
+      // currently docked (e.g. an open Filter panel).
+      setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
       return;
     }
     if (id === 'navigator-builder') {
@@ -940,8 +970,8 @@ function App() {
       setNavigatorDraftQuery(data?.query || '');
       setNavigatorDraftAutoSend(!!data?.autoSend);
       setNavigatorDraftToken(n => n + 1);
+      // Deliberately does NOT touch rightPanel — see the 'navigator' branch above.
       setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
-      setRightPanel('navigator');
       return;
     }
     if (id === 'navigator-explore-toggle') {
@@ -1077,6 +1107,7 @@ function App() {
       tab={rightPanel}
       onTabSwitch={openRightTab}
       onClose={() => { setRightPanel(null); setNavigatorFloating(false); setNavigatorBuilderMode(false); setNavigatorBuilderKind('assessment'); setNavigatorBuilderContext(null); }}
+      onCloseFloatingNavigator={() => setNavigatorFloating(false)}
       visitedTabs={visitedTabs}
       filterProps={{ pageId: current, onApply: (c, chips, arg3, applyToAllPages = false) => {
         // FilterPanel's tabs disagree on what the 3rd positional arg means: the Graph
@@ -1107,7 +1138,17 @@ function App() {
       navigatorProps={{
         onNav: handleNav,
         initialViewMode: navigatorViewMode,
-        onViewModeChange: (mode) => { setNavigatorFloating(mode === 'floating'); setNavigatorViewMode(mode); },
+        onViewModeChange: (mode) => {
+          setNavigatorFloating(mode === 'floating');
+          setNavigatorViewMode(mode);
+          // Docking as sidebar needs the rp-shell slot — take it over explicitly,
+          // same as any other dock action (this matters when Navigator was mounted
+          // as an independent floating panel alongside a different docked tab).
+          if (mode === 'sidebar') {
+            setVisitedTabs(prev => prev.includes('navigator') ? prev : [...prev, 'navigator']);
+            setRightPanel('navigator');
+          }
+        },
         builderMode: navigatorBuilderMode && !!activeBuilderSurface?.matchRoute(current),
         builderApi: activeBuilderSurface?.api ?? null,
         builderKind: navigatorBuilderKind,
@@ -1119,6 +1160,7 @@ function App() {
         draftAutoSend: navigatorDraftAutoSend,
         dockSide: navigatorDock,
         forceFloatToken: navigatorForceFloatToken,
+        forceSidebarToken: navigatorForceSidebarToken,
         exploreActive: navigatorExploreActive,
       }}
       navigatorFloating={navigatorFloating}
@@ -1160,7 +1202,7 @@ function App() {
             onOpenCopilotBuilder={(ctx) => handleNav('navigator-builder', { kind: ctx?.kind ?? 'dashboard', ...ctx })}
             rightPanelSlot={sharedRightPanel}
             rightPanelOpen={rightPanel !== null && !(rightPanel === 'navigator' && navigatorFloating)}
-            navigatorActive={rightPanel === 'navigator'}
+            navigatorActive={rightPanel === 'navigator' || navigatorFloating}
             seedDashboard={dashboardSeed}
             appMode={appMode}
             onModeChange={handleModeChange}
@@ -1423,7 +1465,7 @@ function App() {
       />
 
       {!showSplash && !locked && (!isNavigatorRoute || settingsOpen) && (
-        <CopilotFab onClick={() => handleNav('navigator')} active={rightPanel === 'navigator'} pageContext={settingsOpen ? null : pageMeta?.title} />
+        <CopilotFab onClick={() => handleNav('navigator')} active={rightPanel === 'navigator' || navigatorFloating} pageContext={settingsOpen ? null : pageMeta?.title} />
       )}
     </div>
   );
