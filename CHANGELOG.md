@@ -33,6 +33,14 @@ All notable UI changes are tracked here.
 
 ---
 
+## [0.21.3] — 2026-09-23
+### Added
+- Risk Remediation Metrics standalone HTML v2 variant
+### Changed
+- Updated Risk Remediation Metrics standalone HTML mockup
+
+---
+
 ## [0.21.2] — 2026-09-21
 ### Added
 - New client-specific dashboard pages: MRA Security Risk (React + standalone HTML), MTTD Trends (standalone HTML), Risk Remediation Metrics (standalone HTML)
